@@ -1,6 +1,17 @@
 #!/usr/bin/ruby
-puts "Underscorizing!"
+puts "====================================="
+puts "         Underscorize_v_0.000000001"
 puts "--------------------------------------"
+
+if ARGV.empty?
+ puts "Purpose:"
+ puts "    Replace spaces with underscores in filenames."
+ puts
+ puts "Usage:"
+ puts "    underscorize [filenames...]"
+ puts
+ exit
+end
 
 for fn in ARGV
  new_fn = fn.gsub(' ', '_')
