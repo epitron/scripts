@@ -1,0 +1,3 @@
+#rxvt -ls -fg grey -bg black -fn '-misc-fixed-medium-r-normal-*-*-130-*-*-c-*-iso8859-9' -sl 5000
+rxvt -ls -fg grey -bg black -sl 5000
+

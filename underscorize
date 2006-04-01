@@ -1,0 +1,17 @@
+#!/usr/bin/ruby
+puts "Underscorizing!"
+puts "--------------------------------------"
+
+for fn in ARGV
+ new_fn = fn.gsub(' ', '_')
+ if fn == new_fn
+  puts %{ - Skipping "#{fn}"}
+ elsif File.exists? fn
+  puts %{* Renaming "#{fn}" -> "#{new_fn}"}
+  File.rename fn, new_fn
+ else
+  puts %{! cannot find file: "#{fn}"}
+ end
+end
+
+puts

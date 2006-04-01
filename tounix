@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+'''
+ =================================================
+ The Ubertron Awesomenator 2000!
+ -------------------------------------------------
+ by Chris Gahan (chris@ill-logic.com)
+ =================================================
+ 
+ This is a batch converter for fixing DOS line-endings in text files
+ (by making them UNIX line-endings!). It'll recursively chew through 
+ a tree of files (or a list you supply it with) and convert all files 
+ that have the right filename extension (i.e. .py, .txt, .c, .cpp, etc.)
+ 
+ Edit the "validtypes" definition if you want to make it convert different
+ types of files.
+ 
+ Also, it converts \t's to spaces (8 of them).
+ 
+'''
+
+
+import os, sys
+from os.path import join, splitext, isfile, isdir
+
+validtypes = ['.py', '.txt', '.c', '.cpp', '.h', '.hpp', '.sh', '.js', '.htm', '.html']
+ignoredirs = ['CVS', '.svn']
+
+def isValidFile(name):
+    root, ext = splitext(name)
+    return ext.lower() in validtypes
+
+def getValidFiles(directory):
+    results = []
+    for root, dirs, files in os.walk(directory):
+        results.extend([join(root, name) for name in files])
+
+        for ignoredir in ignoredirs:
+            if ignoredir in dirs:
+                dirs.remove(ignoredir)
+    
+    return filter(isValidFile, results)
+
+def fixLineEnding(string):
+    return string.rstrip('\n\r') + '\n'
+
+def fixLineEndingAndTabs(string):
+    return string.rstrip('\n\r').replace('\t',' '*8) + '\n'
+
+def convertFile(filename):
+    try:
+        infile = open(filename, 'r')
+        fixedlines = map(fixLineEndingAndTabs, infile.readlines())
+        infile.close()
+        
+        outfile = open(filename, 'w')
+        outfile.writelines(fixedlines)
+        outfile.close()
+        
+    except Exception, e:
+        print "* WHUZZUH?! %s *" % e
+
+def madProps():
+    print 'The Ubertron Awesomenator 2000 :: by Chris Gahan\n'
+
+def howToUseMe():
+    print 'This program converts MSDOS/Mac text files to UNIX format.\n'
+
+    print 'Usage:\n    %s [file or directory]\n' % sys.argv[0]
+
+    print 'If a directory is given, all pertient filetypes in the directory and'
+    print 'all subdirectories will be converted.'
+    print '(converted filetypes = %s)\n' % ', '.join(validtypes)
+    
+
+if __name__ == '__main__':
+    madProps()
+
+    if len(sys.argv) >= 2:
+        args = sys.argv[1:]
+        
+        convertme = []
+        
+        for arg in args:
+            if isfile(arg):
+                convertme.append(arg)
+            elif isdir(arg):
+                convertme.extend(getValidFiles(arg))
+            else:
+                print 'WTF is "%s"?!' % arg
+
+        print "Converting %d files to UNIX text format..." % len(convertme)
+        print "=========================================="
+        for filename in convertme:
+            print "+ %s" % filename
+            convertFile(filename)
+
+        print "------------------------------------------"
+        print "* Done!\n" 
+
+    else:
+        howToUseMe()

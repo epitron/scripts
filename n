@@ -1,0 +1,28 @@
+#!/bin/sh
+
+if [ -z "$*" ]
+then
+	echo "      Error! No parameters. Put names of files you want to nedit"
+        echo "      as parameters."
+else
+   if [ -a "$1" ]
+   then 
+      nedit-nc -noask "$1" &> /dev/null &
+   fi
+   if [ -a "$2" ] 
+   then 
+      nedit-nc -noask "$2" &> /dev/null &
+   fi
+   if [ -a "$3" ] 
+   then 
+      nedit-nc -noask "$3" &> /dev/null &
+   fi
+   if [ -a "$4" ] 
+   then 
+      nedit-nc -noask "$4" &> /dev/null &
+   fi
+   if [ -a "$5" ] 
+   then 
+      nedit-nc -noask "$5" &> /dev/null &
+   fi
+fi

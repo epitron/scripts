@@ -1,0 +1,1 @@
+make dep && make bzImage && make modules && make modules_install

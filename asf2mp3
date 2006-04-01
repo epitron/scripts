@@ -1,0 +1,16 @@
+ASF="$1"
+MP3="$2"
+
+if [ "$3" == "" ]
+then
+	PRESET="standard"
+else
+	PRESET="$3"
+fi
+
+if [ -f "$ASF" ]
+then
+	mplayer "$ASF" -ao pcm:file="$MP3".wav
+	lame --preset $PRESET "$MP3.wav" "$MP3"
+	rm "$MP3.wav"
+fi

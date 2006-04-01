@@ -1,0 +1,14 @@
+if [ "$1" == "" ]
+then
+   grep -Ev "GET ((/default.ida)|(/MSADC/)|(/msadc/)|(/scripts)|(/_mem_bin)|(/_vti_bin)|/[cd]/winnt)" /var/log/apache/access.log | colorize | less -R +\>
+else
+   if [ -f /var/log/apache/access.log.$1 ]
+   then
+	grep -Ev "GET ((/default.ida)|(/MSADC/)|(/msadc/)|(/scripts)|(/_mem_bin)|(/_vti_bin)|/[cd]/winnt)" /var/log/apache/access.log.$1 | colorize | less -R +\>
+   else 
+	if [ -f /var/log/apache/access.log.$1.gz ]
+        then
+        	zgrep -Ev "GET ((/default.ida)|(/MSADC/)|(/msadc/)|(/scripts)|(/_mem_bin)|(/_vti_bin)|/[cd]/winnt)" /var/log/apache/access.log.$1.gz | colorize | less -R +\>
+   	fi
+   fi
+fi

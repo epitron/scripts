@@ -1,0 +1,13 @@
+if [ -f setup.py ]
+then
+  instmon -c "python setup.py install" $*
+
+elif [ -f Makefile ]
+then
+  instmon -c "make install" $*
+
+elif [ -f setup.rb ]
+then
+  instmon -c "ruby setup.rb install" $*
+
+fi

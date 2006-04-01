@@ -1,0 +1,1 @@
+`which whois` -H $* | less -b 0

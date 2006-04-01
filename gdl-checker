@@ -1,0 +1,163 @@
+#!/usr/bin/php4 -Cq
+<?
+	echo "=========================================\n";
+	echo " --- GDL Checker v0.1 by Chris Gahan ---\n";
+	echo "=========================================\n\n";
+
+	$bs = 202034; // buffer size (how big each chunk of data is when copying)
+  $outfile = "outfile.avi"; // temporary file to create when gathering
+
+	//************* FUNCTIONS ***************//
+
+	$written = 0;
+  $start_time = 0;
+  
+  function statusupdate() {
+  	global $written, $start_time, $outfile;
+    
+    $delta = (time() - $start_time);
+    $writtenk = round($written / 1024);
+    
+    if ($delta > 0)    
+    	$speed = round($writtenk / $delta);
+    else
+    	$speed = $writtenk;
+  	echo "\rWriting: $outfile (${writtenk}kB, ${speed}kB/s)             \r";
+  }
+
+	function appendto($of, $infilename, $rewindbytes = 0) {
+  	global $bs, $written;
+    
+  	$if = fopen($infilename, "rb");
+    
+    if ($rewindbytes > 0) {
+    	fseek($of, -$rewind, SEEK_CUR);
+      $written -= $rewind;
+    }
+    
+		while (!feof($if)) {
+	    $chunk = fread($if, $bs);
+  	  fwrite($of, $chunk);
+      $written += strlen($chunk);
+      statusupdate();
+    }
+  
+  	fclose($if);
+  }
+
+	function fillmissing($of, $size) {
+  	global $written;
+		fwrite(of, str_repeat("\0", $size));
+    $written += $size;
+  }
+	
+	function compare_redundant($prev, $next, $bytes) {
+  	$f1 = fopen($prev, "rb");
+  	$f2 = fopen($next, "rb");
+    
+    fseek($f1, -$bytes, SEEK_END);
+    
+    $s1 = fread($f1, $bytes);
+    $s2 = fread($f2, $bytes);
+    
+    for ($i = 0; $i < $bytes; $i++) {
+    	if ($s1[$i] != $s2[$i]) {
+				echo "   - DOH! Redundant data doesn't match! mismatch at byte $i.\n";
+        fclose($f1); fclose($f2);
+      	return false;
+      }
+    }
+    
+		//echo "   - bytes match. no problem.\n";
+    fclose($f1); fclose($f2);
+    return true;
+  
+  }
+
+  function cmp ($a, $b) {
+    return strcasecmp($a["name"], $b["name"]);
+  }
+
+  //*************** MAIN PROGRAM BEGINS *******************//
+
+	if ($argc < 2) $dirname = ".";
+  else $dirname = $argv[1];
+
+	if (!is_dir($dirname))
+  	echo "Directory doesn't exist...\n";
+    
+  chdir($dirname);
+
+  echo "Checking GDL in '$dirname'...\n\n";
+
+	if ($dir = @opendir($dirname)) {
+
+		unset($files);		
+    while (($file = readdir($dir)) !== false) {
+      if (ereg ("([0-9A-F]{8})-([0-9A-F]{8})", $file, $regs))
+				$files[] = array("name"=>$file, "start"=>hexdec($regs[1]), "end"=>hexdec($regs[2]));
+		}
+  } 
+  closedir($dir);
+	
+	if (isset($files)) {	
+		usort($files, "cmp"); reset($files);
+
+		$start_time = time();
+	  $of = @fopen($outfile, "wb");
+
+		$lastend = 0;
+		$first = true;
+    foreach($files as $rec) {
+			$file = $rec["name"];
+			$size = filesize($file);
+      $spos = $rec["start"];
+      $epos = $rec["end"];
+			$diff = $lastend - $spos;
+
+			if ($first)
+ 				echo "Appending: $file (".round($size/1024)."kB)            \n";
+
+			// Yay! This part is fine!
+      if ($diff == 0) {
+				appendto($of, $file);
+      }
+
+			// PROBLEM!
+      else {
+        echo " + GDL error: ";
+
+	      if ($diff > 0) {
+					echo "$diff redundant bytes\n";
+          compare_redundant($lastfile, $file, $diff);
+					appendto($of, $file, $diff);
+        }
+        else {
+          echo -$diff . " missing bytes\n";
+					fillmissing($of, -$diff);					
+        }
+      }
+
+			if (!$first)
+ 				echo "Appending: $file (".round($size/1024)."kB)            \n";
+      else
+      	$first = false;
+        
+      $lastend = $spos + $size;
+      $lastfile = $file;
+    }
+		fclose($of);
+
+		echo "========== Finished writing '$outfile'! ==============\n";
+		echo "Bytes written: $written " . filesize($outfile) . " ";
+
+		if ($written < $epos)
+    	echo "(file is missing " . ($epos - $written) . " bytes)";
+		if ($written > $epos)
+    	echo "(file is too big by " . ($written - $epos) . " bytes)";
+    
+    echo "\n";
+
+  }
+
+?>

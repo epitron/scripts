@@ -1,0 +1,251 @@
+#!/usr/bin/python
+"""
+arf! (Archive Flogger)
+--------------------------------------------------------------------
+Concept:
+    This script exists for two reasons:
+        1) Lazy people don't want to type long commands like "unzip"
+           and "unrar", or their respective commandline parameters
+        2) Downloading a tarball, extracting it, then deleting it
+           is a wasteful and boring process
+
+    Therefore, this script attempts to remedy the situation by 
+    allowing you to automatically download archives from urls,
+    automatically recognizing their file format, and then
+    uncompressing them -- again, AUTOMATICALLY!
+
+    It also works on normal files.
+
+todo:
+    + folder cleanliness
+      - if only one file in archive, extract it
+      - if everything in the archive is in one folder, extract it
+      - otherwise, make a new dir named after the archive (possibly with a (1) after it) and extract it there
+"""
+__version__ = '0.4'
+
+import os, sys, re, urllib, time
+from os.path import join, splitext, isfile, isdir, exists
+
+def madProps():
+    s = '  arf! (Archive Flogger) v%s :: by chris gahan (chris@ill-logic.com)  ' % __version__
+    print '=' * len(s)
+    print s
+    print '=' * len(s)
+    print
+
+def howToUseMe():
+    print 'This program takes a compressed file from an url or a filename, figures out'
+    print 'what type of file it is, then tries to extract it into a directory.'
+    print
+    exts = []
+    for extractor in extractors:
+        exts.extend(extractor.exts)
+    print 'Supported filetypes:\n    %s' % ', '.join(exts)
+    print
+    print 'Usage:'
+    print '    %s <input file or url> [output directory]' % sys.argv[0]
+    print
+    print 'The [output directory] is optional. By default, the current directory is used.'
+    print
+    
+def execute(cmd):
+    error = os.system(cmd)
+    if error != 0:
+        raise Exception, "Error! System command returned errorcode %d.\nCommand was: '%s'" % (error, cmd)
+        
+def prompt(message='(Y/n)? ', choices=['y','n'], default='y'):
+    inp = None
+    while not (inp in choices) and inp != '':
+        inp = raw_input(message).lower()
+    
+    if inp == '':
+        inp = default
+
+    return default
+            
+def isurl(thing):
+    return thing.startswith('http://') or thing.startswith('https://') or thing.startswith('ftp://')
+
+def isoption(arg):
+    if arg[0] != '-' or os.path.exists(arg):
+        return False
+    else:
+        return True
+
+class URLGrabber(urllib.FancyURLopener):
+    lastdisplaystring = ''
+
+    def reporthook(self, blockcount, blocksize, filesize):
+        """ Print the current transfer statistics """
+    
+        bytes = blockcount * blocksize
+        if bytes > filesize:
+            bytes = filesize
+    
+        percent = (bytes*100.0)/filesize
+        now = time.time()
+        if now - self.starttime == 0.0:
+            now += 0.0001
+        speed = (bytes / (now - self.starttime)) / 1024
+    
+        lastlen = len(self.lastdisplaystring)
+        #dmesg('lastline = %d' % lastlen)
+        print '\x08' * (lastlen+2),
+        nextline = '%0.1f%% complete (%d/%d bytes) - %0.2f k/sec' % (percent, bytes, filesize, speed)
+        #dmesg('nextline = %d' % len(nextline))
+        if len(nextline) < lastlen:
+            nextline += ' '*(lastlen - len(nextline))
+    
+        #dmesg('newnextline = %d' % len(nextline))
+        print nextline,
+    
+        self.lastdisplaystring = nextline
+    
+    def retrieve(self, url):
+        def reporthookwrapper(blockcount, blocksize, filesize):
+            self.reporthook(blockcount, blocksize, filesize)
+        
+        self.lastdisplaystring = ''
+        self.starttime = time.time()
+        return urllib.FancyURLopener.retrieve(self, url, reporthook=reporthookwrapper)
+
+class FileExtractor:
+    """ Mother class!! """
+    
+    exts = []
+    streamable = False
+
+    def canHandle(self, filename):
+        """ Can you handle the file? CAN YOU HANDLE THE FILE?!!? """
+        filename = filename.lower()
+        for ext in self.exts:
+            if filename.endswith(ext):
+                return True
+        return False
+
+    def extract_file(self, filename, destdir='.'):
+        raise Exception, "extract_file() not implemented!"
+    
+    def extract_url(self, url, destdir='.'):
+        opener = URLGrabber()
+        filename, headers = opener.retrieve(url)
+        print
+        self.extract_file(filename, destdir)
+        os.remove(filename)
+        
+    def extract(self, thing, destdir='.'):
+        print "+ Extracting..."
+        print "    archive: %s" % thing
+        print "    destination: %s" % destdir
+        print "    type: %s" % self.desc
+
+        if not exists(destdir):
+            answer = prompt("* Destination doesn't exist. Create? [Y/n] ", choices=['y','n'], default='y')
+            if answer == 'n':
+                print "+ Aborting..."
+                return
+            print "+ Creating: %s" % destdir
+            os.mkdir(destdir)
+            
+        print "-"*50
+                            
+        if isurl(thing):
+            self.extract_url(thing, destdir)
+        elif isfile(thing):
+            self.extract_file(thing, destdir)
+        else:
+            print "+ I don't know what the crap this thing is:\n\t%s\n\n...what're you trying to pull here, huh?!?!" % thing
+            return
+        
+        print "-"*50
+        print "* Done. ARF!"
+        print
+
+
+
+class TarballExtractor(FileExtractor):
+    exts = ['.tar.gz', '.tar.bz2', '.tar', '.tgz']
+    streamable = True
+    desc = "TAR file"
+
+    # interface
+        
+    def extract_file(self, filename, destdir=None):
+        cmd = self.getcommand(filename)
+        cmd = '%s "%s" -C "%s"' % (cmd, filename, destdir)
+        print "executing: %s" % cmd
+        execute(cmd)
+
+    # utilities
+    
+    def getcommand(self, filename):
+        if self.isgzipped(filename):
+            cmd = "tar -zxvf"
+        elif self.isbzipped(filename):
+            cmd = "tar -jxvf"
+        else:
+            cmd = "tar -xvf"
+        
+        return cmd        
+                
+    def isgzipped(self, url):
+        url = url.lower()
+        return url.endswith('.gz') or url.endswith('.tgz')
+    
+    def isbzipped(self, url):
+        return url.lower().endswith('.bz2')
+
+    
+class ZipExtractor(FileExtractor):
+    exts = ['.zip', '.pk3', '.jar']
+    streamable = False
+    desc = "ZIP file"
+
+    # interface
+    
+    def extract_file(self, filename, destdir=None):
+        execute('unzip -o "%s" -d "%s"' % (filename, destdir))
+        
+class RarExtractor(FileExtractor):
+    exts = ['.rar', '.001']
+    streamable = True
+    desc = "RAR file"
+    
+    def extract_file(self, filename, destdir=None):
+        execute('unrar x "%s" "%s"' % (filename, destdir))
+
+extractors = [
+                TarballExtractor(),
+                ZipExtractor(),
+                RarExtractor(),
+             ]
+
+def extract(filename, destdir):
+    for extractor in extractors:
+        if extractor.canHandle(filename):
+            extractor.extract(filename, destdir)
+            return
+    
+    print "+ I can't extract THAT! Why you gotta play me like this?!"
+
+if __name__ == '__main__':
+    madProps()
+
+    if len(sys.argv) <= 1:
+        howToUseMe()
+    
+    else:
+        args = sys.argv[1:]
+        numargs = len(args)
+
+        filename = args[0]
+        
+        if numargs == 1:
+            destdir = '.'
+        elif numargs == 2:
+            destdir = args[1]
+
+        extract(filename, destdir)
+            
+

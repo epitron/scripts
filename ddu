@@ -1,0 +1,1 @@
+du --max-depth=1 -m $*

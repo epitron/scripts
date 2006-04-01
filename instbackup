@@ -1,0 +1,31 @@
+if [ "$1" == "" ]
+then
+  WD=`pwd`
+  PAR=`basename $WD`
+else
+  PAR=$1
+fi
+
+PKGNAME=`instl | grep -i $PAR`
+
+if [ "$PKGNAME" == "" ]
+then
+  echo "+ We don't got nothing to back up dood! Maybe dat ain't no real package, mang."
+else
+
+  echo "+ Backing up $PKGNAME..."
+  instmon --tar $PKGNAME
+  if [ -f /tmp/$PKGNAME.tar ]
+  then
+    echo "+ Gzipping package..."
+    gzip /tmp/$PKGNAME.tar
+    mv /tmp/$PKGNAME.tar.gz /archive/instbackup/$PKGNAME-`date +'%F_%R'`.tar.gz
+    echo "+ Backed up package:"
+    ls -l /archive/instbackup/$PKGNAME-`date +'%F_%R'`.tar.gz
+    echo "+ Removing installed files..."
+    instmon --remove-files $PKGNAME --remove-log
+  else
+    echo "+ /tmp/$PKGNAME.tar wasn't created... Aborting."
+  fi
+
+fi

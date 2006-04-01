@@ -1,0 +1,3 @@
+FILES=`ls -l | awk '{if ( $5 == 0 ) { print $9 }}'`
+echo "Removing empty files: $FILES..."
+rm $FILES

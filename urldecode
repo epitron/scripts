@@ -1,0 +1,7 @@
+#!/usr/bin/php4 -Cq
+<?
+	$fp = fopen($argv[1], "r");
+	while (!feof($fp)) {
+		echo urldecode(fgets($fp,4096));
+	}
+?>

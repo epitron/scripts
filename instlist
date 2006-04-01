@@ -1,0 +1,1 @@
+instmon -l `instl | grep -i $1`

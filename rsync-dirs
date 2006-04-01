@@ -1,0 +1,1 @@
+rsync -rltv --size-only --progress "$1" "$2"

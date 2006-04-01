@@ -1,0 +1,6 @@
+FONT=-xos4-terminus-medium-r-normal-*-*-140-*-*-c-*-iso8859-1
+
+
+xterm -ls -bg black -fg grey -sb -rightbar -si -sk -sl 700 \
+	-fn "$FONT" \
+	-e 'ruby "'"$*"'"; echo ""; echo "---"; echo "Press enter to close window..."; read'

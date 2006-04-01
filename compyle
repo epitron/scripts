@@ -1,0 +1,11 @@
+compile='import py_compile, sys; py_compile.compile(sys.argv[1])'
+
+if [ "$1" == "-r" ]
+then
+  find . -type f -name '*.py' | xargs -n 1 python -c "$compile"
+else
+  for i in $*
+  do
+    python -c "$compile" $i
+  done
+fi

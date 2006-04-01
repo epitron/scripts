@@ -1,0 +1,3 @@
+JOINED=`python -c "print ''.join('$*'.split())"`
+#echo $JOINED
+/usr/games/an $JOINED | less

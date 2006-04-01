@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+for(1..256){
+   if($_%10==0){
+      print"\n"
+   }
+   $y=chr($_);
+   printf("%10s", "$_ - $y")
+}

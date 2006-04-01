@@ -1,0 +1,571 @@
+#!/bin/sh
+#
+# instmon - INSTall MONitor - an installation monitoring tool
+# Copyright (C) 1998-1999 Vasilis Vasaitis (vvas@hal.csd.auth.gr)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+# gets the arguments from the command line
+parse_cmd_line()
+{
+    while [ $# -gt 0 ]
+    do
+        case "$1" in
+	    -g|--logdir)
+		logdir="$2"
+		shift
+		;;
+	    -b|--libdir)
+		libdir="$2"
+		shift
+		;;
+	    -q|--quiet)
+		quiet=yes
+		;;
+	    -v|--verbose)
+		quiet=no
+		;;
+	    -f|--find)
+		method=find
+		;;
+	    -t|--trace)
+		method=trace
+		;;
+	    -w|--watch)
+		method=watch
+		;;
+	    -i|--include)
+		search="$search $2"
+		shift
+		;;
+	    -x|--exclude)
+		exclude="$exclude $2"
+		shift
+		;;
+	    -s|--search)
+	        search="$2"
+		shift
+		;;
+	    -y|--fstype)
+		fstype="$fstype $2"
+		shift
+		;;
+	    -c|--command)
+		command="$2"
+		shift
+		;;
+	    --rename-log)
+		actions="$actions 0rename"
+		newname="$2"
+		shift
+		;;
+	    --log-path)
+		actions="$actions 1logpath"
+		;;
+	    -l|--list)
+		actions="$actions 2list"
+		;;
+	    --diff)
+		actions="$actions 3diff"
+		;;
+	    --tar)
+		actions="$actions 4tar"
+		;;
+	    --deb)
+		actions="$actions 5deb"
+		;;
+	    --rpm)
+		actions="$actions 6rpm"
+		;;
+	    --cleanup)
+		actions="$actions 7cleanup"
+		;;
+	    --remove-files)
+		actions="$actions 8remfiles"
+		;;
+	    --remove-log)
+		actions="$actions 9remlog"
+		;;
+	    --omit-dirs)
+		listdirs=omit
+		;;
+	    --expand-dirs)
+		listdirs=expand
+		;;
+	    -L|--list-logs)
+		[ -z "$special" ] && special=listlogs
+		;;
+	    -h|--help)
+		[ -z "$special" ] && special=help
+		;;
+	    -V|--version)
+		[ -z "$special" ] && special=version
+		;;
+	    -*)
+		printf "instmon: %s: Unknown option\n" "$1" 1>&2
+		exit 1
+		;;
+	    *)
+		if [ -z "$package" ]
+		then
+		    package="$1"
+		else
+		    printf "instmon: %s: Only one package should be specified\n" "$1" 1>&2
+		    exit 1
+		fi
+		;;
+        esac
+	shift
+    done
+    [ -z "$package" ] && package=$(basename $(pwd))
+}
+
+# clean up $search/$exclude a bit
+search_exclude_normalize()
+{
+    search=$(printf "%s " "$search" | tr -s " /" | sed "s/\([^ ]\)\/\( \|\$\)/\1\2/g")
+    exclude=$(printf "%s " "$exclude" | tr -s " /" | sed "s/\([^ ]\)\/\( \|\$\)/\1\2/g")
+    for path in $search
+    do
+	if printf "%s\n" "$exclude" | egrep -q "(^| )$path( |$)"
+	then
+	    search=$(printf "%s" "$search" | sed "s%\(^\| \)$path\( \|\$\)%\1%")
+	    exclude=$(printf "%s" "$exclude" | sed "s%\(^\| \)$path\( \|\$\)%\1%")
+	fi
+    done
+    search=$(printf "%s" "$search" | sed "s/ \+\$//")
+    exclude=$(printf "%s" "$exclude" | sed "s/ \+\$//")
+    [ -z "$search" ] && search="/"
+}
+
+# prepares the command line of find
+setup_find_args()
+{
+    actionargs="-cnewer $TMPDIR/instmon.time.$$ -print"
+    excludeargs=""
+    if [ -n "$fstype" ]
+    then
+	for type in $fstype
+	do
+	    excludeargs="$excludeargs -not -fstype $type"
+	done
+	excludeargs="$excludeargs -prune -o"
+    fi
+    for path in $exclude
+    do
+	excludeargs="$excludeargs -path $path -prune -o"
+    done
+}
+
+# records the current time (as the timestamp of a file)
+record()
+{
+    printf "instmon: Recording timestamp ...\n" 1>&3
+    : > $TMPDIR/instmon.time.$$
+    sleep 1
+}
+
+# detects the changes made to the file system since the recorded time
+compare()
+{
+    printf "instmon: Detecting changes ...\n" 1>&3
+    rm -f $TMPDIR/instmon.files.$$
+    : > $TMPDIR/instmon.files.$$
+    for path in $search
+    do
+	find $path -path $path \( $actionargs , -true \) -o $excludeargs $actionargs >> $TMPDIR/instmon.files.$$ 2> /dev/null
+    done
+}
+
+# tidies $TMPDIR and places the log in $logdir if possible
+cleanup()
+{
+    rm -f $TMPDIR/instmon.time.$$
+    rm -f $TMPDIR/instlog.$package
+    sort -u $TMPDIR/instmon.files.$$ > $TMPDIR/instlog.$package
+    rm -f $TMPDIR/instmon.files.$$
+    mv -f $TMPDIR/instlog.$package $logdir 2> /dev/null
+}
+
+# implements the `find' method
+do_find()
+{
+    # A call to record() should be here, but it's not
+    $command
+    setup_find_args
+    compare
+    cleanup
+}
+
+# implements the `trace' method
+do_trace()
+{
+    exclude_regexp="^("$(printf "%s" "$exclude" | sed "s/ /\|/g")")(/|\$)"
+    rm -f $TMPDIR/instmon.trace.$$
+    strace -q -f -o $TMPDIR/instmon.trace.$$ -e signal=none \
+	   -e trace=open,creat,link,symlink,unlink,mkdir,chdir,rmdir,rename,mknod,chown,chmod,truncate,utime,fork \
+	   $command
+    rm -f $TMPDIR/instlog.$package
+    awk -f $libdir/strace.awk $(pwd) $TMPDIR/instmon.trace.$$ |
+      egrep -v "$exclude_regexp" | sort > $TMPDIR/instlog.$package
+    rm -f $TMPDIR/instmon.trace.$$
+    mv -f $TMPDIR/instlog.$package $logdir 2> /dev/null
+}
+
+# implements the `watch' method
+do_watch()
+{
+    exclude_regexp="^("$(printf "%s" "$exclude" | sed "s/ /\|/g")")(/|\$)"
+    rm -f $TMPDIR/instmon.watch.$$
+    installwatch -o $TMPDIR/instmon.watch.$$ $command
+    rm -f $TMPDIR/instlog.$package
+    awk -f $libdir/iwatch.awk $TMPDIR/instmon.watch.$$ |
+      egrep -v "$exclude_regexp" | sort > $TMPDIR/instlog.$package
+    rm -f $TMPDIR/instmon.watch.$$
+    mv -f $TMPDIR/instlog.$package $logdir 2> /dev/null
+}
+
+# prints a log file without the contained directories
+omit_directories()
+{
+    while read fname
+    do
+	[ -d "$fname" ] || printf "%s\n" "$fname"
+    done
+}
+
+# prints a log file with the directories expanded up to /
+expand_directories()
+{
+    printf "/\n"
+    filelist=$(cat)
+    dirlist="$filelist"
+    while [ "$dirlist" != "" ]
+    do
+	dirlist=$(printf "%s" "$dirlist" | sed "s/\/[^/]*\$//" | sort -u)
+	filelist=$(printf "%s\n%s" "$filelist" "$dirlist")
+    done
+    printf "\n%s\n" "$filelist" | sort -u | sed 1d
+}
+
+# seperates the name and the version of the package
+name_version_splitup()
+{
+    # I had to use an external file because read-ing from a pipe is broken
+    rm -f $TMPDIR/instmon.split.$$
+    printf "%s\n" "$package" | sed "s/-\([0-9]\)/ \1/" > $TMPDIR/instmon.split.$$
+    read pkg_name pkg_ver < $TMPDIR/instmon.split.$$
+    rm -f $TMPDIR/instmon.split.$$
+}
+
+# prints all the versions of a package, sorted by version
+package_versions_sorted()
+{
+    ls $logdir/instlog.$pkg_name-[0-9]* 2> /dev/null |
+      sed "s%$logdir/instlog.$pkg_name-%%" | awk -f $libdir/versort.awk |
+      sed "s/^/$pkg_name-/"
+}
+
+# prints out the last element of a list
+choose_last()
+{
+    [ $# -ne 0 ] && eval printf \"%s\" \"\$\{$#\}\"
+}
+
+# detects the package, even if only its name has been specified
+find_package()
+{
+    [ -f $logdir/instlog.$package ] && return 0
+    name_version_splitup
+    [ -n "$pkg_ver" ] && return 1
+    last=$(choose_last $(package_versions_sorted))
+    [ -z "$last" ] && return 1
+    package="$last"
+    return 0
+}
+
+# compares different versions of a package
+diff_versions()
+{
+    prev=""
+    rm -f $TMPDIR/instmon.files.$$
+    : > $TMPDIR/instmon.files.$$
+    for pkg in $(package_versions_sorted)
+    do
+	if [ -z "$prev" ]
+	then
+	    printf " %s:\n" "$pkg"
+	    expand_directories < $logdir/instlog.$pkg
+	else
+	    printf "\n %s -> %s:\n" "$prev" "$pkg"
+	    expand_directories < $logdir/instlog.$prev > $TMPDIR/instmon.files.$$
+	    expand_directories < $logdir/instlog.$pkg | diff -u0 $TMPDIR/instmon.files.$$ - | egrep "^[-+]/"
+	fi
+	prev="$pkg"
+    done
+    rm -f $TMPDIR/instmon.files.$$
+}
+
+# the main function of log manipulation mode
+perform_actions()
+{
+    while [ $# -gt 0 ]
+    do
+	case "$1" in
+	    0rename)
+		printf "instmon: Renaming log to %s ...\n" "$newname" 1>&3
+		mv -f "$logdir/instlog.$package" "$logdir/instlog.$newname"
+		package="$newname"
+		;;
+	    1logpath)
+		printf "instmon: Printing the full path of the log ...\n" 1>&3
+		printf "%s/instlog.%s\n" "$logdir" "$package"
+		;;
+	    2list)
+		printf "instmon: Listing log ...\n" 1>&3
+		case "$listdirs" in
+		    omit)
+			cat $logdir/instlog.$package | omit_directories
+			;;
+		    expand)
+			cat $logdir/instlog.$package | expand_directories
+			;;
+		    *)
+			cat $logdir/instlog.$package
+			;;
+		esac
+		;;
+	    3diff)
+		printf "instmon: Comparing all versions of the package ...\n" 1>&3
+		name_version_splitup
+		diff_versions
+		;;
+	    4tar)
+		printf "instmon: Creating tar archive in $TMPDIR ...\n" 1>&3
+		tar -cf $TMPDIR/$package.tar $(omit_directories < $logdir/instlog.$package) 2> /dev/null
+		;;
+	    5deb)
+		printf "instmon: Creating deb package in $TMPDIR ...\n" 1>&3
+		rm -rf $TMPDIR/instmon.debian.$$
+		mkdir $TMPDIR/instmon.debian.$$
+		mkdir $TMPDIR/instmon.debian.$$/DEBIAN
+		name_version_splitup
+		[ -z "$pkg_ver" ] && pkg_ver=0
+		exec 5> $TMPDIR/instmon.debian.$$/DEBIAN/control
+		printf "Package: %s\nVersion: %s\n" "$pkg_name" "$pkg_ver" 1>&5
+		printf "Architecture: %s\n" $(dpkg --print-architecture) 1>&5
+		printf "Maintainer: Noone.\n" 1>&5
+		printf "Description: instmon generated package.\n" 1>&5
+		exec 5>&1
+		cp -dP $(omit_directories < $logdir/instlog.$package) $TMPDIR/instmon.debian.$$/
+		dpkg-deb --build $TMPDIR/instmon.debian.$$ $TMPDIR > /dev/null
+		rm -rf $TMPDIR/instmon.debian.$$
+		;;
+	    6rpm)
+		printf "instmon: Creating rpm package in $TMPDIR ...\n" 1>&3
+		rm -f $TMPDIR/instmon.rpmrc.$$
+		exec 5> $TMPDIR/instmon.rpmrc.$$
+		printf "rpmdir: $TMPDIR\n" 1>&5
+		printf "rpmfilename: %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm\n" 1>&5
+		name_version_splitup
+		[ -z "$pkg_ver" ] && pkg_ver=0
+		rm -f $TMPDIR/instmon.rpmspec.$$
+		exec 5> $TMPDIR/instmon.rpmspec.$$
+		printf "Name: %s\nVersion: %s\n" "$pkg_name" "$pkg_ver" 1>&5
+		printf "Release: 0\nSummary: instmon generated package.\n" 1>&5
+		printf "Copyright: (unknown)\nGroup: (unknown)\n" 1>&5
+		if [ $(choose_last $(printf "2.5.0\n%s\n" $(rpm --version | sed "s/.* //") |
+				     awk -f $libdir/versort.awk)) = "2.5.0" ]
+		then
+		    printf "Description:\n%%files\n" 1>&5
+		else
+		    printf "%%description\n%%files\n" 1>&5
+		fi
+		omit_directories < $logdir/instlog.$package 1>&5
+		exec 5>&1
+		rpm -bb --quiet --rcfile $TMPDIR/instmon.rpmrc.$$ $TMPDIR/instmon.rpmspec.$$
+		rm -f $TMPDIR/instmon.rpmrc.$$
+		rm -f $TMPDIR/instmon.rpmspec.$$
+		;;
+	    7cleanup)
+		printf "instmon: Cleaning up previous versions ...\n" 1>&3
+		name_version_splitup
+		rm -f $TMPDIR/instmon.old.$$
+		diff_versions | egrep "^-/" | sed "s/^-//" > $TMPDIR/instmon.old.$$
+		rm -f $(tac $TMPDIR/instmon.old.$$) 2> /dev/null
+		rmdir $(tac $TMPDIR/instmon.old.$$) 2> /dev/null
+		rm -f $TMPDIR/instmon.old.$$
+		;;
+	    8remfiles)
+		printf "instmon: Removing files ...\n" 1>&3
+		rm -f $(omit_directories < $logdir/instlog.$package) 2> /dev/null
+		rmdir $(expand_directories < $logdir/instlog.$package | tac) 2> /dev/null
+		;;
+	    9remlog)
+		printf "instmon: Removing log ...\n" 1>&3
+		rm -f $logdir/instlog.$package
+		;;
+	esac
+	shift
+    done
+}
+
+# displays a help message
+show_help()
+{
+    cat <<- EOF
+	usage: instmon [option]... [package]
+	
+	General options:
+	  -v, --verbose		print informative messages
+	  -q, --quiet		be quiet, only print error messages
+	  -g, --logdir		specify the directory where logs are stored
+	  -b, --libdir		specify where to find instmon's helper scripts
+	Monitoring mode:
+	  -f, --find		use the \`find' method
+	  -t, --trace		use the \`trace' method
+	  -w, --watch		use the \`watch' method
+	  -x, --exclude		add a directory to the exclusion list
+	  -s, --search		set the search list equal to a directory
+	  -i, --include		add a directory to the search list
+	  -y, --fstype		only search a particular filesystem type
+	  -c, --command		specify which command to run
+	Log manipulation mode:
+	      --rename-log	change the name of the log
+	      --log-path	print the full path name of the log file
+	  -l, --list		list the contents of the log
+	      --diff		compare the different versions of the log
+	      --tar		create a .tar archive
+	      --deb		create a .deb archive
+	      --rpm		create an .rpm archive
+	      --cleanup		remove files from older versions of the log
+	      --remove-files	remove the files listed inside the log
+	      --remove-log	remove the log file
+	      --omit-dirs	skip directories when --listing a log
+	      --expand-dirs	expand directories up to / when --listing a log
+	Other modes of operation:
+	  -L, --list-logs	print a listing of all the available logs
+	  -h, --help		print this help message
+	  -V, --version		print version information
+	
+	EOF
+}
+
+# main program
+
+# trap ^C
+trap "rm -f /tmp/instmon.*.$$; exit 1" INT
+
+# initialize important variables with default values
+[ -z "$TMPDIR" ] && TMPDIR=/tmp
+package=""
+libdir="/usr/scripts/instmon-scripts"
+logdir="/usr/share/instmon"
+method=""
+search="/ /var/lib"
+exclude="/proc /tmp /var /dev /home /root /usr/src /usr/local/src"
+fstype=""
+command=""
+actions=""
+listdirs=""
+quiet=""
+
+# Create the logdir if it doesn't exist
+if [ ! -d "$logdir" ]
+then
+  mkdir -p "$logdir"
+fi
+
+# read the system wide and user specific configuration files
+exclude_tmp="$exclude"
+exclude=""
+[ -f /etc/instmon.conf ] && . /etc/instmon.conf
+exclude_tmp="$exclude_tmp $exclude"
+exclude=""
+[ -f $HOME/.instmonrc ] && . $HOME/.instmonrc
+exclude="$exclude_tmp $exclude"
+
+parse_cmd_line "$@"
+search_exclude_normalize
+
+if [ -n "$special" ]
+then
+    case "$special" in
+	listlogs)
+	    ls -lg $logdir | awk -f $libdir/listlogs.awk
+	    ;;
+	help)
+	    show_help
+	    ;;
+	version)
+	    printf "instmon 2.0, by Vasilis Vasaitis <vvas@hal.csd.auth.gr>\n"
+	    ;;
+    esac
+    exit 0
+fi
+
+if [ "$quiet" = "yes" ]
+then
+    exec 3> /dev/null
+else
+    exec 3>&2
+fi
+
+if [ -n "$actions" ]
+then
+    if find_package
+    then
+	printf "instmon: Acting on package %s ...\n" "$package" 1>&3
+	actions=$(printf "%s " "$actions" | tr " " "\n" | sort -u | tr "\n" " ")
+	perform_actions $actions
+    else
+	printf "instmon: %s: Could not find log file for package\n" "$package" 1>&2
+	exit 1
+    fi
+else
+    if [ -z "$method" ]
+    then
+	type find > /dev/null && method=find
+	type strace > /dev/null && method=trace
+	type installwatch > /dev/null && method=watch
+    fi
+    if printf "%s\n" "$method" | egrep -q "^(find|trace|watch)\$"
+    then
+	printf "instmon: Monitoring package %s ...\n" "$package" 1>&3
+	# A special case
+	[ "$method" = "find" ] && record
+	if [ -n "$command" ]
+	then
+	    printf "instmon: Running \`$command' ...\n" 1>&3
+	else
+	    command="${SHELL:-/bin/sh}"
+	    printf "instmon: Spawning $command ...\n" 1>&3
+	    printf "instmon: Perform the installation, then type \`exit' to continue ...\n" 1>&3
+	fi
+	do_$method
+    else
+	if [ -n "$method" ]
+	then
+	    printf "instmon: %s: Unknown monitoring method\n" "$method" 1>&2
+	else
+	    printf "instmon: No monitoring method available\n" 1>&2
+	fi
+	exit 1
+    fi
+fi
+
+printf "instmon: Finished.\n" 1>&3
+exit 0

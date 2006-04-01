@@ -1,0 +1,11 @@
+#!/bin/bash
+FILE="$*"
+
+if echo "$FILE" | grep -E '^.*\.bz2$'
+then
+	PARAM='jxvf'
+else
+	PARAM='zxvf'
+fi
+
+curl "$FILE" | tar $PARAM -

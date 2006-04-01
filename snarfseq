@@ -1,0 +1,29 @@
+#!/bin/sh
+echo "SnarfSeq v0.01 -- Sequential File Snarfer by Chris Gahan"
+echo ""
+
+if [ "$3" != "" ]
+then
+   C=$2
+   while [ $C -le $3 ]
+   do
+      URL=`echo $1 | sed s/"#"/"$C"/`
+      echo Snarfing $URL...
+      snarf $URL &
+      C=`expr $C + 1`
+   done
+else
+   echo "Parameters:"
+   echo "     snarfseq [url] [startingdigit] [endingdigit]"
+   echo ""
+   echo "  [url] -> url to snarf (any \"#\" characters in the url will be "
+   echo "           replaced by the current number in the sequence)"
+   echo "  [startingdigit] -> first number in sequence"
+   echo "  [endingdigit] -> last number in sequence"
+   echo ""
+   echo "Example:"
+   echo "    snarfseq http://www.pornmaster.com/nakedlady0#.jpg 1 9"
+   echo ""
+   echo "The above example will snarf nakedlady01.jpg to nakedlady09.jpg"
+   echo ""
+fi

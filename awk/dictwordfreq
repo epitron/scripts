@@ -1,0 +1,1 @@
+awk 'BEGIN {curlet = "a"; count = 0} {let = tolower(substr($0, 1, 1)); if (curlet == let){count++}else{print curlet " = " count; curlet = let; count = 0} } END{print curlet " = " count}' < /usr/share/dict/words
