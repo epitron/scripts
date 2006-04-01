@@ -14,15 +14,16 @@
  Edit the "validtypes" definition if you want to make it convert different
  types of files.
  
- Also, it converts \t's to spaces (8 of them).
+ Also, it converts \t's to spaces (if you add the -t <size> option).
  
 '''
 
+__version__ = '0.2'
 
 import os, sys
 from os.path import join, splitext, isfile, isdir
 
-validtypes = ['.py', '.txt', '.c', '.cpp', '.h', '.hpp', '.sh', '.js', '.htm', '.html']
+validtypes = ['.py', '.txt', '.c', '.cpp', '.h', '.hpp', '.sh', '.js', '.htm', '.html', '.rb', '.rhtml', '.rjs']
 ignoredirs = ['CVS', '.svn']
 
 def isValidFile(name):
@@ -43,13 +44,16 @@ def getValidFiles(directory):
 def fixLineEnding(string):
     return string.rstrip('\n\r') + '\n'
 
-def fixLineEndingAndTabs(string):
-    return string.rstrip('\n\r').replace('\t',' '*8) + '\n'
+def fixLineEndingAndTabs(string, tabsize=None):
+    newstring = string.rstrip('\n\r') + '\n'
+    if tabsize:
+        newstring = newstring.replace('\t',' '*tabsize)
+    return newstring
 
-def convertFile(filename):
+def convertFile(filename, tabsize=None):
     try:
         infile = open(filename, 'r')
-        fixedlines = map(fixLineEndingAndTabs, infile.readlines())
+        fixedlines = [ fixLineEndingAndTabs(line, tabsize) for line in infile.readlines() ]
         infile.close()
         
         outfile = open(filename, 'w')
@@ -60,15 +64,19 @@ def convertFile(filename):
         print "* WHUZZUH?! %s *" % e
 
 def madProps():
-    print 'The Ubertron Awesomenator 2000 :: by Chris Gahan\n'
+    print 'The Ubertron Awesomenator v%s :: by Chris Gahan\n' % __version__
 
 def howToUseMe():
-    print 'This program converts MSDOS/Mac text files to UNIX format.\n'
-
-    print 'Usage:\n    %s [file or directory]\n' % sys.argv[0]
-
+    print 'This program converts MSDOS/Mac text files to UNIX format.'
+    print
+    print 'Usage:'
+    print '    %s [file or directory]' % sys.argv[0]
+    print
+    print 'Options:'
+    print '    -t #      | convert tabs to spaces (tab size = #)' % sys.argv[0]
+    print
     print 'If a directory is given, all pertient filetypes in the directory and'
-    print 'all subdirectories will be converted.'
+    print 'its subdirectories will be converted.'
     print '(converted filetypes = %s)\n' % ', '.join(validtypes)
     
 
@@ -80,6 +88,14 @@ if __name__ == '__main__':
         
         convertme = []
         
+        # parse get the -t option
+        if args[0] == '-t':
+            tabsize = int(args[1])
+            args = args[2:]
+        else:
+            tabsize = None
+        
+        # parse all the filenames on the commandline
         for arg in args:
             if isfile(arg):
                 convertme.append(arg)
@@ -92,7 +108,7 @@ if __name__ == '__main__':
         print "=========================================="
         for filename in convertme:
             print "+ %s" % filename
-            convertFile(filename)
+            convertFile(filename, tabsize)
 
         print "------------------------------------------"
         print "* Done!\n" 
