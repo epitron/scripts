@@ -17,10 +17,13 @@ Concept:
     It also works on normal files.
 
 todo:
-    + folder cleanliness
+    + smart folders
       - if only one file in archive, extract it
       - if everything in the archive is in one folder, extract it
       - otherwise, make a new dir named after the archive (possibly with a (1) after it) and extract it there
+    + list the contents of the archive 
+      - arf l <archive name> will list an archive contents (piped to less)
+      - when <archive name> is an url, give the option to extract it afterwards
 """
 __version__ = '0.4'
 
