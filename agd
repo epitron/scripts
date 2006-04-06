@@ -1,1 +1,1 @@
-apt-get --download-only -u dist-upgrade
+apt-get --download-only --force-yes -y -u dist-upgrade

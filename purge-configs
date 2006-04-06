@@ -1,5 +1,5 @@
 export COLUMNS=500
-PKGS=`dpkg -l|grep -E "^rc\w"|awk '{print $2}'|`
+PKGS=`dpkg -l|grep -E "^rc\w"|awk '{print $2}'`
 echo Purging $PKGS...
-dpkg --purge $PKGS
+#dpkg --purge $PKGS
 unset COLUMNS
