@@ -1,5 +1,6 @@
 echo Synching clock ...
-rdate time.nist.gov
+#rdate time.nist.gov
+ntpdate time.nist.gov
 echo Setting hardware clock...
 #hwclock --systohc
 /etc/rc0.d/K25hwclock.sh reload

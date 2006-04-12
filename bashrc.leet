@@ -36,6 +36,8 @@ alias cp="cp -v"
 alias less='less -X -F'
 alias diff='diff -u'
 alias whois='whois -H'
+alias up='cd ..'
+alias back='cd "$OLDPWD"'
 
 ## no display!
 #unset DISPLAY
@@ -44,7 +46,8 @@ alias whois='whois -H'
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
-if [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-fi
+
+#if [ -f /etc/bash_completion ]; then
+#    . /etc/bash_completion
+#fi
 
