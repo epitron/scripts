@@ -1,0 +1,34 @@
+#!/usr/bin/ruby
+#
+# IMAGE SHUFFLE! v7.322785.576823.421.123.45345.624566767867.4.3245.2345
+# ----------------------------------------------------------------------
+#
+# Usage:
+#        + change to porn directory
+#        + run "imageshuffle [number of files, defaults to 50]"
+#
+
+# change this to the viewer you want to use...
+VIEWER="gthumb"
+
+puts "+ Finding all images in #{Dir.pwd}..."
+files = Dir.glob('**/*.{jpg,jpeg,png,gif}', File::FNM_CASEFOLD)
+
+puts "  - #{files.size} images found."
+
+if ARGV.size > 0
+    num = ARGV[0].to_i
+else
+    num = 50
+end
+
+randomfiles = []
+num.times do
+    break if files.empty?
+    randomfiles << files.delete_at(rand(files.size))
+end
+
+puts "  - #{randomfiles.size} random images selected"
+
+puts "+ Launching #{VIEWER}..."
+exec VIEWER, *randomfiles
