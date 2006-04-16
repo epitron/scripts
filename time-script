@@ -1,3 +1,0 @@
-rdate -s time.nist.gov
-hwclock --systohc --localtime
-

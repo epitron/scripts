@@ -1,1 +1,0 @@
-whois -H $* | less -X -F

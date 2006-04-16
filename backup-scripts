@@ -1,9 +1,0 @@
-DATE=`date +'%F'`
-FILENAME="backup/wikibackup-$DATE.tar.gz"
-
-echo
-echo "* Backing up wiki to $FILENAME..."
-echo
-
-#zip -r $FILENAME wiki
-ssh root@serber 'cd /home/epitaph; tar zcvf - wiki' > $FILENAME

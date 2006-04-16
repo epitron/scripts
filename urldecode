@@ -1,4 +1,4 @@
-#!/usr/bin/php4 -Cq
+#!/usr/bin/env php -Cq
 <?
 	$fp = fopen($argv[1], "r");
 	while (!feof($fp)) {

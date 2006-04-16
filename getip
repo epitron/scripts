@@ -1,1 +1,0 @@
-/sbin/ifconfig | grep -E "inet addr:20[56]." | cut -d : -f 2 | cut -d \  -f 1

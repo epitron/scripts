@@ -1,8 +1,0 @@
-if [ ! -d ~/$1 ]
-then
-	mkdir ~/$1
-fi
-
-df ~/$1 | awk '{getline; print "[Used]: " $3 "\n[Available]: " $4 "\n[Usage]: " $5}'
-cd ~/$1
-find . -printf "%C@ " -ls

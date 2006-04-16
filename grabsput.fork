@@ -1,5 +1,0 @@
-ASF=`echo "$*" | sed s/"mms:\/\/.*\/\(.*\)"/"\1"/`
-echo "+ Forking to grab $ASF (pid=$PPID)..."
-asfrecorder "$*" >> "$0.alog.$ASF"
-echo "+ Caputre of $ASF complete (pid $PPID terminating)..."
-rm "$0.alog.$ASF"
