@@ -164,7 +164,7 @@ class FileExtractor:
     
     def extract(self, thing, destdir='.'):
         if isurl(thing):
-            archivename = split(url2pathname(thing))[1]
+            archivename = split(urllib.url2pathname(thing))[1]
         elif isfile(thing):
             archivename = split(thing)[1]
             
