@@ -30,7 +30,7 @@ todo:
 """
 __version__ = '0.5'
 
-import os, sys, re, urllib, time, tempname
+import os, sys, re, urllib, time, tempfile
 from os.path import join, splitext, isfile, isdir, exists, split
 
 def madProps():
@@ -78,6 +78,20 @@ def isoption(arg):
         return False
     else:
         return True
+
+def only_dir_in_path(dir):
+    entries = os.listdir(dir)
+    dirs = []
+    for entry in entries:
+        fullentry = join(dir,entry)
+        if isfile(fullentry):
+            return None
+        if isdir(fullentry):
+            dirs.append(entry)
+        if len(dirs) > 1:
+            return None
+
+    return dirs[0]
 
 class URLGrabber(urllib.FancyURLopener):
     lastdisplaystring = ''
@@ -133,10 +147,11 @@ class FileExtractor:
     def dirname_from_archivename(archivename):
         lowername = archivename.lower()
         for ext in exts:
-            if lowername.endswith(ext)
+            if lowername.endswith(ext):
                 return archivename.rstrip(ext)
         return None
         
+    
     def extract_file(self, filename, destdir='.'):
         raise Exception, "extract_file() not implemented!"
     
@@ -155,7 +170,7 @@ class FileExtractor:
             
         print "+ Extracting..."
         print "    thing: %s" % thing
-        print "    archive name: " % archivename
+        print "    archive name: %s" % archivename
         print "    destination: %s" % destdir
         print "    type: %s" % self.desc
         
@@ -182,29 +197,19 @@ class FileExtractor:
         
         print "-"*50
         
-        def only_dir_in_path(dir):
-            entries = listdir(dir)
-            dircount = 0
-            for entry in entries:
-                if isfile(entry):
-                    return None
-                if isdir(entry):
-                    dircount += 1
-                if dircount > 1:
-                    return None
-
-            return True
         
-        only_dir = dir_contains_one_dir(tempdir)
+        only_dir = only_dir_in_path(tempdir)
         if only_dir:
-            print "+ Placing %s in %s..." % (only_dir, dest)
-            os.rename(join(tempdir, only_dir), only_dir)
+            target = join(destdir, only_dir)
+            print "+ Placing contained directory in '%s'..." % target
+            os.rename(join(tempdir, only_dir), target)
         else:
-            dest = dirname_from_archivename(archivename)
+            dest = join(destdir, self.dirname_from_archivename(archivename))
             count = 1
             while exists(dest):
-                dest = dirname_from_archivename(archivename) + "(%d)"%count
-            print "+ Renaming %s to %s" % (tempdir, dest)
+                dest = join(destdir, self.dirname_from_archivename(archivename)) + "(%d)"%count
+                count += 1
+            print "+ Renaming '%s' to '%s'" % (tempdir, dest)
             os.rename(tempdir, dest)
         
         print "* Done. ARF!"
