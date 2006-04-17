@@ -18,17 +18,20 @@ Concept:
 
 todo:
     + smart folders
-      - if only one file in archive, extract it
-      - if everything in the archive is in one folder, extract it
-      - otherwise, make a new dir named after the archive (possibly with a (1) after it) and extract it there
+      + extract archive to temp dir in current directory
+        - if directory has exactly one directory in it, move it to the parent dir
+        - otherwise, rename the temp dir to the archive name (w/o extension)
+    + better implementation
+        - FileExtractor takes a 'thing' in its __init__ (throwing an exception if it can't handle it), then
+          returns an instance that allows the user to '.extract(destination)' the archive.
     + list the contents of the archive 
       - arf l <archive name> will list an archive contents (piped to less)
       - when <archive name> is an url, give the option to extract it afterwards
 """
-__version__ = '0.4'
+__version__ = '0.5'
 
-import os, sys, re, urllib, time
-from os.path import join, splitext, isfile, isdir, exists
+import os, sys, re, urllib, time, tempname
+from os.path import join, splitext, isfile, isdir, exists, split
 
 def madProps():
     s = '  arf! (Archive Flogger) v%s :: by chris gahan (chris@ill-logic.com)  ' % __version__
@@ -127,6 +130,13 @@ class FileExtractor:
                 return True
         return False
 
+    def dirname_from_archivename(archivename):
+        lowername = archivename.lower()
+        for ext in exts:
+            if lowername.endswith(ext)
+                return archivename.rstrip(ext)
+        return None
+        
     def extract_file(self, filename, destdir='.'):
         raise Exception, "extract_file() not implemented!"
     
@@ -136,13 +146,19 @@ class FileExtractor:
         print
         self.extract_file(filename, destdir)
         os.remove(filename)
-        
+    
     def extract(self, thing, destdir='.'):
+        if isurl(thing):
+            archivename = split(url2pathname(thing))[1]
+        elif isfile(thing):
+            archivename = split(thing)[1]
+            
         print "+ Extracting..."
-        print "    archive: %s" % thing
+        print "    thing: %s" % thing
+        print "    archive name: " % archivename
         print "    destination: %s" % destdir
         print "    type: %s" % self.desc
-
+        
         if not exists(destdir):
             answer = prompt("* Destination doesn't exist. Create? [Y/n] ", choices=['y','n'], default='y')
             if answer == 'n':
@@ -150,18 +166,47 @@ class FileExtractor:
                 return
             print "+ Creating: %s" % destdir
             os.mkdir(destdir)
-            
+
+        tempdir = tempfile.mkdtemp('', 'arf-', destdir)
+        print "+ Extracting archive to: %s" % tempdir
+
         print "-"*50
                             
         if isurl(thing):
-            self.extract_url(thing, destdir)
+            self.extract_url(thing, tempdir)
         elif isfile(thing):
-            self.extract_file(thing, destdir)
+            self.extract_file(thing, tempdir)
         else:
             print "+ I don't know what the crap this thing is:\n\t%s\n\n...what're you trying to pull here, huh?!?!" % thing
             return
         
         print "-"*50
+        
+        def only_dir_in_path(dir):
+            entries = listdir(dir)
+            dircount = 0
+            for entry in entries:
+                if isfile(entry):
+                    return None
+                if isdir(entry):
+                    dircount += 1
+                if dircount > 1:
+                    return None
+
+            return True
+        
+        only_dir = dir_contains_one_dir(tempdir)
+        if only_dir:
+            print "+ Placing %s in %s..." % (only_dir, dest)
+            os.rename(join(tempdir, only_dir), only_dir)
+        else:
+            dest = dirname_from_archivename(archivename)
+            count = 1
+            while exists(dest):
+                dest = dirname_from_archivename(archivename) + "(%d)"%count
+            print "+ Renaming %s to %s" % (tempdir, dest)
+            os.rename(tempdir, dest)
+        
         print "* Done. ARF!"
         print
 
