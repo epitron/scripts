@@ -4,23 +4,26 @@ arf! (Archive Flogger)
 --------------------------------------------------------------------
 Concept:
     This script exists for two reasons:
-        1) Lazy people don't want to type long commands like "unzip"
-           and "unrar", or their respective commandline parameters
+        1) Lazy people don't want to type long commands like "tar zxvf" and
+	   "unzip" and "unrar", or their respective commandline parameters
         2) Downloading a tarball, extracting it, then deleting it
            is a wasteful and boring process
 
-    Therefore, this script attempts to remedy the situation by 
-    allowing you to automatically download archives from urls,
-    automatically recognizing their file format, and then
-    uncompressing them -- again, AUTOMATICALLY!
+    This script remedies that situation. Just run "arf (filename or URL)"
+    and it'll figure out how to extract it, and put the files in a nicely named
+    directory. It works on http, https, and FTP urls.
+    
+    The directory creation works like this:
+       + if the archive contains one directory, extract it as is
+       + if the archive contains more than that, make a directory named
+	  after the filename with the archive extension removed.
 
-    It also works on normal files.
+Examples:
+    arf http://prdownloads.sourceforge.net/something/mrprogram-1.2.45.6.3.tar.bz2
+    arf warez/Awesome.Game.RZR.FLT.DEViANCE/rzrflddev-ag.rar
+    arf pile_of_junk.tgz /root
 
 todo:
-    + smart folders
-      + extract archive to temp dir in current directory
-        - if directory has exactly one directory in it, move it to the parent dir
-        - otherwise, rename the temp dir to the archive name (w/o extension)
     + better implementation
         - FileExtractor takes a 'thing' in its __init__ (throwing an exception if it can't handle it), then
           returns an instance that allows the user to '.extract(destination)' the archive.
@@ -28,7 +31,7 @@ todo:
       - arf l <archive name> will list an archive contents (piped to less)
       - when <archive name> is an url, give the option to extract it afterwards
 """
-__version__ = '0.5'
+__version__ = '0.5.1'
 
 import os, sys, re, urllib, time, tempfile
 from os.path import join, splitext, isfile, isdir, exists, split
@@ -203,6 +206,7 @@ class FileExtractor:
             target = join(destdir, only_dir)
             print "+ Placing contained directory in '%s'..." % target
             os.rename(join(tempdir, only_dir), target)
+            os.removedirs(tempdir)
         else:
             dest = join(destdir, self.dirname_from_archivename(archivename))
             count = 1
