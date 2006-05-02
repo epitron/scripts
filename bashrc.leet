@@ -8,8 +8,12 @@ eval `dircolors -b`
 
 ## pretty prompts
 if [ "$BASH" ]; then
-  . /usr/scripts/purple
- 
+  if [ "`id -u`" -eq 0 ]; then
+    . /usr/scripts/green
+  else
+   . /usr/scripts/purple
+  fi
+
   ## alternate prompt
   #export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;36m\]\w\[\033[00m\]\$ '
 else
