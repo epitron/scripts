@@ -1,2 +1,0 @@
-apt-get update
-apt-get --download-only --force-yes -y -u dist-upgrade
