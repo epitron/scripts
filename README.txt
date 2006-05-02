@@ -22,7 +22,7 @@ purge-configs | delete the config files from all uninstalled debian packages
 
 =[ InstallWatch Packaging Tools  ]==============================
 
-inst          | runs "make install" (or "python setup.py install" or "ruby setup.rb install") in the current directory and monitors all the files that get installed, then records all the installed files in a file in /usr/share/instmon.
+inst          | runs "make install" (or "python setup.py install" or "ruby setup.rb install") in the current directory and monitors all the files that get installed, then records all the installed files in a file in /usr/share/instmon. the package is named after the current directory.
 instbackup    | compresses all this package's files into a tarball and removes the package
 instfind      | search the list of installed packages
 instl         | list installed packages
@@ -32,9 +32,9 @@ instremove    | remove an installed package
 
 =[ Useful UNIX Time-Savers ]====================================
 
-ks            | kill-search (Usage: ks [kill SIGNAL] [grep pattern]) -> prompts you to kills all processes that match the supplied search pattern (using the optional signal)
+ks            | kill-search (Usage: ks [kill SIGNAL] [grep pattern]) -> prompts you to kill all processes that match the supplied search pattern (using the optional signal)
 psfind        | Usage: psfind [grep pattern] -> search all running processes
-f             | Usage: find [search pattern] [paths to search] -> (recursively find all files in the specified directories, or the current directory if unspecified)
+f             | Usage: find [search pattern] [paths to search] -> recursively find all files in the specified directories, or the current directory if unspecified
 ddu           | directory disk-usage (same as du --max-depth=1 -m)
 i             | init.d daemon controller (runs /etc/init.d/[param] [command]) eg: "i apache2" runs /etc/init.d/apache2 restart, "i gdm stop" kills gdm, etc.
 build         | run "./configure ; make" in the current directory, optionally using the "buildconfig" file in the current directory to pass parameters to configure and make. (See the parameters that the script displays when you run it if you want to know what you can set.)
