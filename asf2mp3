@@ -14,3 +14,4 @@ then
 	lame --preset $PRESET "$MP3.wav" "$MP3"
 	rm "$MP3.wav"
 fi
+

@@ -1,1 +1,1 @@
-ipchains -I input 1 -s $1 -j DENY
+iptables -I INPUT 1 -s $1 -j DROP

@@ -1,8 +1,0 @@
-#!/bin/bash
-for i in $*
-do
-   LOWER=`lowcase $i`
-   echo "$i -> $LOWER"
-   mv $i temp.$$$
-   mv temp.$$$ $LOWER
-done
