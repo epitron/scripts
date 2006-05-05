@@ -73,11 +73,12 @@ def howToUseMe():
     print '    %s [file or directory]' % sys.argv[0]
     print
     print 'Options:'
-    print '    -t #      | convert tabs to spaces (tab size = #)' % sys.argv[0]
+    print '    -t #      | convert tabs to spaces (tab size = #)'
     print
     print 'If a directory is given, all pertient filetypes in the directory and'
     print 'its subdirectories will be converted.'
-    print '(converted filetypes = %s)\n' % ', '.join(validtypes)
+    print
+    print '(Filetypes to scan: %s)\n' % ', '.join(validtypes)
     
 
 if __name__ == '__main__':
