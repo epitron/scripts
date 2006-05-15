@@ -31,13 +31,13 @@ todo:
       - arf l <archive name> will list an archive contents (piped to less)
       - when <archive name> is an url, give the option to extract it afterwards
 """
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 import os, sys, re, urllib, time, tempfile
-from os.path import join, splitext, isfile, isdir, exists, split
+from os.path import join, isfile, isdir, exists, split, splitext
 
 def madProps():
-    s = '  arf! (Archive Flogger) v%s :: by chris gahan (chris@ill-logic.com)  ' % __version__
+    s = "  arf! (Archive Retriever, Fo'sho') v%s :: by Chris Gahan (chris@ill-logic.com)  " % __version__
     print '=' * len(s)
     print s
     print '=' * len(s)
@@ -147,9 +147,9 @@ class FileExtractor:
                 return True
         return False
 
-    def dirname_from_archivename(archivename):
+    def dirname_from_archivename(self, archivename):
         lowername = archivename.lower()
-        for ext in exts:
+        for ext in self.exts:
             if lowername.endswith(ext):
                 return archivename.rstrip(ext)
         return None
@@ -200,7 +200,7 @@ class FileExtractor:
         
         print "-"*50
         
-        
+        print "archivename: %s" % repr(archivename)
         only_dir = only_dir_in_path(tempdir)
         if only_dir:
             target = join(destdir, only_dir)
