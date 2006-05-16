@@ -20,7 +20,12 @@ dl            | dpkg list (display installed debian packages)
 ds            | dpkg search (search list of installed packages)
 purge-configs | delete the config files from all uninstalled debian packages
 
-=[ InstallWatch Packaging Tools  ]==============================
+
+=[ InstallWatch Package Tools  ]================================
+
+(Note: If you want these scripts to run really fast, make sure
+       that 'installwatch' or 'checkinstall' are installed on your
+       system.)
 
 inst          | runs "make install" (or "python setup.py install" or "ruby setup.rb install") in the current directory and monitors all the files that get installed, then records all the installed files in a file in /usr/share/instmon. the package is named after the current directory.
 instbackup    | compresses all this package's files into a tarball and removes the package
@@ -30,6 +35,7 @@ instlist      | list the files in an installed package
 instmon       | puts you into a shell that monitors any changes you make to the filesystem. when you type "exit", it saves the changes to the package list.
 instremove    | remove an installed package
 
+
 =[ Useful UNIX Time-Savers ]====================================
 
 ks            | kill-search (Usage: ks [kill SIGNAL] [grep pattern]) -> prompts you to kill all processes that match the supplied search pattern (using the optional signal)
@@ -37,12 +43,12 @@ psfind        | Usage: psfind [grep pattern] -> search all running processes
 f             | Usage: find [search pattern] [paths to search] -> recursively find all files in the specified directories, or the current directory if unspecified
 ddu           | directory disk-usage (same as du --max-depth=1 -m)
 i             | init.d daemon controller (runs /etc/init.d/[param] [command]) eg: "i apache2" runs /etc/init.d/apache2 restart, "i gdm stop" kills gdm, etc.
+arf           | Archive Retrieval Fiend (extract any kind of archive (tarball, zip, rar) from the filesystem or from an URL)
 build         | run "./configure ; make" in the current directory, optionally using the "buildconfig" file in the current directory to pass parameters to configure and make. (See the parameters that the script displays when you run it if you want to know what you can set.)
 tounix        | convert a text file (or directory of text files) with DOS line endings to Unix (optionally, replace tabs with a specified number of spaces)
-arf           | Archive Retrieval Fiend (extract any kind of archive (tarball, zip, rar) from the filesystem or from an URL)
 cu            | run "cvs (or svn) update" on the current directory
 log           | display the logfile for some program, piped to colorize and less.
-
+count         | display the number of lines of each file in a directory tree (shows both total lines and non-blank lines)
 
 =[ Other Things ]===============================================
 

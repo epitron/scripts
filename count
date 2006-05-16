@@ -1,0 +1,41 @@
+#!/usr/bin/ruby
+
+######################################################################
+# count v0.00.0.00.0.0000.0 :: by Chris Gahan (chris@ill-logic.com)
+######################################################################
+#
+# This program is for recursively counting the number of lines in a
+# directory of files. It displays the number of lines in each file
+# (under the "lines" column) and the number of non-blank lines 
+# ("actual"). It takes one parameter: the directory to analyze.
+# Note that it doesn't ignore binary files -- it's very stupid.
+######################################################################
+
+
+# handle supplied directory
+if ARGV.any?
+  search_dir = ARGV.join(' ')
+  glob = File.join(search_dir, '**/*')
+else
+  search_dir = '.'
+  glob = "**/*"
+end
+
+# display user message
+puts "Analyzing all files in '#{search_dir}'..."
+puts "------------------------------------------------------------------------"
+puts
+puts "lines   actual  filename"
+puts "-----   ------  --------"
+
+# analyze each file in the glob
+Dir[glob].each do |path|
+  unless path =~ %r{/(CVS|.svn)/} or File.directory?(path)
+    lines = open(path).readlines
+
+    total_lines = lines.size
+    actual_lines = lines.select{ |line| ! line.strip.empty? }.size
+
+    puts "%5d /  %5d  #{path}" % [total_lines, actual_lines]
+  end
+end
