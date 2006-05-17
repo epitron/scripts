@@ -1,13 +1,23 @@
 if [ -f setup.py ]
 then
+  echo "Installing Python script (setup.py install)..."
   instmon -c "python setup.py install" $*
 
 elif [ -f Makefile ]
 then
+  echo "Installing something with a Makefile (make install)..."
   instmon -c "make install" $*
 
 elif [ -f setup.rb ]
 then
+  echo "Installing Ruby script (setup.rb install)..."
   instmon -c "ruby setup.rb install" $*
 
+elif [ -f install.rb ]
+then
+  echo "Installing Ruby script (install.rb)..."
+  instmon -c "ruby install.rb" $*
+
+else
+  echo "I'm not sure how to install this. Fix my code!!"
 fi
