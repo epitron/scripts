@@ -53,7 +53,7 @@ count         | display the number of lines of each file in a directory tree (sh
 =[ Other Things ]===============================================
 
 j             | loads a file in an already-open jedit editor
-n             | run nedit in daemon mode (so only one process is ever running)
+n             | open a file in nedit (using the same nedit process as all other instances)
 bashrc.leet   | my custom bashrc file
 underscorize  | convert all spaces in filenames to underscores
 timesync      | synch the system's hardware clock with time.nist.gov
