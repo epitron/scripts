@@ -1,0 +1,10 @@
+echo
+echo "==[ BUILDING ]====================================================="
+echo
+apt-build build-source $*
+
+echo
+echo "==[ INSTALLING ]==================================================="
+echo
+agu
+apt-get install $*

@@ -1,2 +1,0 @@
-cd /usr/src/deb
-apt-get -b source $*
