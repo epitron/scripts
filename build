@@ -1,7 +1,7 @@
 unset CC CFLAGS CXX CXXFLAGS MAKE PARAMS
 
 CONFIGFILE=buildconfig
-MAKE="make"
+MAKE="make -j4"
 PARAMS=""
 
 if [ -f $CONFIGFILE ]
