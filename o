@@ -1,1 +1,6 @@
-opera -newpage "$*"
+if [ "$USER" == "root" ]
+then
+  su chris -c "opera -newpage \"$*\""
+else
+  opera -newpage "$*"
+fi

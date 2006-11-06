@@ -43,6 +43,8 @@ alias diff='diff -u'
 alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
+alias ssh='ssh-termtitle'
+
 
 ## no display!
 #unset DISPLAY
