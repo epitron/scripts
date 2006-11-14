@@ -18,7 +18,7 @@
  
 '''
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 import os, sys
 from os.path import join, splitext, isfile, isdir
@@ -53,12 +53,17 @@ def fixLineEndingAndTabs(string, tabsize=None):
 def convertFile(filename, tabsize=None):
     try:
         infile = open(filename, 'r')
-        fixedlines = [ fixLineEndingAndTabs(line, tabsize) for line in infile.readlines() ]
-        infile.close()
+        fixedlinegenerator = ( fixLineEndingAndTabs(line, tabsize) for line in infile )
         
-        outfile = open(filename, 'w')
-        outfile.writelines(fixedlines)
+	tmpfilename = filename+".being-tounixed"
+	
+        outfile = open(tmpfilename, 'w')
+        outfile.writelines(fixedlinegenerator)
+	
         outfile.close()
+	infile.close()
+	
+	os.rename(tmpfilename, filename)
         
     except Exception, e:
         print "* WHUZZUH?! %s *" % e
