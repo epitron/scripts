@@ -1,1 +1,1 @@
-dpkg -L "$*"
+dpkg -L "$*" | less
