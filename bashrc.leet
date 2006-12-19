@@ -1,3 +1,8 @@
+if [ -f /etc/profile ]
+then
+  . /etc/profile
+fi
+
 #PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 export PATH=$PATH:/usr/scripts
 
@@ -30,9 +35,18 @@ fi
 #    export LS_OPTIONS='--color=auto'
 #fi
 
+
 ## aliases
+
 alias ll='ls -l'
-alias l='ls -lA'
+alias l='ls -alF'
+alias la='ls -la'
+alias ll='ls -l'
+
+alias +='pushd .'
+alias -- -='popd'
+alias ..='cd ..'
+alias ...='cd ../..'
 
 alias nano="nano -w"
 alias pico="nano"
@@ -44,6 +58,11 @@ alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
 alias ssh='ssh-termtitle'
+
+alias md='mkdir -p'
+alias o='less'
+alias rehash='hash -r'
+
 
 
 ## no display!
