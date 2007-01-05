@@ -60,7 +60,6 @@ alias back='cd "$OLDPWD"'
 alias ssh='ssh-termtitle'
 
 alias md='mkdir -p'
-alias o='less'
 alias rehash='hash -r'
 
 
