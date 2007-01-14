@@ -61,7 +61,7 @@ alias ssh='ssh-termtitle'
 
 alias md='mkdir -p'
 alias rehash='hash -r'
-
+alias df='df -h'
 
 
 ## no display!
