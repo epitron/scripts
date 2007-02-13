@@ -12,24 +12,6 @@ export CLICOLOR=1
 eval `dircolors -b`
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
-## pretty prompts
-if [ "$BASH" ]; then
-  if [ "`id -u`" -eq 0 ]; then
-    . /usr/scripts/green
-  else
-   . /usr/scripts/purple
-  fi
-
-  ## alternate prompt
-  #export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;36m\]\w\[\033[00m\]\$ '
-else
-  if [ "`id -u`" -eq 0 ]; then
-    export PS1='# '
-  else
-    export PS1='$ '
-  fi
-fi
-
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 #if [ "$TERM" != "dumb" ]; then
 #    export LS_OPTIONS='--color=auto'
