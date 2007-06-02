@@ -1,1 +1,5 @@
-find "$*" -type d | less
+if [ "$*" == "" ]; then
+  find -type d | less
+else
+  find "$*" -type d | less
+fi
