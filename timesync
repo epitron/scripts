@@ -1,5 +1,5 @@
 echo Synching clock ...
-#rdate time.nist.gov
+SERVER=us.pool.ntp.org
 ntpdate time.nist.gov
 echo Setting hardware clock...
 #hwclock --systohc
