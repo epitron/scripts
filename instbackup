@@ -22,8 +22,8 @@ else
     mv /tmp/$PKGNAME.tar.gz /archive/instbackup/$PKGNAME-`date +'%F_%R'`.tar.gz
     echo "+ Backed up package:"
     ls -l /archive/instbackup/$PKGNAME-`date +'%F_%R'`.tar.gz
-    echo "+ Removing installed files..."
-    instmon --remove-files $PKGNAME --remove-log
+    #echo "+ Removing installed files..."
+    #instmon --remove-files $PKGNAME --remove-log
   else
     echo "+ /tmp/$PKGNAME.tar wasn't created... Aborting."
   fi
