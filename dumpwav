@@ -1,0 +1,1 @@
+mplayer -vc null -vo null -ao pcm:waveheader:fast:file="$1" "$2"

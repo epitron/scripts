@@ -1,7 +1,7 @@
-if [ -f /etc/profile ]
-then
-  . /etc/profile
-fi
+#if [ -f /etc/profile ]
+#then
+#  . /etc/profile
+#fi
 
 #PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 export PATH=$PATH:/usr/scripts

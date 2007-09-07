@@ -1,0 +1,10 @@
+CMD="spec -fs -c"
+
+if [ "$1" == "" ]
+then
+  FILES=`find . -iname '*_spec.rb'`
+  $CMD $FILES
+else
+  $CMD $*
+fi
+
