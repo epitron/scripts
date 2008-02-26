@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby -wKU
+
+# get svn info location
+svnurl = `svn info | grep "^URL:"`.gsub('URL: ','').chomp
+
+# project = basename
+project = File.basename(Dir.pwd)
+
+puts cmd = "git-svn clone #{svnurl} ../#{project}.git"
+
+`#{cmd}`
+
