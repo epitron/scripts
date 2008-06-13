@@ -22,7 +22,7 @@ WELCOME="0"
 DEBUG="0"
 #This is the interface you want to use to perform the attack
 #If you dont set this, airoscript will ask you for interface to use
-WIFI=""
+WIFI="eth1"
 #This is the rate per second at wich packets will be injected
 INJECTRATE="1024"
 #How many times the deauth attack is run
@@ -38,7 +38,7 @@ AIREPLAY="aireplay-ng"
 AIRCRACK="aircrack-ng"
 ARPFORGE="packetforge-ng"
 #The path where the data is stored (FOLDER MUST EXIST !)
-DUMP_PATH="/tmp"
+DUMP_PATH="/root/wifidump"
 # Path to your wordlist file (for WPA dictionnary attack, maybe for WEP in next release to)
 WORDLIST="/tmp/english.txt"
 #The Mac address used to associate with AP during fakeauth			
