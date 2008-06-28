@@ -1,0 +1,1 @@
+zgrep "Invalid user" /var/log/auth.log*|less -S

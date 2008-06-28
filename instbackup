@@ -6,6 +6,11 @@ else
   PAR=$1
 fi
 
+if [ ! -d /archive/instbackup ]
+then
+  mkdir -p /archive/instbackup
+fi
+
 PKGNAME=`instl | grep -i $PAR`
 
 if [ "$PKGNAME" == "" ]
