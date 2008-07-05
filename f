@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 # pull in some groovy code
 %w* rubygems colorize rio *.each { |thing| require(thing) }
