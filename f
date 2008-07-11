@@ -58,3 +58,5 @@ Usage:
   f <search string> <paths> => recursively list all files in <paths>
                                containing <search string>
 
+(Note: To colorize the search results, install the "colorize" gem.)
+
