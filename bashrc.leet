@@ -13,10 +13,14 @@ eval `dircolors -b`
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
-#if [ "$TERM" != "dumb" ]; then
-#    export LS_OPTIONS='--color=auto'
-#fi
+if [ "$TERM" != "dumb" ]; then
+    #export LS_OPTIONS='--color=auto'
+    alias ls="ls --color=auto"
+fi
 
+## FUCK YOU ^S AND ^Q!!
+stty stop undef
+stty start undef
 
 ## aliases
 
