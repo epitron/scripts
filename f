@@ -42,7 +42,7 @@ end
 
 #################################################################
 ## Parse Commandline
-query = Regexp.new(Regexp.escape(ARGV.any? ? ARGV.shift : ""))
+query = Regexp.new(Regexp.escape(ARGV.any? ? ARGV.shift : ""), Regexp::IGNORECASE)
 roots = (ARGV.any? ? ARGV : ['.']).select { |path| File.directory? path }
 #################################################################
 
