@@ -78,17 +78,19 @@ def grep_file(path, query, &block)
   end
 end
 
+MAX_LINE_LENGTH = 1000
+
 roots.each do |root|
   breadth_first_file_scan(root) do |path|
     if path.file?
       grep_file(path, query) do |line,n|
-        line = line[0..1000] + " [...#{line.size - 1000} more bytes...]" if line.size > 1000
+        line = line[0..MAX_LINE_LENGTH] + " [...plus #{line.size - MAX_LINE_LENGTH} more bytes...]" if line.size > MAX_LINE_LENGTH
         puts [
-	  path.to_s.magenta,        # pathname
+	  path.to_s.magenta,   # pathname
           ":".blue, 
-          n.to_s.green,          # line number
+          n.to_s.green,        # line number
           ":".blue, 
-          line.hilite(query)     # matched line
+          line.hilite(query)   # line
         ].join
       end
     end
