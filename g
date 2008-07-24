@@ -3,11 +3,17 @@
 ## For author info, scroll to the end of this file.
 #################################################################
 
-
 #################################################################
 ## Load Modules
 require 'pathname'
 require 'set'
+#################################################################
+
+
+#################################################################
+## Settings
+MAX_LINE_LENGTH  = 1000
+IGNORE_PATHS     = Set.new([".svn", ".git", "CVS"])
 #################################################################
 
 
@@ -19,14 +25,30 @@ begin
   # Colourized hilite...
   class String
     def hilite(query)
-      self.to_s.gsub(/(.*)(#{query})(.*)/) { $1 + $2.black.on_yellow + $3 }
+      if size > MAX_LINE_LENGTH
+        line = self[0..MAX_LINE_LENGTH]
+        extra = " [...plus #{size - MAX_LINE_LENGTH} more bytes...]".red 
+      else
+        line = self
+        extra = ""
+      end
+      line.to_s.gsub(/(.*)(#{query})(.*)/) { $1 + $2.black.on_yellow + $3 } + extra
     end
   end
 rescue LoadError
   STDERR.puts "Note: You should install the 'colorize' gem for extra prettiness.\n"
   # Define black & white stubs to replace colorized methods...
   class String
-    def hilite(query); self; end
+    def hilite(query)
+      if size > MAX_LINE_LENGTH
+        line = self[0..MAX_LINE_LENGTH]
+        extra = " [...plus #{size - MAX_LINE_LENGTH} more bytes...]"
+      else
+        line = self
+        extra = ""
+      end
+      line + extra
+    end
     %w(magenta blue green).each do |name|
       define_method(name, proc { self })
     end
@@ -53,8 +75,6 @@ roots = (ARGV.any? ? ARGV : ['.']).select { |path| File.directory? path }
 
 #################################################################
 ## Grep files/display results
-IGNORE_PATHS = Set.new([".svn", ".git", "CVS"])
-
 def breadth_first_file_scan(root, &block)
   files = []
   dirs = []
@@ -78,13 +98,10 @@ def grep_file(path, query, &block)
   end
 end
 
-MAX_LINE_LENGTH = 1000
-
 roots.each do |root|
   breadth_first_file_scan(root) do |path|
     if path.file?
       grep_file(path, query) do |line,n|
-        line = line[0..MAX_LINE_LENGTH] + " [...plus #{line.size - MAX_LINE_LENGTH} more bytes...]" if line.size > MAX_LINE_LENGTH
         puts [
 	  path.to_s.magenta,   # pathname
           ":".blue, 
