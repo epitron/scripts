@@ -104,7 +104,7 @@ roots.each do |root|
       grep_file(path, query) do |line,n|
         puts [
 	  path.to_s.magenta,   # pathname
-          ":".blue, 
+          " ", 
           n.to_s.green,        # line number
           ":".blue, 
           line.hilite(query)   # line
