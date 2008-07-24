@@ -1,43 +1,54 @@
 #!/usr/bin/env ruby
+#################################################################
+## For author info, scroll to the end of this file.
+#################################################################
 
+
+#################################################################
 ## Load Modules
-
 require 'pathname'
+#################################################################
 
+
+#################################################################
+## Load the colorize gem, and define the "hilite" function
 begin
-  # load colorize gem
-  %w(rubygems colorize).each { |gem| require(gem) }
-  class Object
+  require 'rubygems' 
+  require 'colorize'
+  # Colourized hilite...
+  class String
     def hilite(query)
       self.to_s.gsub(/(.*)(#{query})(.*)/) { $1.green + $2.black.on_yellow + $3.green }
     end
   end
 rescue LoadError
   STDERR.puts "Note: You should install the 'colorize' gem for extra prettiness.\n"
-  class Object
-    def hilite(query)
-      self
-    end
+  # Monochrome hilite does nothing...
+  class String
+    def hilite(query); self; end
   end
 end
+#################################################################
 
 
+#################################################################
 ## Display Help (if requested)
-
 if ["--help", "-h"].include?(ARGV[0])
   puts DATA.read
   exit
 end
+#################################################################
 
 
+#################################################################
 ## Parse Commandline
-
 query = Regexp.new(Regexp.escape(ARGV.any? ? ARGV.shift : ""))
 roots = (ARGV.any? ? ARGV : ['.']).select { |path| File.directory? path }
+#################################################################
 
 
+#################################################################
 ## Search/display files
-
 def breadth_first_scan(root, &block)
   children = Pathname(root).children.sort
   children.each { |child| yield child } # breadth
@@ -50,7 +61,11 @@ roots.each do |root|
     puts "#{dirname}/#{filename.hilite(query)}" if filename =~ query
   end
 end
+#################################################################
 
+
+#################################################################
+## Help message (will be put in the DATA array)
 __END__
 "f" (c) 2002-2008 by Chris Gahan (chris@ill-logic.com)
 
