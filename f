@@ -2,25 +2,23 @@
 
 ## Load Modules
 
+require 'pathname'
+
 begin
-
-  # pull in some tasty code
+  # load colorize gem
   %w(rubygems colorize).each { |gem| require(gem) }
-
   class Object
     def hilite(query)
       self.to_s.gsub(/(.*)(#{query})(.*)/) { $1.green + $2.black.on_yellow + $3.green }
     end
   end
-
 rescue LoadError
-
+  STDERR.puts "Note: You should install the 'colorize' gem for extra prettiness.\n"
   class Object
     def hilite(query)
       self
     end
   end
-
 end
 
 
@@ -40,9 +38,14 @@ roots = (ARGV.any? ? ARGV : ['.']).select { |path| File.directory? path }
 
 ## Search/display files
 
+def breadth_first_scan(root, &block)
+  children = Pathname(root).children.sort
+  children.each { |child| yield child } # breadth
+  children.each { |child| breadth_first_scan(child, &block) if child.directory? }
+end
+
 roots.each do |root|
-  Dir["#{root}/**/*"].each do |path|
-    #p path
+  breadth_first_scan(root) do |path|
     dirname, filename = File.split(path)
     puts "#{dirname}/#{filename.hilite(query)}" if filename =~ query
   end

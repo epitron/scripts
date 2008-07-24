@@ -22,12 +22,19 @@ echo "          MAKE=$MAKE"
 echo "        PARAMS=$PARAMS"
 echo ""
 
-echo "============================ Configuring... ==============================="
-if ./configure $PARAMS
+if [ -f configure ]
 then
-   echo "============================ Making... =================================="
-   eval $MAKE
-   echo "========================= DONE! =============================="
-else
-   echo "===================== Configure failed! ========================"
+   echo "============================ Configuring... ==============================="
+   if ./configure $PARAMS
+   then
+      echo "============================ Making... =================================="
+      eval $MAKE
+      echo "========================= DONE! =============================="
+   else
+      echo "===================== Configure failed! ========================"
+   fi
+elif [ -f Rakefile ]
+then
+   echo "========================= Raking Build =============================="
+   rake build
 fi
