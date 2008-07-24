@@ -43,13 +43,20 @@ end
 #################################################################
 ## Parse Commandline
 query = Regexp.new(Regexp.escape(ARGV.any? ? ARGV.shift : ""), Regexp::IGNORECASE)
-roots = (ARGV.any? ? ARGV : ['.']).select { |path| File.directory? path }
+roots = (ARGV.any? ? ARGV : ['.']).
+        map{ |path| Pathname(path) }.
+        select { |path| path.exist? || STDERR.puts("Error: #{path} doesn't exist") }
 #################################################################
 
 
 #################################################################
 ## Search/display files
 def breadth_first_scan(root, &block)
+  if root.file?
+    yield root
+    return
+  end
+
   children = Pathname(root).children.sort
   children.each { |child| yield child } # breadth
   children.each { |child| breadth_first_scan(child, &block) if child.directory? }

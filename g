@@ -69,16 +69,23 @@ end
 #################################################################
 ## Parse Commandline
 query = Regexp.new(Regexp.escape(ARGV.shift), Regexp::IGNORECASE)
-roots = (ARGV.any? ? ARGV : ['.']).select { |path| File.directory? path }
+roots = (ARGV.any? ? ARGV : ['.']).
+        map{ |path| Pathname(path) }.
+        select { |path| path.exist? || STDERR.puts("Error: #{path} doesn't exist") }
 #################################################################
 
 
 #################################################################
 ## Grep files/display results
 def breadth_first_file_scan(root, &block)
+  if root.file?
+    yield root 
+    return
+  end
+
   files = []
   dirs = []
-  Pathname(root).children.sort.each do |entry|
+  root.children.sort.each do |entry|
     if entry.directory?
       dirs << entry unless IGNORE_PATHS.include? entry.basename.to_s
     else
