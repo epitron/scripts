@@ -42,8 +42,25 @@ end
 
 #################################################################
 ## Parse Commandline
-query = Regexp.new(Regexp.escape(ARGV.any? ? ARGV.shift : ""), Regexp::IGNORECASE)
-roots = (ARGV.any? ? ARGV : ['.']).
+case ARGV.size
+  when 0
+    query = ''
+    roots = ['.']
+  when 1
+    if ARGV.first =~ %r{(^/|/$|^\./)} #and File.directory?(ARGV.first)
+      query = ''
+      roots = [ARGV.first]
+    else
+      query = ARGV.first
+      roots = ['.']
+    end
+  else
+    query = ARGV.shift
+    roots = ARGV
+end
+
+query = Regexp.new( Regexp.escape( query ), Regexp::IGNORECASE )
+roots = roots.
         map{ |path| Pathname(path) }.
         select { |path| path.exist? || STDERR.puts("Error: #{path} doesn't exist") }
 #################################################################
@@ -58,8 +75,12 @@ def breadth_first_scan(root, &block)
   end
 
   children = Pathname(root).children.sort
-  children.each { |child| yield child } # breadth
-  children.each { |child| breadth_first_scan(child, &block) if child.directory? }
+  begin
+    children.each { |child| yield child } # breadth
+    children.each { |child| breadth_first_scan(child, &block) if child.directory? }
+  rescue Errno::EACCES => e
+    STDERR.puts("Could not open #{e}")
+  end
 end
 
 roots.each do |root|
