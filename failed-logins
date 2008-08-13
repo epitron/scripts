@@ -1,1 +1,2 @@
-zgrep "Invalid user" /var/log/auth.log*|less -S
+#zgrep "Invalid user" /var/log/auth.log*|less -S
+zgrep "Failed password" /var/log/auth.log*|less -S

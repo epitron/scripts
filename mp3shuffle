@@ -1,0 +1,34 @@
+#!/usr/bin/ruby
+#
+# MP3 SHUFFLE! v7.322785.576823.421.123.45345.624566767867.4.3245.2345
+# ----------------------------------------------------------------------
+#
+# Usage:
+#        + change to mp3 directory
+#        + run "mp3shuffle [number of files, defaults to 50]"
+#
+
+# change this to the viewer you want to use...
+VIEWER="mplayer"
+
+puts "+ Finding all musics in #{Dir.pwd}..."
+files = Dir.glob('**/*.{mp3,ogg,m4a,wma,flac}', File::FNM_CASEFOLD)
+
+puts "  - #{files.size} images found."
+
+if ARGV.size > 0
+    num = ARGV[0].to_i
+else
+    num = 50
+end
+
+randomfiles = []
+num.times do
+    break if files.empty?
+    randomfiles << files.delete_at(rand(files.size))
+end
+
+puts "  - #{randomfiles.size} random musics selected"
+
+puts "+ Launching #{VIEWER}..."
+exec VIEWER, *randomfiles
