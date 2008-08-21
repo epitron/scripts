@@ -84,9 +84,13 @@ def breadth_first_scan(root, &block)
 end
 
 roots.each do |root|
-  breadth_first_scan(root) do |path|
-    dirname, filename = File.split(path)
-    puts "#{dirname}/#{filename.hilite(query)}" if filename =~ query
+  begin
+    breadth_first_scan(root) do |path|
+      dirname, filename = File.split(path)
+      puts "#{dirname}/#{filename.hilite(query)}" if filename =~ query
+    end
+  rescue Interrupt
+    exit(1)
   end
 end
 #################################################################
