@@ -90,6 +90,7 @@ roots.each do |root|
       puts "#{dirname}/#{filename.hilite(query)}" if filename =~ query
     end
   rescue Interrupt
+    # eat ^C
     exit(1)
   end
 end

@@ -106,18 +106,25 @@ def grep_file(path, query, &block)
 end
 
 roots.each do |root|
-  breadth_first_file_scan(root) do |path|
-    if path.file?
-      grep_file(path, query) do |line,n|
-        puts [
-	  path.to_s.magenta,   # pathname
-          " ", 
-          n.to_s.green,        # line number
-          ":".blue, 
-          line.hilite(query)   # line
-        ].join
+  begin
+
+    breadth_first_file_scan(root) do |path|
+      if path.file?
+        grep_file(path, query) do |line,n|
+          puts [
+            path.to_s.magenta,   # pathname
+            " ", 
+            n.to_s.green,        # line number
+            ":".blue, 
+            line.hilite(query)   # line
+          ].join
+        end
       end
     end
+
+  rescue Interrupt
+    # eat ^C
+    exit(1)
   end
 end
 #################################################################
