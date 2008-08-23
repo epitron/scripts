@@ -1,1 +1,1 @@
-instmon -l `instl | grep -i $1`
+instmon -l `instl | grep -i $1 2>/dev/null`
