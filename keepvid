@@ -47,7 +47,7 @@ end
 
 
 ###############################################################
-# step 4: download
+# step 3: download
 
 def download(url, dest)
   system("wget", url, "-O", dest)
