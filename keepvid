@@ -1,0 +1,72 @@
+#!/usr/bin/ruby
+###### keepvid.rb
+
+require 'rubygems'
+require 'hpricot'
+require 'open-uri'
+
+# step 1: get video title
+
+def get_video_title(youtube_url)
+  doc = Hpricot(open(youtube_url))
+  (doc/"title").each do |title|
+    return $1 if title.inner_text =~ %r{YouTube - (.+)}
+  end
+end
+
+# step 2: post to keepvid form
+
+
+def keepvid_urls(url)
+  doc = Hpricot(open("http://keepvid.com/?url=#{URI.escape(url)}"))
+  urls = {}
+  (doc/"a").each do |e|
+    if (href = e.attributes["href"]) =~ /save-video\.mp4/
+      urls[:mp4] = "http://keepvid.com#{href}"
+    end
+  end
+
+  # flv
+  # http://keepvid.com/save-video.flv?http%3A%2F%2Fwww.youtube.com%2Fget_video%3Fvideo_id%3DtsgXMRB4TeQ%26t%3DOEgsToPDskKWdRg2fuNSdntV1dNSi1H5
+  
+  # mp4
+  # http://keepvid.com/save-video.mp4?http%3A%2F%2Fwww.youtube.com%2Fget_video%3Fvideo_id%3DtsgXMRB4TeQ%26t%3DOEgsToPDskKWdRg2fuNSdntV1dNSi1H5%26fmt%3D18
+  
+  urls
+end
+
+
+# step 3: parse flv/mp4 urls
+
+def parse_keepvid_result(result)
+  return nil
+end
+
+# step 4: download
+
+
+# main
+
+def main(youtube_url)
+  title = get_video_title(youtube_url)
+  puts "title: #{title}"
+  
+  urls = keepvid_urls(youtube_url)
+  if url = urls[:mp4]
+    system("wget", url, "-O", "#{title}.mp4")
+  end
+end
+  
+# help
+
+def help
+  puts "usage: keepvid [youtube url]"
+end
+  
+if __FILE__ == $0
+  if ARGV.size != 1
+    help
+  else
+    main(ARGV[0])
+  end
+end
