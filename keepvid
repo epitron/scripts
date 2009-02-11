@@ -50,9 +50,12 @@ end
 # step 3: download
 
 def download(url, dest)
-  system("wget", url, "-O", dest)
+  system("wget", url, "-O", fix_filename(dest))
 end
 
+def fix_filename(filename)
+  filename.tr('":','\',')
+end
 
 
 ###############################################################
