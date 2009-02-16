@@ -30,8 +30,8 @@ def keepvid_urls(url)
   doc = Hpricot(open("http://keepvid.com/?url=#{URI.escape(url)}"))
   urls = {}
   (doc/"a").each do |e|
-    if (href = e.attributes["href"]) =~ /save-video\.mp4/
-      urls[:mp4] = "http://keepvid.com#{href}"
+    if (href = e.attributes["href"]) =~ /save-video\.(\w{3})/
+      urls[$1.to_sym] = "http://keepvid.com#{href}"
     end
   end
 
@@ -50,7 +50,7 @@ end
 # step 3: download
 
 def download(url, dest)
-  system("wget", url, "-O", fix_filename(dest))
+  system("wget", "-c", url, "-O", fix_filename(dest))
 end
 
 def fix_filename(filename)
