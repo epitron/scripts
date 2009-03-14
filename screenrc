@@ -1,0 +1,5 @@
+# Turn off the startup message.
+startup_message off
+# Set the caption to the active windows. 
+caption always "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%<"
+
