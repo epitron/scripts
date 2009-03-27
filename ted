@@ -1,0 +1,68 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'nokogiri'
+require 'open-uri'
+
+
+def get_video_link(url)
+  doc = Nokogiri::HTML(open(url))
+  
+  # "Video to desktop (Zipped MP4)"
+  # "Video to iTunes (MP4)"
+  # "Watch this talk as high-res video"
+
+  links = (doc/"a").select{|e| e.text =~ /high-res video/}
+  
+  if links.any?
+    link = "http://www.ted.com#{links.first['href']}"
+  else
+    raise "Couldn't find any links high-res links"
+  end
+
+  #so.addVariable("fd","Feb 1998"); // filmdate
+  #so.addVariable("pd","Nov 2008"); // pubdate
+
+  if (doc/"script").text =~ /so\.addVariable\("fd","\w+ (\d+)"\)/
+    year = $1
+  else
+    raise "Couldn't find filmdate"
+  end
+
+  #<h1><a class="grey" href="/index.php/talks">Talks</a> <span>
+	#	Brenda Laurel: Why didn't girls play videogames?</span></h1>
+  if doc.search("h1 span").text.strip =~ /(.+): (.+)/
+    name = $1
+    title = $2
+  else
+    raise "Couldn't find a title"
+  end
+  
+  # The result...
+  {:name=>name, :title=>title, :url=>link, :year=>year}
+  
+end
+
+def info_to_filename(info)
+  title = info[:title].gsub('?','').tr(':"', ",'")
+  "#{info[:name]} - #{title} (TED#{info[:year]}).mp4"
+end
+
+def save_file(url, filename)
+  system('wget', '-c', url, '-O', filename)
+end
+
+def help
+  puts "usage: ted <url>"
+  exit 1
+end
+
+if $0 == __FILE__
+  help unless ARGV.size == 1
+  info = get_video_link(ARGV[0])
+  p info
+  filename = info_to_filename(info)
+  puts "Saving to: #{filename}..."
+  puts
+  save_file(info[:url], filename)
+end
