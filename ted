@@ -53,16 +53,22 @@ def save_file(url, filename)
 end
 
 def help
-  puts "usage: ted <url>"
+  puts "usage: ted <urls>"
   exit 1
 end
 
 if $0 == __FILE__
-  help unless ARGV.size == 1
-  info = get_video_link(ARGV[0])
-  p info
-  filename = info_to_filename(info)
-  puts "Saving to: #{filename}..."
-  puts
-  save_file(info[:url], filename)
+  help unless ARGV.size > 0
+
+  for url in ARGV
+    info = get_video_link(url)
+    p info
+
+    filename = info_to_filename(info)
+
+    puts "Saving to: #{filename}..."
+    puts
+
+    save_file(info[:url], filename)
+  end
 end

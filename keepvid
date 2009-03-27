@@ -54,7 +54,7 @@ def download(url, dest)
 end
 
 def fix_filename(filename)
-  filename.tr('":','\',')
+  filename.tr(%{":/},%{',,})
 end
 
 
