@@ -5,8 +5,10 @@ require 'nokogiri'
 require 'open-uri'
 
 
-def get_video_link(url)
+def get_video_info(url)
   doc = Nokogiri::HTML(open(url))
+
+  ## Get the high-res video link
   
   # "Video to desktop (Zipped MP4)"
   # "Video to iTunes (MP4)"
@@ -20,6 +22,9 @@ def get_video_link(url)
     raise "Couldn't find any links high-res links"
   end
 
+
+  ## Get the year
+
   #so.addVariable("fd","Feb 1998"); // filmdate
   #so.addVariable("pd","Nov 2008"); // pubdate
 
@@ -29,8 +34,11 @@ def get_video_link(url)
     raise "Couldn't find filmdate"
   end
 
+  ## Get the title and presenter
+
   #<h1><a class="grey" href="/index.php/talks">Talks</a> <span>
 	#	Brenda Laurel: Why didn't girls play videogames?</span></h1>
+
   if doc.search("h1 span").text.strip =~ /(.+): (.+)/
     name = $1
     title = $2
@@ -38,7 +46,9 @@ def get_video_link(url)
     raise "Couldn't find a title"
   end
   
-  # The result...
+
+  ## Return the info
+
   {:name=>name, :title=>title, :url=>link, :year=>year}
   
 end
@@ -61,7 +71,7 @@ if $0 == __FILE__
   help unless ARGV.size > 0
 
   for url in ARGV
-    info = get_video_link(url)
+    info = get_video_info(url)
     p info
 
     filename = info_to_filename(info)
