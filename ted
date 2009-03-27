@@ -53,19 +53,23 @@ def get_video_info(url)
   
 end
 
+
 def info_to_filename(info)
   title = info[:title].gsub('?','').tr(':"', ",'")
   "#{info[:name]} - #{title} (TED#{info[:year]}).mp4"
 end
 
+
 def save_file(url, filename)
   system('wget', '-c', url, '-O', filename)
 end
+
 
 def help
   puts "usage: ted <urls>"
   exit 1
 end
+
 
 if $0 == __FILE__
   help unless ARGV.size > 0
