@@ -9,12 +9,10 @@
 # that were inserted to wrap the lines of text.)
 #
 
-ENDINGS = %w(. ! ?)
 
-doc = []
-para = []
+DEFAULT_WIDTH = 80
 
-def unwrap(lines, width=80)
+def unwrap(lines, width)
   i = 0
   last = lines.size-1
   
@@ -30,7 +28,7 @@ def unwrap(lines, width=80)
       next_words = lines[i+1].split(/\s+/)
       word_following_wrap = next_words[0]
       
-      unless word_following_wrap and (line.size + word_following_wrap.size) > 80
+      unless word_following_wrap and (line.size + word_following_wrap.size) >= width
         # new para!
         doc << para.join(' ')
         para = []
@@ -63,10 +61,10 @@ end
 
 def usage
   puts "Usage:"
-  puts "    unwrap [-w 80] <input_file.txt> [output_file.txt]"
+  puts "    unwrap [-w #{DEFAULT_WIDTH}] <input_file.txt> [output_file.txt]"
   puts
   puts "Options:"
-  puts "    -w [width]  = Width of wrapped lines (defaults to 80 characters, optional)"
+  puts "    -w [width]  = Width of wrapped lines (defaults to #{DEFAULT_WIDTH} characters, optional)"
   puts "    in.txt      = The file to read"
   puts "    out.txt     = The file to write (defaults to standard output, optional)"
   puts
@@ -75,7 +73,7 @@ end
 
 if $0 == __FILE__
 
-  line_width = 80
+  line_width = DEFAULT_WIDTH
 
   help if ARGV.size < 1
   
@@ -110,8 +108,8 @@ if $0 == __FILE__
   
   puts " (#{lines.size} lines)" if outfile
   
-  print "+ Unwrapping lines..." if outfile
-  doc = unwrap(lines)
+  print "+ Unwrapping lines at #{line_width} chars..." if outfile
+  doc = unwrap(lines, line_width)
   
   puts " (found #{doc.size} paragraphs)" if outfile
   
