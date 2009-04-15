@@ -90,8 +90,8 @@ if $0 == __FILE__
   
   infile = ARGV.shift
   
-  if not File.exists? infile
-    STDERR.puts "ERROR: Cannot find file: #{infile}"
+  unless infile and File.exists? infile
+    STDERR.puts "ERROR: Cannot find file: #{infile.inspect}"
     exit 2
   end
   
