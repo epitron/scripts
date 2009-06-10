@@ -39,9 +39,8 @@ def get_video_info(url)
   #<h1><a class="grey" href="/index.php/talks">Talks</a> <span>
 	#	Brenda Laurel: Why didn't girls play videogames?</span></h1>
 
-  if doc.search("h1 span").text.strip =~ /(.+) on (.+)/
-    name = $1
-    title = $2
+  if doc.search("h1 span").text.strip =~ /(.{10,})/
+    title = $1
   else
     raise "Couldn't find a title"
   end
@@ -49,14 +48,14 @@ def get_video_info(url)
 
   ## Return the info
 
-  {:name=>name, :title=>title, :url=>link, :year=>year}
+  {:title=>title, :url=>link, :year=>year}
   
 end
 
 
 def info_to_filename(info)
   title = info[:title].gsub('?','').tr(':"', ",'")
-  "#{info[:name]} - #{title} (TED#{info[:year]}).mp4"
+  "#{title} (TED#{info[:year]}).mp4"
 end
 
 
