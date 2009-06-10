@@ -70,7 +70,7 @@ end
 ###############################################################
 # main
 
-def main(youtube_url)
+def grab(youtube_url)
   title = get_video_title(youtube_url)
   puts "title: #{title}"
   
@@ -83,10 +83,13 @@ end
 
 ##########################
 if __FILE__ == $0
-  if ARGV.size != 1
+  if ARGV.size == 0
     help
   else
-    main(ARGV[0])
+    puts "Downloading #{ARGV.size} urls..."
+    for url in ARGV
+      grab(url)
+    end
   end
 end
 ##########################

@@ -106,7 +106,7 @@ class URLGrabber(urllib.FancyURLopener):
         if bytes > filesize:
             bytes = filesize
     
-        percent = (bytes*100.0)/filesize
+        percent = (bytes*100.0)//filesize
         now = time.time()
         if now - self.starttime == 0.0:
             now += 0.0001

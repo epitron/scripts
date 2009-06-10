@@ -1,1 +1,1 @@
-dpkg -l|grep -i "$*"
+dpkg -l|grep -i "$*"|less -S

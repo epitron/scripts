@@ -28,7 +28,7 @@ def get_video_info(url)
   #so.addVariable("fd","Feb 1998"); // filmdate
   #so.addVariable("pd","Nov 2008"); // pubdate
 
-  if (doc/"script").text =~ /so\.addVariable\("fd","\w+ (\d+)"\)/
+  if (doc/"script").text =~ /fd:"\w{3,4} (\d{4})",/
     year = $1
   else
     raise "Couldn't find filmdate"
@@ -39,7 +39,7 @@ def get_video_info(url)
   #<h1><a class="grey" href="/index.php/talks">Talks</a> <span>
 	#	Brenda Laurel: Why didn't girls play videogames?</span></h1>
 
-  if doc.search("h1 span").text.strip =~ /(.+): (.+)/
+  if doc.search("h1 span").text.strip =~ /(.+) on (.+)/
     name = $1
     title = $2
   else
