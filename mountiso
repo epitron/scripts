@@ -1,1 +1,6 @@
-mount -t iso9660 -o loop $@
+if [ `whoami` == "root" ]
+then
+  mount -t iso9660 -o loop $@
+else
+  sudo mount -t iso9660 -o loop $@
+fi
