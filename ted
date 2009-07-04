@@ -60,7 +60,9 @@ end
 
 
 def save_file(url, filename)
-  system('wget', '-c', url, '-O', filename)
+  #system('wget', '-c', url, '-O', filename)
+  system('curl', '-C', '-', url, '-o', filename)
+  puts
 end
 
 
