@@ -50,7 +50,8 @@ end
 # step 3: download
 
 def download(url, dest)
-  system("wget", "-c", url, "-O", fix_filename(dest))
+  #system("wget", "-c", url, "-O", fix_filename(dest))
+  system('curl', '-L', '-C', '-', url, '-o', fix_filename(dest))
 end
 
 def fix_filename(filename)
