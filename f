@@ -56,6 +56,7 @@ case ARGV.size
     end
   else
     query = ARGV.shift
+    query = '' if query == '-a'
     roots = ARGV
 end
 
@@ -108,6 +109,7 @@ Usage:
                                containing <search string>
   f <search string> <paths> => recursively list all files in <paths>
                                containing <search string>
+  f -a <paths>              => show all files in paths
 
 (Note: To colorize the search results, install the "colorize" gem.)
 
