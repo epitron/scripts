@@ -1,0 +1,114 @@
+#!/usr/bin/ruby
+
+DEFAULT_CHUNK_SIZE = 4*60
+
+def secs2time(secs)
+  hours, secs = secs.divmod(3600)   
+  mins, secs = secs.divmod(60)
+  
+  "%0.2d:%0.2d:%0.2d" % [hours,mins,secs]
+end  
+
+def times(interval, total_secs)
+  fudge = 0
+  count = (total_secs / interval) + fudge
+  ts = (1..count).map do |x|
+    secs = x * interval
+    secs2time(secs)
+  end
+end
+
+def time2secs(time)
+  if time =~ /0*(\d+):(\d\d):(\d\d).(\d\d)/
+    h,m,s,ss = [$1, $2, $3, $4].map{|x| x.to_i}
+    result = (h*3600) + (m*60) + s + (ss > 0 ? 1 : 0)
+  end
+  return result
+end
+
+def length(filename)
+  if `mpgtx -i "#{filename}" 2>&1` =~ /Estimated Duration: (.+)/ #0*(\d+):(\d\d):(\d\d).(\d\d)s/
+    return time2secs($1)
+  end
+end
+
+def help
+  puts DATA.read #"usage: mp3chunks filename [chunk size in seconds]"
+  exit 1
+end
+
+def binary_in_path?(binary_name)
+  ENV['PATH'].split(":").any? { |p| File.executable?(File.join(p, binary_name)) }
+end
+
+
+if $0 == __FILE__
+  
+  unless binary_in_path? 'mpgtx'
+    puts "*** ERROR! mpgtx not found in path. (apt-get install mpgtx) ***"
+    puts
+    help
+  end
+  
+  filename = (ARGV[0] && File.exists?(ARGV[0]) && ARGV[0]) || help
+  interval = ARGV[1] || DEFAULT_CHUNK_SIZE
+  
+  puts "* Filename: #{filename}" 
+  puts "* Chunk size: #{secs2time(interval)}"
+
+  
+  #h,m,s,ss = length(filename)
+  #total_secs = (h*3600) + (m*60) + s + (ss > 0 ? 1 : 0)  
+  total_secs = length(filename)
+
+  puts "* Length: #{secs2time total_secs}" 
+
+  
+  timearray = times(interval, total_secs)
+  timestring = "{#{timearray.join '-'}}"
+  
+  puts "* Boundaries:"
+  puts "  |_ #{timearray.join(', ')}" 
+  puts
+
+  
+  puts "- Splitting... ------------------------------------------------------------"  
+  system("mpgtx", "-s", "-b", "mp3chunk", filename, timestring)
+  
+  basename = File.basename(filename, ".mp3")
+  outdir = "#{basename}-chunked"
+
+  puts
+  puts "---------------------------------------------------------------------------"  
+  puts
+  
+  
+  puts "* Output dir: #{outdir}/"
+  
+  Dir.mkdir(outdir)
+  chunks = Dir["mp3chunk*.mp3"]
+  
+  puts "* Moving files..."
+  for name in chunks
+    if name =~ /mp3chunk-(\d+)\.mp3/
+      newname = "#{$1}. #{filename}"
+      puts "  |_ #{name} -> #{File.join outdir, newname}"
+      File.rename( name, File.join(outdir, newname) ) 
+    end
+  end
+  
+end
+
+__END__
+MP3Chunk v0.11 by Chris Gahan (chris@ill-logic.com)
+
+Purpose:
+  Split MP3 files into chunks. (NOTE: "mpgtx" must be installed)
+
+Usage:
+  mp3chunk <filename> [chunk size in seconds (defaults to 4 minutes)]
+
+Examples:
+  mp3chunk hugefile.mp3
+  mp3chunk hugefile.mp3 120
+
