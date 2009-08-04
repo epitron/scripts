@@ -1,1 +1,2 @@
+#!/bin/bash
 zgrep "Accepted password for" /var/log/auth.log*|less -S

@@ -1,0 +1,3 @@
+autoload zsh-newuser-install
+zsh-newuser-install -f
+

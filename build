@@ -1,3 +1,4 @@
+#!/bin/bash
 unset CC CFLAGS CXX CXXFLAGS MAKE PARAMS
 
 CONFIGFILE=buildconfig

@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ `whoami` == "root" ]
 then
   mount -t iso9660 -o loop $@

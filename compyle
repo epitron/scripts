@@ -1,3 +1,4 @@
+#!/bin/bash
 compile='import py_compile, sys; py_compile.compile(sys.argv[1])'
 
 if [ "$1" == "-r" ]

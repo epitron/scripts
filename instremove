@@ -1,1 +1,2 @@
+#!/bin/bash
 instmon --remove-files `instl | grep -i $1` --remove-log

@@ -1,3 +1,4 @@
+#!/bin/bash
 # notes:
 # \[ -- begin sequence of nonprinting characters
 # \] -- end " " " " " " " " " " " " " " " " " " 

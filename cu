@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ -d .svn ]
 then
         echo "=== SVN Updating... ==="

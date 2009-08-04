@@ -1,1 +1,2 @@
+#!/bin/bash
 diff -u -N -r $1 $2

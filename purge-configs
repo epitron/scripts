@@ -1,3 +1,4 @@
+#!/bin/bash
 # purge the configs of all deleted debian packages
 # (currently doesn't work :D)
 

@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ "$1" == "" ]
 then
  echo "usage: apt-key-get <key-ID>"

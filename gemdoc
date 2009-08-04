@@ -1,3 +1,4 @@
+#!/bin/bash
 gem_server &
 o http://localhost:8808
 

@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ -f setup.py ]
 then
   echo "Installing Python script (setup.py install)..."

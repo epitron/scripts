@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ "$TERM" == "xterm" ]; then
     export PROMPT_COMMAND='echo -ne "\033]30;`basename "$PWD"`\007"'
 fi

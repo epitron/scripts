@@ -1,1 +1,2 @@
+#!/bin/bash
 passenger-memory-stats $*

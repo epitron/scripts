@@ -1,1 +1,2 @@
+#!/bin/bash
 instmon -l `instl | grep -i $1 2>/dev/null`

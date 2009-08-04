@@ -1,1 +1,2 @@
+#!/bin/bash
 trueprint -x "" -y "" -I -J -T 2 -u -G 1 -i --n -C -r $*

@@ -1,3 +1,4 @@
+#!/bin/bash
 FONT=vga
 #xterm -ls -bg black -fg grey -sb -rightbar -si -sk -sl 700 -fn '-misc-fixed-medium-r-normal-*-*-130-*-*-c-*-iso8859-9'
 if [ "$*" == "" ]

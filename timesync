@@ -1,3 +1,4 @@
+#!/bin/bash
 echo Synching clock ...
 SERVER=us.pool.ntp.org
 ntpdate time.nist.gov

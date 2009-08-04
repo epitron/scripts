@@ -1,1 +1,2 @@
+#!/bin/bash
 ps afx -eo "%p %u %t %a" | grep -si "$*" | grep -v "grep -si"
