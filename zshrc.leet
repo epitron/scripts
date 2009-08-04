@@ -1,0 +1,42 @@
+## colors
+
+export CLICOLOR=1
+#export TERM=xterm-color
+eval `dircolors -b`
+#export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
+
+## if CLICOLOR doesn't work, this can hard-wire color-ls
+if [ "$TERM" != "dumb" ]; then
+    #export LS_OPTIONS='--color=auto'
+    alias ls="ls --color=auto"
+fi
+
+## aliases
+
+alias ll='ls -l'
+alias l='ls -alF'
+alias la='ls -la'
+alias ll='ls -l'
+
+alias ..='cd ..'
+alias ...='cd ../..'
+
+alias nano="nano -w"
+alias pico="nano"
+alias mv="mv -v"
+alias cp="cp -v"
+alias less='less -X -F -i'
+alias diff='diff -u'
+alias whois='whois -H'
+alias up='cd ..'
+alias back='cd "$OLDPWD"'
+alias ssh='ssh-termtitle'
+
+alias md='mkdir -p'
+alias rehash='hash -r'
+alias df='df -h'
+
+
+# uberprompt
+. ~/scripts/zsh-prompt
+
