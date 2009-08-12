@@ -1,4 +1,3 @@
-#!/bin/bash
 # TODO: use the last parameter (or match the parameter that has an '@' in it)
 HOSTNAME="$*"
 
