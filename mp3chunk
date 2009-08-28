@@ -19,16 +19,26 @@ def times(interval, total_secs)
 end
 
 def time2secs(time)
-  if time =~ /0*(\d+):(\d\d):(\d\d).(\d\d)/
+  p time
+  if time =~ /0*(\d+):?(\d\d):(\d\d).(\d\d)/
     h,m,s,ss = [$1, $2, $3, $4].map{|x| x.to_i}
-    result = (h*3600) + (m*60) + s + (ss > 0 ? 1 : 0)
+  elsif time =~ /(\d\d):(\d\d).(\d\d)/
+    h,m,s,ss = [0, $1, $2, $3].map{|x| x.to_i}
+  else
+    return nil
   end
+  result = (h*3600) + (m*60) + s + (ss > 0 ? 1 : 0)
   return result
 end
 
 def length(filename)
-  if `mpgtx -i "#{filename}" 2>&1` =~ /Estimated Duration: (.+)/ #0*(\d+):(\d\d):(\d\d).(\d\d)s/
+  result = `mpgtx -i "#{filename}" 2>&1` 
+  if result =~ /Estimated Duration: (.+)/ 
     return time2secs($1)
+  else
+    puts "* Couldn't get time from mpgtx. Output:"
+    puts result
+    exit 1
   end
 end
 
@@ -85,7 +95,7 @@ if $0 == __FILE__
   
   puts "* Output dir: #{outdir}/"
   
-  Dir.mkdir(outdir)
+  Dir.mkdir(outdir) rescue Errno::EEXIST  # don't abort if dir exists already
   chunks = Dir["mp3chunk*.mp3"]
   
   puts "* Moving files..."
