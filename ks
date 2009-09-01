@@ -22,7 +22,7 @@ else
 
       if [[ $2 == "" ]]
       then
-         echo "You need more parameters bitch!"
+         echo "You need more parameters!"
          exit
       else
          KILLSIG=$1
