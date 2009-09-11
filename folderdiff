@@ -1,0 +1,219 @@
+#!/usr/bin/ruby
+
+#############################################################################
+
+%w[rubygems colorize set].each { |r| require r }
+
+#############################################################################
+
+class Result
+
+  include Comparable
+
+  attr_accessor :root, :path, :path_without_root, :message
+  
+  def initialize(root, path, message=nil)
+    root = root + "/" unless root[-1..-1] == "/"
+    @root = root
+    @path = path
+    @path_without_root = path.sub(/^#{Regexp.escape root}/, '')
+    @message = message
+  end
+  
+  def to_s
+    "<white>#{path_without_root}</white>#{" <light_blue>(<light_cyan>#{message}</light_cyan>)</light_blue>" if message}".colorize
+  end
+  
+  def <=>(other)
+    path_without_root <=> other.path_without_root
+  end
+  
+end
+
+#############################################################################
+
+class Folder
+  
+  attr_accessor(
+    :root, 
+    :paths, 
+    :size_to_path, 
+    :name_to_path, 
+    :path_to_size
+  )
+  
+  def initialize(root)
+    @root = root
+    puts "<light_yellow>* Scanning <light_white>#{root}</light_white>...</light_yellow>".colorize
+    
+    puts "  <default>|_ <light_blue>checking for available disk space...".colorize
+    @paths = Dir[ File.join(root, "**/*") ].select {|path| not File.directory? path }
+
+    @size_to_path = {}
+    @name_to_path = {}
+    @path_to_size = {}
+    
+    puts "  <default>|_ <light_cyan>reticulating splines...".colorize
+    @paths.each do |path|
+      dir, filename = File.split path
+      size = File.size path
+      @size_to_path[size] = path
+      @name_to_path[filename] = path
+      @path_to_size[path] = size
+    end
+    
+    puts "  |_ done! found <light_white>#{@paths.size}</light_white> files.".colorize
+    puts
+  end
+
+  #def deroot_paths(paths)
+  #  expr = /^#{Regexp.escape root}/
+  #  paths.map { |path| path.sub(expr, '') }
+  #end
+  
+  #
+  # Compare one folder to another.
+  #
+  # Splits "@paths" into 2 arrays: common files, and files that are unique to this folder.
+  #
+  def compare_to(other, skip=[])
+    common = []
+    unique = []
+    #p ["skip:", skip.size]
+    #p ["first few:", skip[0..10]]
+    
+    skip = Set.new(skip.map{|p| p.path})
+    
+    name_to_path.each do |name, path|
+      size = path_to_size[path]
+
+      sizematch = other.size_to_path[size]
+      namematch = other.name_to_path[name]    
+
+      next if skip.include? namematch or skip.include? sizematch
+
+      r = Result.new(root, path)
+
+      if sizematch and namematch
+
+        common << r
+
+      elsif namematch
+
+        osize = other.path_to_size[namematch]
+        diff = (size - osize).abs
+        r.message = "#{diff} bytes #{size > osize ? "<light_green>larger</light_green>" : "<light_red>smaller</light_red>"}"
+        unique << r
+
+      elsif sizematch
+
+        #p ["skip?", sizematch, skip.include?(sizematch)]
+        puts "<yellow>* Size matches, doing statistical content comparison:\n  <light_cyan>#{path}\n  <light_white>#{sizematch}".colorize
+
+        if statistical_comparison(path, sizematch)
+          oname = File.split(sizematch)[1]
+          r.message = "other name: #{oname}"
+          common << r
+        else
+          unique << r
+        end
+
+        puts
+        
+      else
+
+        common << r
+
+      end
+    end
+    
+    [common, unique]
+  end
+
+  def statistical_comparison(a, b, sample_percent = 0.001)
+    sizea = File.size a
+    sizeb = File.size b
+    raise "Files must be the same size" unless sizea == sizeb
+    raise "Files must exist" unless [a,b].all? { |f| File.exists? f }
+    
+    size                = sizea
+    block_size          = 2**14  # 16k blocks (average filesystem block size)
+    bytes               = (sizea * sample_percent).to_i
+    cmp_blocks          = bytes / block_size
+    total_blocks        = size / block_size
+    random_blocks       = ( [0] + (1...cmp_blocks).map{ (total_blocks*rand).to_i } + [[0, total_blocks-1].max] ).uniq.sort
+    test_positions      = random_blocks.map{|block| block * block_size }
+
+    #local_variables.map{|v| "#{v} = #{eval(v).inspect}"}.each{|v| puts v}
+    
+    fa, fb = open(a), open(b)
+    result = test_positions.all? do |pos|
+      fa.seek(pos); fb.seek(pos)
+      fa.read(block_size) == fb.read(block_size)
+    end
+    fa.close; fb.close
+
+    result
+  end
+  
+end
+
+#############################################################################
+
+def compare_folders(a, b)
+
+  # Like a Venn diagram: ( unique_to_a ( common ) unique_to_b )
+  puts "* Comparing..."
+  common_a, unique_to_a = a.compare_to(b)
+  common_b, unique_to_b = b.compare_to(a, common_a)
+  common = common_a | common_b
+
+  puts
+  [unique_to_a, common, unique_to_b]
+end
+
+#############################################################################
+
+
+#############################################################################
+
+def title(msg)
+  puts ("-"*50).light_blue
+  puts "<light_cyan>#{msg}".colorize
+  puts ("-"*50).blue
+end
+
+def display_unique(folder, unique)
+  title "Only in <light_yellow>#{folder.root}</light_yellow> <cyan>(<light_cyan>#{unique.size}</light_cyan> <light_blue>files</light_blue>)</cyan>:"
+  display_results unique
+  puts  
+end
+
+def display_common(common)
+  title "Common to both <cyan>(<light_cyan>#{common.size}</light_cyan> <light_blue>files</light_blue>)</cyan>:"
+  display_results common
+  puts  
+end
+
+def display_results(results)
+  results.sort.each do |r|
+    puts r
+  end
+end
+
+#############################################################################
+
+if $0 == __FILE__
+  raise "Must pass 2 folders as parameters to compare" unless ARGV.size == 2
+  raise "Both folders must exist" unless ARGV.any? and ARGV.all?{|f| File.exists? f}
+
+  a,b = ARGV.map{|path| Folder.new path }
+
+  unique_to_a, common, unique_to_b = compare_folders(a, b)
+  
+  display_common(common)
+  display_unique(a, unique_to_a)
+  display_unique(b, unique_to_b)
+end
+
+#############################################################################
