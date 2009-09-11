@@ -65,9 +65,22 @@ def usage
   puts
   puts "Options:"
   puts "    -w [width]  = Width of wrapped lines (defaults to #{DEFAULT_WIDTH} characters, optional)"
+  puts "    -c          = Calculate line lengths"
   puts "    in.txt      = The file to read"
   puts "    out.txt     = The file to write (defaults to standard output, optional)"
   puts
+end
+
+def calculate_line_lengths(filename)
+  puts "Statistics:"
+  puts "----------------------"
+  lengths = open(filename).map{|line| line.strip.size}
+  n = lengths.size
+  sum = lengths.inject(0){|sum,len| sum + len}
+  puts "  mean: #{sum.to_f / n}"
+  puts "median: #{lengths.sort[n / 2]}"
+  puts "   min: #{lengths.min}"
+  puts "   max: #{lengths.max}"
 end
 
 
@@ -76,6 +89,13 @@ if $0 == __FILE__
   line_width = DEFAULT_WIDTH
 
   help if ARGV.size < 1
+
+  if ARGV.first == "-c"
+    ARGV.shift
+    infile = ARGV.shift
+    calculate_line_lengths(infile)
+    exit
+  end
   
   if ARGV.first == "-w"
     ARGV.shift

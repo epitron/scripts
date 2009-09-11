@@ -79,8 +79,8 @@ def breadth_first_scan(root, &block)
   begin
     children.each { |child| yield child } # breadth
     children.each { |child| breadth_first_scan(child, &block) if child.directory? }
-  rescue Errno::EACCES => e
-    STDERR.puts("Could not open #{e}")
+  rescue Errno::EACCES, Errno::EPERM => e
+    STDERR.puts("Error: #{e}".red)
   end
 end
 
