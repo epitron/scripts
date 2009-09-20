@@ -15,6 +15,7 @@
 
 #############################################################################
 
+MY_VERSION = "0.2"
 OPTIONS = OpenStruct.new
 
 class Result
@@ -245,7 +246,7 @@ def parse_options!
   ARGV.push("--help") if ARGV.empty?
   
   OptionParser.new do |opts|
-    opts.banner = "Usage: folderdiff [options] <folder a> <folder b"
+    opts.banner = "Usage: folderdiff [options] <folder a> <folder b>"
     opts.separator " "
     opts.separator "Specific options:"
     
@@ -257,6 +258,12 @@ def parse_options!
       OPTIONS.verbose = true
     end
   
+    opts.on("", "--version", "Version information") do |opt|
+      puts "folderdiff v#{MY_VERSION}"
+      puts
+      exit
+    end
+
     # No argument, shows at tail.  This will print an options summary.
     # Try it and see!
     opts.on_tail("-h", "--help", "Show this message") do
@@ -264,15 +271,6 @@ def parse_options!
       puts
       exit
     end
-
-=begin
-    opts.on("-v", "--version", "Version information") do |opt|
-      versionfile = File.join(File.dirname(File.expand_path(__FILE__)), "..", "VERSION")
-      versionstring = open(versionfile).read
-      puts "delicious-cli v#{versionstring}"
-      puts
-    end
-=end
 
   end.parse!
 end
