@@ -2,15 +2,31 @@
 
 #############################################################################
 
-%w[rubygems colorize set].each { |r| require r }
+%w[
+  rubygems 
+
+  colorize 
+  set 
+  ostruct
+
+  optparse
+  optparse/time
+].each { |r| require r }
 
 #############################################################################
+
+OPTIONS = OpenStruct.new
 
 class Result
 
   include Comparable
 
-  attr_accessor :root, :path, :path_without_root, :message
+  attr_accessor(
+    :root, 
+    :path, 
+    :path_without_root, 
+    :message
+  )
   
   def initialize(root, path, message=nil)
     root = root + "/" unless root[-1..-1] == "/"
@@ -22,6 +38,17 @@ class Result
   
   def to_s
     "<white>#{path_without_root}</white>#{" <light_blue>(<light_cyan>#{message}</light_cyan>)</light_blue>" if message}".colorize
+  end
+
+
+  ## Comparable overrides
+  
+  def hash
+    path_without_root.hash
+  end
+  
+  def eql?(other)
+    path_without_root.eql?(other.path_without_root)
   end
   
   def <=>(other)
@@ -87,42 +114,46 @@ class Folder
     name_to_path.each do |name, path|
       size = path_to_size[path]
 
-      sizematch = other.size_to_path[size]
-      namematch = other.name_to_path[name]    
+      opath_samesize = other.size_to_path[size]
+      opath_samename = other.name_to_path[name]    
 
-      next if skip.include? namematch or skip.include? sizematch
+      next if skip.include? opath_samename or skip.include? opath_samesize
 
       r = Result.new(root, path)
 
-      if sizematch and namematch
+      if opath_samesize and opath_samename
+        # same size, same name
 
         common << r
 
-      elsif namematch
-
-        osize = other.path_to_size[namematch]
+      elsif opath_samename
+        # same name, different content
+        osize = other.path_to_size[opath_samename]
         diff = (size - osize).abs
         r.message = "#{diff} bytes #{size > osize ? "<light_green>larger</light_green>" : "<light_red>smaller</light_red>"}"
         unique << r
 
-      elsif sizematch
-
+      elsif opath_samesize
+        # same size, different name
+        
         #p ["skip?", sizematch, skip.include?(sizematch)]
-        puts "<yellow>* Size matches, doing statistical content comparison:\n  <light_cyan>#{path}\n  <light_white>#{sizematch}".colorize
+        puts "<yellow>* Size matches, comparing content:\n  <light_cyan>#{path}\n  <light_white>#{opath_samesize}".colorize if OPTIONS.verbose
 
-        if statistical_comparison(path, sizematch)
-          oname = File.split(sizematch)[1]
+        if content_probably_matches?(path, opath_samesize)
+          # same content (probably)
+          oname = File.split(opath_samesize).last
           r.message = "other name: #{oname}"
           common << r
         else
+          # different content
           unique << r
         end
 
-        puts
+        puts if OPTIONS.verbose
         
       else
 
-        common << r
+        unique << r
 
       end
     end
@@ -130,40 +161,50 @@ class Folder
     [common, unique]
   end
 
-  def statistical_comparison(a, b, sample_percent = 0.001)
-    sizea = File.size a
-    sizeb = File.size b
-    raise "Files must be the same size" unless sizea == sizeb
-    raise "Files must exist" unless [a,b].all? { |f| File.exists? f }
-    
-    size                = sizea
-    block_size          = 2**14  # 16k blocks (average filesystem block size)
-    bytes               = (sizea * sample_percent).to_i
-    cmp_blocks          = bytes / block_size
-    total_blocks        = size / block_size
-    random_blocks       = ( [0] + (1...cmp_blocks).map{ (total_blocks*rand).to_i } + [[0, total_blocks-1].max] ).uniq.sort
-    test_positions      = random_blocks.map{|block| block * block_size }
-
-    #local_variables.map{|v| "#{v} = #{eval(v).inspect}"}.each{|v| puts v}
-    
-    fa, fb = open(a), open(b)
-    result = test_positions.all? do |pos|
-      fa.seek(pos); fb.seek(pos)
-      fa.read(block_size) == fb.read(block_size)
-    end
-    fa.close; fb.close
-
-    result
-  end
-  
 end
+
 
 #############################################################################
 
+
+def content_probably_matches?(a, b, sample_percent = 0.001)
+  sizea = File.size a
+  sizeb = File.size b
+  raise "Files must be the same size" unless sizea == sizeb
+  raise "Files must exist" unless [a,b].all? { |f| File.exists? f }
+  
+  size                = sizea
+  block_size          = 2**14  # 16k blocks (average filesystem block size)
+  bytes               = (sizea * sample_percent).to_i
+  cmp_blocks          = bytes / block_size
+  total_blocks        = size / block_size
+  random_blocks       = ( [0] + (1...cmp_blocks).map{ (total_blocks*rand).to_i } + [[0, total_blocks-1].max] ).uniq.sort
+  test_positions      = random_blocks.map{|block| block * block_size }
+
+  #local_variables.map{|v| "#{v} = #{eval(v).inspect}"}.each{|v| puts v}
+  
+  fa, fb = open(a), open(b)
+  result = test_positions.all? do |pos|
+    fa.seek(pos); fb.seek(pos)
+    fa.read(block_size) == fb.read(block_size)
+  end
+  fa.close; fb.close
+
+  result
+end
+
+
+#############################################################################
+#
+# Returns: [unique_to_a, common, unique_to_b]
+#
+# Like a Venn diagram: ( unique_to_a ( common ) unique_to_b )
+#
 def compare_folders(a, b)
 
-  # Like a Venn diagram: ( unique_to_a ( common ) unique_to_b )
-  puts "* Comparing..."
+  puts "* Comparing contents...".light_yellow
+  puts if OPTIONS.verbose
+  
   common_a, unique_to_a = a.compare_to(b)
   common_b, unique_to_b = b.compare_to(a, common_a)
   common = common_a | common_b
@@ -171,9 +212,6 @@ def compare_folders(a, b)
   puts
   [unique_to_a, common, unique_to_b]
 end
-
-#############################################################################
-
 
 #############################################################################
 
@@ -203,7 +241,47 @@ end
 
 #############################################################################
 
-if $0 == __FILE__
+def parse_options!  
+  ARGV.push("--help") if ARGV.empty?
+  
+  OptionParser.new do |opts|
+    opts.banner = "Usage: folderdiff [options] <folder a> <folder b"
+    opts.separator " "
+    opts.separator "Specific options:"
+    
+    opts.on("-c", "--common", "Show common files") do |opt|
+      OPTIONS.common = true
+    end
+  
+    opts.on("-v", "--verbose", "Verbose mode") do |opt|
+      OPTIONS.verbose = true
+    end
+  
+    # No argument, shows at tail.  This will print an options summary.
+    # Try it and see!
+    opts.on_tail("-h", "--help", "Show this message") do
+      puts opts
+      puts
+      exit
+    end
+
+=begin
+    opts.on("-v", "--version", "Version information") do |opt|
+      versionfile = File.join(File.dirname(File.expand_path(__FILE__)), "..", "VERSION")
+      versionstring = open(versionfile).read
+      puts "delicious-cli v#{versionstring}"
+      puts
+    end
+=end
+
+  end.parse!
+end
+  
+#############################################################################
+
+def main
+  parse_options!
+
   raise "Must pass 2 folders as parameters to compare" unless ARGV.size == 2
   raise "Both folders must exist" unless ARGV.any? and ARGV.all?{|f| File.exists? f}
 
@@ -211,9 +289,15 @@ if $0 == __FILE__
 
   unique_to_a, common, unique_to_b = compare_folders(a, b)
   
-  display_common(common)
+  display_common(common) if OPTIONS.common
   display_unique(a, unique_to_a)
   display_unique(b, unique_to_b)
+end
+
+#############################################################################
+
+if $0 == __FILE__
+  main
 end
 
 #############################################################################
