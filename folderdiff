@@ -1,11 +1,12 @@
 #!/usr/bin/ruby
 
 #############################################################################
+## REQUIREMENTS
 
 %w[
   rubygems 
-
   colorize 
+
   set 
   ostruct
 
@@ -15,8 +16,15 @@
 
 #############################################################################
 
+
+#############################################################################
+## GLOBALS
 MY_VERSION = "0.2"
 OPTIONS = OpenStruct.new
+#############################################################################
+
+
+#############################################################################
 
 class Result
 
@@ -60,6 +68,9 @@ end
 
 #############################################################################
 
+
+#############################################################################
+
 class Folder
   
   attr_accessor(
@@ -94,15 +105,10 @@ class Folder
     puts
   end
 
-  #def deroot_paths(paths)
-  #  expr = /^#{Regexp.escape root}/
-  #  paths.map { |path| path.sub(expr, '') }
-  #end
-  
   #
   # Compare one folder to another.
   #
-  # Splits "@paths" into 2 arrays: common files, and files that are unique to this folder.
+  # Returns 2 arrays: "common" files, and files "unique" to this folder.
   #
   def compare_to(other, skip=[])
     common = []
@@ -124,7 +130,6 @@ class Folder
 
       if opath_samesize and opath_samename
         # same size, same name
-
         common << r
 
       elsif opath_samename
@@ -136,9 +141,9 @@ class Folder
 
       elsif opath_samesize
         # same size, different name
-        
-        #p ["skip?", sizematch, skip.include?(sizematch)]
-        puts "<yellow>* Size matches, comparing content:\n  <light_cyan>#{path}\n  <light_white>#{opath_samesize}".colorize if OPTIONS.verbose
+        if OPTIONS.verbose
+          puts "<yellow>* Size matches, comparing content:\n  <light_cyan>#{path}\n  <light_white>#{opath_samesize}".colorize
+        end
 
         if content_probably_matches?(path, opath_samesize)
           # same content (probably)
@@ -164,9 +169,10 @@ class Folder
 
 end
 
-
 #############################################################################
 
+
+#############################################################################
 
 def content_probably_matches?(a, b, sample_percent = 0.001)
   sizea = File.size a
@@ -193,6 +199,8 @@ def content_probably_matches?(a, b, sample_percent = 0.001)
 
   result
 end
+
+#############################################################################
 
 
 #############################################################################
@@ -280,7 +288,7 @@ end
 def main
   parse_options!
 
-  raise "Must pass 2 folders as parameters to compare" unless ARGV.size == 2
+  raise "Must pass 2 folders to compare as parameters" unless ARGV.size == 2
   raise "Both folders must exist" unless ARGV.any? and ARGV.all?{|f| File.exists? f}
 
   a,b = ARGV.map{|path| Folder.new path }
