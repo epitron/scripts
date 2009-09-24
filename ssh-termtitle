@@ -2,4 +2,10 @@
 HOSTNAME="$*"
 
 termtitle "{$HOSTNAME}"
-ssh $*
+
+if which autossh > /dev/null
+then
+  autossh $*
+else
+  ssh $*
+fi

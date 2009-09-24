@@ -2,6 +2,20 @@
    name = epitron
    email = chris@ill-logic.com
 
+[alias]
+  st = status
+  ci = commit
+  br = branch
+  co = checkout
+  df = diff
+  lg = log -p
+
+[branch]
+  autosetupmerge = true
+
+[merge]
+  tool = meld
+
 [color]
   ui = auto
 [color "branch"]
@@ -18,10 +32,4 @@
   changed = green
   untracked = cyan
 
-[alias]
-  st = status
-  ci = commit
-  br = branch
-  co = checkout
-  df = diff
-  lg = log -p
+
