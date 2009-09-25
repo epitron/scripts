@@ -93,12 +93,17 @@ class Folder
     @path_to_size = {}
     
     puts "  <default>|_ <light_cyan>reticulating splines...".colorize
+
     @paths.each do |path|
-      dir, filename = File.split path
-      size = File.size path
-      @size_to_path[size] = path
-      @name_to_path[filename] = path
-      @path_to_size[path] = size
+      begin
+        dir, filename = File.split path
+        size = File.size path
+        @size_to_path[size] = path
+        @name_to_path[filename] = path
+        @path_to_size[path] = size
+      rescue SystemCallError => e
+        puts e.to_s.light_red
+      end
     end
     
     puts "  |_ done! found <light_white>#{@paths.size}</light_white> files.".colorize
@@ -189,14 +194,17 @@ def content_probably_matches?(a, b, sample_percent = 0.001)
   test_positions      = random_blocks.map{|block| block * block_size }
 
   #local_variables.map{|v| "#{v} = #{eval(v).inspect}"}.each{|v| puts v}
-  
-  fa, fb = open(a), open(b)
-  result = test_positions.all? do |pos|
-    fa.seek(pos); fb.seek(pos)
-    fa.read(block_size) == fb.read(block_size)
+  begin
+    fa, fb = open(a), open(b)
+    result = test_positions.all? do |pos|
+      fa.seek(pos); fb.seek(pos)
+      fa.read(block_size) == fb.read(block_size)
+    end
+    fa.close; fb.close
+  rescue SystemCallError => e
+    puts e.to_s.light_red
+    result = false
   end
-  fa.close; fb.close
-
   result
 end
 
