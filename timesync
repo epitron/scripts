@@ -1,8 +1,12 @@
 #!/bin/bash
+
+#SERVER=time.nist.gov
+SERVER=ca.pool.ntp.org
+
+
 echo Synching clock ...
-SERVER=us.pool.ntp.org
-ntpdate time.nist.gov
+ntpdate $SERVER
 echo Setting hardware clock...
-#hwclock --systohc
-/etc/rc0.d/K25hwclock.sh reload
+hwclock --systohc
+#/etc/rc0.d/K25hwclock.sh reload
 
