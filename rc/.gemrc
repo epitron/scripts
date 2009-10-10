@@ -1,5 +1,5 @@
 ---
-gem: --no-ri --no-rdoc
+gem: --no-ri --no-rdoc --verbose
 search: -r -d
 :sources:
 - http://gemcutter.org
