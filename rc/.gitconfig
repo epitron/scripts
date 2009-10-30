@@ -1,6 +1,12 @@
 [user]
-   name = epitron
-   email = chris@ill-logic.com
+  name = epitron
+  email = chris@ill-logic.com
+
+[github]
+  user = epitron
+
+[push]
+  default = matching
 
 [alias]
   st = status
@@ -31,5 +37,4 @@
   added = yellow
   changed = green
   untracked = cyan
-
 
