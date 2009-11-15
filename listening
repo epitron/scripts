@@ -1,0 +1,36 @@
+#!/usr/bin/ruby
+#######################################################
+## Uses 'netstat' and 'fuser' to show all programs 
+## that are listening on TCP/UDP ports.
+#######################################################
+
+# show a fancy title
+def title(msg, width=60)
+  puts "-"*width
+  puts " " + msg
+  puts "="*width
+end
+
+
+#######################################################
+## gather open ports from 'netstat'
+#######################################################
+
+# regexes to match netstat output
+IP4LINE = /^(tcp|udp)\s+\d+\s+\d+\s+([\d\.]+):(\d+)\s+/
+IP6LINE = /^(tcp|udp)6\s+\d+\s+\d+\s+([\w\d:]+):(\d+)\s+/
+ports = [] 
+
+for line in `netstat -ln`
+  ports << [$3.to_i, $1] if line =~ IP4LINE or line =~ IP6LINE
+end
+
+
+#######################################################
+## display listening programs with 'fuser'
+#######################################################
+
+title "Listening sockets (IPv4 & IPv6):"
+params = ports.sort.uniq.map { |port,proto| "#{port}/#{proto}" }
+system("fuser", "-v", *params)
+puts
