@@ -57,6 +57,8 @@ alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
 alias ssh='ssh-termtitle'
+alias ack='ack-grep'
+
 
 alias md='mkdir -p'
 alias rehash='hash -r'
