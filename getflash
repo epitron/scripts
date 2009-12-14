@@ -2703,6 +2703,10 @@ sub find_video {
     playpath => $playpath,
     flv      => title_to_filename("$author - $title")
   };
+  
+  #print "app: $data{'app'}\n";
+  #print "streamer: $streamer\n";
+  #print "playpath: $playpath\n";
     
   return $data;
 }
@@ -3998,9 +4002,12 @@ sub get_rtmp_program {
 sub run {
   my($self, $prog, $rtmp_data) = @_;
 
-  debug "Running $prog", 
+  #debug "Running $prog", 
+  #  join(" ", map { ("--$_" => $rtmp_data->{$_} ? $self->shell_escape($rtmp_data->{$_}) : ()) } keys
+  #      %$rtmp_data);
+  print "\n$prog ", 
     join(" ", map { ("--$_" => $rtmp_data->{$_} ? $self->shell_escape($rtmp_data->{$_}) : ()) } keys
-        %$rtmp_data);
+        %$rtmp_data), "\n\n";
 
   my($in, $out, $err);
   $err = gensym;
