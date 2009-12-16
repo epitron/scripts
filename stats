@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+%w[ resolv thread timeout ].each { |m| require m }
+
+cachefile = "#{ENV['HOME']}/.resolv.cache"
+p [:cache, cachefile]
+
+if File.exists? cachefile
+  @nscache = Marshal.load(File.read cachefile)
+else
+  @nscache = {}
+end
+
+
+def parallel_lookup(ips)
+  dns = Resolv::DNS.new
+
+  print "* Resolving #{ips.size} ips."
+  
+  threads = []
+  
+  ips.each do |ip|
+    next if @nscache[ip]
+    
+    threads << Thread.new(ip) do |ip|
+      begin
+        timeout(6) { @nscache[ip] = dns.getname(ip).to_s }
+      rescue Resolv::ResolvError, Timeout::Error
+        @nscache[ip] = ip
+      end
+      
+      print "."
+      STDOUT.flush
+    end
+  end
+  
+  threads.each { |t| t.join }
+  puts
+end
+
+
+def lookup(ip)
+  unless @nscache[ip]
+    begin
+      @nscache[ip] = Resolv.getname(ip).strip
+    rescue Resolv::ResolvError
+      @nscache[ip] = ip
+    end
+  end
+  @nscache[ip]
+end
+
+hosts = Hash.new{|h,k| h[k] = 0}
+
+ARGF.each do |line|
+  host = line.split.first
+  hosts[host] += 1
+end
+
+parallel_lookup hosts.keys
+
+total = 0
+hosts = hosts.sort_by { |ip, hits| @nscache[ip] } 
+
+hosts.each do |ip, hits|
+  puts "#{hits}\t#{@nscache[ip] || ip}"
+  total += hits
+end
+
+puts "----------------------------------"
+puts "#{total}\thits"
+puts "#{hosts.size}\tunique hosts"
+
+open(cachefile, "w") { |f| f.write Marshal.dump(@nscache) }
