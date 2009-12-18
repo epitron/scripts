@@ -2,7 +2,7 @@
 %w[ resolv thread timeout ].each { |m| require m }
 
 cachefile = "#{ENV['HOME']}/.resolv.cache"
-p [:cache, cachefile]
+#p [:cache, cachefile]
 
 if File.exists? cachefile
   @nscache = Marshal.load(File.read cachefile)
@@ -24,7 +24,7 @@ def parallel_lookup(ips)
     threads << Thread.new(ip) do |ip|
       begin
         timeout(6) { @nscache[ip] = dns.getname(ip).to_s }
-      rescue Resolv::ResolvError, Timeout::Error
+      rescue Resolv::ResolvError, Resolv::ResolvTimeout, Timeout::Error 
         @nscache[ip] = ip
       end
       
