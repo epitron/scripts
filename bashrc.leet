@@ -29,8 +29,9 @@ if [ "$TERM" != "dumb" ]; then
     #export LS_OPTIONS='--color=auto'
     
     if [ "`uname -s`" == "Darwin" ]
-      alias ls="ls -G"
     then
+      alias ls="ls -G"
+    else
       eval `dircolors -b`
       alias ls="ls --color=auto"
     fi
