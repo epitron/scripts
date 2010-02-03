@@ -11,7 +11,7 @@ then
 elif [ -d ~/scripts ]
 then
   export PATH=$PATH:~/scripts
-end
+fi
 
 if [ -d ~/bin ]
 then
@@ -22,7 +22,6 @@ fi
 ## colors
 export CLICOLOR=1
 #export TERM=xterm-color
-eval `dircolors -b`
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
@@ -30,9 +29,10 @@ if [ "$TERM" != "dumb" ]; then
     #export LS_OPTIONS='--color=auto'
     
     if [ "`uname -s`" == "Darwin" ]
-       alias ls="ls -G"
+      alias ls="ls -G"
     then
-       alias ls="ls --color=auto"
+      eval `dircolors -b`
+      alias ls="ls --color=auto"
     fi
 fi
 
@@ -54,6 +54,7 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias ......='cd ../../../../..'
+alias .......='cd ../../../../../..'
 
 alias nano="nano -w"
 alias pico="nano"
