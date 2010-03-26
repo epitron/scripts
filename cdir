@@ -1,17 +1,21 @@
-#!/bin/bash
-if [ ! "$*" == "" ]
-then
-  DIR="$*"
-  cd "$DIR"
-else
-  DIR="`pwd`"
-fi
+#!/usr/bin/env ruby
 
-echo "* $DIR/CACHEDIR.TAG"
-
-cat > CACHEDIR.TAG <<END
-Signature: 8a477f597d28d172789f06886806bc55
+CACHETAG = %{Signature: 8a477f597d28d172789f06886806bc55
 # This file is a cache directory tag created by (application name).
 # For information about cache directory tags, see:
 #       http://www.brynosaurus.com/cachedir/
-END
+}
+
+dirs = if ARGV.any?
+  ARGV.map{|arg| File.expand_path arg}
+else
+  Dir.pwd
+end
+
+puts "* Writing cache files..."
+for dir in dirs
+  cachefile = File.join dir, "CACHEDIR.TAG"
+  puts "  |_ #{cachefile}"
+  open(cachefile, "wb"){|f| f.write(CACHETAG)}
+end
+
