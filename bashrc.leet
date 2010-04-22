@@ -8,6 +8,9 @@
 if [ -d /usr/scripts ]
 then
   export PATH=$PATH:/usr/scripts
+elif [ -d ~/scripts ]
+then
+  export PATH=$PATH:~/scripts
 fi
 
 if [ -d ~/bin ]
@@ -16,22 +19,27 @@ then
 fi
 
 
-
 ## colors
 export CLICOLOR=1
 #export TERM=xterm-color
-eval `dircolors -b`
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
     #export LS_OPTIONS='--color=auto'
-    alias ls="ls --color=auto"
+    
+    if [ "`uname -s`" == "Darwin" ]
+    then
+      alias ls="ls -G"
+    else
+      eval `dircolors -b`
+      alias ls="ls --color=auto"
+    fi
 fi
 
 ## FUCK YOU ^S AND ^Q!!
-stty stop undef
-stty start undef
+#stty stop undef
+#stty start undef
 
 ## aliases
 
@@ -46,6 +54,8 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
+alias ......='cd ../../../../..'
+alias .......='cd ../../../../../..'
 
 alias nano="nano -w"
 alias pico="nano"
@@ -56,7 +66,13 @@ alias diff='diff -u'
 alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
-alias ssh='ssh-termtitle'
+
+if [ "$TERM" == "xterm" ]
+then
+  alias ssh='ssh-termtitle'
+fi
+
+alias ack='ack-grep'
 
 alias md='mkdir -p'
 alias rehash='hash -r'
@@ -65,7 +81,6 @@ alias screen="screen -U"
 
 ## no display!
 #unset DISPLAY
-
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile

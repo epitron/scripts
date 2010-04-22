@@ -1,8 +1,10 @@
 #!/bin/bash
 unset CC CFLAGS CXX CXXFLAGS MAKE PARAMS
 
+PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
+
 CONFIGFILE=buildconfig
-MAKE="make -j4"
+MAKE="make -j`expr $PROCESSORS + 2`"
 PARAMS=""
 
 if [ -f $CONFIGFILE ]
@@ -13,6 +15,8 @@ fi
 
 export CC CFLAGS CXX CXXFLAGS MAKE PARAMS
 
+echo ""
+echo " Procssors: $PROCESSORS"
 echo ""
 echo " ====== Parameters: ==========================="
 echo "            CC=$CC"

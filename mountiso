@@ -1,7 +1,9 @@
 #!/bin/bash
-if [ `whoami` == "root" ]
+if [ "`whoami`" == "root" ]
 then
+  echo "Mounting $@"
   mount -t iso9660 -o loop $@
 else
+  echo "(sudo) Mounting $@"
   sudo mount -t iso9660 -o loop $@
 fi

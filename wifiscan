@@ -1,0 +1,9 @@
+#!/bin/bash
+if [ "$1" == "" ]
+then
+  DEV=eth1
+else
+  DEV=$1
+fi
+
+sudo iwlist $DEV scan|grep -iE '(cell|essid|channel)'

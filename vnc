@@ -1,0 +1,3 @@
+#!/bin/bash
+xvncviewer -passwd ~/.vnc/passwd $*
+
