@@ -1,6 +1,13 @@
 ###################################################################
 ## IRB tweaks
 
+# Note: You must install these gems:
+#  * hirb
+#  * looksee
+#  * boson
+# (It won't tell you if they're not installed... the RC file will
+#  just terminate before it's finished.)
+
 require 'irb/completion'
 
 IRB.conf[:AUTO_INDENT] = true
