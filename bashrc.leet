@@ -77,7 +77,7 @@ alias ack='ack-grep'
 alias md='mkdir -p'
 alias rehash='hash -r'
 alias df='df -h'
-
+alias screen="screen -U"
 
 ## no display!
 #unset DISPLAY
