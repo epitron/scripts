@@ -1,0 +1,12 @@
+INFILE="$1"
+BASENAME="`basename "$INFILE" .mkv`"
+OUTFILE="$BASENAME CD%01d.mkv"
+
+if [ "$2" == "" ]
+then
+  OUTDIR="~"
+else
+  OUTDIR="$2"
+fi
+
+echo mkvmerge --split 4470m -o "$OUTDIR/$OUTFILE" --link "$INFILE"
