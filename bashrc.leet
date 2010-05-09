@@ -67,6 +67,11 @@ alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
 
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+
+
 if [ "$TERM" == "xterm" ]
 then
   alias ssh='ssh-termtitle'
