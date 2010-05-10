@@ -96,6 +96,23 @@ def only_dir_in_path(dir):
 
     return dirs[0]
 
+def is_exe(fpath):
+    return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+    
+def which(program):
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+
 class URLGrabber(urllib.FancyURLopener):
     lastdisplaystring = ''
 
@@ -136,8 +153,10 @@ class URLGrabber(urllib.FancyURLopener):
 class FileExtractor:
     """ Mother class!! """
     
-    exts = []
-    streamable = False
+    exts            = []
+    streamable      = False
+    binary          = None
+    package         = None
 
     def canHandle(self, filename):
         """ Can you handle the file? CAN YOU HANDLE THE FILE?!!? """
@@ -153,8 +172,63 @@ class FileExtractor:
             if lowername.endswith(ext):
                 return archivename.rstrip(ext)
         return None
+
+    def find_binary(self):
+        if isinstance(self.binary, list):
+            binaries = self.binary
+        else:
+            binaries = [self.binary]
+            
+        for binary in binaries:
+            if which(binary) is not None:
+                return binary
         
+        return None
     
+
+    def check_binary(self):
+        binary = self.find_binary()
+        if binary:
+            return binary
+        else:
+            answer = prompt("* %s not found. Would you like to install it? [Y/n] " % self.binary, choices=['y','n'], default='y')
+            if answer == 'n':
+                print "+ Aborting..."
+                return
+            self.install_package()
+            
+            return self.find_binary()
+
+    def install_package(self):
+        pkgtools = {
+            "Ubuntu": "apt-get install",
+            "Fedora": "yum install",
+        }
+        
+        result = re.findall(r"Distributor ID:\t(\w+)", os.popen("lsb_release -i").read())
+        if result:
+            distro = result[0]
+            print "Distribution: %s" % distro
+
+            pkgtool = pkgtools.get(distro)
+            if pkgtool is None:
+                print "Error: Unknown distro!"
+                return
+            
+            print "Package: %s" % self.package
+            print
+            
+            command = 'sudo %s "%s"' % (pkgtool, self.package)
+            
+            print "Executing: %s" % command
+            print
+            execute(command)
+            print
+            
+        else:
+            print "Error: Could not find your Linux version via the 'lsb_release' tool."
+        
+
     def extract_file(self, filename, destdir='.'):
         raise Exception, "extract_file() not implemented!"
     
@@ -170,6 +244,8 @@ class FileExtractor:
             archivename = split(urllib.url2pathname(thing))[1]
         elif isfile(thing):
             archivename = split(thing)[1]
+            
+        self.check_binary()
             
         print "+ Extracting..."
         print "    thing: %s" % thing
@@ -222,9 +298,10 @@ class FileExtractor:
 
 
 class TarballExtractor(FileExtractor):
-    exts = ['.tar.gz', '.tar.bz2', '.tar', '.tgz']
-    streamable = True
-    desc = "TAR file"
+    exts            = ['.tar.gz', '.tar.bz2', '.tar', '.tgz']
+    streamable      = True
+    desc            = "TAR file"
+    binary          = "tar"
 
     # interface
         
@@ -255,9 +332,10 @@ class TarballExtractor(FileExtractor):
 
     
 class ZipExtractor(FileExtractor):
-    exts = ['.zip', '.pk3', '.jar']
-    streamable = False
-    desc = "ZIP file"
+    exts            = ['.zip', '.pk3', '.jar']
+    streamable      = False
+    desc            = "ZIP file"
+    binary          = "unzip"
 
     # interface
     
@@ -265,17 +343,34 @@ class ZipExtractor(FileExtractor):
         execute('unzip -o "%s" -d "%s"' % (filename, destdir))
         
 class RarExtractor(FileExtractor):
-    exts = ['.rar', '.001']
-    streamable = True
-    desc = "RAR file"
+    exts            = ['.rar', '.001']
+    streamable      = True
+    desc            = "RAR file"
+    binary          = "unrar"
+    package         = binary
     
     def extract_file(self, filename, destdir=None):
         execute('unrar x "%s" "%s"' % (filename, destdir))
+
+class SevenZipExtractor(FileExtractor):
+    exts            = ['.7z',]
+    streamable      = False
+    desc            = "7zip file"
+    binary          = ["7z", "7za", "7zr"]
+    package         = "p7zip"
+
+    # interface
+    
+    def extract_file(self, filename, destdir=None):
+        binary = self.find_binary()
+        execute('%s x "%s" -o"%s"' % (binary, filename, destdir))
+
 
 extractors = [
                 TarballExtractor(),
                 ZipExtractor(),
                 RarExtractor(),
+                SevenZipExtractor(),
              ]
 
 def extract(filename, destdir):
