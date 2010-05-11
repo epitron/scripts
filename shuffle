@@ -1,0 +1,69 @@
+#!/usr/bin/ruby
+#
+# SHUFFLE! v15.01
+# ----------------------------------------------------------------------
+#
+# Usage:
+#   shuffle <mediatype (eg: images, videos, music, etc.)> <number of files, defaults to 100>
+#
+
+require 'pp'
+
+MEDIA_DEFS = [
+  # labels                              player        exts
+  [   [/^image/, /^pic/, /^photo/],     "gthumb",     %w[jpg png gif]                        ],
+  [   [/^mov/, /^vid/],                 "totem",      %w[avi mov mpg mpeg flv wmv asf m4v]   ],
+  [   [/^mus/, /^aud/, /^song/],        "audacious2", %w[mp3 flac mp4 aac ogg]               ],
+]
+
+opts = {
+  :num => 69,
+}
+
+ARGV.each do |arg|
+  
+  case arg
+  when /^(\d+)$/
+    opts[:num] = $1.to_i
+  when /^\w+$/
+    for labels, player, exts in MEDIA_DEFS
+      if labels.any? { |pattern| pattern.match(arg) }
+        opts[:player] = player
+        opts[:exts]   = exts  
+        opts[:label]  = arg
+      end
+    end
+  end
+  
+end
+
+####
+puts "Options:"
+puts "------------------"
+pp opts
+####
+
+
+####
+glob_pattern = "**/*.{%s}" % opts[:exts].join(',')
+puts "+ finding #{opts[:label]} (glob: #{Dir.pwd}/#{glob_pattern})"
+
+all_files   = Dir.glob(glob_pattern, File::FNM_CASEFOLD)
+puts "  |_ #{all_files.size} files found."
+####
+
+
+#randomfiles = []
+#num.times do
+#    break if files.empty?
+#    randomfiles << files.delete_at(rand(files.size))
+#end
+
+random_files = all_files.shuffle[0...opts[:num]]
+
+puts "  - #{random_files.size} random images selected"
+
+puts "+ Launching #{opts[:player]}..."
+exec opts[:player], *random_files
+
+
