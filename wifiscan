@@ -1,9 +1,69 @@
-#!/bin/bash
-if [ "$1" == "" ]
-then
-  DEV=eth1
-else
-  DEV=$1
-fi
+#!/usr/bin/env ruby
 
-sudo iwlist $DEV scan|grep -iE '(cell|essid|channel)'
+require 'rubygems'
+require '/home/epi/epitools/lib/epitools.rb'
+require 'pp'
+
+devs = `iwconfig 2> /dev/null`.grep(/802\.11/).map{|l| l.split.first }.compact
+
+for dev in devs
+
+  puts "-"*50
+  puts "Wifi device: #{dev}"
+  puts "-"*50
+  puts
+  
+  data = open("wifi.txt") #.map(&:strip)
+    
+  results = data.split_before(/Cell (\d+)/).map do |ap|
+  
+    result = {}
+    
+    for line in ap
+    
+      case line
+        when /Channel:(\d+)/
+          result[:channel] = $1.to_i
+        when /ESSID:"([^\"]+)"/
+          result[:name] = $1
+        when /Cell (\d+)/
+          result[:cell] = $1.to_i
+        when /Quality=([\d\/]+)\s+Signal level=(.+)/
+          result[:quality] = $1
+          result[:signal] = $2.strip        
+        when /(WPA|WPA2|TKIP|PSK)/
+        when /Encryption key:(on|off)/
+          result[:encrypted] = ($1 == "on")
+      end
+      
+    end
+    
+    result[:protocols] && result[:protocols].uniq!
+    
+    result
+ 
+  end.select(&:any?)
+  
+  #pp results
+  
+  for channel, results in results.group_by{|result| result[:channel]}
+    puts "Channel: #{channel}"
+    
+    for result in results
+      quality = Ratio[*result[:quality].split('/').map(&:to_i)]
+      params = [
+        result[:encrypted] ? "ENCRYPTED" : nil, 
+        "sig:#{result[:signal]}", 
+        "quality:#{quality.percent}", 
+        result[:protocols] ? "crypto:#{result[:protocols].join('/')}" : nil 
+      ].compact
+      puts "  #{result[:name]} (#{params.join(', ')})"
+    end
+    puts
+  end
+  puts 
+  
+  #`sudo iwlist $DEV scan`
+  #sudo iwlist $DEV scan|grep -iE '(cell|essid|channel)'
+end
+
