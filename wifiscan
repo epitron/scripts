@@ -58,7 +58,7 @@ for dev in devs
     for result in results.sort_by{|r| r[:quality] }.reverse
       
       params = [
-        result[:encrypted] ? "ENCRYPTED" : nil, 
+        result[:encrypted] ? "ENCRYPTED" : "OPEN", 
         "sig:#{result[:signal]}", 
         result[:protocols] ? "crypto:#{result[:protocols].join('/')}" : nil 
       ].compact
