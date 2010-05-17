@@ -1,0 +1,42 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'RRDiff'
+
+# The first process is to create a signature for the oldfile. The
+# parameters are the original file and where you want to store
+# the signature file.
+#
+#   RRDiff.signature("oldfile", "sigfile")
+
+# Then from the newfile and the sigfile generate a delta. Deltafile
+# is where the delta is stored.
+#
+#   RRDiff.delta("newfile", "sigfile", "deltafile")
+
+# Finally, apply the deltafile to the oldfile to create the patchedfile
+# which should be equivalent to newfile.
+#
+#   RRDiff.patch("oldfile", "deltafile", "patchedfile")
+
+command = ARGV.shift
+
+case command
+when "sig", "fingerprint"
+  fn = ARGV.shift
+  puts "Generating signature for #{fn}"
+  RRDiff.signature(fn, fn+".sig")
+
+when "diff", "delta"
+  fn, sig = ARGV
+  puts "Generating patch for #{fn}"
+  RRDiff.delta(fn, sig, fn+".patch")
+
+when "patch", "apply"
+  fn, patch = ARGV 
+  puts "Backing up #{fn} to #{fn}.backup"
+  File.rename(fn, "#{fn}.backup")
+  puts "Applying patch from #{patch}..."
+  RRDiff.patch("#{fn}.backup", patch, fn)
+
+end
