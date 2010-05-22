@@ -1,4 +1,5 @@
 #!/usr/bin/python
+#####################################################################
 """
 A.R.F. (Archive Retrieval Fiend)
 --------------------------------------------------------------------
@@ -31,10 +32,14 @@ todo:
       - arf l <archive name> will list an archive contents (piped to less)
       - when <archive name> is an url, give the option to extract it afterwards
 """
+#####################################################################
+
 __version__ = '0.5.2'
 
 import os, sys, re, urllib, time, tempfile
 from os.path import join, isfile, isdir, exists, split, splitext
+
+#####################################################################
 
 def madProps():
     s = "  arf! (Archive Retriever, Fo'sho') v%s :: by Chris Gahan (chris@ill-logic.com)  " % __version__
@@ -112,6 +117,7 @@ def which(program):
 
     return None
 
+#####################################################################
 
 class URLGrabber(urllib.FancyURLopener):
     lastdisplaystring = ''
@@ -149,6 +155,8 @@ class URLGrabber(urllib.FancyURLopener):
         self.lastdisplaystring = ''
         self.starttime = time.time()
         return urllib.FancyURLopener.retrieve(self, url, reporthook=reporthookwrapper)
+
+#####################################################################
 
 class FileExtractor:
     """ Mother class!! """
@@ -296,6 +304,7 @@ class FileExtractor:
         print
 
 
+#####################################################################
 
 class TarballExtractor(FileExtractor):
     exts            = ['.tar.gz', '.tar.bz2', '.tar', '.tgz']
@@ -365,11 +374,22 @@ class SevenZipExtractor(FileExtractor):
         binary = self.find_binary()
         execute('%s x "%s" -o"%s"' % (binary, filename, destdir))
 
+class DebExtractor(FileExtractor):
+    exts            = ['.deb']
+    streamable      = True
+    desc            = "DEBian package"
+    binary          = "dpkg"
+    
+    def extract_file(self, filename, destdir=None):
+        execute('dpkg -x "%s" "%s"' % (filename, destdir))
+
+#####################################################################
 
 extractors = [
                 TarballExtractor(),
                 ZipExtractor(),
                 RarExtractor(),
+                DebExtractor(),
                 SevenZipExtractor(),
              ]
 
@@ -380,6 +400,8 @@ def extract(filename, destdir):
             return
     
     print "+ I can't extract THAT! Why you gotta play me like this?!"
+
+#####################################################################
 
 if __name__ == '__main__':
     madProps()

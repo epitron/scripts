@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-cache search $* | less -i --pattern="$*"
+apt-cache search $* | less -S -i --pattern="$*"

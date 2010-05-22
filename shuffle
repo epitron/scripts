@@ -7,18 +7,24 @@
 #   shuffle <mediatype (eg: images, videos, music, etc.)> <number of files, defaults to 100>
 #
 
+require 'rubygems'
+require 'epitools'
 require 'pp'
 
 MEDIA_DEFS = [
-  # labels                              player        exts
-  [   [/^image/, /^pic/, /^photo/],     "gthumb",     %w[jpg png gif]                        ],
-  [   [/^mov/, /^vid/],                 "totem",      %w[avi mov mpg mpeg flv wmv asf m4v]   ],
-  [   [/^mus/, /^aud/, /^song/],        "audacious2", %w[mp3 flac mp4 aac ogg]               ],
+  #  labels                            players                      exts
+  [  [/^image/, /^pic/, /^photo/],     ["gthumb"],                  %w[jpg png gif],                        ],
+  [  [/^mov/, /^vid/],                 ["totem", "mplayer"],        %w[avi mov mpg mpeg flv wmv asf m4v],   ],
+  [  [/^mus/, /^aud/, /^song/],        ["audacious2", "amarok -e"], %w[mp3 flac mp4 aac ogg],               ],
 ]
 
 opts = {
   :num => 69,
 }
+
+def find_in_path(*args)
+  args.map { |arg| Dir.glob( "{#{ENV["PATH"].split(':').join(',')}}/#{arg}" ) }.squash
+end
 
 ARGV.each do |arg|
   
@@ -26,11 +32,11 @@ ARGV.each do |arg|
   when /^(\d+)$/
     opts[:num] = $1.to_i
   when /^\w+$/
-    for labels, player, exts in MEDIA_DEFS
+    for labels, players, exts, desc in MEDIA_DEFS
       if labels.any? { |pattern| pattern.match(arg) }
-        opts[:player] = player
+        opts[:player] = find_in_path(*players).first
         opts[:exts]   = exts  
-        opts[:label]  = arg
+        opts[:desc]   = arg
       end
     end
   end
@@ -38,20 +44,32 @@ ARGV.each do |arg|
 end
 
 ####
-puts "Options:"
-puts "------------------"
-pp opts
+puts "="*40
+puts "Shuffle Options:"
+puts "-"*40
+pp opts.dup.delete_if{|k,v| k == :exts}
+puts "="*40
 ####
 
 
 ####
 glob_pattern = "**/*.{%s}" % opts[:exts].join(',')
-puts "+ finding #{opts[:label]} (glob: #{Dir.pwd}/#{glob_pattern})"
+puts
+puts "+ Shuffling #{opts[:desc]}..."
+puts "  |_ searching for: #{Dir.pwd}/#{glob_pattern}"
 
-all_files   = Dir.glob(glob_pattern, File::FNM_CASEFOLD)
-puts "  |_ #{all_files.size} files found."
+# GLOB IT
+all_files = Dir.glob(glob_pattern, File::FNM_CASEFOLD)
+
+# GROUP IT
+grouped   = all_files.group_by { |filename| File.extname(filename)[1..-1] }
+
+puts "  |_ #{all_files.size} files found"
+
+for group, files in grouped
+  puts "     |_ #{files.size} #{group}s"
+end
 ####
-
 
 #randomfiles = []
 #num.times do
@@ -61,9 +79,10 @@ puts "  |_ #{all_files.size} files found."
 
 random_files = all_files.shuffle[0...opts[:num]]
 
-puts "  - #{random_files.size} random images selected"
-
-puts "+ Launching #{opts[:player]}..."
-exec opts[:player], *random_files
+puts
+puts "+ Sticking #{random_files.size} random #{opts[:desc]} into #{opts[:player]}..."
+#fork { 
+  exec opts[:player], *random_files 
+#}
 
 
