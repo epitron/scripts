@@ -62,7 +62,7 @@ puts "  |_ searching for: #{Dir.pwd}/#{glob_pattern}"
 all_files = Dir.glob(glob_pattern, File::FNM_CASEFOLD)
 
 # GROUP IT
-grouped   = all_files.group_by { |filename| File.extname(filename)[1..-1] }
+grouped   = all_files.group_by { |filename| File.extname(filename)[1..-1].upcase }.sort_by{|k,v| -v.size}
 
 puts "  |_ #{all_files.size} files found"
 
