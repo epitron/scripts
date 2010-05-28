@@ -85,6 +85,9 @@ alias rehash='hash -r'
 alias df='df -h'
 alias screen="screen -U"
 
+alias gs="git status"
+alias ga="git add"
+
 ## no display!
 #unset DISPLAY
 
