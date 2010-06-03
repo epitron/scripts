@@ -5,10 +5,20 @@
 #  * hirb
 #  * looksee
 #  * boson
+#  * bond
 # (It won't tell you if they're not installed... the RC file will
 #  just terminate before it's finished.)
 
-require 'irb/completion'
+puts "Loading modules..."
+
+def req mod
+  puts "  |_ #{mod}"
+  require mod
+rescue Exception => e
+  p e
+end
+
+req 'irb/completion'
 
 IRB.conf[:AUTO_INDENT] = true
 IRB.conf[:USE_READLINE] = true
@@ -22,16 +32,16 @@ IRB.conf[:LOAD_MODULES] ||= []
 ###################################################################
 ## Misc Ruby libraries
 
-require 'rubygems'
-require 'pp'
-require 'pathname'
-require 'open-uri'
-
+req 'rubygems'
+req 'pp'
+req 'pathname'
+req 'open-uri'
+req 'epitools'
 
 ###################################################################
 ## Looksee!
 
-require 'looksee/shortcuts'
+req 'looksee/shortcuts'
 
 class Object
 
@@ -62,9 +72,9 @@ end
 ###################################################################
 ## RI hack
 
-require 'rdoc/ri/driver'
+req 'rdoc/ri/driver'
 ENV['PAGER'] = 'less -X -F -i -R'
-require 'boson'
+req 'boson'
 Boson.start
 
 def ri(original_query, regex=nil)
@@ -172,6 +182,11 @@ def noecho
   echo(false)
 end
 
+###################################################################
+## Bond!
+
+req 'bond'
+Bond.start
 
 ###################################################################
 ## DONE!

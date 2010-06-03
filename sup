@@ -1,0 +1,14 @@
+#!/bin/bash
+SCRIPTS=$(dirname `which bashrc.leet`)
+
+echo "--------------------------------"
+echo "Updating $SCRIPTS"
+echo "--------------------------------"
+
+pushd $SCRIPTS
+
+echo
+git pull
+echo
+
+popd
