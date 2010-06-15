@@ -8,3 +8,4 @@ else
   ps afx -eo '%p %u %t %a' | grep -si "$*" | grep -v "psfind" | grep -v "grep -si"
 fi
 
+exit $?

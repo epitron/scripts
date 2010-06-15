@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if psfind compiz > /dev/null
+then
+  echo "Switching to Metacity"
+  #metacity --replace
+elif psfind metacity > /dev/null
+then
+  echo "Switching to Compiz"
+  #compiz --replace
+else
+  echo "No WM found"
+fi
