@@ -1,2 +1,8 @@
 #!/bin/bash
-jedit -reuseview $*
+
+if [ "`uname`" == "Darwin" ]
+then
+  open -a /Applications/jEdit.app $*
+else
+  jedit -reuseview $*
+fi
