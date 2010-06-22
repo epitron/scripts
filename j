@@ -4,5 +4,5 @@ if [ "`uname`" == "Darwin" ]
 then
   open -a /Applications/jEdit.app $*
 else
-  jedit -reuseview $*
+  jedit -reuseview $* > /dev/null
 fi
