@@ -13,9 +13,9 @@ require 'pp'
 
 MEDIA_DEFS = [
   #  labels                            players                      exts
-  [  [/^image/, /^pic/, /^photo/],     ["gthumb"],                  %w[jpg png gif],                        ],
-  [  [/^mov/, /^vid/],                 ["totem", "mplayer"],        %w[avi mov mpg mpeg flv wmv asf m4v],   ],
-  [  [/^mus/, /^aud/, /^song/],        ["audacious2", "amarok -e"], %w[mp3 flac mp4 aac ogg],               ],
+  [  [/^image/, /^pic/, /^photo/],     ["gthumb"],                  %w[jpg jpeg png gif],                    ],
+  [  [/^mov/, /^vid/],                 ["totem", "mplayer"],        %w[avi mov mpg mpeg flv wmv asf m4v ogm],],
+  [  [/^mus/, /^aud/, /^song/],        ["audacious2", "amarok -e"], %w[mp3 flac mp4 aac ogg],                ],
 ]
 
 opts = {
