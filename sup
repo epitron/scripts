@@ -5,10 +5,12 @@ echo "--------------------------------"
 echo "Updating $SCRIPTS"
 echo "--------------------------------"
 
-pushd $SCRIPTS
+pushd $SCRIPTS > /dev/null
 
-echo
+echo "* git pull"
+echo -n "  |_ "
 git pull
 echo
+echo "* done!"
 
-popd
+popd > /dev/null
