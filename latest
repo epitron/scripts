@@ -1,0 +1,23 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'epitools'
+require 'colorize'
+
+paths = Dir['**/*'].select{|fn| not File.directory?(fn)}.map{|fn| [File.mtime(fn), fn]}
+grouped = paths.group_by{|t,f| t}.sort
+
+for group, paths in grouped
+  
+  puts group.inspect.green
+  
+  for time, path in paths
+    dir, file = File.split(path)
+    print "  "
+    print "#{dir}/" unless dir == "."
+    puts file.magenta
+  end
+  
+  puts
+  
+end
