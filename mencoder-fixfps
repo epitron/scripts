@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "* Converting $1 from 25fps to 24fps..."
+echo
+mencoder "$1" -o "$1.tmp" -speed 0.96 -oac mp3lame -lameopts cbr:br=128 -af resample=44100 -ovc copy
+mv "$1" "$1.bad"
+mv "$1.tmp" "$1"
