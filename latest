@@ -4,7 +4,10 @@ require 'rubygems'
 require 'epitools'
 require 'colorize'
 
+count = ARGV.first ? ARGV.first.to_i : nil
+
 paths = Dir['**/*'].select{|fn| not File.directory?(fn)}.map{|fn| [File.mtime(fn), fn]}
+paths = paths.sort[-count..-1] if count
 grouped = paths.group_by{|t,f| t}.sort
 
 for group, paths in grouped
