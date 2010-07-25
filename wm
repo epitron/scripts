@@ -1,13 +1,35 @@
 #!/bin/bash
 
-if psfind compiz > /dev/null
-then
-  echo "Switching to Metacity"
-  #metacity --replace
-elif psfind metacity > /dev/null
-then
-  echo "Switching to Compiz"
-  #compiz --replace
+function is_running {
+  psfind $1 > /dev/null
+}
+
+if [ "$1" != "" ]; then
+  # User supplied the WM to switch to
+  WM=$1
 else
-  echo "No WM found"
+  # Switch to the "other" WM (compiz or metacity)
+  if is_running compiz; then
+    WM="metacity"
+  elif is_running metacity; then
+    WM="compiz"
+  else
+    echo "No windowmanager found."
+  fi
 fi
+
+case "$WM" in
+  metacity)
+    echo "Switching to Metacity..."
+    metacity --replace > /dev/null 2>&1 &
+  ;;
+
+  compiz)
+    echo "Switching to Compiz..."
+    compiz --replace > /dev/null 2>&1 &
+  ;;
+
+  *)
+    echo "Don't recognize $WM as a windowmanager"
+  ;;
+esac
