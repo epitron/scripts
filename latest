@@ -6,8 +6,17 @@ require 'colorize'
 
 count = ARGV.first ? ARGV.first.to_i : nil
 
-paths = Dir['**/*'].select{|fn| not File.directory?(fn)}.map{|fn| [File.mtime(fn), fn]}
+paths = Dir['**/*'].select{|fn| not File.directory?(fn)}
+
+# Get modification times
+paths = paths.map do |fn|
+  mtime = File.mtime(fn) rescue nil
+  next unless mtime
+  [mtime, fn]
+end.compact
+
 paths = paths.sort[-count..-1] if count
+
 grouped = paths.group_by{|t,f| t}.sort
 
 for group, paths in grouped
