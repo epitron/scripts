@@ -5,6 +5,7 @@ require 'json'
 require 'open-uri'
 
 if ARGV.any?
+  puts "Opening #{ARGV.first}..."
   input = open(ARGV.first)
 else
   input = STDIN

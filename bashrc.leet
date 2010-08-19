@@ -86,7 +86,10 @@ alias df='df -h'
 alias screen="screen -U"
 
 alias gs="git status"
+alias gd="git diff"
 alias ga="git add"
+
+alias r="rails"
 
 ## no display!
 #unset DISPLAY
