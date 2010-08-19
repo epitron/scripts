@@ -1,0 +1,14 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'json'
+require 'open-uri'
+
+if ARGV.any?
+  input = open(ARGV.first)
+else
+  input = STDIN
+end
+
+json = JSON.parse(input.read)
+IO.popen("less -S", "w"){ |f| f.puts JSON.pretty_generate(json) }
