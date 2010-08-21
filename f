@@ -40,36 +40,11 @@ end
 #################################################################
 
 
-#################################################################
-## Parse Commandline
-case ARGV.size
-  when 0
-    query = ''
-    roots = ['.']
-  when 1
-    if ARGV.first =~ %r{(^/|/$|^\./)} #and File.directory?(ARGV.first)
-      query = ''
-      roots = [ARGV.first]
-    else
-      query = ARGV.first
-      roots = ['.']
-    end
-  else
-    query = ARGV.shift
-    query = '' if query == '-a'
-    roots = ARGV
-end
-
-query = Regexp.new( Regexp.escape( query ), Regexp::IGNORECASE )
-roots = roots.
-        map{ |path| Pathname(path) }.
-        select { |path| path.exist? || STDERR.puts("Error: #{path} doesn't exist") }
-#################################################################
-
 
 #################################################################
-## Search/display files
-def breadth_first_scan(root, &block)
+## Old path scanner (Pathname is SLOWW)
+
+def breadth_first_scan_old(root, &block)
   if root.file?
     yield root
     return
@@ -84,18 +59,111 @@ def breadth_first_scan(root, &block)
   end
 end
 
-roots.each do |root|
-  begin
-    breadth_first_scan(root) do |path|
-      dirname, filename = File.split(path)
-      puts "#{dirname}/#{filename.hilite(query)}" if filename =~ query
+#################################################################
+
+
+
+#################################################################
+## NEW path scanner
+
+def slashed(path)
+  path[-1] == ?/ ? path : (path + "/") 
+end
+
+def listdir(root)
+  root = slashed(root)
+  
+  dirs = Dir.glob("#{root}*/", File::FNM_DOTMATCH)
+  files = Dir.glob("#{root}*", File::FNM_DOTMATCH)
+
+  dirs_without_slashes = dirs.map{|dir| dir[0...-1]} 
+  files = files - dirs_without_slashes # remove dirs from file list
+
+  dirs = dirs[2..-1] || [] # drop the "." and ".." dirs
+
+  # strip #{root} from paths
+  dirs, files = [dirs,files].map do |list|
+    list.map { |f| f[root.size..-1] }
+  end
+  
+  [dirs, files]
+end
+
+
+$visited = {} # visited paths, to avoid symlink-loops
+
+def breadth_first_scan(root, &block)
+  root = slashed(root)
+  
+  dirs, files = listdir(root)
+  path_id = File.lstat(root).ino
+  
+  if seenpath = $visited[path_id]
+    STDERR.puts "*** WARNING: Already seen #{root.inspect} as #{seenpath.inspect}".red
+  else
+    $visited[path_id] = root
+    
+    dirs.each  { |f| yield root, f }
+    files.each { |f| yield root, f }
+    
+    for dir in dirs
+      breadth_first_scan(root+dir, &block)
     end
-  rescue Interrupt
-    # eat ^C
-    exit(1)
   end
 end
+
 #################################################################
+
+
+
+#################################################################
+## MAIN
+
+if $0 == __FILE__
+
+  # Parse Commandline
+  case ARGV.size
+    when 0
+      query = ''
+      roots = ['.']
+    when 1
+      if ARGV.first =~ %r{(^/|/$|^\./)} #and File.directory?(ARGV.first)
+        query = ''
+        roots = [ARGV.first]
+      else
+        query = ARGV.first
+        roots = ['.']
+      end
+    else
+      query = ARGV.shift
+      query = '' if query == '-a'
+      roots = ARGV
+  end
+
+  # Matcher  
+  query = Regexp.new( Regexp.escape( query ), Regexp::IGNORECASE )
+  
+  # Ignore bad path arguments
+  roots = roots.select do |path|
+    File.exists?(path) || STDERR.puts("Error: #{path} doesn't exist")
+  end
+
+  # Search!
+  roots.each do |root|
+    begin
+      breadth_first_scan(root) do |dirname, filename|
+        puts dirname+filename.hilite(query) if filename =~ query
+      end
+    rescue Interrupt
+      # eat ^C
+      exit(1)
+    end
+  end
+
+end
+
+#################################################################
+
 
 
 #################################################################
