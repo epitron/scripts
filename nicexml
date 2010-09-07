@@ -1,0 +1,6 @@
+#!/usr/bin/ruby
+require 'rubygems'
+require 'nokogiri'
+
+fragment = Nokogiri::XML.fragment($<.read)
+puts fragment
