@@ -41,6 +41,10 @@ fi
 #stty stop undef
 #stty start undef
 
+## Pager
+
+export PAGER=less
+
 ## aliases
 
 alias ll='ls -l'
