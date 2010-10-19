@@ -1,0 +1,44 @@
+#!/usr/bin/ruby
+
+opts = ARGV.select{|arg| arg =~ /^-\w{1,2}$/ }
+args = ARGV - opts
+
+inp = args[0]
+out = inp.gsub(/\..{3,4}$/, '.avi')
+
+raise "Error: inp == out!"  if inp == out
+
+if File.exists? out
+  
+  loop do
+    
+    print "Overwrite #{out.inspect}? [Y/n] "
+
+    case $stdin.gets.strip
+      
+      when /^n/i
+        puts "Quitting..."
+        exit 1
+        
+      when /^y/i, ""
+        puts "Overwriting!"
+        break
+        
+    end
+    
+  end
+  
+end  
+
+xres = 640
+# vbitrate = 1000
+command = %{mencoder -oac mp3lame -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2}.split + [inp, "-o", out]
+command += %{-vf scale -zoom -xy #{xres}}.split if opts == ["-s"]
+
+puts
+puts "Executing:"
+puts "--------------------"
+puts "  " + command.join(' ')
+puts
+puts
+system(*command)
