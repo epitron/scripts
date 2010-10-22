@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+#
+# Reads from STDIN or files, and counts how many copies of a line occur.
+#
 
 counts = Hash.new { |h,k| h[k] = 0 }
 
