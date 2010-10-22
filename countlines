@@ -1,0 +1,70 @@
+#!/usr/bin/ruby
+
+######################################################################
+# count v0.00.0.00.0000.00.0 :: by Chris Gahan (chris@ill-logic.com)
+######################################################################
+#
+# This program is for recursively counting the number of lines in a
+# directory of files. It displays the number of lines in each file
+# (under the "lines" column) and the number of non-blank lines 
+# ("actual"). It takes one parameter: the directory to analyze.
+# Note that it doesn't ignore binary files -- it's very stupid.
+######################################################################
+
+TEXT_GLOB = "*.{rhtml,htm,html,xml,xsd,rake,rb,js,rjs,php,inc,py,pyx,txt,c,cpp,h,hpp,sh,awk,pl,sql}"
+
+# Set the "search_dir" and "glob" variables (note: glob will contain the search_dir)
+
+if ARGV.any?
+  # user supplied some parameters
+  args = ARGV.join(' ')
+  if File.directory? args
+    # user supplied a directory on the commandline
+    search_dir = args
+    glob = "#{search_dir}/**/*"
+  else
+    # user supplied a directory and a mask
+    search_dir, filenames = File.split(args)
+    glob = "#{search_dir}/**/#{filenames}"
+  end
+else
+  # user didn't supply any parameters
+  search_dir = nil
+  #glob = "**/#{TEXT_GLOB}"
+  glob = "**/*"
+end
+
+
+# Display user message
+
+puts "Analyzing files in #{search_dir ? search_dir.inspect : 'current directory'}..."
+puts "------------------------------------------------------------------------"
+puts
+puts "lines   actual  filename"
+puts "-----   ------  --------"
+
+
+# Analyze each file
+
+total_lines = 0
+total_non_empty_lines = 0
+
+Dir[glob].each do |path|
+  unless path =~ %r{/(CVS|.svn)(/|^)} or File.directory?(path)
+    # open the file and read all of its lines
+    lines = open(path).readlines
+
+    # count the lines
+    all_lines = lines.size
+    total_lines += all_lines
+    
+    non_empty_lines = lines.select{ |line| ! line.strip.empty? }.size
+    total_non_empty_lines += non_empty_lines
+
+    # display stats
+    puts "%5d /  %5d  #{path}" % [all_lines, non_empty_lines]
+  end
+end
+
+puts "-------------------------------------------------------------------------------------"
+puts "Total: #{total_lines} lines, #{total_non_empty_lines} non-empty lines"
