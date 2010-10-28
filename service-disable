@@ -1,0 +1,7 @@
+#!/bin/bash
+if [ "$1" == "" ]
+then
+  echo "usage: service-disable <servicename>"
+else
+  sudo update-rc.d -f $1 remove
+fi
