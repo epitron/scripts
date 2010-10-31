@@ -1,0 +1,44 @@
+#!/usr/bin/ruby
+require 'rubygems'
+require 'nokogiri'
+require 'open-uri'
+require 'uri'
+
+def absolute_uri(root, url)
+  URI.join(root, url).to_s
+end
+
+
+def get_page(url)
+  $stderr.puts "Loading #{url.inspect}..."
+  Nokogiri::HTML(open(url))
+end
+
+
+def get_links(url)
+  page = get_page(url)
+  
+  page.search("a").each do |a|
+    if href = a["href"]
+      puts absolute_uri(url, href)
+    end
+  end
+end
+
+
+if ARGV.any?
+  ARGV.each { |arg| get_links(arg) }
+else
+  puts
+  puts "Usage: getlinks <url1> [<url2>, ...]" 
+  puts
+  puts "Purpose:"
+  puts "  Returns all the HREFs from the <a href=\"\"> tags in the specificed"
+  puts "  url(s). The links are output to STDOUT, while the status information"
+  puts "  is output to STDERR, so you can pipe the links to 'grep' and/or"
+  puts "  'xargs wget'."
+  puts
+  puts "Example:"
+  puts "  getlinks http://something.com/stuff.html | egrep '\.zip$' | xargs wget"
+  puts
+end
