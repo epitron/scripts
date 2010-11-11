@@ -82,7 +82,7 @@ then
   alias ssh='ssh-termtitle'
 fi
 
-alias ack='ack-grep'
+#alias ack='ack-grep'
 
 alias md='mkdir -p'
 alias rehash='hash -r'
