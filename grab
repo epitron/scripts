@@ -1,5 +1,14 @@
-#!/usr/bin/env ruby
-%w[rubygems nokogiri curb uri].each { |m| require m }
+#!/usr/bin/ruby
+%w[rubygems nokogiri curb uri pp].each { |m| require m }
+
+# TODO: - REWRITE so it's like 'shuffle'. ("grab audio http://site.com/stuff/ /d/mp3")
+#       - use progress bar
+#       - lightbar to flag files you want to get (w/ "select all"/"select none"/"invert")
+#       - let user filter by regexp
+#       - resume ("-w" or "-c" to use curl or wget, "-r" to use internal resume)
+#       - "-n" mode (show links only)
+#       - 
+
 
 class Grabber
   
@@ -181,8 +190,91 @@ private
       raise "Error: #{code} - #{HTTP_STATUS_CODES[code]}"
     end
   end
+
   
 end
+
+
+class Link
+  
+  attr_accessor :base, :relative, :grabber
+  
+  def initialize(base, relative)
+    @base = base
+    @relative = relative
+    @grabber = Grabber.new
+  end
+  
+  def absolute
+    if relative =~ /^http/
+      relative
+    else
+      URI.join(base, relative).to_s
+    end
+  end
+  
+  alias_method :to_s, :absolute
+  alias_method :url,  :absolute
+  
+  def save(dest=".")
+    if File.directory?(dest)
+      save_to = File.join( dest, filename_from_url(url) )
+    elsif File.exists?(dest)
+      # TODO: Resume?
+      raise "Error: #{dest} already exists."
+    else
+      save_to = dest
+    end
+    
+    puts %{- "#{url}" -> "#{save_to}"...}
+    # @easy.on_progress { |dl_total, dl_now, ul_total, ul_now| ... }
+    
+    grabber.download(url, save_to) 
+    puts
+  end
+  
+end
+
+
+class Page
+  
+  attr_accessor :url, :grabber
+  
+  def initialize(url)
+    @url = url
+    @grabber = Grabber.new
+  end
+
+  def filename_from_url(url)
+    return if url.nil?
+    base = url.split(/\?/).first
+    return if base.nil?
+    base.split(/\//).last
+  end
+
+  def media_url?(url)
+    if filename_from_url(url) =~ /\.(mp3|avi|mpg|mp4|flv|ogg)$/
+      $1
+    else
+      nil
+    end
+  end
+  
+  def get_media_links
+    doc = Nokogiri::HTML( grabber.read(url) )
+    
+    doc.search("a").map do |a|
+      link = a["href"]
+      media_url?(link) ? link : nil
+    end.compact
+  end
+
+  def media_links
+    @media_links ||= get_media_links
+  end
+  
+end
+
 
 GRAB_VERSION = "0.0.3"
 
@@ -208,7 +300,13 @@ if $0 == __FILE__
   
   #g.graball('http://www.phonelosers.org/issue/014/')
   ARGV.each do |arg|
-    g.graball(arg)
+    page = Page.new(arg)
+    pp page.media_links
+    for link in page.media_links
+      system("wget", "-c", link)
+    end
+  #  g.graball(arg)
   end
+  
   
 end
