@@ -1,1 +1,30 @@
-pacman -Ss $*
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'colored'
+require 'open3'
+
+def help errormsg=nil
+  puts "usage: pms <regexp>"
+  if errormsg
+    puts "error: #{msg}"
+  end
+  exit 1
+end
+
+help "no search string" if ARGV.size < 0
+
+pattern = /(#{ARGV.join ' '})/i
+
+#lessinp, lessout, lesserr = Open3.popen3("less -SR -")
+
+Open3.popen3("pacman -Ss") do |pacinp, pacout, pacerr|
+
+  puts "pacman running"
+
+  pacout.each_slice(2) do |slice|
+    if slice.any? { |line| line =~ pattern }
+      slice.each { |line| puts line.gsub(pattern) { |match| match.red } }
+    end
+  end
+
+end
