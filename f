@@ -12,6 +12,12 @@ require 'pp'
 
 
 #################################################################
+## Globals
+$verbose = false
+#################################################################
+
+
+#################################################################
 ## Load the colorize gem, and define the "hilite" function
 begin
   require 'rubygems' 
@@ -101,7 +107,7 @@ def breadth_first_scan(root, &block)
   path_id = File.lstat(root).ino
   
   if seenpath = $visited[path_id]
-    STDERR.puts "*** WARNING: Already seen #{root.inspect} as #{seenpath.inspect}".red
+    STDERR.puts "*** WARNING: Already seen #{root.inspect} as #{seenpath.inspect}".red if $verbose
   else
     $visited[path_id] = root
     
@@ -124,7 +130,11 @@ end
 if $0 == __FILE__
 
   # Parse Commandline
-  case ARGV.size
+  opts = ARGV.select{|arg| arg =~ /^-\w$/}
+  args = ARGV - opts
+
+  # Handle ARGV
+  case args.size
     when 0
       query = ''
       roots = ['.']
@@ -138,10 +148,21 @@ if $0 == __FILE__
       end
     else
       query = ARGV.shift
-      query = '' if query == '-a'
       roots = ARGV
   end
 
+  # Handle one-letter options (eg: -a)
+  for opt in opts
+    case opt
+      when '-a'
+        roots.unshift query
+        query = ''
+      when '-v'
+        $verbose = true
+    end
+  end
+
+  
   # Matcher
   orig_query = query
   query = Regexp.new( Regexp.escape( query ), Regexp::IGNORECASE )
@@ -190,6 +211,7 @@ Usage:
   f <search string> <paths> => recursively list all files in <paths>
                                containing <search string>
   f -a <paths>              => show all files in paths
+  f -v [...]                => verbose mode (warns if there are symlink loops)
 
 (Note: To colorize the search results, install the "colorize" gem.)
 
