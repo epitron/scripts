@@ -142,9 +142,10 @@ if $0 == __FILE__
       roots = ARGV
   end
 
-  # Matcher  
+  # Matcher
+  orig_query = query
   query = Regexp.new( Regexp.escape( query ), Regexp::IGNORECASE )
-  
+
   # Ignore bad path arguments
   roots = roots.select do |path|
     File.exists?(path) || STDERR.puts("Error: #{path} doesn't exist")
@@ -154,10 +155,19 @@ if $0 == __FILE__
   roots.each do |root|
     begin
       breadth_first_scan(root) do |dirname, filename|
-        puts dirname+filename.hilite(query) if filename =~ query
+        
+        if orig_query['/']
+          # search in the full path if the user put a '/' in the query
+          path = dirname + filename
+          puts path.hilite(query) if path =~ query
+        else
+          # search in the filenames only
+          puts dirname+filename.hilite(query) if filename =~ query
+        end
+        
       end
     rescue Interrupt
-      # eat ^C
+      # eat ^C's
       exit(1)
     end
   end
