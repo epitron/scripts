@@ -7,6 +7,7 @@
 #################################################################
 ## Load Modules
 require 'pathname'
+require 'pp'
 #################################################################
 
 
@@ -79,7 +80,8 @@ def listdir(root)
   dirs_without_slashes = dirs.map{|dir| dir[0...-1]} 
   files = files - dirs_without_slashes # remove dirs from file list
 
-  dirs = dirs[2..-1] || [] # drop the "." and ".." dirs
+  # drop the "." and ".." dirs
+  dirs = dirs.select { |dir| not dir =~ %r{/\.{1,2}/} }
 
   # strip #{root} from paths
   dirs, files = [dirs,files].map do |list|
