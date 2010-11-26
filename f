@@ -129,26 +129,26 @@ end
 
 if $0 == __FILE__
 
-  # Parse Commandline
+  # Separate options from commmandline args
   opts = ARGV.select{|arg| arg =~ /^-\w$/}
   args = ARGV - opts
 
-  # Handle ARGV
+  # Handle args
   case args.size
     when 0
       query = ''
       roots = ['.']
     when 1
-      if ARGV.first =~ %r{(^/|/$|^\./)} #and File.directory?(ARGV.first)
+      if args.first =~ %r{(^/|/$|^\./)} #and File.directory?(ARGV.first)
         query = ''
-        roots = [ARGV.first]
+        roots = [args.first]
       else
-        query = ARGV.first
+        query = args.first
         roots = ['.']
       end
     else
-      query = ARGV.shift
-      roots = ARGV
+      query = args.shift
+      roots = args
   end
 
   # Handle one-letter options (eg: -a)
