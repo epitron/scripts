@@ -4,7 +4,8 @@ opts = ARGV.select{|arg| arg =~ /^-\w{1,2}$/ }
 args = ARGV - opts
 
 inp = args[0]
-out = inp.gsub(/\..{3,4}$/, '.avi')
+#out = inp.gsub(/\..{3,4}$/, '.avi')
+out = inp + ".avi"
 
 raise "Error: inp == out!"  if inp == out
 
