@@ -21,7 +21,7 @@ $verbose = false
 ## Load the colorize gem, and define the "hilite" function
 begin
   require 'rubygems' 
-  require 'colorize'
+  require 'colored'
   # Colourized hilite...
   class String
     def hilite(query)
