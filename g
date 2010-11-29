@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# encoding: BINARY
+
 #################################################################
 ## For author info, scroll to the end of this file.
 #################################################################
@@ -21,7 +23,7 @@ IGNORE_PATHS     = Set.new([".svn", ".git", "CVS"])
 ## Load the colorize gem, and define the "hilite" function
 begin
   require 'rubygems' 
-  require 'colorize'
+  require 'colored'
   # Colourized hilite...
   class String
     def hilite(query)
@@ -36,7 +38,7 @@ begin
     end
   end
 rescue LoadError
-  STDERR.puts "Note: You should install the 'colorize' gem for extra prettiness.\n"
+  STDERR.puts "Note: You should install the 'colored' gem for extra prettiness.\n"
   # Define black & white stubs to replace colorized methods...
   class String
     def hilite(query)
@@ -98,8 +100,8 @@ def breadth_first_file_scan(root, &block)
 end
 
 def grep_file(path, query, &block)
-  path.open do |f|
-    f.each_with_index do |line,n|
+  open(path, "rb") do |f|
+    f.each_with_index do |line, n|
       yield(line,n+1) if line =~ query
     end
   end
