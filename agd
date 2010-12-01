@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-get --download-only --force-yes -y -u dist-upgrade
+sudoifnotroot apt-get --download-only --force-yes -y -u dist-upgrade

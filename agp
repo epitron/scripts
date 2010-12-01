@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-get purge $*
+sudiofnotroot apt-get purge $*

@@ -1,0 +1,8 @@
+#!/bin/bash
+CMD="$*"
+
+if [ $UID == 0 ]; then
+  $CMD
+else
+  sudo $CMD
+fi

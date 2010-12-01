@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-get remove $*
+sudoifnotroot apt-get remove $*

@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-get -u install $*
+sudoifnotroot apt-get -u install $*
