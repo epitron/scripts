@@ -21,7 +21,7 @@
 
 BEGIN { $INC{'HTTP/Cookies.pm'}++; }
 BEGIN { $INC{'HTTP/Date.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/HTTP/Date.pm
+##{ /usr/share/perl5/HTTP/Date.pm
 {
 package HTTP::Date;
 
@@ -270,9 +270,9 @@ sub time2isoz (;$)
 
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Date.pm
+##} /usr/share/perl5/HTTP/Date.pm
 BEGIN { $INC{'HTTP/Headers/Util.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/HTTP/Headers/Util.pm
+##{ /usr/share/perl5/HTTP/Headers/Util.pm
 {
 package HTTP::Headers::Util;
 
@@ -367,16 +367,16 @@ sub join_header_words
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Headers/Util.pm
+##} /usr/share/perl5/HTTP/Headers/Util.pm
 BEGIN { $INC{'HTTP/Cookies/Netscape.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/HTTP/Cookies/Netscape.pm
+##{ /usr/share/perl5/HTTP/Cookies/Netscape.pm
 {
 package HTTP::Cookies::Netscape;
 
 use strict;
 use vars qw(@ISA $VERSION);
 
-$VERSION = "5.832";
+$VERSION = "5.822";
 
 @ISA=qw(HTTP::Cookies);
 
@@ -436,19 +436,19 @@ EOT
 
 1;
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Cookies/Netscape.pm
-##{ /usr/local/share/perl/5.10.0/HTTP/Cookies.pm
+##} /usr/share/perl5/HTTP/Cookies/Netscape.pm
+##{ /usr/share/perl5/HTTP/Cookies.pm
 {
 package HTTP::Cookies;
 
 use strict;
-BEGIN { HTTP::Date->import( qw(str2time parse_date time2str)); } # (added by utils/combine-perl.pl)
-BEGIN { no strict 'refs'; *str2time = \&HTTP::Date::str2time; *parse_date = \&HTTP::Date::parse_date; *time2str = \&HTTP::Date::time2str; }
+BEGIN { HTTP::Date->import( qw(str2time time2str)); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *str2time = \&HTTP::Date::str2time; *time2str = \&HTTP::Date::time2str; }
 BEGIN { HTTP::Headers::Util->import( qw(_split_header_words join_header_words)); } # (added by utils/combine-perl.pl)
 BEGIN { no strict 'refs'; *_split_header_words = \&HTTP::Headers::Util::_split_header_words; *join_header_words = \&HTTP::Headers::Util::join_header_words; }
 
 use vars qw($VERSION $EPOCH_OFFSET);
-$VERSION = "5.833";
+$VERSION = "5.827";
 
 
 $EPOCH_OFFSET = 0;  # difference from Unix epoch
@@ -580,12 +580,7 @@ sub add_cookie_header
 	}
     }
 
-    if (@cval) {
-	if (my $old = $request->header("Cookie")) {
-	    unshift(@cval, $old);
-	}
-	$request->header(Cookie => join("; ", @cval));
-    }
+    $request->header(Cookie => join("; ", @cval)) if @cval;
 
     $request;
 }
@@ -635,23 +630,9 @@ sub extract_cookies
 		}
 		if (!$first_param && lc($k) eq "expires") {
 		    my $etime = str2time($v);
-		    if (defined $etime) {
-			push(@cur, "Max-Age" => $etime - $now);
+		    if ($etime) {
+			push(@cur, "Max-Age" => str2time($v) - $now);
 			$expires++;
-		    }
-		    else {
-			my($year, $mon, $day, $hour, $min, $sec, $tz) = parse_date($v);
-			if ($year) {
-			    my $thisyear = (gmtime)[5] + 1900;
-			    if ($year < $thisyear) {
-				push(@cur, "Max-Age" => -1);  # any negative value will do
-				$expires++;
-			    }
-			    elsif ($year >= $thisyear + 10) {
-				push(@cur, "Max-Age" => 10 * 365 * 24 * 60 * 60);
-				$expires++;
-			    }
-			}
 		    }
 		}
                 elsif (!$first_param && lc($k) =~ /^(?:version|discard|ns-cookie)/) {
@@ -688,7 +669,7 @@ sub extract_cookies
 	    if ($k eq "discard" || $k eq "secure") {
 		$v = 1 unless defined $v;
 	    }
-	    next if exists $hash{$k};  # only first value is significant
+	    next if exists $hash{$k};  # only first value is signigicant
 	    $hash{$k} = $v;
 	};
 
@@ -1002,7 +983,7 @@ sub _normalize_path  # so that plain string compare can be used
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Cookies.pm
+##} /usr/share/perl5/HTTP/Cookies.pm
 BEGIN { $INC{'HTTP/Config.pm'}++; }
 BEGIN { $INC{'URI.pm'}++; }
 BEGIN { $INC{'URI/Escape.pm'}++; }
@@ -1368,7 +1349,7 @@ sub STORABLE_thaw {
 
 }
 ##} /usr/share/perl5/URI.pm
-##{ /usr/local/share/perl/5.10.0/HTTP/Config.pm
+##{ /usr/share/perl5/HTTP/Config.pm
 {
 package HTTP::Config;
 
@@ -1376,7 +1357,7 @@ use strict;
 BEGIN { URI->import(); } # (added by utils/combine-perl.pl)
 use vars qw($VERSION);
 
-$VERSION = "5.835";
+$VERSION = "5.815";
 
 sub new {
     my $class = shift;
@@ -1443,7 +1424,7 @@ my %MATCH = (
     },
     m_secure => sub {
         my($v, $uri) = @_;
-        my $secure = $uri->can("secure") ? $uri->secure : $uri->_scheme eq "https";
+        my $secure = $uri->_scheme eq "https";
         return $secure == !!$v;
     },
     m_host_port => sub {
@@ -1518,7 +1499,7 @@ my %MATCH = (
         my $ct = $response->content_type;
         return 2, 1 if $v =~ s,/\*\z,, && $ct =~ m,^\Q$v\E/,;
         return 3, 1 if $v eq "html" && $response->content_is_html;
-        return 4, 1 if $v eq "xhtml" && $response->content_is_xhtml;
+        return 4, 1 if $v eq "html" && $response->content_is_xhtml;
         return 10, 1 if $v eq $ct;
         return 0;
     },
@@ -1604,12 +1585,12 @@ sub matching_items {
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Config.pm
+##} /usr/share/perl5/HTTP/Config.pm
 BEGIN { $INC{'HTTP/Request/Common.pm'}++; }
 BEGIN { $INC{'HTTP/Request.pm'}++; }
 BEGIN { $INC{'HTTP/Message.pm'}++; }
 BEGIN { $INC{'HTTP/Headers.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/HTTP/Headers.pm
+##{ /usr/share/perl5/HTTP/Headers.pm
 {
 package HTTP::Headers;
 
@@ -1617,7 +1598,7 @@ use strict;
 use Carp ();
 
 use vars qw($VERSION $TRANSLATE_UNDERSCORE);
-$VERSION = "5.835";
+$VERSION = "5.827";
 
 $TRANSLATE_UNDERSCORE = 1 unless defined $TRANSLATE_UNDERSCORE;
 
@@ -1800,16 +1781,16 @@ sub _header
 sub _sorted_field_names
 {
     my $self = shift;
-    return [ sort {
+    return sort {
         ($header_order{$a} || 999) <=> ($header_order{$b} || 999) ||
          $a cmp $b
-    } keys %$self ];
+    } keys %$self
 }
 
 
 sub header_field_names {
     my $self = shift;
-    return map $standard_case{$_} || $_, @{ $self->_sorted_field_names },
+    return map $standard_case{$_} || $_, $self->_sorted_field_names
 	if wantarray;
     return keys %$self;
 }
@@ -1819,17 +1800,17 @@ sub scan
 {
     my($self, $sub) = @_;
     my $key;
-    for $key (@{ $self->_sorted_field_names }) {
-	next if substr($key, 0, 1) eq '_';
+    foreach $key ($self->_sorted_field_names) {
+        next if $key =~ /^_/;
 	my $vals = $self->{$key};
 	if (ref($vals) eq 'ARRAY') {
 	    my $val;
 	    for $val (@$vals) {
-		$sub->($standard_case{$key} || $key, $val);
+		&$sub($standard_case{$key} || $key, $val);
 	    }
 	}
 	else {
-	    $sub->($standard_case{$key} || $key, $vals);
+	    &$sub($standard_case{$key} || $key, $vals);
 	}
     }
 }
@@ -1841,42 +1822,20 @@ sub as_string
     $endl = "\n" unless defined $endl;
 
     my @result = ();
-    for my $key (@{ $self->_sorted_field_names }) {
-	next if index($key, '_') == 0;
-	my $vals = $self->{$key};
-	if ( ref($vals) eq 'ARRAY' ) {
-	    for my $val (@$vals) {
-		my $field = $standard_case{$key} || $key;
-		$field =~ s/^://;
-		if ( index($val, "\n") >= 0 ) {
-		    $val = _process_newline($val, $endl);
-		}
-		push @result, $field . ': ' . $val;
-	    }
+    $self->scan(sub {
+	my($field, $val) = @_;
+	$field =~ s/^://;
+	if ($val =~ /\n/) {
+	    $val =~ s/\s+$//;          # trailing newlines and space must go
+	    $val =~ s/\n\n+/\n/g;      # no empty lines
+	    $val =~ s/\n([^\040\t])/\n $1/g;  # intial space for continuation
+	    $val =~ s/\n/$endl/g;      # substitute with requested line ending
 	}
-	else {
-	    my $field = $standard_case{$key} || $key;
-	    $field =~ s/^://;
-	    if ( index($vals, "\n") >= 0 ) {
-		$vals = _process_newline($vals, $endl);
-	    }
-	    push @result, $field . ': ' . $vals;
-	}
-    }
+	push(@result, "$field: $val");
+    });
 
     join($endl, @result, '');
 }
-
-sub _process_newline {
-    local $_ = shift;
-    my $endl = shift;
-    s/\s+$//;        # trailing newlines and space must go
-    s/\n(\x0d?\n)+/\n/g;     # no empty lines
-    s/\n([^\040\t])/\n $1/g; # intial space for continuation
-    s/\n/$endl/g;    # substitute with requested line ending
-    $_;
-}
-
 
 
 if (eval { require Storable; 1 }) {
@@ -1884,7 +1843,7 @@ if (eval { require Storable; 1 }) {
 } else {
     *clone = sub {
 	my $self = shift;
-	my $clone = HTTP::Headers->new;
+	my $clone = new HTTP::Headers;
 	$self->scan(sub { $clone->push_header(@_);} );
 	$clone;
     };
@@ -2037,14 +1996,14 @@ sub _basic_auth {
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Headers.pm
-##{ /usr/local/share/perl/5.10.0/HTTP/Message.pm
+##} /usr/share/perl5/HTTP/Headers.pm
+##{ /usr/share/perl5/HTTP/Message.pm
 {
 package HTTP::Message;
 
 use strict;
 use vars qw($VERSION $AUTOLOAD);
-$VERSION = "5.835";
+$VERSION = "5.831";
 
 require Carp;
 
@@ -2242,6 +2201,7 @@ sub content_charset
 
     my $cref = $self->decoded_content(ref => 1, charset => "none");
 
+    local $_;
     for ($$cref) {
 	return "UTF-8"     if /^\xEF\xBB\xBF/;
 	return "UTF-32-LE" if /^\xFF\xFE\x00\x00/;
@@ -2277,7 +2237,6 @@ sub content_charset
 		    if (my $c = $attr->{content}) {
 			require HTTP::Headers::Util;
 			my @v = HTTP::Headers::Util::split_header_words($c);
-			return unless @v;
 			my($ct, undef, %ct_param) = @{$v[0]};
 			$charset = $ct_param{charset};
 		    }
@@ -2329,37 +2288,69 @@ sub decoded_content
 		next unless $ce;
 		next if $ce eq "identity";
 		if ($ce eq "gzip" || $ce eq "x-gzip") {
-		    require IO::Uncompress::Gunzip;
-		    my $output;
-		    IO::Uncompress::Gunzip::gunzip($content_ref, \$output, Transparent => 0)
-			or die "Can't gunzip content: $IO::Uncompress::Gunzip::GunzipError";
-		    $content_ref = \$output;
-		    $content_ref_iscopy++;
+		    require Compress::Zlib;
+		    unless ($content_ref_iscopy) {
+			my $copy = $$content_ref;
+			$content_ref = \$copy;
+			$content_ref_iscopy++;
+		    }
+		    $content_ref = \Compress::Zlib::memGunzip($$content_ref);
+		    die "Can't gunzip content" unless defined $$content_ref;
 		}
 		elsif ($ce eq "x-bzip2") {
-		    require IO::Uncompress::Bunzip2;
-		    my $output;
-		    IO::Uncompress::Bunzip2::bunzip2($content_ref, \$output, Transparent => 0)
-			or die "Can't bunzip content: $IO::Uncompress::Bunzip2::Bunzip2Error";
-		    $content_ref = \$output;
+		    require Compress::Bzip2;
+		    my $i = Compress::Bzip2::bzinflateInit() or
+			die "Can't init bzip2 inflater: $Compress::Bzip2::bzerrno";
+		    unless ($content_ref_iscopy) {
+			my $copy = $$content_ref;
+			$content_ref = \$copy;
+			$content_ref_iscopy++;
+		    }
+		    my ($out, $status) = $i->bzinflate($$content_ref);
+		    my $bzerr = "";
+		    if (!defined($out) &&
+			$status != Compress::Bzip2::BZ_STREAM_END()) {
+			if ($status == Compress::Bzip2::BZ_OK()) {
+			    $self->push_header("Client-Warning" =>
+			       "Content might be truncated; incomplete bzip2 stream");
+			}
+			else {
+			    $out = undef;
+			    $bzerr = ": $Compress::Bzip2::bzerrno";
+			}
+		    }
+		    die "Can't bunzip content$bzerr" unless defined $out;
+		    $content_ref = \$out;
 		    $content_ref_iscopy++;
 		}
 		elsif ($ce eq "deflate") {
-		    require IO::Uncompress::Inflate;
-		    my $output;
-		    my $status = IO::Uncompress::Inflate::inflate($content_ref, \$output, Transparent => 0);
-		    my $error = $IO::Uncompress::Inflate::InflateError;
-		    unless ($status) {
-			$output = undef;
-			require IO::Uncompress::RawInflate;
-			unless (IO::Uncompress::RawInflate::rawinflate($content_ref, \$output)) {
-			    $self->push_header("Client-Warning" =>
-				"Could not raw inflate content: $IO::Uncompress::RawInflate::RawInflateError");
-			    $output = undef;
+		    require Compress::Zlib;
+		    my $out = Compress::Zlib::uncompress($$content_ref);
+		    unless (defined $out) {
+			unless ($content_ref_iscopy) {
+			    my $copy = $$content_ref;
+			    $content_ref = \$copy;
+			    $content_ref_iscopy++;
+			}
+
+			my($i, $status) = Compress::Zlib::inflateInit(
+			    WindowBits => -Compress::Zlib::MAX_WBITS(),
+                        );
+			my $OK = Compress::Zlib::Z_OK();
+			die "Can't init inflate object" unless $i && $status == $OK;
+			($out, $status) = $i->inflate($content_ref);
+			if ($status != Compress::Zlib::Z_STREAM_END()) {
+			    if ($status == $OK) {
+				$self->push_header("Client-Warning" =>
+				    "Content might be truncated; incomplete deflate stream");
+			    }
+			    else {
+				$out = undef;
+			    }
 			}
 		    }
-		    die "Can't inflate content: $error" unless defined $output;
-		    $content_ref = \$output;
+		    die "Can't inflate content" unless defined $out;
+		    $content_ref = \$out;
 		    $content_ref_iscopy++;
 		}
 		elsif ($ce eq "compress" || $ce eq "x-compress") {
@@ -2381,7 +2372,7 @@ sub decoded_content
 	    }
 	}
 
-	if ($self->content_is_text || (my $is_xml = $self->content_is_xml)) {
+	if ($self->content_is_text || $self->content_is_xml) {
 	    my $charset = lc(
 	        $opt{charset} ||
 		$self->content_type_charset ||
@@ -2398,30 +2389,9 @@ sub decoded_content
 		    $content_ref = \$copy;
 		    $content_ref_iscopy++;
 		}
-		eval {
-		    $content_ref = \Encode::decode($charset, $$content_ref,
-			 ($opt{charset_strict} ? Encode::FB_CROAK() : 0) | Encode::LEAVE_SRC());
-		};
-		if ($@) {
-		    my $retried;
-		    if ($@ =~ /^Unknown encoding/) {
-			my $alt_charset = lc($opt{alt_charset} || "");
-			if ($alt_charset && $charset ne $alt_charset) {
-			    $content_ref = \Encode::decode($alt_charset, $$content_ref,
-				 ($opt{charset_strict} ? Encode::FB_CROAK() : 0) | Encode::LEAVE_SRC())
-			        unless $alt_charset =~ /^(?:none|us-ascii|iso-8859-1)\z/;
-			    $retried++;
-			}
-		    }
-		    die unless $retried;
-		}
+		$content_ref = \Encode::decode($charset, $$content_ref,
+		     ($opt{charset_strict} ? Encode::FB_CROAK() : 0) | Encode::LEAVE_SRC());
 		die "Encode::decode() returned undef improperly" unless defined $$content_ref;
-		if ($is_xml) {
-		    $$content_ref =~ s/^\x{FEFF}//;
-		    if ($$content_ref =~ /^(\s*<\?xml[^\x00]*?\?>)/) {
-			substr($$content_ref, 0, length($1)) =~ s/\sencoding\s*=\s*(["']).*?\1//;
-		    }
-		}
 	    }
 	}
     };
@@ -2439,16 +2409,11 @@ sub decodable
     my $self = shift;
     my @enc;
     eval {
-        require IO::Uncompress::Gunzip;
-        push(@enc, "gzip", "x-gzip");
+        require Compress::Zlib;
+        push(@enc, "gzip", "x-gzip", "deflate");
     };
     eval {
-        require IO::Uncompress::Inflate;
-        require IO::Uncompress::RawInflate;
-        push(@enc, "deflate");
-    };
-    eval {
-        require IO::Uncompress::Bunzip2;
+        require Compress::Bzip2;
         push(@enc, "x-bzip2");
     };
     return wantarray ? @enc : join(", ", @enc);
@@ -2486,25 +2451,24 @@ sub encode
 	    $content = MIME::Base64::encode($content);
 	}
 	elsif ($encoding eq "gzip" || $encoding eq "x-gzip") {
-	    require IO::Compress::Gzip;
-	    my $output;
-	    IO::Compress::Gzip::gzip(\$content, \$output, Minimal => 1)
-		or die "Can't gzip content: $IO::Compress::Gzip::GzipError";
-	    $content = $output;
+	    require Compress::Zlib;
+	    $content = Compress::Zlib::memGzip($content);
 	}
 	elsif ($encoding eq "deflate") {
-	    require IO::Compress::Deflate;
-	    my $output;
-	    IO::Compress::Deflate::deflate(\$content, \$output)
-		or die "Can't deflate content: $IO::Compress::Deflate::DeflateError";
-	    $content = $output;
+	    require Compress::Zlib;
+	    $content = Compress::Zlib::compress($content);
 	}
 	elsif ($encoding eq "x-bzip2") {
-	    require IO::Compress::Bzip2;
-	    my $output;
-	    IO::Compress::Bzip2::bzip2(\$content, \$output)
-		or die "Can't bzip2 content: $IO::Compress::Bzip2::Bzip2Error";
-	    $content = $output;
+	    require Compress::Bzip2;
+	    my $d = Compress::Bzip2::bzdeflateInit() or
+		die "Can't init bzip2 deflater: $Compress::Bzip2::bzerrno";
+	    ($content, my $status) = $d->bzdeflate($content);
+	    die "Can't bzip content: $Compress::Bzip2::bzerrno"
+		unless $status == Compress::Bzip2::BZ_OK();
+	    (my $rest, $status) = $d->bzclose;
+	    die "Can't bzip content: $Compress::Bzip2::bzerrno"
+		unless $status == Compress::Bzip2::BZ_OK();
+	    $content .= $rest if defined $rest;
 	}
 	elsif ($encoding eq "rot13") {  # for the fun of it
 	    $content =~ tr/A-Za-z/N-ZA-Mn-za-m/;
@@ -2767,8 +2731,8 @@ sub _boundary
 
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Message.pm
-##{ /usr/local/share/perl/5.10.0/HTTP/Request.pm
+##} /usr/share/perl5/HTTP/Message.pm
+##{ /usr/share/perl5/HTTP/Request.pm
 {
 package HTTP::Request;
 
@@ -2903,8 +2867,8 @@ sub dump
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Request.pm
-##{ /usr/local/share/perl/5.10.0/HTTP/Request/Common.pm
+##} /usr/share/perl5/HTTP/Request.pm
+##{ /usr/share/perl5/HTTP/Request/Common.pm
 {
 package HTTP::Request::Common;
 
@@ -3190,11 +3154,11 @@ sub boundary
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Request/Common.pm
+##} /usr/share/perl5/HTTP/Request/Common.pm
 BEGIN { $INC{'LWP/Protocol/http.pm'}++; }
 BEGIN { $INC{'HTTP/Response.pm'}++; }
 BEGIN { $INC{'HTTP/Status.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/HTTP/Status.pm
+##{ /usr/share/perl5/HTTP/Status.pm
 {
 package HTTP::Status;
 
@@ -3300,13 +3264,13 @@ sub is_server_error ($) { $_[0] >= 500 && $_[0] < 600; }
 
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Status.pm
-##{ /usr/local/share/perl/5.10.0/HTTP/Response.pm
+##} /usr/share/perl5/HTTP/Status.pm
+##{ /usr/share/perl5/HTTP/Response.pm
 {
 package HTTP::Response;
 
 @ISA = qw(HTTP::Message);
-$VERSION = "5.836";
+$VERSION = "5.824";
 
 use strict;
 
@@ -3377,11 +3341,9 @@ sub status_line
 sub base
 {
     my $self = shift;
-    my $base = (
-	$self->header('Content-Base'),        # used to be HTTP/1.1
-	$self->header('Content-Location'),    # HTTP/1.1
-	$self->header('Base'),                # HTTP/1.0
-    )[0];
+    my $base = $self->header('Content-Base')     ||  # used to be HTTP/1.1
+               $self->header('Content-Location') ||  # HTTP/1.1
+               $self->header('Base');                # HTTP/1.0
     if ($base && $base =~ /^$URI::scheme_re:/o) {
 	return $HTTP::URI_CLASS->new($base);
     }
@@ -3450,8 +3412,8 @@ sub filename
 	}
     }
 
+    my $uri;
     unless (defined($file) && length($file)) {
-	my $uri;
 	if (my $cl = $self->header('Content-Location')) {
 	    $uri = URI->new($cl);
 	}
@@ -3621,10 +3583,10 @@ sub fresh_until
 
 
 }
-##} /usr/local/share/perl/5.10.0/HTTP/Response.pm
+##} /usr/share/perl5/HTTP/Response.pm
 BEGIN { $INC{'Net/HTTP.pm'}++; }
 BEGIN { $INC{'Net/HTTP/Methods.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/Net/HTTP/Methods.pm
+##{ /usr/share/perl5/Net/HTTP/Methods.pm
 {
 package Net::HTTP::Methods;
 
@@ -3633,7 +3595,7 @@ require 5.005;  # 4-arg substr
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "5.834";
+$VERSION = "5.824";
 
 my $CRLF = "\015\012";   # "\r\n" is not portable
 
@@ -3697,7 +3659,7 @@ sub http_configure {
     $peer_http_version = "1.0" unless defined $peer_http_version;
     my $send_te = delete $cnf->{SendTE};
     my $max_line_length = delete $cnf->{MaxLineLength};
-    $max_line_length = 8*1024 unless defined $max_line_length;
+    $max_line_length = 4*1024 unless defined $max_line_length;
     my $max_header_lines = delete $cnf->{MaxHeaderLines};
     $max_header_lines = 128 unless defined $max_header_lines;
 
@@ -3788,7 +3750,7 @@ sub format_request {
     if ($given{te}) {
 	push(@connection, "TE") unless grep lc($_) eq "te", @connection;
     }
-    elsif ($self->send_te && gunzip_ok()) {
+    elsif ($self->send_te && zlib_ok()) {
 	push(@h2, "TE: deflate,gzip;q=0.3");
 	push(@connection, "TE");
     }
@@ -3864,14 +3826,13 @@ sub my_read {
 
 sub my_readline {
     my $self = shift;
-    my $what = shift;
     for (${*$self}{'http_buf'}) {
 	my $max_line_length = ${*$self}{'http_max_line_length'};
 	my $pos;
 	while (1) {
 	    $pos = index($_, "\012");
 	    last if $pos >= 0;
-	    die "$what line too long (limit is $max_line_length)"
+	    die "Line too long (limit is $max_line_length)"
 		if $max_line_length && length($_) > $max_line_length;
 
           READ:
@@ -3883,7 +3844,7 @@ sub my_readline {
                         select(undef, undef, undef, 0.1);  # but this will do for now
                         redo READ;
                     }
-                    die "$what read failed: $!" unless length;
+                    die "read failed: $!" unless length;
                 }
                 unless ($n) {
                     return undef unless length;
@@ -3891,7 +3852,7 @@ sub my_readline {
                 }
             }
 	}
-	die "$what line too long ($pos; limit is $max_line_length)"
+	die "Line too long ($pos; limit is $max_line_length)"
 	    if $max_line_length && $pos > $max_line_length;
 
 	my $line = substr($_, 0, $pos+1, "");
@@ -3929,7 +3890,7 @@ sub _read_header_lines {
     my @headers;
     my $line_count = 0;
     my $max_header_lines = ${*$self}{'http_max_header_lines'};
-    while (my $line = my_readline($self, 'Header')) {
+    while (my $line = my_readline($self)) {
 	if ($line =~ /^(\S+?)\s*:\s*(.*)/s) {
 	    push(@headers, $1, $2);
 	}
@@ -3957,7 +3918,7 @@ sub read_response_headers {
     my($self, %opt) = @_;
     my $laxed = $opt{laxed};
 
-    my($status, $eol) = my_readline($self, 'Status');
+    my($status, $eol) = my_readline($self);
     unless (defined $status) {
 	die "Server closed connection without sending any data back";
     }
@@ -4030,21 +3991,17 @@ sub read_entity_body {
 		unless pop(@te) eq "chunked";
 
 	    for (@te) {
-		if ($_ eq "deflate" && inflate_ok()) {
-		    my ($i, $status) = Compress::Raw::Zlib::Inflate->new();
-		    die "Can't make inflator: $status" unless $i;
-		    $_ = sub { my $out; $i->inflate($_[0], \$out); $out }
+		if ($_ eq "deflate" && zlib_ok()) {
+		    my $i = Compress::Zlib::inflateInit();
+		    die "Can't make inflator" unless $i;
+		    $_ = sub { scalar($i->inflate($_[0])) }
 		}
-		elsif ($_ eq "gzip" && gunzip_ok()) {
+		elsif ($_ eq "gzip" && zlib_ok()) {
 		    my @buf;
 		    $_ = sub {
 			push(@buf, $_[0]);
-			return "" unless $_[1];
-			my $input = join("", @buf);
-			my $output;
-			IO::Uncompress::Gunzip::gunzip(\$input, \$output, Transparent => 0)
-			    or die "Can't gunzip content: $IO::Uncompress::Gunzip::GunzipError";
-			return \$output;
+			return Compress::Zlib::memGunzip(join("", @buf)) if $_[1];
+			return "";
 		    };
 		}
 		elsif ($_ eq "identity") {
@@ -4078,11 +4035,11 @@ sub read_entity_body {
     if (defined $chunked) {
 
 	if ($chunked <= 0) {
-	    my $line = my_readline($self, 'Entity body');
+	    my $line = my_readline($self);
 	    if ($chunked == 0) {
 		die "Missing newline after chunk data: '$line'"
 		    if !defined($line) || $line ne "";
-		$line = my_readline($self, 'Entity body');
+		$line = my_readline($self);
 	    }
 	    die "EOF when chunk header expected" unless defined($line);
 	    my $chunk_len = $line;
@@ -4152,52 +4109,37 @@ sub get_trailers {
 }
 
 BEGIN {
-my $gunzip_ok;
-my $inflate_ok;
+my $zlib_ok;
 
-sub gunzip_ok {
-    return $gunzip_ok if defined $gunzip_ok;
-
-    local $@;
-    local $SIG{__DIE__};
-    $gunzip_ok = 0;
-
-    eval {
-	require IO::Uncompress::Gunzip;
-	$gunzip_ok++;
-    };
-
-    return $gunzip_ok;
-}
-
-sub inflate_ok {
-    return $inflate_ok if defined $inflate_ok;
+sub zlib_ok {
+    return $zlib_ok if defined $zlib_ok;
 
     local $@;
     local $SIG{__DIE__};
-    $inflate_ok = 0;
+    $zlib_ok = 0;
 
     eval {
-	require Compress::Raw::Zlib;
-	$inflate_ok++;
+	require Compress::Zlib;
+	Compress::Zlib->VERSION(1.10);
+	$zlib_ok++;
     };
 
-    return $inflate_ok;
+    return $zlib_ok;
 }
 
 } # BEGIN
 
 1;
 }
-##} /usr/local/share/perl/5.10.0/Net/HTTP/Methods.pm
-##{ /usr/local/share/perl/5.10.0/Net/HTTP.pm
+##} /usr/share/perl5/Net/HTTP/Methods.pm
+##{ /usr/share/perl5/Net/HTTP.pm
 {
 package Net::HTTP;
 
 use strict;
 use vars qw($VERSION @ISA $SOCKET_CLASS);
 
-$VERSION = "5.834";
+$VERSION = "5.831";
 unless ($SOCKET_CLASS) {
     eval { require IO::Socket::INET } || require IO::Socket;
     $SOCKET_CLASS = "IO::Socket::INET";
@@ -4225,10 +4167,10 @@ sub http_connect {
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/Net/HTTP.pm
+##} /usr/share/perl5/Net/HTTP.pm
 BEGIN { $INC{'LWP/Protocol.pm'}++; }
 BEGIN { $INC{'LWP/MemberMixin.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/LWP/MemberMixin.pm
+##{ /usr/share/perl5/LWP/MemberMixin.pm
 {
 package LWP::MemberMixin;
 
@@ -4244,8 +4186,8 @@ sub _elem
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/LWP/MemberMixin.pm
-##{ /usr/local/share/perl/5.10.0/LWP/Protocol.pm
+##} /usr/share/perl5/LWP/MemberMixin.pm
+##{ /usr/share/perl5/LWP/Protocol.pm
 {
 package LWP::Protocol;
 
@@ -4430,8 +4372,8 @@ sub collect_once
 
 
 }
-##} /usr/local/share/perl/5.10.0/LWP/Protocol.pm
-##{ /usr/local/share/perl/5.10.0/LWP/Protocol/http.pm
+##} /usr/share/perl5/LWP/Protocol.pm
+##{ /usr/share/perl5/LWP/Protocol/http.pm
 {
 package LWP::Protocol::http;
 
@@ -4449,7 +4391,7 @@ sub _new_socket
     my($self, $host, $port, $timeout) = @_;
     my $conn_cache = $self->{ua}{conn_cache};
     if ($conn_cache) {
-	if (my $sock = $conn_cache->withdraw($self->socket_type, "$host:$port")) {
+	if (my $sock = $conn_cache->withdraw("http", "$host:$port")) {
 	    return $sock if $sock && !$sock->can_read(0);
 	    $sock->close;
 	}
@@ -4458,7 +4400,6 @@ sub _new_socket
     local($^W) = 0;  # IO::Socket::INET can be noisy
     my $sock = $self->socket_class->new(PeerAddr => $host,
 					PeerPort => $port,
-					LocalAddr => $self->{ua}{local_address},
 					Proto    => 'tcp',
 					Timeout  => $timeout,
 					KeepAlive => !!$conn_cache,
@@ -4474,11 +4415,6 @@ sub _new_socket
     eval { $sock->blocking(0); };
 
     $sock;
-}
-
-sub socket_type
-{
-    return "http";
 }
 
 sub socket_class
@@ -4545,9 +4481,9 @@ sub request
 
     my $method = $request->method;
     unless ($method =~ /^[A-Za-z0-9_!\#\$%&\'*+\-.^\`|~]+$/) {  # HTTP token
-	return HTTP::Response->new( &HTTP::Status::RC_BAD_REQUEST,
+	return new HTTP::Response &HTTP::Status::RC_BAD_REQUEST,
 				  'Library does not allow method ' .
-				  "$method for 'http:' URLs");
+				  "$method for 'http:' URLs";
     }
 
     my $url = $request->uri;
@@ -4810,7 +4746,7 @@ sub request
 	    if (($peer_http_version eq "1.1" && !$connection{close}) ||
 		$connection{"keep-alive"})
 	    {
-		$conn_cache->deposit($self->socket_type, "$host:$port", $socket);
+		$conn_cache->deposit("http", "$host:$port", $socket);
 	    }
 	}
     }
@@ -4871,7 +4807,7 @@ use vars qw(@ISA);
 
 1;
 }
-##} /usr/local/share/perl/5.10.0/LWP/Protocol/http.pm
+##} /usr/share/perl5/LWP/Protocol/http.pm
 BEGIN { $INC{'XML/Simple.pm'}++; }
 # $Id: Simple.pm,v 1.40 2007/08/15 10:36:48 grantm Exp $
 #################################################
@@ -6904,18 +6840,19 @@ sub get_phrase {
 
 }
 ##} /usr/lib/perl5/HTML/TokeParser.pm
-##{ ./FlashVideo/Utils.pm
+##{ blib/lib/FlashVideo/Utils.pm
 {
 package FlashVideo::Utils;
 
 use strict;
+no warnings 'uninitialized';
 use Exporter;use base 'Exporter';
 use HTML::Entities;
 BEGIN { HTML::TokeParser->import(); } # (added by utils/combine-perl.pl)
 use Encode;
 
 use constant FP_KEY => "Genuine Adobe Flash Player 001";
-use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv|avi)/i;
+use constant EXTENSIONS => qr/\.(?:flv|mp4|mov|wmv|avi|m4v)/i;
 use constant MAX_REDIRECTS => 5;
 
 our @EXPORT = qw(debug info error
@@ -6927,11 +6864,11 @@ our @EXPORT = qw(debug info error
 sub debug(@) {
   my $string = "@_\n";
   $string =~ s/\Q$ENV{HOME}\E/~/g;
-  print STDERR $string if $::opt{debug};
+  print STDERR $string if $App::get_flash_videos::opt{debug};
 }
 
 sub info(@) {
-  print STDERR "@_\n" unless $::opt{quiet};
+  print STDERR "@_\n" unless $App::get_flash_videos::opt{quiet};
 }
 
 sub error(@) {
@@ -7015,10 +6952,14 @@ sub url_exists {
 
 sub title_to_filename {
   my($title, $type) = @_;
-  $type ||= "flv";
 
-  $type = substr $1, 1 if $title =~ s/(@{[EXTENSIONS]})$//;
-  $type = substr $1, 1 if $type =~ s/(@{[EXTENSIONS]})$//;
+  if($title =~ s/(@{[EXTENSIONS]})$//) {
+    $type = substr $1, 1;
+  } elsif ($type && $type !~ /^\w+$/) {
+    $type = substr((URI->new($type)->path =~ /(@{[EXTENSIONS]})$/)[0], 1);
+  }
+
+  $type ||= "flv";
 
   utf8::upgrade($title);
 
@@ -7127,7 +7068,7 @@ sub is_program_on_path {
 
 sub get_terminal_width {
   if(eval { require Term::ReadKey } && (my($width) = Term::ReadKey::GetTerminalSize())) {
-    return $width - 1 if $^O =~ /MSWin/i; # seems to be off by 1 on Windows
+    return $width - 1 if $^O =~ /MSWin|cygwin/i; # seems to be off by 1 on Windows
     return $width;
   } elsif($ENV{COLUMNS}) {
     return $ENV{COLUMNS};
@@ -7145,53 +7086,91 @@ sub json_unescape {
 }
 
 sub convert_sami_subtitles_to_srt {
-  my ($sami_subtitles, $filename) = @_;
+  my ($sami_subtitles, $filename, $decrypt_callback) = @_;
 
   die "SAMI subtitles must be provided"      unless $sami_subtitles;
   die "Output SRT filename must be provided" unless $filename;
 
-  my $parser = HTML::TokeParser->new(\$sami_subtitles);
+  $sami_subtitles =~ s/[\r\n]//g; # flatten
+
+  my @lines = split /<Sync\s/i, $sami_subtitles;
+  shift @lines; # Skip headers
 
   my @subtitles;
   my $count = 0;
 
-  while (my $token = $parser->get_token()) {
-    my ($start_or_end, $tag, $attributes) = @$token;
+  my $last_proper_sub_end_time = '';
 
-    if ($start_or_end eq 'S' and $tag eq 'sync') {
-      my $begin = $attributes->{start};
+  for (@lines) {
+    my ($begin, $sub);
+    s|<\/?span.*?>| |g;
+    
+    s|&amp;|&|g;
 
-      my $subtitle_text = $parser->get_trimmed_text('sync');
-      $subtitle_text =~ s/\xA0/ /g; # convert non-breaking space to normal
+    s{&(?:nbsp|#160);}{ }g;
 
-      my $seconds = int($begin / 1000);
-      my $milliseconds = $begin - ($seconds * 1000);
-      $begin = sprintf("%02d:%02d:%02d,%03d", (gmtime($seconds))[2,1,0],
-          $milliseconds);
+
+    ($begin, $sub) = ($1, $2) if m{[^>]*Start="(.+?)"[^>]*>(.*?)<\/Sync>}i;
+
+    if (/^\s*Encrypted="true"\s*/i) {
+      if ($decrypt_callback and ref($decrypt_callback) eq 'CODE') {
+        $sub = $decrypt_callback->($sub);
+      }
+    }
+
+    $sub =~ s@&amp;@&@g;
+    $sub =~ s@(?:</?span[^>]*>|&nbsp;|&#160;)@ @g;
+
+    $sub =~ s{</?P[^>]*?>}{}g;  # remove <P Class="ENCC"> and similar
+
+    $sub =~ s{<(/)?([BI])>}{"<$1" . lc($2) . ">"}eg;
+    
+    decode_entities($sub); # in void context, this works in place
+
+    if ($sub and ($begin or $begin == 0)) {
+      my $seconds = int( $begin / 1000.0 );
+      my $ms = $begin - ( $seconds * 1000.0 );
+      $begin = sprintf("%02d:%02d:%02d,%03d", (gmtime($seconds))[2,1,0], $ms );
+
+
+      $sub =~ s/^\s*(.*?)\s*$/$1/;
+
+      $sub =~ s/\s{2,}/ /g;
+
+      $sub =~ s|<br ?\/? ?>|\n|ig;
+
+      $sub =~ s/^\s*|\s*$//mg;
 
       if ($count and !$subtitles[$count - 1]->{end}) {
-        $subtitles[$count - 1]->{end} = $begin;      
+        $subtitles[$count - 1]->{end} = $begin;
       }
 
-      if (!$subtitle_text or $subtitle_text eq ' ') {
+      if (!$sub or $sub =~ /^\s+$/) {
+        if ($count) {
+          $last_proper_sub_end_time = $subtitles[$count - 1]->{end};
+        }
+
         next; # this is not a meaningful subtitle
       }
 
       push @subtitles, {
         start => $begin,
-        text  => $subtitle_text,
+        text  => $sub,
       };
 
       $count++;
     }
   }
 
-  $subtitles[$count - 1]->{end} = $subtitles[$count - 1]{start};
+  $subtitles[$count - 1]->{end} = $last_proper_sub_end_time;
 
   open my $subtitle_fh, '>', $filename
     or die "Can't open subtitles file $filename: $!";
 
+  binmode $subtitle_fh, ':utf8';
+
   $count = 1;
+
   foreach my $subtitle (@subtitles) {
     print $subtitle_fh "$count\n$subtitle->{start} --> $subtitle->{end}\n" .
                        "$subtitle->{text}\n\n";
@@ -7210,7 +7189,7 @@ sub from_xml {
     die "Must have XML::Simple to download " . caller =~ /::([^:])+$/ . " videos\n";
   }
 
-  my $xml = eval {
+  $xml = eval {
     XML::Simple::XMLin(ref $xml eq 'SCALAR' ? $xml
       : ref $xml ? $xml->content
       : $xml, @args);
@@ -7225,8 +7204,8 @@ sub from_xml {
 
 1;
 }
-##} ./FlashVideo/Utils.pm
-##{ ./FlashVideo/Site/4od.pm
+##} blib/lib/FlashVideo/Utils.pm
+##{ blib/lib/FlashVideo/Site/4od.pm
 {
 package FlashVideo::Site::4od;
 
@@ -7288,10 +7267,10 @@ sub _process_4od_result {
 
 1;
 }
-##} ./FlashVideo/Site/4od.pm
+##} blib/lib/FlashVideo/Site/4od.pm
 BEGIN { $INC{'FlashVideo/Site/5min.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/5min.pm
+##{ blib/lib/FlashVideo/Site/5min.pm
 {
 package FlashVideo::Site::5min;
 
@@ -7311,10 +7290,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/5min.pm
+##} blib/lib/FlashVideo/Site/5min.pm
 BEGIN { $INC{'FlashVideo/Site/Abc.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Abc.pm
+##{ blib/lib/FlashVideo/Site/Abc.pm
 {
 package FlashVideo::Site::Abc;
 
@@ -7431,12 +7410,12 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Abc.pm
+##} blib/lib/FlashVideo/Site/Abc.pm
 BEGIN { $INC{'FlashVideo/Site/About.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/Site/Brightcove.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Brightcove.pm
+##{ blib/lib/FlashVideo/Site/Brightcove.pm
 {
 package FlashVideo::Site::Brightcove;
 
@@ -7484,7 +7463,7 @@ sub find_video {
 
   die "Unable to extract Brightcove IDs from page" unless $player_id;
 
-  $metadata->{videoId} = $video_id unless $metadata->{lineupId};
+  $metadata->{videoId} = $video_id;
   return $self->amfgateway($browser, $player_id, $metadata);
 }
 
@@ -7536,7 +7515,7 @@ EOF
 
   $packet = Data::AMF::Packet->deserialize($browser->content);
 
-  if($::opt{debug}) {
+  if($self->debug) {
     require Data::Dumper;
     debug Data::Dumper::Dumper($packet);
   }
@@ -7609,8 +7588,8 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Brightcove.pm
-##{ ./FlashVideo/Site/About.pm
+##} blib/lib/FlashVideo/Site/Brightcove.pm
+##{ blib/lib/FlashVideo/Site/About.pm
 {
 package FlashVideo::Site::About;
 
@@ -7644,10 +7623,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/About.pm
+##} blib/lib/FlashVideo/Site/About.pm
 BEGIN { $INC{'FlashVideo/Site/Amazon.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Amazon.pm
+##{ blib/lib/FlashVideo/Site/Amazon.pm
 {
 package FlashVideo::Site::Amazon;
 
@@ -7744,10 +7723,49 @@ sub parse_smil_like_xml {
 
 1;
 }
-##} ./FlashVideo/Site/Amazon.pm
+##} blib/lib/FlashVideo/Site/Amazon.pm
+BEGIN { $INC{'FlashVideo/Site/Aniboom.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Aniboom.pm
+{
+package FlashVideo::Site::Aniboom;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+
+sub find_video {
+  my ($self, $browser, $embed_url) = @_;
+
+  my ($id, $url, $title);
+
+  if ($browser->uri->as_string =~ /\/animation-video\/(\d*)\/([^\/]*)/) {
+    $id = $1;
+    $title = $2;
+    $title =~ s/-/ /g;
+  } else {
+    die "Could not detect video ID!";
+  }
+  
+  $browser->get("http://www.aniboom.com/animations/player/handlers/animationDetails.aspx?mode=&movieid=$id");
+
+  if ($browser->content =~ /(?:mp4|flv)=([^&]*)/) {
+    $url = $1;
+    $url =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+  } else {
+    die "Could not get flv/mp4 location!";
+  }
+  
+  return $url, title_to_filename($title);
+}
+
+1;
+
+}
+##} blib/lib/FlashVideo/Site/Aniboom.pm
 BEGIN { $INC{'FlashVideo/Site/Apple.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Apple.pm
+##{ blib/lib/FlashVideo/Site/Apple.pm
 {
 package FlashVideo::Site::Apple;
 use strict;
@@ -7799,10 +7817,75 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Apple.pm
+##} blib/lib/FlashVideo/Site/Apple.pm
+BEGIN { $INC{'FlashVideo/Site/Arte.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Arte.pm
+{
+package FlashVideo::Site::Arte;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *debug = \&FlashVideo::Utils::debug; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+
+sub find_video {
+  my ($self, $browser, $embed_url) = @_;
+  my ($lang, $xmlurl1, $xmlurl2, $filename, $videourl, $hash, $playerurl);
+
+  debug "Arte::find_video called, embed_url = \"$embed_url\"\n";
+
+  my $pageurl = $browser->uri() . "";
+  if($pageurl =~ /videos\.arte\.tv\/(..)\//) {
+    $lang = $1;
+  } else {
+    die "Unable to find language in original URL \"$pageurl\"\n";
+  }
+
+  if($browser->content =~ /videorefFileUrl = "(.*)";/) {
+    $xmlurl1 = $1;
+    debug "found videorefFileUrl \"$xmlurl1\"\n";
+    ($filename = $xmlurl1) =~ s/-.*$//;
+    $filename =~ s/^.*\///g;
+    $filename = title_to_filename($filename);
+  } else {
+    die "Unable to find 'videorefFileUrl' in page\n";
+  }
+
+  if($browser->content =~ /<param name="movie" value="(http:\/\/videos\.arte\.tv\/[^\?]+)\?/) {
+    $playerurl = $1;
+    debug "found playerurl \"$playerurl\"\n";
+  }
+
+  $browser->get($xmlurl1);
+
+  if($browser->content =~ /<video lang="$lang" ref="(.*)"\/>/) {
+    $xmlurl2 = $1;
+    debug "found <video ref=\"$xmlurl2\">\n";
+  } else {
+    die "Unable to find <video ref...> in XML $xmlurl1\n";
+  }
+
+  $browser->get($xmlurl2);
+
+  if($browser->content =~ /<url quality="sd">([^<]+)<\/url>/) {
+    $videourl = { rtmp => $1,
+		flv => $filename};
+    if(defined $playerurl) {
+      $videourl->{swfVfy} = $playerurl;
+    }
+  } else {
+    die "Unable to find <url ...> in XML $xmlurl2\n";
+  }
+
+  return $videourl, $filename;
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Arte.pm
 BEGIN { $INC{'FlashVideo/Site/Bbc.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Bbc.pm
+##{ blib/lib/FlashVideo/Site/Bbc.pm
 {
 package FlashVideo::Site::Bbc;
 
@@ -7967,10 +8050,48 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Bbc.pm
+##} blib/lib/FlashVideo/Site/Bbc.pm
+BEGIN { $INC{'FlashVideo/Site/Bing.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Bing.pm
+{
+package FlashVideo::Site::Bing;
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+
+  my $count = 0;
+  while((my $location = $browser->response->header("Location")) && $count++ < 5) {
+    $browser->get($location);
+  }
+
+  my $title;
+  if ($browser->content =~ /sourceFriendly:\s*'([^']+)'[\s\S]+?\s*title:\s*'([^']+)'/) {
+    $title = "$1 - $2";
+  }
+
+  my $url;
+  if ($browser->content =~ /formatCode:\s*1003,\s*url:\s*'([^']+)'/) {
+    $url = $1;
+
+    $url =~ s/\\x([0-9a-f]{2})/chr hex $1/egi;
+  }
+  die "Unable to extract video url" unless $url;
+
+  $browser->allow_redirects;
+
+  return $url, title_to_filename($title);
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Bing.pm
 BEGIN { $INC{'FlashVideo/Site/Blip.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Blip.pm
+##{ blib/lib/FlashVideo/Site/Blip.pm
 {
 package FlashVideo::Site::Blip;
 
@@ -8021,10 +8142,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Blip.pm
+##} blib/lib/FlashVideo/Site/Blip.pm
 BEGIN { $INC{'FlashVideo/Site/Break.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Break.pm
+##{ blib/lib/FlashVideo/Site/Break.pm
 {
 package FlashVideo::Site::Break;
 
@@ -8078,10 +8199,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Break.pm
+##} blib/lib/FlashVideo/Site/Break.pm
 BEGIN { $INC{'FlashVideo/Site/Cartoonnetwork.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Cartoonnetwork.pm
+##{ blib/lib/FlashVideo/Site/Cartoonnetwork.pm
 {
 package FlashVideo::Site::Cartoonnetwork;
 
@@ -8128,10 +8249,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Cartoonnetwork.pm
+##} blib/lib/FlashVideo/Site/Cartoonnetwork.pm
 BEGIN { $INC{'FlashVideo/Site/Cbs.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Cbs.pm
+##{ blib/lib/FlashVideo/Site/Cbs.pm
 {
 package FlashVideo::Site::Cbs;
 
@@ -8158,7 +8279,7 @@ sub find_video {
 
   my $rtmpurl = $item->{video}->{src};
   $rtmpurl =~ s/<break>.*//;
-  my $title = $item->{ref}->{title}->{content};
+  my $title = $item->{ref}->{title};
 
   return {
     rtmp => $rtmpurl,
@@ -8168,10 +8289,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Cbs.pm
+##} blib/lib/FlashVideo/Site/Cbs.pm
 BEGIN { $INC{'FlashVideo/Site/Collegehumor.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Collegehumor.pm
+##{ blib/lib/FlashVideo/Site/Collegehumor.pm
 {
 package FlashVideo::Site::Collegehumor;
 
@@ -8203,7 +8324,7 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Collegehumor.pm
+##} blib/lib/FlashVideo/Site/Collegehumor.pm
 BEGIN { $INC{'FlashVideo/Site/Ctv.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 #################################################
@@ -8225,7 +8346,7 @@ BEGIN { $INC{'FlashVideo/Site/Ctv.pm'}++; }
 #
 #	Stavr0
 #
-##{ ./FlashVideo/Site/Ctv.pm
+##{ blib/lib/FlashVideo/Site/Ctv.pm
 {
 package FlashVideo::Site::Ctv;
 
@@ -8291,10 +8412,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Ctv.pm
+##} blib/lib/FlashVideo/Site/Ctv.pm
 BEGIN { $INC{'FlashVideo/Site/Dailymotion.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Dailymotion.pm
+##{ blib/lib/FlashVideo/Site/Dailymotion.pm
 {
 package FlashVideo::Site::Dailymotion;
 
@@ -8343,7 +8464,7 @@ sub find_video {
   }
 
   if(!$video) {
-    my($package, $possible_url) = FlashVideo::URLFinder::find_package($browser->uri, $browser);
+    my($package, $possible_url) = FlashVideo::URLFinder->find_package($browser->uri, $browser);
 
     if($package ne __PACKAGE__) {
       return $package->find_video($browser, $possible_url, $prefs);
@@ -8372,10 +8493,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Dailymotion.pm
+##} blib/lib/FlashVideo/Site/Dailymotion.pm
 BEGIN { $INC{'FlashVideo/Site/Ehow.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Ehow.pm
+##{ blib/lib/FlashVideo/Site/Ehow.pm
 {
 package FlashVideo::Site::Ehow;
 
@@ -8425,10 +8546,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Ehow.pm
+##} blib/lib/FlashVideo/Site/Ehow.pm
 BEGIN { $INC{'FlashVideo/Site/Expertvillage.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Expertvillage.pm
+##{ blib/lib/FlashVideo/Site/Expertvillage.pm
 {
 package FlashVideo::Site::Expertvillage;
 
@@ -8459,10 +8580,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Expertvillage.pm
+##} blib/lib/FlashVideo/Site/Expertvillage.pm
 BEGIN { $INC{'FlashVideo/Site/Flickr.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Flickr.pm
+##{ blib/lib/FlashVideo/Site/Flickr.pm
 {
 package FlashVideo::Site::Flickr;
 
@@ -8518,10 +8639,10 @@ sub make_guid {
 
 1;
 }
-##} ./FlashVideo/Site/Flickr.pm
+##} blib/lib/FlashVideo/Site/Flickr.pm
 BEGIN { $INC{'FlashVideo/Site/Fliqz.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Fliqz.pm
+##{ blib/lib/FlashVideo/Site/Fliqz.pm
 {
 package FlashVideo::Site::Fliqz;
 
@@ -8591,10 +8712,10 @@ EOF
 
 1;
 }
-##} ./FlashVideo/Site/Fliqz.pm
+##} blib/lib/FlashVideo/Site/Fliqz.pm
 BEGIN { $INC{'FlashVideo/Site/Fora.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Fora.pm
+##{ blib/lib/FlashVideo/Site/Fora.pm
 {
 package FlashVideo::Site::Fora;
 
@@ -8627,10 +8748,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Fora.pm
+##} blib/lib/FlashVideo/Site/Fora.pm
 BEGIN { $INC{'FlashVideo/Site/Freevideo.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Freevideo.pm
+##{ blib/lib/FlashVideo/Site/Freevideo.pm
 {
 package FlashVideo::Site::Freevideo; # .ru
 
@@ -8693,10 +8814,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Freevideo.pm
+##} blib/lib/FlashVideo/Site/Freevideo.pm
 BEGIN { $INC{'FlashVideo/Site/Gamespot.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Gamespot.pm
+##{ blib/lib/FlashVideo/Site/Gamespot.pm
 {
 package FlashVideo::Site::Gamespot;
 
@@ -8725,10 +8846,10 @@ sub find_video {
 1;
 
 }
-##} ./FlashVideo/Site/Gamespot.pm
+##} blib/lib/FlashVideo/Site/Gamespot.pm
 BEGIN { $INC{'FlashVideo/Site/Gawker.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Gawker.pm
+##{ blib/lib/FlashVideo/Site/Gawker.pm
 {
 package FlashVideo::Site::Gawker;
 
@@ -8758,10 +8879,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Gawker.pm
+##} blib/lib/FlashVideo/Site/Gawker.pm
 BEGIN { $INC{'FlashVideo/Site/Google.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Google.pm
+##{ blib/lib/FlashVideo/Site/Google.pm
 {
 package FlashVideo::Site::Google;
 
@@ -8804,7 +8925,7 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Google.pm
+##} blib/lib/FlashVideo/Site/Google.pm
 BEGIN { $INC{'FlashVideo/Site/Googlevideosearch.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/Mechanize.pm'}++; }
@@ -8812,11 +8933,11 @@ BEGIN { $INC{'FlashVideo/Mechanize.pm'}++; }
 BEGIN { $INC{'WWW/Mechanize.pm'}++; }
 BEGIN { $INC{'LWP/UserAgent.pm'}++; }
 BEGIN { $INC{'LWP.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/LWP.pm
+##{ /usr/share/perl5/LWP.pm
 {
 package LWP;
 
-$VERSION = "5.836";
+$VERSION = "5.831";
 sub Version { $VERSION; }
 
 require 5.005;
@@ -8824,8 +8945,8 @@ require 5.005;
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/LWP.pm
-##{ /usr/local/share/perl/5.10.0/LWP/UserAgent.pm
+##} /usr/share/perl5/LWP.pm
+##{ /usr/share/perl5/LWP/UserAgent.pm
 {
 package LWP::UserAgent;
 
@@ -8833,7 +8954,7 @@ use strict;
 use vars qw(@ISA $VERSION);
 
 @ISA = qw(LWP::MemberMixin);
-$VERSION = "5.835";
+$VERSION = "5.829";
 
 
 
@@ -8862,7 +8983,6 @@ sub new
     my $def_headers = delete $cnf{default_headers};
     my $timeout = delete $cnf{timeout};
     $timeout = 3*60 unless defined $timeout;
-    my $local_address = delete $cnf{local_address};
     my $use_eval = delete $cnf{use_eval};
     $use_eval = 1 unless defined $use_eval;
     my $parse_head = delete $cnf{parse_head};
@@ -8903,7 +9023,6 @@ sub new
     my $self = bless {
 		      def_headers  => $def_headers,
 		      timeout      => $timeout,
-		      local_address => $local_address,
 		      use_eval     => $use_eval,
                       show_progress=> $show_progress,
 		      max_size     => $max_size,
@@ -8915,8 +9034,7 @@ sub new
                       requests_redirectable => $requests_redirectable,
 		     }, $class;
 
-    $self->agent(defined($agent) ? $agent : $class->_agent)
-	if defined($agent) || !$def_headers || !$def_headers->header("User-Agent");
+    $self->agent($agent || $class->_agent);
     $self->from($from) if $from;
     $self->cookie_jar($cookie_jar) if $cookie_jar;
     $self->parse_head($parse_head);
@@ -9363,7 +9481,6 @@ sub get_basic_credentials
 
 
 sub timeout      { shift->_elem('timeout',      @_); }
-sub local_address{ shift->_elem('local_address',@_); }
 sub max_size     { shift->_elem('max_size',     @_); }
 sub max_redirect { shift->_elem('max_redirect', @_); }
 sub show_progress{ shift->_elem('show_progress', @_); }
@@ -9428,8 +9545,6 @@ sub default_headers {
     my $self = shift;
     my $old = $self->{def_headers} ||= HTTP::Headers->new;
     if (@_) {
-	Carp::croak("default_headers not set to HTTP::Headers compatible object")
-	    unless @_ == 1 && $_[0]->can("header_field_names");
 	$self->{def_headers} = shift;
     }
     return $old;
@@ -9621,13 +9736,9 @@ sub mirror
     my $tmpfile = "$file-$$";
 
     my $response = $self->request($request, $tmpfile);
-    if ( $response->header('X-Died') ) {
-	die $response->header('X-Died');
-    }
 
     if ( $response->is_success ) {
-        my @stat        = stat($tmpfile) or die "Could not stat tmpfile '$tmpfile': $!";
-        my $file_length = $stat[7];
+        my $file_length = ( stat($tmpfile) )[7];
         my ($content_length) = $response->header('Content-length');
 
         if ( defined $content_length and $file_length < $content_length ) {
@@ -9712,7 +9823,6 @@ sub env_proxy {
 	}
 	else {
             next unless $k =~ /^$URI::scheme_re\z/;
-            next unless LWP::Protocol::implementor($k);
 	    $self->proxy($k, $v);
 	}
     }
@@ -9745,9 +9855,9 @@ sub _new_response {
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/LWP/UserAgent.pm
+##} /usr/share/perl5/LWP/UserAgent.pm
 BEGIN { $INC{'HTML/Form.pm'}++; }
-##{ /usr/local/share/perl/5.10.0/HTML/Form.pm
+##{ /usr/share/perl5/HTML/Form.pm
 {
 package HTML::Form;
 
@@ -10759,7 +10869,7 @@ sub keytype {
 1;
 
 }
-##} /usr/local/share/perl/5.10.0/HTML/Form.pm
+##} /usr/share/perl5/HTML/Form.pm
 BEGIN { $INC{'HTTP/Response/Encoding.pm'}++; }
 ##{ /usr/share/perl5/HTTP/Response/Encoding.pm
 {
@@ -12165,7 +12275,39 @@ sub _die {
 ##} /usr/share/perl5/WWW/Mechanize.pm
 BEGIN { $INC{'FlashVideo/Downloader.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Downloader.pm
+BEGIN { $INC{'FlashVideo/Site.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site.pm
+{
+package FlashVideo::Site;
+
+use strict;
+
+
+sub debug {
+  $App::get_flash_videos::opt{debug};
+}
+
+sub action {
+  $App::get_flash_videos::opt{play} ? "play" : "download";
+}
+
+sub player {
+  $App::get_flash_videos::opt{player};
+}
+
+sub yes {
+  $App::get_flash_videos::opt{yes};
+}
+
+sub quiet {
+  $App::get_flash_videos::opt{quiet};
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site.pm
+##{ blib/lib/FlashVideo/Downloader.pm
 {
 package FlashVideo::Downloader;
 
@@ -12173,11 +12315,14 @@ use strict;
 BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
 BEGIN { no strict 'refs'; *info = \&FlashVideo::Utils::info; *error = \&FlashVideo::Utils::error; *get_win_codepage = \&FlashVideo::Utils::get_win_codepage; *get_terminal_width = \&FlashVideo::Utils::get_terminal_width; }
 
+BEGIN { FlashVideo::Site->import(); } # (added by utils/combine-perl.pl)
+use base "FlashVideo::Site";
+
 sub new {
   my $class = shift;
 
   my $self = {
-    has_readkey => eval { require Term::ReadKey }
+    has_readkey => scalar eval { require Term::ReadKey }
   };
 
   bless $self, $class;
@@ -12190,7 +12335,7 @@ sub play {
   $self->{stream} = sub {
     $self->{stream} = undef;
 
-    if ($^O =~ /MSWin/i and $::opt{player} eq "VLC") {
+    if ($^O =~ /MSWin/i and $self->player eq "VLC") {
       if (my $vlc_binary = FlashVideo::Utils::get_vlc_exe_from_registry()) {
         require Win32::Process;
         require File::Basename;
@@ -12216,7 +12361,7 @@ sub play {
       my $pid = fork;
       die "Fork failed" unless defined $pid;
       if(!$pid) {
-        exec $self->replace_filename($::opt{player}, $file);
+        exec $self->replace_filename($self->player, $file);
         die "Exec failed\n";
       }
     }
@@ -12234,7 +12379,7 @@ sub download {
 
   my $mode = (-e $file) ? '>>' : '>';
   my $offset;
-  if (-e $file) {
+  if ($file ne '-' && -e $file) {
     $offset = -s $file;
 
     my $response = $browser->head($url);
@@ -12244,10 +12389,10 @@ sub download {
       $self->{stream}->() if defined $self->{stream};
       return;
     }
-    
+
     info "File $self->{printable_filename} already exists, seeing if resuming is supported.";
     if (!$response->header('Accept-Ranges')) {
-      if(!$::opt{yes}) {
+      if(!$self->yes) {
         error "This server doesn't explicitly support resuming.\n" .
                    "Do you want to try resuming anyway (y/n)?";
         chomp(my $answer = <STDIN>);
@@ -12262,16 +12407,22 @@ sub download {
     }
   }
 
-  open my $video_fh, $mode, $file or die $!;
+  my $video_fh;
+  if($file eq '-') {
+    $video_fh = \*STDOUT;
+  } else {
+    open $video_fh, $mode, $file or die $!;
+  }
+
   binmode $video_fh;
-  $self->{fh} = $video_fh; 
+  $self->{fh} = $video_fh;
 
   info "Downloading $url...";
   if ($offset) {
     $browser->add_header("Range", "bytes=$offset-");
   }
-  my $response = $browser->get($url, 
-    ':content_cb' => sub { 
+  my $response = $browser->get($url,
+    ':content_cb' => sub {
         my ($data, $response) = @_;
 
         if (!$self->{content_length}) {
@@ -12356,7 +12507,7 @@ sub progress {
   my($self) = @_;
 
   return unless -t STDERR;
-  return if $::opt{quiet};
+  return if $self->quiet;
 
   my $progress_text;
 
@@ -12372,7 +12523,7 @@ sub progress {
       $self->{percent} = $percent;
     }
   } else {
-    my $data_transferred = _bytes_to_kib($self->{downloaded});;
+    my $data_transferred = _bytes_to_kib($self->{downloaded});
     if ($data_transferred != $self->{data_transferred}) {
       $progress_text = ": $data_transferred KiB";
     }
@@ -12460,8 +12611,8 @@ sub get_filename {
 1;
 
 }
-##} ./FlashVideo/Downloader.pm
-##{ ./FlashVideo/Mechanize.pm
+##} blib/lib/FlashVideo/Downloader.pm
+##{ blib/lib/FlashVideo/Mechanize.pm
 {
 package FlashVideo::Mechanize;
 BEGIN { WWW::Mechanize->import(); } # (added by utils/combine-perl.pl)
@@ -12477,7 +12628,7 @@ sub new {
   my $browser = $class->SUPER::new(autocheck => 0);
   $browser->agent_alias("Windows Mozilla");
 
-  my $proxy = $::opt{proxy};
+  my $proxy = $App::get_flash_videos::opt{proxy};
   if($proxy && $proxy !~ /^\w+:/) {
     my $port = ($proxy =~ /:(\d+)/)[0] || 1080;
     $proxy = "socks://$1:$port";
@@ -12485,6 +12636,12 @@ sub new {
 
   if($proxy) {
     $browser->proxy([qw[http https]] => $proxy);
+  }
+
+  if($browser->get_socks_proxy) {
+    if(!eval { require LWP::Protocol::socks }) {
+      die "LWP::Protocol::socks is required for SOCKS support, please install it\n";
+    }
   }
 
   return $browser;
@@ -12504,11 +12661,11 @@ sub allow_redirects {
 sub get {
   my($self, @rest) = @_;
 
-  print STDERR "-> GET $rest[0]\n" if $::opt{debug};
+  print STDERR "-> GET $rest[0]\n" if $App::get_flash_videos::opt{debug};
 
   my $r = $self->SUPER::get(@rest);
 
-  if($::opt{debug}) {
+  if($App::get_flash_videos::opt{debug}) {
     my $text = join " ", $self->response->code,
       $self->response->header("Content-type"), "(" . length($self->content) . ")";
     $text .= ": " . DBI::data_string_desc($self->content) if eval { require DBI };
@@ -12524,7 +12681,8 @@ sub update_html {
 
   my $charset = _parse_charset($self->response->header("Content-type"));
 
-  if(!$charset || !Encode::is_utf8($html)) {
+  if($LWP::UserAgent::VERSION < 5.827
+    && (!$charset || !Encode::is_utf8($html))) {
 
     $html = Encode::encode("iso-8859-1", $html) if Encode::is_utf8($html);
 
@@ -12556,7 +12714,7 @@ sub get_socks_proxy {
   my $self = shift;
   my $proxy = $self->proxy("http");
 
-  if($proxy =~ m!^socks://(.*?):(\d+)!) {
+  if(defined $proxy && $proxy =~ m!^socks://(.*?):(\d+)!) {
     return "$1:$2";
   }
 
@@ -12565,12 +12723,13 @@ sub get_socks_proxy {
 
 1;
 }
-##} ./FlashVideo/Mechanize.pm
-##{ ./FlashVideo/Site/Googlevideosearch.pm
+##} blib/lib/FlashVideo/Mechanize.pm
+##{ blib/lib/FlashVideo/Site/Googlevideosearch.pm
 {
 package FlashVideo::Site::Googlevideosearch;
 
 use strict;
+no warnings 'uninitialized';
 BEGIN { FlashVideo::Mechanize->import(); } # (added by utils/combine-perl.pl)
 
 sub search {
@@ -12604,10 +12763,10 @@ sub search {
 
 1;
 }
-##} ./FlashVideo/Site/Googlevideosearch.pm
+##} blib/lib/FlashVideo/Site/Googlevideosearch.pm
 BEGIN { $INC{'FlashVideo/Site/Grindtv.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Grindtv.pm
+##{ blib/lib/FlashVideo/Site/Grindtv.pm
 {
 package FlashVideo::Site::Grindtv;
 
@@ -12648,10 +12807,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Grindtv.pm
+##} blib/lib/FlashVideo/Site/Grindtv.pm
 BEGIN { $INC{'FlashVideo/Site/Ima.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Ima.pm
+##{ blib/lib/FlashVideo/Site/Ima.pm
 {
 package FlashVideo::Site::Ima;
 
@@ -12686,10 +12845,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Ima.pm
+##} blib/lib/FlashVideo/Site/Ima.pm
 BEGIN { $INC{'FlashVideo/Site/Itv.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Itv.pm
+##{ blib/lib/FlashVideo/Site/Itv.pm
 {
 package FlashVideo::Site::Itv;
 
@@ -12753,10 +12912,219 @@ EOF
 
 1;
 }
-##} ./FlashVideo/Site/Itv.pm
+##} blib/lib/FlashVideo/Site/Itv.pm
+BEGIN { $INC{'FlashVideo/Site/Joemonster.pm'}++; }
+# Author: paczesiowa@gmail.com
+#################################################
+#
+# This file was automatically generated by utils/combine-perl.pl
+# You should edit the original files, not this
+# combined version.
+#
+# The original files are available at:
+# http://github.com/monsieurvideo/get-flash-videos
+#
+#################################################
+#
+# This plugin works for videos from www.joemonster.org using 'Monster Player'
+#
+# Most (~70%) of them are single embedded youtube videos:
+# http://www.joemonster.org/filmy/28773/Sposob_na_Euro_2012
+# This plugin doesn't directly support them,
+# so get_flash_videos fallbacks to youtube method, which works just fine.
+# Pages with multiple youtube videos are also supported by youtube method,
+# but only the first embedded video is downloaded:
+# http://www.joemonster.org/filmy/4551/Terapia_masazem
+#
+# This plugin claims to support a page when it contains at least one video
+# embedded with Monster Player.
+# Pages with mixed providers, like this (Monster Player+youtube):
+# http://www.joemonster.org/filmy/5496/Kolo_Smierci
+# only downloads Monster Player movies, the rest is discarded,
+# because I don't know how to provide links AND fallback to a different method.
+#
+# There are two versions of Monster Player:
+# * old/fat
+# http://www.joemonster.org/filmy/28784/Genialny_wystep_mlodego_iluzjonisty_w_Mam_talent (single video)
+# http://www.joemonster.org/filmy/28693/Dave_Chappelle_w_San_Francisco_ (multi videos)
+#
+# * new/slim
+# http://www.joemonster.org/filmy/28372/Wszyscy_kochamy_Polske_czesc_ (single video)
+#
+# Currently multiple videos are unsupported, only the first one is downloaded,
+# I have no idea how to return multiple links
+#
+# About 5% of videos are embedded from external providers (different than youtube),
+# they should work if get_flash_videos has appropriate method.
+
+BEGIN { $INC{'URI/QueryParam.pm'}++; }
+##{ /usr/share/perl5/URI/QueryParam.pm
+{
+package URI::QueryParam;
+
+use strict;
+
+sub URI::_query::query_param {
+    my $self = shift;
+    my @old = $self->query_form;
+
+    if (@_ == 0) {
+	my %seen;
+	my @keys;
+	for (my $i = 0; $i < @old; $i += 2) {
+	    push(@keys, $old[$i]) unless $seen{$old[$i]}++;
+	}
+	return @keys;
+    }
+
+    my $key = shift;
+    my @i;
+
+    for (my $i = 0; $i < @old; $i += 2) {
+	push(@i, $i) if $old[$i] eq $key;
+    }
+
+    if (@_) {
+	my @new = @old;
+	my @new_i = @i;
+	my @vals = map { ref($_) eq 'ARRAY' ? @$_ : $_ } @_;
+	while (@new_i > @vals) {
+	    splice(@new, pop(@new_i), 2);
+	}
+	while (@vals > @new_i) {
+	    my $i = @new_i ? $new_i[-1] + 2 : @new;
+	    splice(@new, $i, 0, $key => pop(@vals));
+	}
+	for (@vals) {
+	    $new[shift(@new_i)+1] = $_;
+	}
+
+	$self->query_form(\@new);
+    }
+
+    return wantarray ? @old[map $_+1, @i] : @i ? $old[$i[0]+1] : undef;
+}
+
+sub URI::_query::query_param_append {
+    my $self = shift;
+    my $key = shift;
+    $self->query_form($self->query_form, $key => \@_);  # XXX
+    return;
+}
+
+sub URI::_query::query_param_delete {
+    my $self = shift;
+    my $key = shift;
+    my @old = $self->query_form;
+    my @vals;
+
+    for (my $i = @old - 2; $i >= 0; $i -= 2) {
+	next if $old[$i] ne $key;
+	push(@vals, (splice(@old, $i, 2))[1]);
+    }
+    $self->query_form(\@old) if @vals;
+    return wantarray ? reverse @vals : $vals[-1];
+}
+
+sub URI::_query::query_form_hash {
+    my $self = shift;
+    my @old = $self->query_form;
+    if (@_) {
+	$self->query_form(@_ == 1 ? %{shift(@_)} : @_);
+    }
+    my %hash;
+    while (my($k, $v) = splice(@old, 0, 2)) {
+	if (exists $hash{$k}) {
+	    for ($hash{$k}) {
+		$_ = [$_] unless ref($_) eq "ARRAY";
+		push(@$_, $v);
+	    }
+	}
+	else {
+	    $hash{$k} = $v;
+	}
+    }
+    return \%hash;
+}
+
+1;
+
+}
+##} /usr/share/perl5/URI/QueryParam.pm
+##{ blib/lib/FlashVideo/Site/Joemonster.pm
+{
+package FlashVideo::Site::Joemonster;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+BEGIN { URI::Escape->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; }
+BEGIN { URI::QueryParam->import(); } # (added by utils/combine-perl.pl)
+
+
+my $new_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/www\\.joemonster\\.org\\/flvplayer\\.swf\\?file=.*?)\\s*\"";
+
+sub is_new_monster_player {
+    my($self, $browser) = @_;
+    return $browser->content =~ m/$new_monster_player_regex/;
+}
+
+sub get_new_monster_player_url {
+    my($self, $browser) = @_;
+    $browser->content =~ m/$new_monster_player_regex/;
+    return URI->new($1)->query_param('file') or die "no file key in player link";
+}
+
+my $old_monster_player_regex = "<\\s*embed\\s*src\\s*=\\s*\"\\s*(http:\\/\\/www\\.joemonster\\.org\\/emb\\/.*?)\\s*\"";
+
+sub is_old_monster_player {
+    my($self, $browser) = @_;
+    return $browser->content =~ m/$old_monster_player_regex/;
+}
+
+
+sub get_old_monster_player_url {
+    my($self, $browser) = @_;
+    $browser->content =~ m/$old_monster_player_regex/;
+    my $embedded_url = $1;
+    $browser->get($embedded_url);
+    my $url = $browser->uri;
+    return URI->new($url)->query_param('file') or die "no file key in player link";
+}
+
+sub can_handle {
+    my($self, $browser, $url) = @_;
+    return $self->is_new_monster_player($browser) || $self->is_old_monster_player($browser);
+}
+
+sub find_video {
+    my($self, $browser, $url) = @_;
+    my $real_url;
+
+    if ($self->is_new_monster_player($browser)) {
+	$real_url = $self->get_new_monster_player_url($browser);
+    }
+    else {
+	$real_url = $self->get_old_monster_player_url($browser);
+    }
+
+    my $title;
+    if ($browser->title =~ m/(.*) - Joe Monster/ ) {
+	$title = $1;
+    } else {
+	$title = $browser->title;
+    }
+
+    return $real_url, title_to_filename($title);
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Joemonster.pm
 BEGIN { $INC{'FlashVideo/Site/Last.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Last.pm
+##{ blib/lib/FlashVideo/Site/Last.pm
 {
 package FlashVideo::Site::Last;
 
@@ -12787,10 +13155,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Last.pm
+##} blib/lib/FlashVideo/Site/Last.pm
 BEGIN { $INC{'FlashVideo/Site/Liveleak.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Liveleak.pm
+##{ blib/lib/FlashVideo/Site/Liveleak.pm
 {
 package FlashVideo::Site::Liveleak;
 
@@ -12842,12 +13210,12 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Liveleak.pm
+##} blib/lib/FlashVideo/Site/Liveleak.pm
 BEGIN { $INC{'FlashVideo/Site/Megaporn.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/Site/Megavideo.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Megavideo.pm
+##{ blib/lib/FlashVideo/Site/Megavideo.pm
 {
 package FlashVideo::Site::Megavideo;
 
@@ -12935,8 +13303,8 @@ sub _decrypt {
 
 1;
 }
-##} ./FlashVideo/Site/Megavideo.pm
-##{ ./FlashVideo/Site/Megaporn.pm
+##} blib/lib/FlashVideo/Site/Megavideo.pm
+##{ blib/lib/FlashVideo/Site/Megaporn.pm
 {
 package FlashVideo::Site::Megaporn;
 
@@ -12946,10 +13314,10 @@ use base 'FlashVideo::Site::Megavideo';
 
 1;
 }
-##} ./FlashVideo/Site/Megaporn.pm
+##} blib/lib/FlashVideo/Site/Megaporn.pm
 BEGIN { $INC{'FlashVideo/Site/Metacafe.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Metacafe.pm
+##{ blib/lib/FlashVideo/Site/Metacafe.pm
 {
 package FlashVideo::Site::Metacafe;
 
@@ -12989,10 +13357,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Metacafe.pm
+##} blib/lib/FlashVideo/Site/Metacafe.pm
 BEGIN { $INC{'FlashVideo/Site/Mitworld.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Mitworld.pm
+##{ blib/lib/FlashVideo/Site/Mitworld.pm
 {
 package FlashVideo::Site::Mitworld;
 
@@ -13020,10 +13388,118 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Mitworld.pm
+##} blib/lib/FlashVideo/Site/Mitworld.pm
+BEGIN { $INC{'FlashVideo/Site/Mofosex.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Mofosex.pm
+{
+package FlashVideo::Site::Mofosex;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+
+sub find_video {
+  my ($self, $browser, $embed_url) = @_;
+
+  my $filename = title_to_filename($browser->content =~ /<title>(.*?)<\//);
+  
+  $browser->allow_redirects;
+
+  my $playlist = ($browser->content =~ /videoPath=(.+?)%26page/)[0];
+  $browser->get($playlist);
+   
+  my $url = ($browser->content =~ /<url>(.+?)<\/url>/)[0];
+    
+  return $url, $filename;
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Mofosex.pm
+BEGIN { $INC{'FlashVideo/Site/Msnbc.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Msnbc.pm
+{
+package FlashVideo::Site::Msnbc;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *title_to_filename = \&FlashVideo::Utils::title_to_filename; *from_xml = \&FlashVideo::Utils::from_xml; }
+
+sub find_video {
+  my ($self, $browser, $embed_url) = @_;
+
+  $browser->allow_redirects;
+
+  my $id;
+  my $location;
+  if ($embed_url =~ /(.+\/id\/)([0-9]+)\/vp\/.+#([0-9]+)/) {
+    $location = $1;
+    $id = $3;
+  } elsif ($embed_url =~ /(.+\/id\/)([0-9]+)\/vp\/([0-9]+)/) {
+    $location = $1;
+    $id = $3;
+  } elsif ($embed_url =~ /(.+\/id\/)([0-9]+)\/.+#([0-9]+)/) {
+    $location = $1;
+    $id = $3;
+  } elsif ($embed_url =~ /(.+\/id\/)([0-9]+)\/#([0-9]+)/) {
+    $location = $1;
+    $id = $3;
+  }
+  die "Unable to find location and videoid" unless $location and $id;
+
+  $browser->get($location . $id . '/displaymode/1219/'); # http://today.msnbc.msn.com/id/$id/displaymode/1219/
+
+  my $xml = from_xml($browser->content);
+
+  my $title;
+  my $url;
+  if ($xml->{video}->{docid} eq $id) {
+    $title = $xml->{video}->{title};
+    foreach my $media (@{$xml->{video}->{media}}) {
+      if ($media->{type} =~ /flashVideo$/i) {
+        $url = $media->{content};
+        last; #prefer http get over rtmp
+      } elsif ($media->{type} =~ /flashVideoStream$/i) {
+        $browser->get($media->{content});
+        if ($browser->content =~ /<FlashLink>(.+)<\/FlashLink>/i) {
+          $url = $1; #rtmp
+        }
+      }
+    }
+  }
+  die "Unable to extract video url" unless $url;
+
+  if ($url =~ /^rtmp/i) {
+    return {
+      rtmp => $url,
+      flv => title_to_filename($title)
+    };
+  }
+
+  return $url, title_to_filename($title);
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Msnbc.pm
+BEGIN { $INC{'FlashVideo/Site/Msn.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Msn.pm
+{
+package FlashVideo::Site::Msn;
+
+use strict;
+BEGIN { FlashVideo::Site::Bing->import(); } # (added by utils/combine-perl.pl)
+use base 'FlashVideo::Site::Bing';
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Msn.pm
 BEGIN { $INC{'FlashVideo/Site/Mtvnservices.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Mtvnservices.pm
+##{ blib/lib/FlashVideo/Site/Mtvnservices.pm
 {
 package FlashVideo::Site::Mtvnservices;
 
@@ -13033,7 +13509,7 @@ BEGIN { no strict 'refs'; *title_to_filename = \&FlashVideo::Utils::title_to_fil
 BEGIN { URI::Escape->import(); } # (added by utils/combine-perl.pl)
 BEGIN { no strict 'refs'; *uri_unescape = \&URI::Escape::uri_unescape; }
 
-my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.-_]+};
+my $MTVN_URL = qr{http://\w+.mtvnservices.com/(?:\w+/)?mgid:[a-z0-9:.\-_]+};
 
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
@@ -13077,6 +13553,50 @@ sub find_video {
   }
 }
 
+sub handle_full_episode {
+  my($self, $items, $filename, $browser, $page_url, $uri) = @_;
+
+  my @rtmpdump_commands;
+
+  foreach (@$items) {
+    my $item = $_;
+    my $isepisodesegment = ref $item->{"media:group"}->{"media:category"} eq 'ARRAY' ?
+    (grep { $_->{scheme} eq "urn:mtvn:playlist_uri" } @{$item->{"media:group"}->{"media:category"}})[0]->{content}
+    : $item->{"media:group"}->{"media:category"}->{content} eq $uri;
+
+    my $affect_counters = (grep { $_->{scheme} eq "urn:mtvn:affect_counters" } @{$item->{"media:group"}->{"media:category"}})[0];
+    my $iscommercial = 0;
+    if (defined $affect_counters && $affect_counters->{content} eq 'false') {
+      $iscommercial = 1;
+    }
+
+    if ($isepisodesegment && !$iscommercial) {
+      my $mediagen_url = $item->{"media:group"}->{"media:content"}->{url};
+      die "Unable to find mediagen URL\n" unless $mediagen_url;
+
+      $browser->get($mediagen_url);
+      my $xml = from_xml($browser);
+
+      my $rendition = (grep { $_->{rendition} } ref $xml->{video}->{item} eq 'ARRAY'
+        ?  @{$xml->{video}->{item}} : $xml->{video}->{item})[0]->{rendition};
+      $rendition = [ $rendition ] unless ref $rendition eq 'ARRAY';
+
+      my $url = (sort { $b->{bitrate} <=> $a->{bitrate} } @$rendition)[0]->{src};
+
+      $browser->allow_redirects;
+
+      push @rtmpdump_commands, {
+        flv => title_to_filename($item->{"media:group"}->{"media:title"}),
+        rtmp => $url,
+        pageUrl => $item->{"link"},
+        swfhash($browser, "http://media.mtvnservices.com/player/release/")
+      };
+    }
+  }
+
+  return \@rtmpdump_commands;
+}
+
 sub handle_feed {
   my($self, $feed, $browser, $page_url, $uri) = @_;
 
@@ -13085,6 +13605,11 @@ sub handle_feed {
   my $filename = title_to_filename($xml->{channel}->{title});
 
   my $items = $xml->{channel}->{item};
+  my $categories = ref $items eq 'ARRAY' ? @$items[0]->{"media:group"}->{"media:category"} : @$items->{"media:group"}->{"media:category"};
+  if (ref $categories eq 'ARRAY' && (grep { $_->{scheme} eq "urn:mtvn:content_type" } @$categories)[0]->{content} eq "full_episode_segment") {
+    return $self->handle_full_episode($items, $filename, $browser, $page_url, $uri);
+  }
+
   my $item = ref $items eq 'ARRAY' ?
     (grep { $_->{guid}->{content} eq $uri } @$items)[0] :
     $items;
@@ -13123,10 +13648,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Mtvnservices.pm
+##} blib/lib/FlashVideo/Site/Mtvnservices.pm
 BEGIN { $INC{'FlashVideo/Site/Muzu.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Muzu.pm
+##{ blib/lib/FlashVideo/Site/Muzu.pm
 {
 package FlashVideo::Site::Muzu;
 
@@ -13181,10 +13706,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Muzu.pm
+##} blib/lib/FlashVideo/Site/Muzu.pm
 BEGIN { $INC{'FlashVideo/Site/Mylifetime.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Mylifetime.pm
+##{ blib/lib/FlashVideo/Site/Mylifetime.pm
 {
 package FlashVideo::Site::Mylifetime;
 
@@ -13213,10 +13738,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Mylifetime.pm
+##} blib/lib/FlashVideo/Site/Mylifetime.pm
 BEGIN { $INC{'FlashVideo/Site/Myvideo.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Myvideo.pm
+##{ blib/lib/FlashVideo/Site/Myvideo.pm
 {
 package FlashVideo::Site::Myvideo;
 
@@ -13243,10 +13768,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Myvideo.pm
+##} blib/lib/FlashVideo/Site/Myvideo.pm
 BEGIN { $INC{'FlashVideo/Site/Nbc.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Nbc.pm
+##{ blib/lib/FlashVideo/Site/Nbc.pm
 {
 package FlashVideo::Site::Nbc;
 
@@ -13273,7 +13798,7 @@ sub find_video {
 
   $packet->messages->[0]->{value}->[0] = $video_id;
 
-  if($::opt{debug}) {
+  if($self->debug) {
     require Data::Dumper;
     debug Data::Dumper::Dumper($packet);
   }
@@ -13289,23 +13814,15 @@ sub find_video {
   die "Failed to post to Nbc AMF gateway"
     unless $browser->response->is_success;
 
-  if($::opt{debug}) {
-    debug $browser->content;
-  }
+  debug $browser->content;
 
 
-  my($clipurl) = $browser->content =~ /clipurl.{3,5}(nbcrewind[^\0]+)/;
+  my($clipurl) = $browser->content =~ /clipurl.{0,5}(nbc[^\0]+)/;
 
   my($title) = $browser->content =~ /headline.{1,3}([^\0]+)/;
 
-  if($::opt{debug}) {
-    debug "$clipurl\n";
-    debug "$title\n";
-  }
-
-
-
-
+  debug $clipurl;
+  debug $title;
 
   $browser->get("http://video.nbcuni.com/$clipurl");
   my $xml = from_xml($browser);
@@ -13333,7 +13850,7 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Nbc.pm
+##} blib/lib/FlashVideo/Site/Nbc.pm
 BEGIN { $INC{'FlashVideo/Site/Nfb.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 #################################################
@@ -13347,7 +13864,7 @@ BEGIN { $INC{'FlashVideo/Site/Nfb.pm'}++; }
 #
 #################################################
 # Except the CCR bits, thanks to Fogerty for those.
-##{ ./FlashVideo/Site/Nfb.pm
+##{ blib/lib/FlashVideo/Site/Nfb.pm
 {
 package FlashVideo::Site::Nfb;
 
@@ -13437,10 +13954,10 @@ sub _get_quality_from_url {
 
 1;
 }
-##} ./FlashVideo/Site/Nfb.pm
+##} blib/lib/FlashVideo/Site/Nfb.pm
 BEGIN { $INC{'FlashVideo/Site/Nicovideo.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Nicovideo.pm
+##{ blib/lib/FlashVideo/Site/Nicovideo.pm
 {
 package FlashVideo::Site::Nicovideo;
 
@@ -13476,10 +13993,103 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Nicovideo.pm
+##} blib/lib/FlashVideo/Site/Nicovideo.pm
+BEGIN { $INC{'FlashVideo/Site/Pbs.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Pbs.pm
+{
+package FlashVideo::Site::Pbs;
+
+use strict;
+use warnings;
+
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *debug = \&FlashVideo::Utils::debug; *from_xml = \&FlashVideo::Utils::from_xml; }
+use MIME::Base64 qw(decode_base64);
+
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+
+  die "Must have Crypt::Rijndael installed to download from PBS"
+    unless eval { require Crypt::Rijndael };
+
+  my ($media_id) = $browser->uri->as_string =~ m[
+    ^http://video\.pbs\.org/video/(\d+)
+  ]x;
+  unless (defined $media_id) {
+    ($media_id) = $browser->content =~ m[
+      http://video\.pbs\.org/widget/partnerplayer/(\d+)
+    ]x;
+  }
+  unless (defined $media_id) {
+    ($media_id) = $browser->content =~ m[
+      /embed-player[^"]+\bepisodemediaid=(\d+)
+    ]x;
+  }
+  unless (defined $media_id) {
+    ($media_id) = $browser->content =~ m[var videoUrl = "([^"]+)"];
+  }
+  unless (defined $media_id) {
+    my ($pap_id, $youtube_id) = $browser->content =~ m[
+      \bDetectFlashDecision\ \('([^']+)',\ '([^']+)'\);
+    ]x;
+    if ($youtube_id) {
+      debug "Youtube ID found, delegating to Youtube plugin\n";
+      my $url = "http://www.youtube.com/v/$youtube_id";
+      require FlashVideo::Site::Youtube;
+      return FlashVideo::Site::Youtube->find_video($browser, $url, $prefs);
+    }
+  }
+  die "Couldn't find media_id\n" unless defined $media_id;
+  debug "media_id: $media_id\n";
+
+  $browser->get("http://video.pbs.org/videoPlayerInfo/$media_id");
+
+  my $xml = $browser->content;
+  $xml =~ s/&/&amp;/g;
+  my $href = from_xml($xml);
+  my $release_url = $href->{releaseURL};
+
+  unless ($release_url =~ m[^https?://]) {
+    debug "encrypted release url: $release_url\n";
+    my ($type, $iv, $ciphertext) = split '\$', $release_url, 3;
+    $release_url = undef;
+
+    my $key = 'RPz~i4p*FQmx>t76';
+
+    my $cipher = Crypt::Rijndael->new($key, Crypt::Rijndael->MODE_CBC);
+    $iv = pack 'H*', $iv if 32 == length $iv;
+    $cipher->set_iv($iv);
+
+    $release_url = $cipher->decrypt(decode_base64($ciphertext));
+    $release_url =~ s/\s+$//;
+  }
+  debug "unencrypted release url: $release_url\n";
+
+  $browser->get($release_url);
+
+  my $rtmp_url = $browser->res->header('location')
+    || from_xml($browser->content)->{choice}{url}
+    || die "Couldn't find stream url\n";
+  $rtmp_url =~ s/<break>//;
+
+  my ($file) = $rtmp_url =~ m{([^/]+)$};
+
+  return {
+    rtmp    => $rtmp_url,
+    pageUrl => $embed_url,
+    swfUrl  => 'http://www-tc.pbs.org/video/media/swf/PBSPlayer.swf?18809',
+    flv     => $file,
+  };
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Pbs.pm
 BEGIN { $INC{'FlashVideo/Site/Pennyarcade.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Pennyarcade.pm
+##{ blib/lib/FlashVideo/Site/Pennyarcade.pm
 {
 package FlashVideo::Site::Pennyarcade;
 
@@ -13501,10 +14111,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Pennyarcade.pm
+##} blib/lib/FlashVideo/Site/Pennyarcade.pm
 BEGIN { $INC{'FlashVideo/Site/Redbull.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Redbull.pm
+##{ blib/lib/FlashVideo/Site/Redbull.pm
 {
 package FlashVideo::Site::Redbull;
 
@@ -13562,10 +14172,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Redbull.pm
+##} blib/lib/FlashVideo/Site/Redbull.pm
 BEGIN { $INC{'FlashVideo/Site/Redtube.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Redtube.pm
+##{ blib/lib/FlashVideo/Site/Redtube.pm
 {
 package FlashVideo::Site::Redtube;
 
@@ -13589,10 +14199,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Redtube.pm
+##} blib/lib/FlashVideo/Site/Redtube.pm
 BEGIN { $INC{'FlashVideo/Site/Ringtv.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Ringtv.pm
+##{ blib/lib/FlashVideo/Site/Ringtv.pm
 {
 package FlashVideo::Site::Ringtv;
 
@@ -13602,10 +14212,10 @@ use base 'FlashVideo::Site::Grindtv';
 
 1;
 }
-##} ./FlashVideo/Site/Ringtv.pm
+##} blib/lib/FlashVideo/Site/Ringtv.pm
 BEGIN { $INC{'FlashVideo/Site/Seesaw.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Seesaw.pm
+##{ blib/lib/FlashVideo/Site/Seesaw.pm
 {
 package FlashVideo::Site::Seesaw;
 
@@ -13632,6 +14242,11 @@ sub find_video {
   my %seen; # avoid duplication in filenames
   
   my %metadata = map { $_ => '' } qw(brandTitle seriesTitle programmeTitle);
+ 
+  my ($series, $episode) = ($browser->content =~ /Series (\d+) - Ep(?:isode)?\.? (\d+)/);
+  if ($series and $episode) {
+    $metadata{series_and_episode} = sprintf "S%02dE%02d", $series, $episode;
+  }
 
   foreach my $metadata_item (keys %metadata) {
     if (my $value = ($content =~ m{<$metadata_item>(.*?)</$metadata_item>}isg)[0]) {
@@ -13639,16 +14254,15 @@ sub find_video {
 
       next if $seen{$value};
 
+      $seen{$value}++;
+
       $metadata{$metadata_item} = $value;
     }
   }
 
-  foreach my $item (values %metadata) {
-    $item =~ s/^(?:(S)eries|(E)pisode) (\d+).*$/sprintf "%s%02d", $1, $2/ie;
-  }
-
-  my $title = join " - ", grep length,
-                          @metadata{qw(brandTitle seriesTitle programmeTitle)};
+  my $title = join "-", map { trim($_) }
+                        grep length,
+                        @metadata{qw(brandTitle series_and_episode seriesTitle programmeTitle)};
 
   $browser->get($player_info);
 
@@ -13674,10 +14288,12 @@ sub find_video {
   $prefix = "flv" if $playpath =~ /\.flv$/;
 
   if ($prefs->subtitles) {
-    $browser->back;
-
-    if ($browser->content =~ m{setConfig\('', '(/\w/\w+/\d{6,10}/\d+\.smi)'}) {
-      my $subtitles_url = "http://www.seesaw.com$1";
+    if ($browser->content =~ m{"subtitleLocation":\["([^"]+)"\]}) {
+      my $subtitles_url = $1;
+      
+      if ($subtitles_url =~ m{^/}) {
+        $subtitles_url = "http://www.seesaw.com$subtitles_url";
+      }
 
       debug "Got Seesaw subtitles URL: $subtitles_url";
 
@@ -13815,12 +14431,20 @@ sub _update_with_content {
   $browser->update_html($content);
 }
 
+sub trim {
+  local $_ = shift;
+
+  s/^\s+|\s+$//g;
+
+  return $_;
+}
+
 1;
 }
-##} ./FlashVideo/Site/Seesaw.pm
+##} blib/lib/FlashVideo/Site/Seesaw.pm
 BEGIN { $INC{'FlashVideo/Site/Sevenload.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Sevenload.pm
+##{ blib/lib/FlashVideo/Site/Sevenload.pm
 {
 package FlashVideo::Site::Sevenload;
 
@@ -13860,10 +14484,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Sevenload.pm
+##} blib/lib/FlashVideo/Site/Sevenload.pm
 BEGIN { $INC{'FlashVideo/Site/Spike.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Spike.pm
+##{ blib/lib/FlashVideo/Site/Spike.pm
 {
 package FlashVideo::Site::Spike;
 
@@ -13902,10 +14526,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Spike.pm
+##} blib/lib/FlashVideo/Site/Spike.pm
 BEGIN { $INC{'FlashVideo/Site/Stagevu.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Stagevu.pm
+##{ blib/lib/FlashVideo/Site/Stagevu.pm
 {
 package FlashVideo::Site::Stagevu;
 
@@ -13926,10 +14550,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Stagevu.pm
+##} blib/lib/FlashVideo/Site/Stagevu.pm
 BEGIN { $INC{'FlashVideo/Site/Starwars.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Starwars.pm
+##{ blib/lib/FlashVideo/Site/Starwars.pm
 {
 package FlashVideo::Site::Starwars;
 
@@ -13971,10 +14595,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Starwars.pm
+##} blib/lib/FlashVideo/Site/Starwars.pm
 BEGIN { $INC{'FlashVideo/Site/Stickam.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Stickam.pm
+##{ blib/lib/FlashVideo/Site/Stickam.pm
 {
 package FlashVideo::Site::Stickam;
 
@@ -14049,10 +14673,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Stickam.pm
+##} blib/lib/FlashVideo/Site/Stickam.pm
 BEGIN { $INC{'FlashVideo/Site/Stupidvideos.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Stupidvideos.pm
+##{ blib/lib/FlashVideo/Site/Stupidvideos.pm
 {
 package FlashVideo::Site::Stupidvideos;
 
@@ -14062,10 +14686,10 @@ use base 'FlashVideo::Site::Grindtv';
 
 1;
 }
-##} ./FlashVideo/Site/Stupidvideos.pm
+##} blib/lib/FlashVideo/Site/Stupidvideos.pm
 BEGIN { $INC{'FlashVideo/Site/Tbs.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Tbs.pm
+##{ blib/lib/FlashVideo/Site/Tbs.pm
 {
 package FlashVideo::Site::Tbs;
 
@@ -14112,10 +14736,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Tbs.pm
+##} blib/lib/FlashVideo/Site/Tbs.pm
 BEGIN { $INC{'FlashVideo/Site/Techcast.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Techcast.pm
+##{ blib/lib/FlashVideo/Site/Techcast.pm
 {
 package FlashVideo::Site::Techcast;
 
@@ -14142,10 +14766,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Techcast.pm
+##} blib/lib/FlashVideo/Site/Techcast.pm
 BEGIN { $INC{'FlashVideo/Site/Ted.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Ted.pm
+##{ blib/lib/FlashVideo/Site/Ted.pm
 {
 package FlashVideo::Site::Ted;
 use strict;
@@ -14173,10 +14797,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Ted.pm
+##} blib/lib/FlashVideo/Site/Ted.pm
 BEGIN { $INC{'FlashVideo/Site/Theonion.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Theonion.pm
+##{ blib/lib/FlashVideo/Site/Theonion.pm
 {
 package FlashVideo::Site::Theonion; # horrible casing :(
 
@@ -14213,10 +14837,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Theonion.pm
+##} blib/lib/FlashVideo/Site/Theonion.pm
 BEGIN { $INC{'FlashVideo/Site/Todaysbigthing.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Todaysbigthing.pm
+##{ blib/lib/FlashVideo/Site/Todaysbigthing.pm
 {
 package FlashVideo::Site::Todaysbigthing;
 
@@ -14259,7 +14883,7 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Todaysbigthing.pm
+##} blib/lib/FlashVideo/Site/Todaysbigthing.pm
 BEGIN { $INC{'FlashVideo/Site/Tou.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 #################################################
@@ -14281,7 +14905,7 @@ BEGIN { $INC{'FlashVideo/Site/Tou.pm'}++; }
 #
 #	Stavr0
 #
-##{ ./FlashVideo/Site/Tou.pm
+##{ blib/lib/FlashVideo/Site/Tou.pm
 {
 package FlashVideo::Site::Tou;
 
@@ -14383,10 +15007,10 @@ sub search {
 
 1;
 }
-##} ./FlashVideo/Site/Tou.pm
+##} blib/lib/FlashVideo/Site/Tou.pm
 BEGIN { $INC{'FlashVideo/Site/Traileraddict.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Traileraddict.pm
+##{ blib/lib/FlashVideo/Site/Traileraddict.pm
 {
 package FlashVideo::Site::Traileraddict;
 
@@ -14448,10 +15072,10 @@ sub parse_video_info {
 
 1;
 }
-##} ./FlashVideo/Site/Traileraddict.pm
+##} blib/lib/FlashVideo/Site/Traileraddict.pm
 BEGIN { $INC{'FlashVideo/Site/Truveo.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Truveo.pm
+##{ blib/lib/FlashVideo/Site/Truveo.pm
 {
 package FlashVideo::Site::Truveo;
 
@@ -14476,7 +15100,7 @@ sub find_video {
 
     $browser->get($redirect);
 
-    my($package, $possible_url) = FlashVideo::URLFinder::find_package($redirect, $browser);
+    my($package, $possible_url) = FlashVideo::URLFinder->find_package($redirect, $browser);
 
     die "Recursion detected" if $package eq __PACKAGE__;
 
@@ -14488,9 +15112,9 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Truveo.pm
+##} blib/lib/FlashVideo/Site/Truveo.pm
 BEGIN { $INC{'FlashVideo/Site/Tudou.pm'}++; }
-##{ ./FlashVideo/Site/Tudou.pm
+##{ blib/lib/FlashVideo/Site/Tudou.pm
 {
 package FlashVideo::Site::Tudou;
 
@@ -14602,10 +15226,10 @@ sub parse_video_info {
 
 1;
 }
-##} ./FlashVideo/Site/Tudou.pm
+##} blib/lib/FlashVideo/Site/Tudou.pm
 BEGIN { $INC{'FlashVideo/Site/Tva.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Tva.pm
+##{ blib/lib/FlashVideo/Site/Tva.pm
 {
 package FlashVideo::Site::Tva;
 
@@ -14643,10 +15267,10 @@ sub can_handle {
 
 1;
 }
-##} ./FlashVideo/Site/Tva.pm
+##} blib/lib/FlashVideo/Site/Tva.pm
 BEGIN { $INC{'FlashVideo/Site/Ustream.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Ustream.pm
+##{ blib/lib/FlashVideo/Site/Ustream.pm
 {
 package FlashVideo::Site::Ustream;
 
@@ -14693,10 +15317,10 @@ EOF
 
 1;
 }
-##} ./FlashVideo/Site/Ustream.pm
+##} blib/lib/FlashVideo/Site/Ustream.pm
 BEGIN { $INC{'FlashVideo/Site/Videojug.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Videojug.pm
+##{ blib/lib/FlashVideo/Site/Videojug.pm
 {
 package FlashVideo::Site::Videojug;
 
@@ -14778,10 +15402,10 @@ sub get_prefix_and_title {
 
 1;
 }
-##} ./FlashVideo/Site/Videojug.pm
+##} blib/lib/FlashVideo/Site/Videojug.pm
 BEGIN { $INC{'FlashVideo/Site/Videolectures.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Videolectures.pm
+##{ blib/lib/FlashVideo/Site/Videolectures.pm
 {
 package FlashVideo::Site::Videolectures;
 
@@ -14811,10 +15435,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Videolectures.pm
+##} blib/lib/FlashVideo/Site/Videolectures.pm
 BEGIN { $INC{'FlashVideo/Site/Vimeo.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Vimeo.pm
+##{ blib/lib/FlashVideo/Site/Vimeo.pm
 {
 package FlashVideo::Site::Vimeo;
 
@@ -14851,10 +15475,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Vimeo.pm
+##} blib/lib/FlashVideo/Site/Vimeo.pm
 BEGIN { $INC{'FlashVideo/Site/Wat.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Wat.pm
+##{ blib/lib/FlashVideo/Site/Wat.pm
 {
 package FlashVideo::Site::Wat;
 
@@ -14916,10 +15540,51 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Wat.pm
+##} blib/lib/FlashVideo/Site/Wat.pm
+BEGIN { $INC{'FlashVideo/Site/Xhamster.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Xhamster.pm
+{
+package FlashVideo::Site::Xhamster;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *extract_title = \&FlashVideo::Utils::extract_title; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+
+sub find_video {
+  my ($self, $browser) = @_;
+
+  my $server;
+  if ($browser->content =~ m{'srv': '(http://[^'"]+)'}) {
+    $server = $1;
+  }
+  else {
+    die "Couldn't determine xhamster server";
+  }
+
+  my $video_file;
+  if ($browser->content =~ m{'file': '([^'"]+\.flv)'}) {
+    $video_file = $1;
+  }
+  else {
+    die "Couldn't determine xhamster video filename";
+  }
+
+  my $filename = title_to_filename(extract_title($browser));
+ 
+  my $url = sprintf "%s/flv2/%s", $server, $video_file;
+
+  $browser->allow_redirects;
+
+  return $url, $filename;
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Xhamster.pm
 BEGIN { $INC{'FlashVideo/Site/Xnxx.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Xnxx.pm
+##{ blib/lib/FlashVideo/Site/Xnxx.pm
 {
 package FlashVideo::Site::Xnxx;
 
@@ -14945,10 +15610,10 @@ sub find_video {
 
 1;
 }
-##} ./FlashVideo/Site/Xnxx.pm
+##} blib/lib/FlashVideo/Site/Xnxx.pm
 BEGIN { $INC{'FlashVideo/Site/Xvideos.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Site/Xvideos.pm
+##{ blib/lib/FlashVideo/Site/Xvideos.pm
 {
 package FlashVideo::Site::Xvideos;
 
@@ -14958,9 +15623,9 @@ use base 'FlashVideo::Site::Xnxx';
 
 1;
 }
-##} ./FlashVideo/Site/Xvideos.pm
+##} blib/lib/FlashVideo/Site/Xvideos.pm
 BEGIN { $INC{'FlashVideo/Site/Youku.pm'}++; }
-##{ ./FlashVideo/Site/Youku.pm
+##{ blib/lib/FlashVideo/Site/Youku.pm
 {
 package FlashVideo::Site::Youku;
 
@@ -15015,8 +15680,14 @@ sub parse_video_info {
   my $stream = ( index $streams, 'mp4' ) > 0 ? 'mp4' : 'flv';
   debug "Choosing to use the $stream stream (available: $streams)";
 
-  my ( $fileID ) = ( $json =~ /"streamfileids":{"$stream":"([^"]+)"/ );
+  my $fileID = '';
+  if ($json =~ /"streamfileids":{([^}]+)}/) {
+    my $streamfileids = $1;
+    ( $fileID ) = ( $streamfileids =~ /"$stream":"([^"]+)"/ );
+  }
   ( $fileID ) = ( $json =~ /"fileid":"([^"]+)"/ ) if not $fileID;
+  die "Can't find the encrypted file ID in the video info JSON"
+    unless $fileID;
   debug "Encrypted file ID: $fileID";
 
   my @lookup_table = shuffle_table( $shuffle_seed );
@@ -15029,17 +15700,6 @@ sub parse_video_info {
   my ( $keyB ) = ( $json =~ /"key2":"([^"]+)"/ );
   my $key = sprintf "%s%x", $keyB, hex( $keyA ) ^ hex( 'a55aa5a5' );
 
-  $browser->get(
-    sprintf "http://f.youku.com/player/getFlvPath/sid/%s/st/%s/fileid/%s?K=%s&myp=null",
-      $sID, $stream, $fileID, $key );
-
-  my $url = $browser->response->header( 'Location' );
-  die "Youku rejected our attempt to get the video, we're probably out of date"
-    unless $browser->response->code eq 302 and $url;
-
-  debug "Video location is $url";
-  $url = "$url.$stream" unless $url =~ /$stream$/;
-
   my ( $title ) = ( $json =~ /"title":"([^"]+)"/ );
   $title =~ s/\\u([a-f0-9]{4})/chr(hex $1)/egi;
 
@@ -15047,14 +15707,40 @@ sub parse_video_info {
   $filename = title_to_filename( $title, $stream ) if $title;
 
   my ( $stream_info ) = ( $json =~ /"segs":{"$stream":\[([^\]]+)\]/ );
-  my ( $stream_duration ) = ( $stream_info =~ /"seconds":"([^"]+)"/ );
-  my ( $stream_size ) = ( $stream_info =~ /"size":"([^"]+)"/ );
-  debug sprintf
-    "%s, %s seconds, %s bytes",
-    $title, $stream_duration, $stream_size
-      if ( $title and $stream_duration and $stream_size );
+  my @urls;
+  my $part_count = 0;
 
-  return ( $url, $filename );
+  while ($stream_info =~ /\G{"no":"?(\d+)"?,([^}]+)},?/g) {
+    my ( $segment_number, $segment_info ) = ( $1, $2 );
+    my ( $segment_duration ) = ( $segment_info =~ /"seconds":"([^"]+)"/ );
+    my ( $segment_size ) = ( $segment_info =~ /"size":"([^"]+)"/ );
+
+    my $segment_number_str = sprintf '%02X', $segment_number;
+    my $segment_fileID = $fileID;
+    substr $segment_fileID, 8, 2, $segment_number_str;
+
+    $browser->get(
+      sprintf "http://f.youku.com/player/getFlvPath/sid/%s/st/%s/fileid/%s?K=%s&myp=null",
+        $sID, $stream, $segment_fileID, $key );
+
+    my $url = $browser->response->header( 'Location' );
+    die "Youku rejected our attempt to get the video, we're probably out of date"
+      unless $browser->response->code eq 302 and $url;
+
+    debug "Video location for segment $segment_number is $url";
+    $url = "$url.$stream" unless $url =~ /$stream$/;
+
+    debug sprintf
+      "%s, segment %d, %s seconds, %s bytes",
+      $title, $segment_number, $segment_duration, $segment_size
+        if ( $title and $segment_duration and $segment_size );
+
+    push @urls, [$url, ++$part_count, 0, $segment_size];
+  }
+
+  $_->[2] = $part_count for @urls;
+
+  return ( \@urls, $filename );
 }
 
 sub shuffle_table {
@@ -15076,13 +15762,13 @@ sub shuffle_table {
 
 1;
 }
-##} ./FlashVideo/Site/Youku.pm
+##} blib/lib/FlashVideo/Site/Youku.pm
 BEGIN { $INC{'FlashVideo/Site/Youtubenocookie.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/Site/Youtube.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/JSON.pm'}++; }
-##{ ./FlashVideo/JSON.pm
+##{ blib/lib/FlashVideo/JSON.pm
 {
 package FlashVideo::JSON;
 
@@ -15153,8 +15839,8 @@ sub from_json {
 
 1;
 }
-##} ./FlashVideo/JSON.pm
-##{ ./FlashVideo/Site/Youtube.pm
+##} blib/lib/FlashVideo/JSON.pm
+##{ blib/lib/FlashVideo/Site/Youtube.pm
 {
 package FlashVideo::Site::Youtube;
 
@@ -15194,7 +15880,7 @@ sub find_video {
   }
 
   if (!$browser->success) {
-    verify_age($browser);
+    verify_age($browser, $prefs);
   }
 
   my $title = extract_info($browser)->{meta_title};
@@ -15225,7 +15911,7 @@ sub find_video {
   my $video_page_url = $browser->uri->as_string;
 
   if (my %info = get_youtube_video_info($browser->clone, $video_id, $video_page_url, $t)) {
-    if($::opt{debug}) {
+    if($self->debug) {
       require Data::Dumper;
       debug Data::Dumper::Dumper(\%info);
     }
@@ -15349,7 +16035,7 @@ sub check_die {
 }
 
 sub verify_age {
-  my($browser) = @_;
+  my($browser, $prefs) = @_;
   my $orig_uri = $browser->uri;
 
   if ($browser->response->code == 303 
@@ -15365,13 +16051,14 @@ sub verify_age {
       return if $browser->response->code == 200;
     }
 
-    print "Unfortunately, due to Youtube being lame, you have to have\n" .
-    "an account to download this video.\n" .
-    "Username (Google Account Email): ";
-    chomp(my $username = <STDIN>);
-    print "Ok, need your password (will be displayed): ";
-    chomp(my $password = <STDIN>);
-    unless ($username and $password) {
+    my $account = $prefs->account("youtube", <<EOT);
+Unfortunately, due to Youtube being lame, you have to have
+an account to download this video. (See the documentation for how to configure
+~/.netrc)
+
+EOT
+
+    unless ($account->username and $account->password) {
       error "You must supply Youtube account details.";
       exit 1;
     }
@@ -15385,8 +16072,10 @@ sub verify_age {
     $browser->get($real_login_url);
 
     $browser->form_with_fields('Email', 'Passwd');
-    $browser->set_fields(Email  => $username,
-      Passwd => $password);
+    $browser->set_fields(
+      Email  => $account->username,
+      Passwd => $account->password,
+    );
     $browser->submit();
 
     if ($browser->content =~ /your login was incorrect/) {
@@ -15512,8 +16201,8 @@ sub parse_youtube_format_url_map {
 
 1;
 }
-##} ./FlashVideo/Site/Youtube.pm
-##{ ./FlashVideo/Site/Youtubenocookie.pm
+##} blib/lib/FlashVideo/Site/Youtube.pm
+##{ blib/lib/FlashVideo/Site/Youtubenocookie.pm
 {
 package FlashVideo::Site::Youtubenocookie;
 
@@ -15523,49 +16212,18 @@ use base 'FlashVideo::Site::Youtube';
 
 1;
 }
-##} ./FlashVideo/Site/Youtubenocookie.pm
+##} blib/lib/FlashVideo/Site/Youtubenocookie.pm
 ##{ .sitemodules
 {
 package main;
 }
 ##} .sitemodules
-#!/usr/bin/env perl
-#################################################
-#
-# This file was automatically generated by utils/combine-perl.pl
-# You should edit the original files, not this
-# combined version.
-#
-# The original files are available at:
-# http://github.com/monsieurvideo/get-flash-videos
-#
-#################################################
-#
-# get_flash_videos -- download all the Flash videos off a web page
-#
-#   http://code.google.com/p/get-flash-videos/
-#
-# Copyright 2009, 2010 zakflash, MonsieurVideo and contributors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain a
-# copy of the License at
-#   http://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# Contributions are welcome and encouraged, but please take care to
-# maintain the JustWorks(tm) nature of the program.
-
-
+#!/usr/bin/perl
 BEGIN { $INC{'FlashVideo/URLFinder.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/Generic.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Generic.pm
+##{ blib/lib/FlashVideo/Generic.pm
 {
 package FlashVideo::Generic;
 
@@ -15774,7 +16432,7 @@ sub guess_file {
     my $uri = url_exists($browser->clone, $orig_uri);
 
     if($uri) {
-      my ($package, $url) = FlashVideo::URLFinder::find_package($uri,
+      my ($package, $url) = FlashVideo::URLFinder->find_package($uri,
         $browser->clone);
 
       if($package && $package ne __PACKAGE__) {
@@ -15830,14 +16488,15 @@ sub guess_file {
 
 1;
 }
-##} ./FlashVideo/Generic.pm
-##{ ./FlashVideo/URLFinder.pm
+##} blib/lib/FlashVideo/Generic.pm
+##{ blib/lib/FlashVideo/URLFinder.pm
 {
 package FlashVideo::URLFinder;
 
 use strict;
 BEGIN { FlashVideo::Mechanize->import(); } # (added by utils/combine-perl.pl)
 BEGIN { FlashVideo::Generic->import(); } # (added by utils/combine-perl.pl)
+BEGIN { FlashVideo::Site->import(); } # (added by utils/combine-perl.pl)
 BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
 BEGIN { no strict 'refs'; *info = \&FlashVideo::Utils::info; }
 BEGIN { URI->import(); } # (added by utils/combine-perl.pl)
@@ -15846,23 +16505,22 @@ BEGIN { URI->import(); } # (added by utils/combine-perl.pl)
 my @extra_can_handle = qw(Brightcove Mtvnservices Gawker);
 
 sub find_package {
-  my($url, $browser) = @_;
-  my $package = find_package_url($url, $browser);
+  my($class, $url, $browser) = @_;
+  my $package = _find_package_url($url, $browser);
 
   if(!defined $package) {
- 
+
     for my $possible_url($browser->content =~
         m!(?:<object[^>]+>.*?|<(?:script|embed|iframe|param) [^>]*(?:src=["']?|name=["']src["']\ value=["']))(http://[^"'> ]+)!gixs) {
-      $package = find_package_url($possible_url, $browser);
-    
+      $package = _find_package_url($possible_url, $browser);
+
       return _found($package, $possible_url) if defined $package;
     }
   }
 
   if(!defined $package) {
     for(@extra_can_handle) {
-      my $possible_package = "FlashVideo::Site::$_";
-      eval "require $possible_package";
+      my $possible_package = _load($_);
 
       my $r = $possible_package->can_handle($browser, $url);
       if($r) {
@@ -15880,18 +16538,17 @@ sub find_package {
 }
 
 
-sub find_package_url {
+sub _find_package_url {
   my($url, $browser) = @_;
   my $package;
 
   foreach my $host_part (split /\./, URI->new($url)->host) {
-    $host_part = ucfirst lc $host_part;
+    $host_part = lc $host_part;
     $host_part =~ s/[^a-z0-9]//i;
 
-    my $possible_package = "FlashVideo::Site::$host_part";
-    eval "require $possible_package";
+    my $possible_package = _load($host_part);
 
-    if(UNIVERSAL::can($possible_package, "find_video")) {
+    if($possible_package->can("find_video")) {
 
       if($possible_package->can("can_handle")) {
         next unless $possible_package->can_handle($browser, $url);
@@ -15905,20 +16562,30 @@ sub find_package_url {
   return $package;
 }
 
-
 sub _found {
   my($package, $url) = @_;
   info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
   return $package, $url;
 }
 
+sub _load {
+  my($site) = @_;
+
+  my $package = "FlashVideo::Site::" . ucfirst lc $site;
+
+  if(eval "require $package") {
+    no strict 'refs';
+    push @{$package . "::ISA"}, "FlashVideo::Site";
+  }
+  return $package;
+}
 
 1;
 }
-##} ./FlashVideo/URLFinder.pm
+##} blib/lib/FlashVideo/URLFinder.pm
 BEGIN { $INC{'FlashVideo/RTMPDownloader.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/RTMPDownloader.pm
+##{ blib/lib/FlashVideo/RTMPDownloader.pm
 {
 package FlashVideo::RTMPDownloader;
 
@@ -15952,15 +16619,15 @@ sub download {
 
   my($r_fh, $w_fh); # So Perl doesn't close them behind our back..
 
-  if ($rtmp_data->{live} && $::opt{play}) {
-   
+  if ($rtmp_data->{live} && $self->action eq 'play') {
+
     pipe($r_fh, $w_fh);
 
     my $pid = fork;
     die "Fork failed" unless defined $pid;
     if(!$pid) {
       fcntl $r_fh, Fcntl::F_SETFD(), ~Fcntl::FD_CLOEXEC();
-      exec $self->replace_filename($::opt{player}, "/dev/fd/" . fileno $r_fh);
+      exec $self->replace_filename($self->player, "/dev/fd/" . fileno $r_fh);
       die "Exec failed\n";
     }
 
@@ -15979,7 +16646,7 @@ sub download {
     exit 1;
   }
 
-  if($::opt{debug}) {
+  if($self->debug) {
     $rtmp_data->{verbose} = undef;
   }
 
@@ -15991,7 +16658,7 @@ sub download {
     ($return, @errors) = $self->run($prog, $rtmp_data);
   }
 
-  if(-s $file < 100 || !$self->check_file($file)) {
+  if($file ne '-' && (-s $file < 100 || !$self->check_file($file))) {
     error "Download failed, no valid file downloaded";
     unlink $rtmp_data->{flv};
     return 0;
@@ -16050,7 +16717,7 @@ sub run {
       kill 'TERM', $pid;
       exit;
     };
-  } 
+  }
 
   my $complete = 0;
   my $buf = "";
@@ -16116,42 +16783,33 @@ sub run {
 
 1;
 }
-##} ./FlashVideo/RTMPDownloader.pm
+##} blib/lib/FlashVideo/RTMPDownloader.pm
 BEGIN { $INC{'FlashVideo/Search.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/Search.pm
+##{ blib/lib/FlashVideo/Search.pm
 {
 package FlashVideo::Search;
 
 use strict;
 use Carp;
-
 BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
 BEGIN { no strict 'refs'; *debug = \&FlashVideo::Utils::debug; *info = \&FlashVideo::Utils::info; }
 
 my @sites_with_search = ('4oD', 'GoogleVideoSearch');
 
 sub search {
-  my ($search, $max_per_site, $max_results) = @_;
+  my ($class, $search, $max_per_site, $max_results) = @_;
 
-  my @search_sites = map { /^FlashVideo::Site::/ ? $_ 
-                                                 : "FlashVideo::Site::$_"; }
-                     map { ucfirst lc } @sites_with_search;
- 
-  unless ($::SCRIPT_NAME) {
-    eval "require $_" for @search_sites;
-  }
+  my @search_sites = map { FlashVideo::URLFinder::_load($_) } @sites_with_search;
 
   if ($search =~ /^(\w+) \w+/) {
     my $possible_site = ucfirst lc $1;
 
     debug "Checking to see if '$possible_site' in '$search' is a search-supported site.";
 
-    my $possible_package = "FlashVideo::Site::$possible_site";
+    my $possible_package = FlashVideo::URLFinder::_load($possible_site);
 
-    eval "require $possible_package";
-
-    if (UNIVERSAL::can($possible_package, "search")) {
+    if ($possible_package->can("search")) {
       debug "Search for '$search' will only search $possible_site.";
 
       $search =~ s/^\w+ //;
@@ -16160,16 +16818,14 @@ sub search {
     }
   }
 
-  my @plugins = main::get_installed_plugins();
+  my @plugins = App::get_flash_videos::get_installed_plugins();
 
   foreach my $plugin (@plugins) {
     $plugin =~ s/\.pm$//;
 
-    my $plugin_package = "FlashVideo::Site::$plugin";
+    my $plugin_package = FlashVideo::URLFinder::_load($plugin);
 
-    eval "require $plugin_package";
-
-    if (UNIVERSAL::can($plugin_package, "search")) {
+    if ($plugin_package->can("search")) {
       debug "Plugin '$plugin' has a search method.";
 
       unshift @search_sites, $plugin_package;
@@ -16221,12 +16877,12 @@ sub trim_resultset {
 
 1;
 }
-##} ./FlashVideo/Search.pm
+##} blib/lib/FlashVideo/Search.pm
 BEGIN { $INC{'FlashVideo/VideoPreferences.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/VideoPreferences/Quality.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
-##{ ./FlashVideo/VideoPreferences/Quality.pm
+##{ blib/lib/FlashVideo/VideoPreferences/Quality.pm
 {
 package FlashVideo::VideoPreferences::Quality;
 
@@ -16323,13 +16979,71 @@ sub resolution_to_quality {
 
 1;
 }
-##} ./FlashVideo/VideoPreferences/Quality.pm
-##{ ./FlashVideo/VideoPreferences.pm
+##} blib/lib/FlashVideo/VideoPreferences/Quality.pm
+BEGIN { $INC{'FlashVideo/VideoPreferences/Account.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/VideoPreferences/Account.pm
+{
+package FlashVideo::VideoPreferences::Account;
+
+use strict;
+
+sub new {
+  my($class, $site, $prompt) = @_;
+
+  require Net::Netrc; # Core since 5.8
+
+  my $record = Net::Netrc->lookup($site);
+  my($user, $pass) = $record ? $record->lpa : ();
+
+
+  if(!$user) {
+    print $prompt;
+
+    print "Username: ";
+    chomp($user = <STDIN>);
+  }
+
+  if(!$pass) {
+    print "Ok, need your password";
+    if(eval { require Term::ReadKey }) {
+      print ": ";
+      Term::ReadKey::ReadMode(2);
+      chomp($pass = <STDIN>);
+      Term::ReadKey::ReadMode(0);
+      print "\n";
+    } else {
+      print " (will be displayed): ";
+      chomp($pass = <STDIN>);
+    }
+  }
+  
+  return bless {
+    username => $user,
+    password => $pass,
+  }, $class;
+}
+
+sub username {
+  my($self) = @_;
+  return $self->{username};
+}
+
+sub password {
+  my($self) = @_;
+  return $self->{password};
+}
+
+1;
+}
+##} blib/lib/FlashVideo/VideoPreferences/Account.pm
+##{ blib/lib/FlashVideo/VideoPreferences.pm
 {
 package FlashVideo::VideoPreferences;
 
 use strict;
 BEGIN { FlashVideo::VideoPreferences::Quality->import(); } # (added by utils/combine-perl.pl)
+BEGIN { FlashVideo::VideoPreferences::Account->import(); } # (added by utils/combine-perl.pl)
 
 sub new {
   my($class, %opt) = @_;
@@ -16351,29 +17065,54 @@ sub subtitles {
 
   return $self->{subtitles};
 }
+
+sub account {
+  my($self, $site, $prompt) = @_;
+
+  return FlashVideo::VideoPreferences::Account->new($site, $prompt);
+}
+
 1;
 }
-##} ./FlashVideo/VideoPreferences.pm
-
-##{ get_flash_videos
+##} blib/lib/FlashVideo/VideoPreferences.pm
+##{ bin/get_flash_videos
 {
 package main;
+$::SCRIPT_NAME = "get_flash_videos";
+$::INSTALL_TYPE = "cpan-manual";
+
+package App::get_flash_videos;
 use strict;
 use Encode ();
 use File::Basename qw(basename);
 use File::stat;
 use Getopt::Long;
 use Text::Wrap;
+
+BEGIN {
+  if(!$::SCRIPT_NAME) {
+    require Cwd;
+    require File::Spec;
+    my($vol, $dir) = (File::Spec->splitpath(Cwd::realpath($0)))[0, 1];
+    unshift @INC, File::Spec->catpath($vol, File::Spec->catdir($dir, "lib"));
+  }
+}
+
 BEGIN { FlashVideo::URLFinder->import(); } # (added by utils/combine-perl.pl)
+BEGIN { FlashVideo::Mechanize->import(); } # (added by utils/combine-perl.pl)
 BEGIN { FlashVideo::Downloader->import(); } # (added by utils/combine-perl.pl)
 BEGIN { FlashVideo::RTMPDownloader->import(); } # (added by utils/combine-perl.pl)
 BEGIN { FlashVideo::Search->import(); } # (added by utils/combine-perl.pl)
 BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
 BEGIN { no strict 'refs'; *debug = \&FlashVideo::Utils::debug; *info = \&FlashVideo::Utils::info; *error = \&FlashVideo::Utils::error; *get_user_config_dir = \&FlashVideo::Utils::get_user_config_dir; *get_win_codepage = \&FlashVideo::Utils::get_win_codepage; *is_program_on_path = \&FlashVideo::Utils::is_program_on_path; *get_terminal_width = \&FlashVideo::Utils::get_terminal_width; }
 BEGIN { FlashVideo::VideoPreferences->import(); } # (added by utils/combine-perl.pl)
+
 unshift @INC, \&plugin_loader;
 
-use constant VERSION => "1.23";
+our $VERSION;
+BEGIN {
+  $VERSION = "1.24";
+}
 
 our %opt;
 BEGIN {
@@ -16381,7 +17120,9 @@ BEGIN {
   $player = "VLC" if $^O =~ /MSWin/i;
   $player = "open" if $^O =~ /darwin/ && !is_program_on_path("mplayer");
 
-  if(is_program_on_path("gnome-open") && !is_program_on_path("mplayer")) {
+  if(is_program_on_path("xdg-open") && !is_program_on_path("mplayer")) {
+    $player = "xdg-open";
+  } elsif(is_program_on_path("gnome-open") && !is_program_on_path("mplayer")) {
     $player = "gnome-open";
   } elsif(is_program_on_path("kde-open") && !is_program_on_path("mplayer")) {
     $player = "kde-open";
@@ -16403,7 +17144,7 @@ BEGIN {
 }
 
 use constant VER_INFO => <<EOF;
-get_flash_videos version @{[VERSION]} (http://code.google.com/p/get-flash-videos/)
+get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
 EOF
 
 use constant USAGE => VER_INFO . <<EOF;
@@ -16437,13 +17178,13 @@ A required Perl module for downloading this video is not installed.
 EOF
 
 use constant FRIENDLY_FAILURE => <<EOF;
-  
+
 Couldn't extract Flash movie URL. This site may need specific support adding,
 or fixing.
 
 Please confirm the site is using Flash video and if you have Flash available
 check that the URL really works(!).
-  
+
 Check for updates by running: $0 --update
 
 If the latest version does not support this please open a bug (or
@@ -16488,14 +17229,6 @@ if ($opt{debug}) {
   }
 }
 
-if (FlashVideo::Mechanize->new->get_socks_proxy()) {
-  my $HAS_LWP_PROTOCOL_SOCKS = eval { require LWP::Protocol::socks };
-
-  if (!$HAS_LWP_PROTOCOL_SOCKS) {
-    die "LWP::Protocol::socks is required for SOCKS support, please install it"
-  }
-}
-
 if($^O =~ /MSWin/i) {
   $opt{filename} = Encode::decode(get_win_codepage(), $opt{filename});
   binmode STDERR, ":encoding(" . get_win_codepage() . ")";
@@ -16518,13 +17251,13 @@ if ( ((@urls == 1) and $urls[0] !~ m'\.') or
 my @download_urls;
 
 if ($search) {
-  if (my @results = FlashVideo::Search::search($search, 10, 20)) {
+  if (my @results = FlashVideo::Search->search($search, 10, 20)) {
     if ($opt{yes} or @results == 1) {
       my $message = (@results == 1) ?
         "Downloading only match for '$search': '$results[0]->{name}'" :
         "Downloading first match for '$search': '$results[0]->{name}'" ;
       info $message;
-           
+
       push @download_urls, $results[0]->{url};
     }
     else {
@@ -16532,7 +17265,7 @@ if ($search) {
 
       my $columns = get_terminal_width() - 5;
       local $Text::Wrap::columns = $columns;
-    
+
       my $count = 1;
       for my $result(@results) {
         printf "[%2d] %s\n", $count, $result->{name};
@@ -16549,7 +17282,7 @@ if ($search) {
             "(separate multiple with comma or space): ";
       chomp(my $choice = <STDIN>);
       $choice ||= 1;
-      
+
       for(split /[ ,]+/, $choice) {
         if (/-/) {
           my ($lower, $upper) = split /-/, $choice;
@@ -16578,7 +17311,6 @@ if ($search) {
     print STDERR "No results found for '$search'.\n";
     exit 1;
   }
-  
 }
 else {
   @download_urls = @urls;
@@ -16617,7 +17349,7 @@ sub download {
     error "Couldn't download '$url': " . $browser->response->status_line;
   }
 
-  my($package, $possible_url) = FlashVideo::URLFinder::find_package($url, $browser);
+  my($package, $possible_url) = FlashVideo::URLFinder->find_package($url, $browser);
 
   my($actual_url, @suggested_fnames) = eval {
     $package->find_video($browser, $possible_url, $prefs);
@@ -16667,6 +17399,21 @@ sub download {
       $file ||= $data->{flv};
     } else {
       $downloader = FlashVideo::Downloader->new;
+    }
+
+    if (ref $data eq 'ARRAY') {
+      my ($url, $part_number, $part_count, $part_size) = @$data;
+      $data = $url;
+      if (defined $part_number && defined $part_count) {
+        my $part_suffix = sprintf('.part%02d_of_%02d', $part_number, $part_count);
+        substr $file, rindex($file, '.'), 0, $part_suffix
+          if $part_count > 1;
+      }
+
+      if (defined $part_size && -f $file && -s $file == $part_size) {
+        info "Already downloaded $file ($part_size bytes)";
+        next;
+      }
     }
 
     my $size = $downloader->$action($data, $file, $browser) || return 0;
@@ -16724,13 +17471,20 @@ sub add_plugin {
 }
 
 sub update {
+  my %update_types = (
+    'cpan-cpan' => [1, "cpan " . __PACKAGE__],
+    'cpan-cpanp' => [1, "cpanp i " . __PACKAGE__],
+    'cpan-cpanm' => [1, "cpanm " . __PACKAGE__],
+    'cpan-manual' => [0, "Manual install"],
+  );
+
   if($::SCRIPT_NAME) {
     my $browser = FlashVideo::Mechanize->new;
 
     $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
 
     if(!$browser->response->is_success) {
-      die "Unable to retrieve version data: " . $browser->response->status_line;
+      die "Unable to retrieve version data: " . $browser->response->status_line . "\n";
     }
 
     my $version = ($browser->content =~ /version: (\S+)/)[0];
@@ -16741,7 +17495,7 @@ sub update {
     die "Unable to parse version data" unless $version and $base;
 
     my @v = split /\./, $version;
-    my @V = split /\./, VERSION;
+    my @V = split /\./, $VERSION;
 
     my $newer = 0;
     my $i = 0;
@@ -16752,23 +17506,29 @@ sub update {
     }
 
     if($newer) {
-      info "Newer version ($version) available, downloading..";
-      die "Cannot update -- unable to write to $0\n" unless -w $0;
+      info "Newer version ($version) available";
+      debug "(Install type: $::INSTALL_TYPE)";
 
-      my $new_file = $0 . ".new";
-      $browser->mirror($url, $new_file);
+      if($::INSTALL_TYPE =~ /^cpan-/) {
 
-      if($browser->response->is_success && -f $new_file) {
-        rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
-        rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
-        chmod 0755, $0;
+        my $update_method = $update_types{$::INSTALL_TYPE};
+        if($update_method->[0]) {
+          info "This was installed via CPAN, you may upgrade by running:";
+          info $update_method->[1];
 
-        info "New version installed as $0";
-        info "(previous version backed up to $0.old).";
-        info $info;
-        exit 0;
+          my $run_cpan = $opt{yes} || do {
+            info "Shall I run that for you? (Y/n)";
+            <STDIN> =~ /(?:^\s*$|y)/i;
+          };
+
+          if($run_cpan) {
+            system $update_method->[1];
+          }
+        } else {
+          info "Please visit http://code.google.com/p/get-flash-videos to upgrade";
+        }
       } else {
-        die "Download failed: " . $browser->response->status_line;
+        update_script($browser, $url, $info);
       }
     } else {
       print STDERR "You already have the latest version.\n";
@@ -16778,6 +17538,30 @@ sub update {
   }
 
   update_plugins();
+
+  return 0; # exit code
+}
+
+sub update_script {
+  my($browser, $url, $info) = @_;
+
+  info "Downloading new version...";
+  die "Cannot update -- unable to write to $0\n" unless -w $0;
+
+  my $new_file = $0 . ".new";
+  $browser->mirror($url, $new_file);
+
+  if($browser->response->is_success && -f $new_file) {
+    rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
+    rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
+    chmod 0755, $0;
+
+    info "New version installed as $0";
+    info "(previous version backed up to $0.old).";
+    info $info;
+  } else {
+    die "Download failed: " . $browser->response->status_line;
+  }
 }
 
 sub update_plugins {
@@ -16836,7 +17620,7 @@ sub update_plugins {
 sub install_plugin {
   my ($browser, $url, $file) = @_;
 
-  my $plugin_exists = -f $file; 
+  my $plugin_exists = -f $file;
 
   my $new_file = $plugin_exists ? "$file.new" : $file;
 
@@ -16853,7 +17637,7 @@ sub install_plugin {
       info "(previous version backed up to $file.old).";
     }
     else {
-      info "New plugin $short_name installed as $file"; 
+      info "New plugin $short_name installed as $file";
     }
 
     return 1;
@@ -16879,7 +17663,7 @@ sub plugin_loader {
       return $plugin_fh; # Perl then reads the plugin from the FH
     }
   }
-  
+
   return;
 }
 
@@ -16900,4 +17684,4 @@ sub get_plugin_dir {
   return get_user_config_dir() . "/plugins";
 }
 }
-##} get_flash_videos
+##} bin/get_flash_videos
