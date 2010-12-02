@@ -29,7 +29,7 @@ begin
     end
   end
 rescue LoadError
-  STDERR.puts "Note: You should install the 'colorize' gem for extra prettiness.\n"
+  STDERR.puts "Note: You should install the 'colored' gem for extra prettiness.\n"
   # Monochrome hilite does nothing...
   class String
     def hilite(query); self; end
