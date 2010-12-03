@@ -1,0 +1,2 @@
+#!/bin/bash
+sudoifnotroot add-apt-repository ppa:$1

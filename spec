@@ -1,5 +1,5 @@
 #!/bin/bash
-CMD="spec -fs -c"
+CMD="rspec -fs -c"
 
 if [ "$1" == "" ]
 then

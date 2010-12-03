@@ -79,7 +79,7 @@ def prompt(message='(Y/n)? ', choices=['y','n'], default='y'):
     return default
             
 def isurl(thing):
-    return thing.startswith('http://') or thing.startswith('https://') or thing.startswith('ftp://')
+    return re.match(r'^(https|ftp|git)://', thing) is not None
 
 def isoption(arg):
     if arg[0] != '-' or os.path.exists(arg):
@@ -383,6 +383,14 @@ class DebExtractor(FileExtractor):
     def extract_file(self, filename, destdir=None):
         execute('dpkg -x "%s" "%s"' % (filename, destdir))
 
+class GitExtractor(FileExtractor):
+    exts            = ['.git']
+    desc            = "Git Repository"
+    binary          = "git"
+    
+    def extract_url(self, filename, destdir=None):
+        execute('git clone "%s" "%s"' % (filename, destdir))
+
 #####################################################################
 
 extractors = [
@@ -391,6 +399,7 @@ extractors = [
                 RarExtractor(),
                 DebExtractor(),
                 SevenZipExtractor(),
+                GitExtractor(),
              ]
 
 def extract(filename, destdir):
