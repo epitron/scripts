@@ -1,2 +1,6 @@
-#!/bin/bash
-apt-cache search $* | less -S -i --pattern="$*"
+#!/usr/bin/env ruby
+require 'epitools'
+
+results = `apt-cache search #{ARGV * ' '}`
+pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
+IO.popen("less -S -R -X", "w"){ |f| f.puts results.highlight(pattern) }
