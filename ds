@@ -1,2 +1,28 @@
-#!/bin/bash
-dpkg -l|grep -i "$*"|less -S
+#!/usr/bin/env ruby
+require 'epitools'
+pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
+
+header = ""
+no_matches_yet = true
+
+
+IO.popen("less -S -R -X", "w") do |less|
+  IO.popen("dpkg -l", "r") do |dpkg|
+    enum = Enumerator.new dpkg, :each
+  
+    for line in enum
+      header << line
+      break if line[/^\+\+\+/]
+    end
+  
+    for line in enum
+      if line[pattern]
+        if no_matches_yet
+          less.puts header
+          no_matches_yet = false
+        end
+        less.puts line.strip.highlight(pattern)
+      end
+    end
+  end
+end

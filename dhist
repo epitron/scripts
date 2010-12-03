@@ -1,0 +1,52 @@
+#!/usr/bin/ruby
+require 'epitools'
+
+Colored.force!
+
+class Event < Struct.new(:date, :cmd, :name, :v1, :v2)
+
+  # 2010-12-03 01:36:56 remove gir1.0-mutter-2.31 2.31.5-0ubuntu9 2.31.5-0ubuntu9
+  # 2010-12-03 01:36:58 install gir1.0-mutter-2.91 <none> 2.91.2+git20101114.982a10ac-0ubuntu1~11.04~ricotz0  
+  #LINE_RE = /^(.+ .+) (status \w+|\w+) (.+) (.+)$/
+  LINE_RE = /^(.+ .+) (remove|install) (.+) (.+) (.+)$/
+
+  def initialize(line)
+    if line =~ LINE_RE
+      super($1, $2, $3, $4, $5)
+    else
+      raise "Bad line: #{line.inspect}"
+    end
+  end
+
+  def cmd_color
+    case cmd
+      when 'remove'
+        :light_red
+      when 'install'
+        :light_yellow
+      else
+        :white
+    end
+  end
+  
+  def to_s
+    "[#{date.light_blue}] #{cmd.send(cmd_color)} #{name.light_cyan} (#{v2})"
+  end  
+
+  def self.each
+
+    logs = Dir["/var/log/dpkg*"].sort_by{|fn| File.mtime(fn)}
+
+    logs.each do |log|
+      open(log, 'rb').each do |line|
+        if e = Event.new(line) rescue nil
+          yield e; end; end; end
+    
+  end
+
+end
+
+
+if $0 == __FILE__
+  Event.each{|e| puts e}
+end
