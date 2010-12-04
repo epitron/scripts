@@ -5,8 +5,7 @@ pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
 header = ""
 no_matches_yet = true
 
-
-IO.popen("less -S -R -X", "w") do |less|
+lesspipe do |less|
   IO.popen("dpkg -l", "r") do |dpkg|
     enum = Enumerator.new dpkg, :each
   
