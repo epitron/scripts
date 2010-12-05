@@ -1,2 +1,11 @@
-#!/bin/bash
-apt-cache show $* | less -X
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'epitools'
+
+IO.popen("apt-cache show #{ARGV * ' '}", "r") do |apt|
+  lesspipe do |less|
+    for line in apt
+      less.puts line.gsub(/^\S+:/) { |m| m.light_yellow }
+    end
+  end
+end

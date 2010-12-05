@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-results = `apt-cache search #{ARGV * ' '}`
 pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
-IO.popen("less -S -R -X", "w"){ |f| f.puts results.highlight(pattern) }
+
+IO.popen("apt-cache search #{ARGV * ' '}", "r") do |apt|
+  for line in apt
+    lesspipe { |less| less.puts line.highlight(pattern) }
+  end
+end
