@@ -3,8 +3,10 @@ require 'epitools'
 
 pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
 
-IO.popen("apt-cache search #{ARGV * ' '}", "r") do |apt|
-  for line in apt
-    lesspipe { |less| less.puts line.highlight(pattern) }
+lesspipe do |less| 
+  IO.popen("apt-cache search #{ARGV * ' '}", "r") do |apt|
+    for line in apt
+      less.puts line.highlight(pattern)
+    end
   end
 end
