@@ -1,2 +1,2 @@
 #!/bin/bash
-dpkg -L "$*" | less
+dpkg -L "$*" | less -X
