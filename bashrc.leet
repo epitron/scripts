@@ -89,6 +89,9 @@ alias rehash='hash -r'
 alias df='df -h'
 alias screen="screen -U"
 
+alias dict='dictless'
+alias chrome='google-chrome'
+
 alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
