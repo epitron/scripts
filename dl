@@ -1,2 +1,39 @@
-#!/bin/bash
-dpkg -L "$*" | less -X
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'epitools'
+
+STYLEDESC = %{
+  /share/doc/ light_yellow
+  /bin/       light_cyan
+  /lib/       light_blue
+  /share/     light_green
+}
+
+STYLELIST = STYLEDESC.
+  nice_lines.
+  map(&:strip).map(&:split).
+  map{|loc,color| [Regexp.new(loc), color] }
+
+if ARGV.empty?
+  puts "Please supply the package you want to view the contents of after the command."
+  exit 1
+end
+
+IO.popen("dpkg -L #{ARGV * ' '}", "r") do |dpkg|
+  lesspipe do |less|
+
+    for line in dpkg
+      selected_color = 'white'
+      for pattern, color in STYLELIST
+        if pattern.match(line)
+          selected_color = color
+          break
+        end
+      end
+      
+      less.puts line.strip.send(selected_color)
+    end
+  end
+end
+
+
