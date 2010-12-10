@@ -7,8 +7,10 @@
 
 #################################################################
 ## Load Modules
+require 'rubygems'
 require 'pathname'
 require 'set'
+require 'epitools'
 #################################################################
 
 
@@ -16,46 +18,6 @@ require 'set'
 ## Settings
 MAX_LINE_LENGTH  = 1000
 IGNORE_PATHS     = Set.new([".svn", ".git", "CVS"])
-#################################################################
-
-
-#################################################################
-## Load the colorize gem, and define the "hilite" function
-begin
-  require 'rubygems' 
-  require 'colored'
-  # Colourized hilite...
-  class String
-    def hilite(query)
-      if size > MAX_LINE_LENGTH
-        line = self[0..MAX_LINE_LENGTH]
-        extra = " [...plus #{size - MAX_LINE_LENGTH} more bytes...]".red 
-      else
-        line = self
-        extra = ""
-      end
-      line.to_s.gsub(/(.*)(#{query})(.*)/) { $1 + $2.black.on_yellow + $3 } + extra
-    end
-  end
-rescue LoadError
-  STDERR.puts "Note: You should install the 'colored' gem for extra prettiness.\n"
-  # Define black & white stubs to replace colorized methods...
-  class String
-    def hilite(query)
-      if size > MAX_LINE_LENGTH
-        line = self[0..MAX_LINE_LENGTH]
-        extra = " [...plus #{size - MAX_LINE_LENGTH} more bytes...]"
-      else
-        line = self
-        extra = ""
-      end
-      line + extra
-    end
-    %w(magenta blue green).each do |name|
-      define_method(name, proc { self })
-    end
-  end
-end
 #################################################################
 
 
@@ -118,7 +80,7 @@ roots.each do |root|
             " ", 
             n.to_s.green,        # line number
             ":".blue, 
-            line.hilite(query)   # line
+            line.highlight(query)   # line
           ].join
         end
       end

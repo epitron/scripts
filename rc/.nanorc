@@ -245,7 +245,7 @@ include "/usr/share/nano/perl.nanorc"
 include "/usr/share/nano/python.nanorc"
 
 ## Ruby
-include "/usr/share/nano/ruby.nanorc"
+include "/usr/scripts/nano/ruby.nanorc"
 
 ## Java
 include "/usr/share/nano/java.nanorc"

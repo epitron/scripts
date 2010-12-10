@@ -6,8 +6,10 @@
 
 #################################################################
 ## Load Modules
+require 'rubygems' 
 require 'pathname'
 require 'pp'
+require 'epitools'
 #################################################################
 
 
@@ -16,26 +18,6 @@ require 'pp'
 $verbose = false
 #################################################################
 
-
-#################################################################
-## Load the colorize gem, and define the "hilite" function
-begin
-  require 'rubygems' 
-  require 'colored'
-  # Colourized hilite...
-  class String
-    def hilite(query)
-      self.to_s.gsub(/(.*)(#{query})(.*)/) { $1.green + $2.black.on_yellow + $3.green }
-    end
-  end
-rescue LoadError
-  STDERR.puts "Note: You should install the 'colored' gem for extra prettiness.\n"
-  # Monochrome hilite does nothing...
-  class String
-    def hilite(query); self; end
-  end
-end
-#################################################################
 
 
 #################################################################
@@ -180,10 +162,10 @@ if $0 == __FILE__
         if orig_query['/']
           # search in the full path if the user put a '/' in the query
           path = dirname + filename
-          puts path.hilite(query) if path =~ query
+          puts path.highlight(query) if path =~ query
         else
           # search in the filenames only
-          puts dirname+filename.hilite(query) if filename =~ query
+          puts dirname+filename.highlight(query) if filename =~ query
         end
         
       end

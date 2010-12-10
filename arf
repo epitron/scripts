@@ -252,6 +252,8 @@ class FileExtractor:
             archivename = split(urllib.url2pathname(thing))[1]
         elif isfile(thing):
             archivename = split(thing)[1]
+        else:
+            archivename = "dunno.qqq"
             
         self.check_binary()
             
