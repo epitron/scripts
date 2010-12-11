@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-get autoremove
+sudoifnotroot apt-get autoremove
