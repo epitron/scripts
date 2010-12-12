@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
+
+require 'rubygems'
 require 'epitools'
+
 pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
 
 header = ""
