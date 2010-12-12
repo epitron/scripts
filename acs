@@ -4,8 +4,12 @@ require 'epitools'
 
 IO.popen("apt-cache show #{ARGV * ' '}", "r") do |apt|
   lesspipe do |less|
-    for line in apt
-      less.puts line.gsub(/^\S+:/) { |m| m.light_yellow }
-    end
+    separator = ("#"*50).light_cyan
+  
+    result = apt.read.
+      gsub("\n\n") {|m| "\n\n#{separator}\n\n" }.
+      gsub(/^\S+:/) { |m| m.light_yellow }
+      
+    less.puts "\n#{separator}\n\n#{result}"
   end
 end
