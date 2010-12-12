@@ -3,8 +3,12 @@ require 'rubygems'
 require 'nokogiri'
 require 'open-uri'
 require 'uri'
+require 'choice'
+require 'epitools'
+# todo: use choice
 
 def absolute_uri(root, url)
+  pp [:url_join, root, url]
   URI.join(root, url).to_s
 end
 
@@ -15,19 +19,49 @@ def get_page(url)
 end
 
 
-def get_links(url)
-  page = get_page(url)
+def get_links(pageurl)
+
+  page = get_page(pageurl)
+
+  result = {
+
+  :links => page.search("a").map { |a|
+    linkurl = a["href"]
+  }.squash,
   
-  page.search("a").each do |a|
-    if href = a["href"]
-      puts absolute_uri(url, href)
-    end
-  end
+  :embeds => page.search("embed").map { |embed|
+    linkurl = embed["src"]
+    #if embed["type"].in? %w(application/x-mplayer2)
+  }.squash,
+  
+  :images => page.search("img").map { |img|
+    linkurl = img["src"]
+  }.squash,
+
+  }
+  
+  result.map_values! { |links| 
+    links.map { |linkurl|
+      absolute_uri(pageurl, linkurl)
+    }
+  }
+  result[:emails] = result[:links].select{|v| v["mailto:"]}
+  result[:links] -= result[:emails]
+  
+  result
+
 end
 
 
 if ARGV.any?
-  ARGV.each { |arg| get_links(arg) }
+  ARGV.each do |pageurl|
+    puts "### Page URL: #{pageurl}"
+    for category, links in get_links(pageurl)
+      puts "# #{category}"
+      links.each { |link| puts link }
+      puts
+    end
+  end
 else
   puts
   puts "Usage: getlinks <url1> [<url2>, ...]" 
