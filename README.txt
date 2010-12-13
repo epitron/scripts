@@ -4,6 +4,7 @@
 
 Lots of cool scripts!
 
+(This list is out of date.)
 
 =[ Debian Scripts ]=============================================
 

@@ -100,6 +100,8 @@ alias gl="git log"
 alias r="rails"
 
 alias go="gnome-open"
+alias open="gnome-open"
+alias git="hub"
 
 ## no display!
 #unset DISPLAY
