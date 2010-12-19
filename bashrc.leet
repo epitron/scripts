@@ -18,6 +18,8 @@ then
   export PATH=$PATH:~/bin
 fi
 
+## Ruby 1.8
+export RUBYOPT="rubygems"
 
 ## colors
 export CLICOLOR=1
