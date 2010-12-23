@@ -101,9 +101,13 @@ alias gl="git log"
 
 alias r="rails"
 
-alias go="gnome-open"
-alias open="gnome-open"
 alias git="hub"
+
+if [ "$OSTYPE" == "cygwin" ]; then
+  alias open="cygstart"
+else
+  alias open="gnome-open"
+fi
 
 ## no display!
 #unset DISPLAY
