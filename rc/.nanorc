@@ -258,3 +258,6 @@ include "/usr/share/nano/sh.nanorc"
 
 ## POV-Ray
 include "/usr/share/nano/pov.nanorc"
+
+## Common Lisp
+include "/usr/scripts/nano/lisp.nanorc"
