@@ -3,7 +3,7 @@ require 'rubygems'
 require 'epitools'
 
 IO.popen("apt-cache show #{ARGV * ' '}", "r") do |apt|
-  lesspipe do |less|
+  lesspipe(:wrap=>true) do |less|
     separator = ("#"*50).light_cyan
   
     result = apt.read.
