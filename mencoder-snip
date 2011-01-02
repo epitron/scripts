@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'epitools'
+
+COEFFS = [24*60*60, 60*60, 60, 1]
+
+def to_sec(t)
+  bits = t.split(":").map{|x| x.to_i}
+  bits.reverse.zip(COEFFS.reverse).map{|c,n| c*n}.sum
+end  
+
+def to_time(s)
+  result = COEFFS.map do |c| 
+    num, s = s.divmod(c)
+    num
+  end
+  
+  result.shift      while result.first == 0
+  result.unshift 0  while result.size < 2
+
+  result.map{|n| "%0.2d" % n}.join(":")  
+end
+
+def timediff(a,b)
+  to_time(to_sec(b) - to_sec(a))
+end
+
+def snip(infile, outfile, startpos, endpos)
+  length = timediff(startpos, endpos)
+  args = %w[ mencoder -oac copy -ovc copy -ss ] + 
+         [startpos] + 
+         %w[ -endpos ] + 
+         [length] +
+         %w[ -o ] + 
+         [outfile, infile]
+  
+  system(*args)
+end
+
+def test_times
+  p to_sec("00:12")
+  p to_sec("01:15")
+  p to_time(to_sec("1:00:00"))
+  
+  p timediff("33:41", "38:18")
+  p timediff("33:41", "1:12:18")
+end
+
+def usage
+  puts "usage: <infile> <outfile> <startpos> <endpos>"
+end
+
+def help
+  usage
+  exit 1
+end
+
+if $0 == __FILE__
+  help if ARGV.size != 4
+  snip(*ARGV)  
+end
