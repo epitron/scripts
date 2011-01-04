@@ -103,6 +103,8 @@ alias r="rails"
 
 alias git="hub"
 
+alias gem="sudoifnotroot gem"
+
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"
 else

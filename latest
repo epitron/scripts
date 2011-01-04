@@ -1,8 +1,6 @@
-#!/usr/bin/ruby
-
+#!/usr/bin/env ruby
 require 'rubygems'
 require 'epitools'
-require 'colorize'
 
 count = ARGV.first ? ARGV.first.to_i : nil
 
@@ -21,13 +19,13 @@ grouped = paths.group_by{|t,f| t}.sort
 
 for group, paths in grouped
   
-  puts group.inspect.green
+  puts group.inspect.light_blue
   
   for time, path in paths
     dir, file = File.split(path)
     print "  "
-    print "#{dir}/" unless dir == "."
-    puts file.magenta
+    print "#{dir}/".light_white unless dir == "."
+    puts file.white
   end
   
   puts
