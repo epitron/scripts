@@ -1,0 +1,2 @@
+#!/bin/bash
+help $@ || $@ -h || $@ --help || man $@ || $BROWSER "http://www.google.com/search?q=$@"
