@@ -8,7 +8,6 @@
 #################################################################
 ## Load Modules
 require 'rubygems'
-require 'pathname'
 require 'set'
 require 'epitools'
 #################################################################
@@ -34,14 +33,14 @@ end
 ## Parse Commandline
 query = Regexp.new(Regexp.escape(ARGV.shift), Regexp::IGNORECASE)
 roots = (ARGV.any? ? ARGV : ['.']).
-        map{ |path| Pathname(path) }.
-        select { |path| path.exist? || STDERR.puts("Error: #{path} doesn't exist") }
+        map{ |path| Path[path] }.
+        select { |path| path.exists? || STDERR.puts("Error: #{path} doesn't exist") }
 #################################################################
 
 
 #################################################################
 ## Grep files/display results
-def breadth_first_file_scan(root, &block)
+def old_breadth_first_file_scan(root, &block)
   if root.file?
     yield root 
     return
@@ -61,35 +60,91 @@ def breadth_first_file_scan(root, &block)
   dirs.each { |dir| breadth_first_file_scan(dir, &block) }
 end
 
-def grep_file(path, query, &block)
-  open(path, "rb") do |f|
-    f.each_with_index do |line, n|
-      yield(line,n+1) if line =~ query
+
+#################################################################
+## NEW path scanner
+
+def slashed(path)
+  path[-1] == ?/ ? path : (path + "/") 
+end
+
+def listdir(root)
+  root = slashed(root)
+  
+  dirs = Dir.glob("#{root}*/", File::FNM_DOTMATCH)
+  files = Dir.glob("#{root}*", File::FNM_DOTMATCH)
+
+  dirs_without_slashes = dirs.map{|dir| dir[0...-1]} 
+  files = files - dirs_without_slashes # remove dirs from file list
+
+  # drop the "." and ".." dirs
+  dirs = dirs.select { |dir| not dir =~ %r{/\.{1,2}/} }
+
+  # strip #{root} from paths
+  dirs, files = [dirs,files].map do |list|
+    list.map { |f| f[root.size..-1] }
+  end
+  
+  [dirs, files]
+end
+
+
+$visited = {} # visited paths, to avoid symlink-loops
+
+def breadth_first_scan(root, &block)
+  root = slashed(root)
+  
+  dirs, files = listdir(root)
+  path_id = File.lstat(root).ino
+  
+  if seenpath = $visited[path_id]
+    STDERR.puts "*** WARNING: Already seen #{root.inspect} as #{seenpath.inspect}".red if $verbose
+  else
+    $visited[path_id] = root
+    
+    dirs.each  { |f| yield root, f }
+    files.each { |f| yield root, f }
+    
+    for dir in dirs
+      breadth_first_scan(root+dir, &block)
     end
   end
 end
 
-roots.each do |root|
-  begin
+#################################################################
 
-    breadth_first_file_scan(root) do |path|
-      if path.file?
-        grep_file(path, query) do |line,n|
-          puts [
-            path.to_s.magenta,   # pathname
-            " ", 
-            n.to_s.green,        # line number
-            ":".blue, 
-            line.highlight(query)   # line
-          ].join
-        end
+
+def grep_file(path, query, &block)
+  open(path, "rb") do |f|
+    f.each_with_index do |line, n|
+      if line =~ query
+        yield(line,n+1)
       end
     end
-
-  rescue Interrupt
-    # eat ^C
-    exit(1)
   end
+rescue => e
+  #STDERR.puts e  
+end
+
+lesspipe do |less|
+  
+  roots.each do |root|
+    begin
+  
+      breadth_first_scan(root.to_s) do |root, path|
+        unless path[-1] == ?/
+          grep_file(File.join(root,path), query) do |line,n|
+            less.puts "#{path.magenta} #{n.to_s.green}#{":".blue}#{line.highlight(query)}"
+          end
+        end
+      end
+  
+    rescue Interrupt
+      # eat ^C
+      exit(1)
+    end
+  end
+  
 end
 #################################################################
 
