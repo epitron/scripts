@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #######################################################
 ## Uses 'netstat' and 'fuser' to show all programs 
 ## that are listening on TCP/UDP ports.
@@ -21,13 +21,13 @@ IP4LINE = /^(tcp|udp)\s+\d+\s+\d+\s+([\d\.]+):(\d+)\s+/
 IP6LINE = /^(tcp|udp)6\s+\d+\s+\d+\s+([\w\d:]+):(\d+)\s+/
 ports = [] 
 
-for line in `netstat -ln`
+for line in `netstat -ln`.lines
   ports << [$3.to_i, $1] if line =~ IP4LINE or line =~ IP6LINE
 end
 
 
 #######################################################
-## display listening programs with 'fuser'
+## display programs which are listening using 'fuser'
 #######################################################
 
 title "Listening sockets (IPv4 & IPv6):"
