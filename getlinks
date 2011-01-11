@@ -3,9 +3,8 @@ require 'rubygems'
 require 'nokogiri'
 require 'open-uri'
 require 'uri'
-require 'choice'
 require 'epitools'
-# todo: use choice
+
 
 def absolute_uri(root, url)
   #pp [:url_join, root, url]
@@ -14,14 +13,23 @@ end
 
 
 def get_page(url)
-  $stderr.puts "Loading #{url.inspect}..."
+  #$stderr.puts "Loading #{url.inspect}..."
   Nokogiri::HTML(open(url))
+end
+
+
+def relative_url?(url)
+  URI.join(url, url)
+  false
+rescue URI::BadURIError
+  true
 end
 
 
 def get_links(pageurl)
 
   page = get_page(pageurl)
+  root_is_relative = relative_url?(pageurl)
 
   result = {
 
@@ -40,11 +48,13 @@ def get_links(pageurl)
 
   }
   
+
   result.map_values! { |links| 
     links.map { |linkurl|
       absolute_uri(pageurl, linkurl)
     }
-  }
+  } unless root_is_relative
+  
   result[:emails] = result[:links].select{|v| v["mailto:"]}
   result[:links] -= result[:emails]
   
@@ -54,6 +64,7 @@ end
 
 
 if ARGV.any?
+
   ARGV.each do |pageurl|
     puts "### Page URL: #{pageurl}"
     for category, links in get_links(pageurl)
@@ -62,9 +73,11 @@ if ARGV.any?
       puts
     end
   end
+
 else
+
   puts
-  puts "Usage: getlinks <url1> [<url2>, ...]" 
+  puts "Usage: getlinks <url1> [<url2>, ...]"
   puts
   puts "Purpose:"
   puts "  Returns all the HREFs from the <a href=\"\"> tags in the specificed"
@@ -75,4 +88,5 @@ else
   puts "Example:"
   puts "  getlinks http://something.com/stuff.html | egrep '\.zip$' | xargs wget"
   puts
+
 end
