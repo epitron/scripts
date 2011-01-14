@@ -155,24 +155,28 @@ if $0 == __FILE__
   end
 
   # Search!
-  roots.each do |root|
-    begin
-      breadth_first_scan(root) do |dirname, filename|
+  lesspipe do |less|
+
+    roots.each do |root|
+      begin
+        breadth_first_scan(root) do |dirname, filename|
         
-        if orig_query['/']
-          # search in the full path if the user put a '/' in the query
-          path = dirname + filename
-          puts path.highlight(query) if path =~ query
-        else
-          # search in the filenames only
-          puts dirname+filename.highlight(query) if filename =~ query
+          if orig_query['/']
+            # search in the full path if the user put a '/' in the query
+            path = dirname + filename
+            less.puts path.highlight(query) if path =~ query
+          else
+            # search in the filenames only
+            less.puts dirname+filename.highlight(query) if filename =~ query
+          end
+        
         end
-        
+      rescue Interrupt
+        # eat ^C's
+        exit(1)
       end
-    rescue Interrupt
-      # eat ^C's
-      exit(1)
     end
+  
   end
 
 end
