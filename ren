@@ -12,7 +12,7 @@ def startup_hook():
 
 readline.set_startup_hook(startup_hook)
 
-dest = raw_input("Change filename: ")
+dest = raw_input("Rename to: ")
 
 print
 print "Renaming", repr(src), "to", repr(dest)
