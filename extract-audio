@@ -2,7 +2,7 @@
 require 'rubygems'
 require 'epitools'
 
-VALID_EXTS = %w[.avi .asf .wmv .mp4 .ogm .mkv]
+VALID_EXTS = %w[.avi .asf .wmv .mp4 .ogm .mkv .flv]
 
 def extract_audio(infile)
 
