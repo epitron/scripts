@@ -155,7 +155,7 @@ if $0 == __FILE__
   end
 
   # Search!
-  lesspipe do |less|
+  lesspipe(:wrap=>true) do |less|
 
     roots.each do |root|
       begin
