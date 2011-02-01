@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ "$*" == "" ]; then
+  echo "usage: gg <regexp>"
+else
+  git grep "$*" $(git rev-list --all)
+fi
