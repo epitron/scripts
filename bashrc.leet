@@ -91,6 +91,8 @@ alias rehash='hash -r'
 alias df='df -h'
 alias screen="screen -U"
 
+alias off="shutdown -h now"
+
 alias dict='dictless'
 alias chrome='google-chrome'
 
