@@ -1,3 +1,4 @@
+#echo ".bash_profile"
 . ~/scripts/bashrc.leet
 . purple
 
