@@ -16,7 +16,9 @@ def req mod
   puts "  |_ #{mod}"
   require mod
 rescue Exception => e
-  p e
+  puts "Error: #{e.inspect}"
+  puts e.backtrace
+  puts
 end
 
 req 'irb/completion'
