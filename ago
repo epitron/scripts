@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "* apt-get optimizing..."
+
+sudoifnotroot dpkg --clear-avail
+
+if [ ! "`which sync-available`" == "" ]; then
+  sudoifnotroot sync-available
+else
+  echo "* dctrl-tools not installed. skipping sync-available."
+fi
+
+sudoifnotroot apt-get update
