@@ -1,7 +1,7 @@
 ---
-gem: --no-ri --no-rdoc --verbose
+gem: --no-ri --no-rdoc #--verbose
 search: -r -d
 :sources:
 - http://rubygems.org
-- http://gems.github.com
+#- http://gems.github.com
 #- http://gems.rubyforge.org
