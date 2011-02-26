@@ -1,2 +1,8 @@
 #!/bin/bash
-mplayer -vc null -vo null -ao pcm:waveheader:fast:file="$2" "$1"
+if [ "$1" == "" ]; then
+  echo "usage: dumpwav <video file>"
+  echo "effect: create a .wav file from the audio from the video."
+else
+  mplayer -vo null -ao pcm:waveheader:fast:file="$1.wav" "$1"
+fi
+

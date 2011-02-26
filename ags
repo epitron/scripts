@@ -2,7 +2,7 @@
 require 'rubygems'
 require 'epitools'
 
-pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")" )
+pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")", Regexp::IGNORECASE )
 
 lesspipe do |less| 
   IO.popen("apt-cache search #{ARGV * ' '}", "r") do |apt|

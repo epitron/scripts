@@ -32,5 +32,5 @@ end
 
 title "Listening sockets (IPv4 & IPv6):"
 params = ports.sort.uniq.map { |port,proto| "#{port}/#{proto}" }
-system("fuser", "-v", *params)
+system("fuser -v #{params.join ' '} 2>&1")
 puts
