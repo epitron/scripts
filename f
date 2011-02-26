@@ -15,7 +15,12 @@ require 'epitools'
 
 #################################################################
 ## Globals
-$verbose = false
+if ARGV.any?{|arg| arg == "-v"}
+  ARGV.remove_if{|arg| arg == "-v"}
+  $verbose = true
+else
+  $verbose = false
+end
 #################################################################
 
 
@@ -83,6 +88,8 @@ end
 $visited = {} # visited paths, to avoid symlink-loops
 
 def breadth_first_scan(root, &block)
+  puts "=== ".light_black + root.light_cyan + " ===".light_black if $verbose
+
   root = slashed(root)
   
   dirs, files = listdir(root)
@@ -160,7 +167,7 @@ if $0 == __FILE__
     roots.each do |root|
       begin
         breadth_first_scan(root) do |dirname, filename|
-        
+
           if orig_query['/']
             # search in the full path if the user put a '/' in the query
             path = dirname + filename
