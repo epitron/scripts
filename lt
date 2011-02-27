@@ -1,1 +1,1 @@
-ls --color=force -ltr | tail -n 15
+ls --color=force -hltr | cut -b 37- | tail -n 15
