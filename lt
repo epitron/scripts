@@ -1,0 +1,1 @@
+ls --color=force -ltr | tail -n 15

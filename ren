@@ -6,10 +6,15 @@ if len(sys.argv) == 2:
 else:
   print "Usage: ren <filename>"
   sys.exit(1)
+
+if not os.path.exists(src):
+  print repr(src), "not found."
+  sys.exit(2)
   
 readline.set_startup_hook( lambda: readline.insert_text(src) )
 
-dest = raw_input("Rename to: ")
+print            "Rename:", src
+dest = raw_input("    to: ")
 
 print
 print "Renaming", repr(src), "to", repr(dest)

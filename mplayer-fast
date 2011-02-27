@@ -1,0 +1,1 @@
+mplayer -af scaletempo -speed 1.5 "$@"
