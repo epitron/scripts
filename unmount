@@ -1,32 +1,60 @@
 #!/usr/bin/env ruby
-if ARGV.size != 1
-  puts "usage: unmount <directory>"
+args = ARGV
+
+unless args.any?
+  puts "usage: unmount <directory> [ <directory> [ ... ] ]"
   exit 1
 end
 
-arg = ARGV.first
+# /dev/sda2 on / type ext4 (rw,errors=remount-ro,commit=0)
 
-unless File.directory? arg
-  puts "Error: #{arg.inspect} isn't a directory."
-  exit 2
-end
-
-matches = `mount | grep #{arg}`.lines.select { |line| line[arg] }
-
-if matches.empty?
-  puts "Error: #{arg.inspect} isn't mounted."
-  exit 3
-end
-
-raise "ERROR: Too many matching mountpoints: #{matches.size}" if matches.size > 1
-
-for match in matches
-
-  case m
-    when /type fuse/
-      system("fusermount -u #{arg}")
-    else
-      system("sudoifnotroot umount #{arg}")
+class Mount < Struct.new(:dev, :path, :type, :options)
+  
+  def self.from_line(line)
+    if line =~ %r{^(\S+) on (\S+) type (\S+) \((\S+)\)$} 
+      new($1, $2, $3, $4)
     end
+  end
+  
+end
     
+mounts = `mount`.lines.map{|line| Mount.from_line(line) }.compact
+
+for arg in args
+  
+  print "unmount #{arg.inspect}: "
+  
+  unless File.directory? arg
+    puts "FAIL! (not a directory)"
+    next
+  end
+  
+  abspath = File.expand_path(arg)
+
+  matches = mounts.select{|mount| mount.path == abspath }
+  
+  if matches.empty?
+    puts "FAIL! (not mounted)"
+    next
+  end
+  
+  if matches.size > 1
+    puts "FAIL! (too many matching mountpoints...)"
+    p matches
+    puts
+    next
+  end
+  
+  for match in matches
+  
+    success = if match.type[/^fuse/]
+                system("fusermount -u #{arg}")
+              else
+                system("sudoifnotroot umount #{arg}")
+              end
+      
+    puts( success ? "SUCCESS!" : "FAIL!" )
+      
+  end
+  
 end

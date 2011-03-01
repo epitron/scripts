@@ -106,6 +106,7 @@ alias r="rails"
 alias git="hub"
 
 alias gem="sudoifnotroot gem"
+alias mount="sudoifnotroot mount"
 
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"

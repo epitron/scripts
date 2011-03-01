@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 require 'rubygems'
 require 'epitools'
+require 'date'
 
 Colored.force!
 
@@ -18,14 +19,14 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
     nil => :white,
   }
   
-  def initialize(line)
+  def self.from_line(line)
     if line =~ LINE_RE
-      super($1, Event.parse_date($1), $2, $3, $4, $5)
+      new($1, Event.parse_date($1), $2, $3, $4, $5)
     else
-      raise "Bad line: #{line.inspect}"
+      nil
     end
-  end
-
+  end    
+  
   def cmd_color
     CMD_COLORS[cmd]
   end
@@ -53,9 +54,10 @@ class History
     logs = Dir["/var/log/dpkg*"].sort_by{|fn| File.mtime(fn)}
 
     logs.each do |log|
-      open(log, 'rb').each do |line|
-        if e = (Event.new(line) rescue nil)
-          yield e
+      zopen(log, 'r').each do |line|
+        line.strip!
+        if e = Event.from_line(line)
+          yield e 
         end
       end
     end
@@ -92,8 +94,10 @@ class History
 
 end
 
-def show_events(es)
-  lesspipe{|less| es.each{|e| less.puts e} }
+def show_events(events)
+  lesspipe(:tail=>true) do |less| 
+    events.each { |event| less.puts event }
+  end
 end
 
 def show_grouped(g)
@@ -117,7 +121,11 @@ end
 if $0 == __FILE__
   args = ARGV
   
-  command = args.shift
+  if args.any?
+    command = args.shift
+  else
+    command = "list"
+  end
   
   case command
     when 'list'

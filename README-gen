@@ -4,24 +4,22 @@ require 'epitools'
 require 'json'
 
 def parse_readme
-sections = {}
-
-for chunk in File.read("README.txt").lines.split_before(/=\[/)
-  if chunk.first =~ /=\[ (.+) \]=/
-    section = $1
-  end
-
+  sections = {}
   
-  script_pairs = chunk.
-    grep(/\|/).
-    map{|l| [$1,$2] if l =~ /(\S+)\s*\|\s*(.+)/}.
-    flatten
+  for chunk in File.read("README.txt").lines.split_before(/=\[/)
+    if chunk.first =~ /=\[ (.+) \]=/
+      section = $1
+    end
     
-  sections[section] = Hash[*script_pairs]
-    
-end
-
-
+    script_pairs = \
+      chunk.
+      grep(/\|/).
+      map{|l| [$1,$2] if l =~ /(\S+)\s*\|\s*(.+)/}.
+      flatten
+      
+    sections[section] = Hash[*script_pairs]
+  end
+  
   open("descs.json","wb"){|f| f.write sections.to_json }
 
 end
@@ -30,16 +28,12 @@ end
 def find_missing
 
   sects = JSON.load open("descs.json")
- 
   described_scripts = sects.values.map(&:keys).flatten.sort
-  
   all_scripts = Dir["**/*"].select{|fn| File.file? fn }.sort
-
   missing = all_scripts - described_scripts
+  sects["Undescribed"] = Hash[*missing.map{|m| [m,'']}.flatten]
   
-  sects["Undescribed"] = Hash[*missing.map{|m| [m,'']}]
-
-  JSON.
+  pp sects
   
 end
 
