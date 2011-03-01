@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+if ARGV.size != 1
+  puts "usage: unmount <directory>"
+  exit 1
+end
+
+arg = ARGV.first
+
+unless File.directory? arg
+  puts "Error: #{arg.inspect} isn't a directory."
+  exit 2
+end
+
+matches = `mount | grep #{arg}`.lines.select { |line| line[arg] }
+
+if matches.empty?
+  puts "Error: #{arg.inspect} isn't mounted."
+  exit 3
+end
+
+raise "ERROR: Too many matching mountpoints: #{matches.size}" if matches.size > 1
+
+for match in matches
+
+  case m
+    when /type fuse/
+      system("fusermount -u #{arg}")
+    else
+      system("sudoifnotroot umount #{arg}")
+    end
+    
+end
