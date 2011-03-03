@@ -1,0 +1,1 @@
+sudoifnotroot apt-add-repository "$@"
