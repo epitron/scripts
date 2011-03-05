@@ -12,5 +12,5 @@ else
 		CMD="$2"
 	fi
 
-	/etc/init.d/$1 $CMD
+	sudoifnotroot /etc/init.d/$1 $CMD
 fi
