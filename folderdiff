@@ -5,7 +5,7 @@
 
 %w[
   rubygems 
-  colorize 
+  epitools
 
   set 
   ostruct
@@ -85,14 +85,14 @@ class Folder
     @root = root
     puts "<light_yellow>* Scanning <light_white>#{root}</light_white>...</light_yellow>".colorize
     
-    puts "  <default>|_ <light_blue>checking for available disk space...".colorize
+    puts "  <white>|_ <light_blue>checking for available disk space...".colorize
     @paths = Dir[ File.join(root, "**/*") ].select {|path| not File.directory? path }
 
     @size_to_path = {}
     @name_to_path = {}
     @path_to_size = {}
     
-    puts "  <default>|_ <light_cyan>reticulating splines...".colorize
+    puts "  <white>|_ <light_cyan>reticulating splines...".colorize
 
     @paths.each do |path|
       begin

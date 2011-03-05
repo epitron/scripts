@@ -79,7 +79,7 @@ def prompt(message='(Y/n)? ', choices=['y','n'], default='y'):
     return default
             
 def isurl(thing):
-    return re.match(r'^(https|ftp|git)://', thing) is not None
+    return re.match(r'^(https?|ftp|git)://', thing) is not None
 
 def isoption(arg):
     if arg[0] != '-' or os.path.exists(arg):
@@ -248,12 +248,16 @@ class FileExtractor:
         os.remove(filename)
     
     def extract(self, thing, destdir='.'):
+        print "thing:", thing
         if isurl(thing):
             archivename = split(urllib.url2pathname(thing))[1]
         elif isfile(thing):
             archivename = split(thing)[1]
         else:
-            archivename = "dunno.qqq"
+            raise "Unknown thing: %s" % thing
+            
+        print "archivename:", archivename
+        print
             
         self.check_binary()
             

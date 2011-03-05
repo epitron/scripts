@@ -1,2 +1,2 @@
 #!/bin/bash
-sudiofnotroot apt-get purge $*
+sudoifnotroot apt-get purge $*
