@@ -1,22 +1,29 @@
 #!/usr/bin/env python
 import readline, sys, os
 
-if len(sys.argv) == 2:
-  src = sys.argv[1]
-else:
+if len(sys.argv) < 2:
   print "Usage: ren <filename>"
   sys.exit(1)
+else:
+  srcs = sys.argv[1:]
 
-if not os.path.exists(src):
-  print repr(src), "not found."
-  sys.exit(2)
-  
-readline.set_startup_hook( lambda: readline.insert_text(src) )
 
-print            "Rename:", src
-dest = raw_input("    to: ")
+if len(srcs) > 1:
+    print "Renaming %d paths." % len(srcs)
+    print
 
-print
-print "Renaming", repr(src), "to", repr(dest)
-
-os.rename(src, dest)
+for src in srcs:
+    
+    if not os.path.exists(src):
+      print repr(src), "not found."
+      sys.exit(2)
+      
+    readline.set_startup_hook( lambda: readline.insert_text(src) )
+    
+    print            "Rename:", src
+    dest = raw_input("    to: ")
+    
+    print
+    print "Renaming", repr(src), "to", repr(dest)
+    
+    os.rename(src, dest)
