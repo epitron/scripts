@@ -31,7 +31,38 @@ todo:
     + list the contents of the archive 
       - arf l <archive name> will list an archive contents (piped to less)
       - when <archive name> is an url, give the option to extract it afterwards
+
 """
+
+#####################################################################
+## Desired features #################################################
+#####################################################################
+
+# == installs packages automatically
+# arf something.rar
+#   -- rar isn't installed -> prompts to install via apt-get or yum
+# arf -i
+#   -- install all supported packages
+
+# == list archive contents
+# arf -v archive.tar.gz <other archives, including .pk3 and .wad and .cab>
+#   -- show contents (colour-coded, piped to less)
+
+# == streaming extraction (uncompress while downloading) 
+# arf http://whatever/blah.zip
+#   -- supported by all the popular ones: .tar.{gz,bz2}, .zip, .rar
+
+# == stream format detection (format not always obvious from url)
+# arf http://site/getazip #=> streams a zip file
+#   -- read the first 4096 bytes of the file, and use that to detect the format.  
+
+# == handle weird redirects
+# arf http://sf.net/projects/foo/blah/thing.tgz?mirror=what&cookie=324983294&etc.
+#   -- if last redirect has a proper filename, use that as archive name.
+#      otherwise:
+#           1) look at path & guess
+#           2) prompt user
+
 #####################################################################
 
 __version__ = '0.5.2'
