@@ -241,6 +241,7 @@ class FileExtractor:
     def install_package(self):
         pkgtools = {
             "Ubuntu": "apt-get install",
+            "Debian": "apt-get install",
             "Fedora": "yum install",
         }
         
