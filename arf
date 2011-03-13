@@ -349,6 +349,7 @@ class TarballExtractor(FileExtractor):
     streamable      = True
     desc            = "TAR file"
     binary          = "tar"
+    package         = binary
 
     # interface
         
@@ -383,6 +384,7 @@ class ZipExtractor(FileExtractor):
     streamable      = False
     desc            = "ZIP file"
     binary          = "unzip"
+    package         = binary
 
     # interface
     
@@ -425,6 +427,7 @@ class GitExtractor(FileExtractor):
     exts            = ['.git']
     desc            = "Git Repository"
     binary          = "git"
+    package         = "git-core"
     
     def extract_url(self, filename, destdir=None):
         execute('git clone "%s" "%s"' % (filename, destdir))
