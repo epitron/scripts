@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ "$*" == "" ]; then
+  files="*"
+else
+  files="$@"
+fi
+
+for i in $files; do
+  downcased="`echo $i | tr '[A-Z]' '[a-z]'`"
+  if [ ! "$downcased" == "$i" ]; then
+    mv -v "$i" "$downcased"
+  fi
+done
