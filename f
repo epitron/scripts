@@ -74,7 +74,7 @@ def listdir(root)
   files = files - dirs_without_slashes # remove dirs from file list
 
   # drop the "." and ".." dirs
-  dirs = dirs.select { |dir| not dir =~ %r{/\.{1,2}/} }
+  dirs = dirs.select { |dir| not dir =~ %r[/\.{1,2}/] }
 
   # strip #{root} from paths
   dirs, files = [dirs,files].map do |list|
@@ -195,7 +195,7 @@ end
 #################################################################
 ## Help message (will be put in the DATA array)
 __END__
-"f" (c) 2002-2008 by Chris Gahan (chris@ill-logic.com)
+"f" (c) 2002-2011 by Chris Gahan (chris@ill-logic.com)
 
 Usage:
   f                         => recursively list all files in current directory

@@ -1,0 +1,20 @@
+{
+    "always_rename": false, 
+    "batch": false, 
+    "episode_single": "%02d",
+    "filename_with_date_and_episode": "%(seriesname)s - %(episode)s - %(episodename)s%(ext)s", 
+    "filename_with_date_without_episode": "%(seriesname)s - %(episode)s%(ext)s", 
+    "filename_with_episode": "%(seriesname)s - %(seasonno)dx%(episode)s - %(episodename)s%(ext)s", 
+    "filename_with_episode_no_season": "%(seriesname)s - %(episode)s - %(episodename)s%(ext)s", 
+    "filename_without_episode": "%(seriesname)s - %(seasonno)dx%(episode)s%(ext)s", 
+    "filename_without_episode_no_season": "%(seriesname)s - %(episode)s%(ext)s", 
+    "input_filename_replacements": [], 
+    "language": "en", 
+    "move_files_confirmation": true, 
+    "multiep_join_name_with": ", ", 
+    "normalize_unicode_filenames": false, 
+    "replace_invalid_characters_with": "_", 
+    "search_all_languages": false, 
+    "verbose": false, 
+    "windows_safe_filenames": true
+}
