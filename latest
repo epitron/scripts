@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'epitools'
+require 'date'
 
 count = ARGV.first ? ARGV.first.to_i : nil
 
@@ -15,17 +16,25 @@ end.compact
 
 paths = paths.sort[-count..-1] if count
 
-grouped = paths.group_by{|t,f| t}.sort
+grouped = paths.group_by{|t,f| t.strftime("%Y-%m-%d") }.sort
 
 for group, paths in grouped
   
-  puts group.inspect.light_blue
+  puts group.light_blue
   
-  for time, path in paths
-    dir, file = File.split(path)
-    print "  "
-    print "#{dir}/".light_white unless dir == "."
-    puts file.white
+  splitpaths = paths.map { |time, path| [time] + File.split(path) }
+  
+  groupedpaths = splitpaths.group_by { |time, dir, file| dir }
+  
+  for dir, splitpaths in groupedpaths.sort
+    p dir unless dir == '.'
+    next
+    splitpaths.sort!
+      print "  "
+      print "#{dir}/".light_white unless dir == "."
+      puts file.white
+    for time, dir, file in splitpaths
+    end
   end
   
   puts
