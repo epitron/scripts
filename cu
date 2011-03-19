@@ -18,9 +18,9 @@ elif [ -d .svn ]; then
         echo
 	svn update
 elif [ -d .hg ]; then
-        echo "(hg {pull,update}) ==="
+        echo "(hg pull -u) ==="
         echo
-	hg pull && hg update
+	hg pull -u
 elif [ -d CVS ]; then
         echo "(cvs update) ==="
         echo
