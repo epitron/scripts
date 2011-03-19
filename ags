@@ -5,7 +5,7 @@ require 'epitools'
 pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")", Regexp::IGNORECASE )
 
 lesspipe do |less| 
-  IO.popen("apt-cache search #{ARGV * ' '}", "r") do |apt|
+  IO.popen("apt-cache search #{ARGV * ' '} | sort", "r") do |apt|
     for line in apt
       less.puts line.highlight(pattern)
     end

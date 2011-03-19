@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+require 'date'
+
+`lastlog`.
+	lines.
+	select{|l| not l=~/Never logged in/}.
+	sort_by{|l| DateTime.parse( l.split[3..-1].join(" ") ) rescue DateTime.parse("Jan 1 500 BC") }.
+	each{|s| puts s}
