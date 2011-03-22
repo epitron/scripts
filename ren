@@ -9,7 +9,8 @@ else:
 
 
 if len(srcs) > 1:
-    print "Renaming %d paths." % len(srcs)
+    print
+    print "%d thing(s) to rename..." % len(srcs)
     print
 
 for src in srcs:
@@ -22,8 +23,13 @@ for src in srcs:
     
     print            "Rename:", src
     dest = raw_input("    to: ")
-    
     print
-    print "Renaming", repr(src), "to", repr(dest)
+    
+    if src == dest:
+      print "Skipping..."
+    else:
+      print "Renaming", repr(src), "to", repr(dest)
     
     os.rename(src, dest)
+
+    print
