@@ -1,5 +1,5 @@
 #echo ".bash_profile"
-. ~/scripts/bashrc.leet
+. /usr/scripts/bashrc.leet
 . purple
 
 if [ "$TMUX" == "" ]; then
