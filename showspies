@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'epitools'
+require 'epitools/sys'
+
+# todo: sudoifnotroot
+
+verbose = ARGV.include? "-v"
+
+Sys.ps.each do |pr|
+  if verbose
+    puts "Name:   #{pr.name}"
+    puts "Binary: #{pr.exename}"
+    pr.fds.each { |fd| puts "  #{fd}"}
+    puts
+  else
+    puts "#{pr.pid.to_s.light_blue}: #{pr.name}"
+    puts "  #{pr.exename}".light_cyan if pr.exename
+  end
+end
+
