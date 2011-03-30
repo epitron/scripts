@@ -7,15 +7,16 @@ require 'epitools/sys'
 
 verbose = ARGV.include? "-v"
 
-Sys.ps.each do |pr|
-  if verbose
-    puts "Name:   #{pr.name}"
-    puts "Binary: #{pr.exename}"
-    pr.fds.each { |fd| puts "  #{fd}"}
-    puts
-  else
-    puts "#{pr.pid.to_s.light_blue}: #{pr.name}"
-    puts "  #{pr.exename}".light_cyan if pr.exename
+lesspipe do |less|
+  Sys.ps.sort_by{|pr| [pr.exename || "", pr.pid.to_i]}.each do |pr|
+    if verbose
+      less.puts "Name:   #{pr.name}"
+      less.puts "Binary: #{pr.exename}"
+      pr.fds.each { |fd| less.puts "  #{fd}"}
+      less.puts
+    else
+      less.puts "#{pr.pid.to_s.light_blue}: #{pr.name}"
+      less.puts "  #{pr.exename}".light_cyan if pr.exename
+    end
   end
 end
-
