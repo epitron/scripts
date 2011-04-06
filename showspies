@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'epitools'
+require 'epitools/sys'
+
+# todo: sudoifnotroot
+
+verbose = ARGV.include? "-v"
+
+lesspipe do |less|
+  Sys.ps.sort_by{|pr| [pr.exename || "", pr.pid.to_i]}.each do |pr|
+    if verbose
+      less.puts "Name:   #{pr.name}"
+      less.puts "Binary: #{pr.exename}"
+      pr.fds.each { |fd| less.puts "  #{fd}"}
+      less.puts
+    else
+      less.puts "#{pr.pid.to_s.light_blue}: #{pr.name}"
+      less.puts "  #{pr.exename}".light_cyan if pr.exename
+    end
+  end
+end

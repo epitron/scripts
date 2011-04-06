@@ -13,7 +13,7 @@
     "move_files_confirmation": true, 
     "multiep_join_name_with": ", ", 
     "normalize_unicode_filenames": false, 
-    "replace_invalid_characters_with": "_", 
+    "replace_invalid_characters_with": "", 
     "search_all_languages": false, 
     "verbose": false, 
     "windows_safe_filenames": true
