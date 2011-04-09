@@ -14,14 +14,16 @@ lesspipe(:wrap=>true) do |less|
 
   last_pkg = nil
 
-  IO.popen("dpkg -S #{ARGV.join ' '}", "r") do |results|
+  IO.popen("dpkg -S #{ARGV.join ' '} | sort", "r") do |results|
   
     for line in results
       if line =~ /^(\S+): (.+)$/
         pkg = $1
         path = $2
 
-        puts pkg.light_blue + ":".light_black if last_pkg != pkg
+        if last_pkg != pkg
+          less.puts pkg.light_blue + ":".light_black
+        end
         less.puts "\t#{ path.highlight pattern }"
         
         last_pkg = pkg        
@@ -32,3 +34,4 @@ lesspipe(:wrap=>true) do |less|
     
   end    
 end
+
