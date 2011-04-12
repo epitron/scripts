@@ -10,4 +10,7 @@ else
   echo "* dctrl-tools not installed. skipping sync-available."
 fi
 
-sudoifnotroot apt-get update
+echo "* apt-get update..."
+sudoifnotroot apt-get update > /dev/null
+
+echo "* done!"
