@@ -31,7 +31,8 @@ ARGV.each do |arg|
   
   case arg
   when /^(\d+)$/
-    opts[:num] = $1.to_i
+    num = $1.to_i
+    opts[:num] = (num <= 0) ? -1 : num  # <-- for picking 0..num from the shuffled aray
   when /^\w+$/
     for labels, players, exts, desc in MEDIA_DEFS
       if labels.any? { |pattern| pattern.match(arg) }

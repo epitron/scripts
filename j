@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-if ! psfind jedit
+if ! psfind jedit > /dev/null
 then
   echo "Launching background jedit..."
   jedit -background > /dev/null

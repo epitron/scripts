@@ -7,10 +7,10 @@
 
 if [ -d /usr/scripts ]
 then
-  export PATH=$PATH:/usr/scripts
+  export PATH=/usr/scripts:$PATH
 elif [ -d ~/scripts ]
 then
-  export PATH=$PATH:~/scripts
+  export PATH=~/scripts:$PATH
 fi
 
 if [ -d ~/bin ]
@@ -105,8 +105,8 @@ alias r="rails"
 
 alias git="hub"
 
-alias gem="sudoifnotroot gem"
-alias mount="sudoifnotroot mount"
+#alias gem="sudoifnotroot gem"
+#alias mount="sudoifnotroot mount"
 
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"
