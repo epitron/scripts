@@ -1,0 +1,13 @@
+  "webkit": {
+      "webprefs": {
+         "default_fixed_font_size": 11,
+         "default_font_size": 12,
+         "fixed_font_family": "Bitstream Vera Sans Mono",
+         "minimum_font_size": 12,
+         "minimum_logical_font_siz": 12,
+         "sansserif_font_family": "Times New Roman",
+         "serif_font_family": "Arial",
+         "standard_font_is_serif": false,
+         "text_areas_are_resizable": true
+      }
+   }
