@@ -100,8 +100,7 @@ alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
 alias gl="git log"
-alias gco="git checkout"
-alias gc="git commit"
+alias gc="git checkout"
 
 alias r="rails"
 
