@@ -9,7 +9,7 @@ out = inp + ".avi"
 
 raise "Error: inp == out!"  if inp == out
 
-if File.exists? out
+if File.exists?(out) and not opts.include? "-y"
   
   loop do
     
