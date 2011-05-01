@@ -1,0 +1,16 @@
+[ "$UID" = "0" ] || exec sudo $0 $@
+
+ID="$1"
+
+[ -z "$ID" ] && exit 1
+
+if [ "$2" == "" ]; then
+  BITS=1024
+else
+  BITS=$2
+fi
+
+openssl genrsa -out $ID.key $BITS
+openssl req -new -key $ID.key -x509 -days 4653 -out $ID.crt
+cat $ID.key $ID.crt > $ID.pem
+chmod 600 $ID.key $ID.pem

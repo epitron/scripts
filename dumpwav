@@ -1,8 +1,17 @@
-#!/bin/bash
-if [ "$1" == "" ]; then
-  echo "usage: dumpwav <video file>"
-  echo "effect: create a .wav file from the audio from the video."
+#!/usr/bin/env ruby
+
+def convert(input)
+  output = input + ".wav"
+  puts "* Converting #{input.inspect} to #{output.inspect}..."
+  puts
+  system("mplayer -vo null -ao pcm:waveheader:fast:file=\"#{output}\" \"#{input}\"")
+  puts
+end
+
+unless ARGV.any?
+  puts "usage: dumpwav <video file>"
+  puts "effect: create a .wav file from the audio from the video."
 else
-  mplayer -vo null -ao pcm:waveheader:fast:file="$1.wav" "$1"
-fi
+  ARGV.each { |arg| convert arg }
+end
 

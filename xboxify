@@ -1,5 +1,7 @@
 #!/usr/bin/ruby
 
+require 'epitools'
+
 opts = ARGV.select{|arg| arg =~ /^-\w{1,2}$/ }
 args = ARGV - opts
 
@@ -33,8 +35,11 @@ end
 
 xres = 640
 # vbitrate = 1000
-command = %{mencoder -oac mp3lame -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2}.split + [inp, "-o", out]
-command += %{-vf scale -zoom -xy #{xres}}.split if opts == ["-s"]
+command = %{mencoder -oac mp3lame -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2}.split
+command += [inp, "-o", out]
+if opts.remove_if{|opt| opt == "-s"}.any?
+  command += %{-vf scale -zoom -xy #{xres}}.split
+end
 
 puts
 puts "Executing:"
