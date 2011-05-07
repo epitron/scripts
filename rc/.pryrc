@@ -4,9 +4,10 @@
 
 puts "Loading modules..."
 
-def req mod
+def req(mod)
   puts "  |_ #{mod}"
   require mod
+  yield if block_given?
 rescue Exception => e
   p e
 end
@@ -16,8 +17,10 @@ end
 
 #req 'open-uri'
 req 'epitools'
+req 'awesome_print'
 
-## PM
+
+## PrintMembers
 
 req 'print_members'
 
@@ -28,31 +31,43 @@ class Object
 end
 
 
-## Pry aliases
+## Sketches
+
+req 'sketches' do
+  Sketches.config :editor => 'j'
+end
+
+
+## Pry commands
+
 #class MyCommands < Pry::Commands
 Pry::Commands.class_eval do
-  
   #alias_command "?", "show-doc"
   #alias_command ">", "cd"
   #alias_command "<", "cd .."
+  command("decode") { |uri| puts URI.decode(uri) }
   
-end
-
-## Other stuff
-
-def src(str)
-  case str
-    when /^(.+)[\.#](.+)$/
-      obj = eval $1
-      method = $2.to_sym
-      
-      puts
-      print "=> ".light_red
-      puts "#{obj.inspect}##{method}".light_cyan
-      puts
-      PrintMembers.print_source(obj, method)
+  
+  command "gem", "rrrrrrrrrubygems!" do |*args|
+    gem_home = Gem.instance_variable_get(:@gem_home)
+  
+    command = ["gem"] + args
+    command.unshift "sudo" unless File.writable?(gem_home)
+  
+    output.puts "Executing: #{bright_yellow command.join(' ')}"
+    if system(*command)
+      Gem.refresh
+      output.puts "Refreshed gem cache."
     else
-      puts "Dunno what #{str} is."
+      output.puts "Gem failed."
+    end
   end
+
+  alias_command "require", "req"
+  
+  command "ls", "List Stuff" do |*args|
+    target.eval('self').meths(*args)
+  end
+  
 end
 

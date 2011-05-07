@@ -1,0 +1,1 @@
+mount | ruby -e 'STDIN.map{|s| s.strip.split(/ (on|type) /) }.each{|src, x, dest, y, rest| puts "#{dest}\n\t#{src}\n\t#{rest}\n\n"} ' | less

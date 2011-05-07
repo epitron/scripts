@@ -1,8 +1,10 @@
 #!/usr/bin/ruby
 
 require 'rubygems'
+require 'epitools'
 require 'json'
 require 'open-uri'
+require 'awesome_print'
 
 if ARGV.any?
   puts "Opening #{ARGV.first}..."
@@ -12,4 +14,4 @@ else
 end
 
 json = JSON.parse(input.read)
-IO.popen("less -S", "w"){ |f| f.puts JSON.pretty_generate(json) }
+lesspipe { |less| less.puts json.ai }
