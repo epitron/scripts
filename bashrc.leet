@@ -114,6 +114,8 @@ else
   alias open="gnome-open"
 fi
 
+alias tree="tree -C | less -SR"
+
 ## no display!
 #unset DISPLAY
 
