@@ -3,28 +3,88 @@
 require 'rubygems'
 require 'epitools'
 
-pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")", Regexp::IGNORECASE )
-
-header = ""
-no_matches_yet = true
-
-lesspipe do |less|
-  IO.popen("dpkg -l", "r") do |dpkg|
-    enum = Enumerator.new dpkg, :each
+USAGE = %{
+usage:
+  ds <pattern>    | Find packages named like <pattern>
+  ds -f <pattern> | Find files in packages named like <pattern>
   
-    for line in enum
-      header << line
-      break if line[/^\+\+\+/]
-    end
+}
+
+def dpkg_search(pattern)
   
-    for line in enum
-      if line[pattern]
-        if no_matches_yet
-          less.puts header
-          no_matches_yet = false
+  header = ""
+  no_matches_yet = true
+  
+  lesspipe do |less|
+    IO.popen("dpkg -l", "r") do |dpkg|
+      enum = Enumerator.new dpkg, :each
+    
+      for line in enum
+        header << line
+        break if line[/^\+\+\+/]
+      end
+    
+      for line in enum
+        if line[pattern]
+          if no_matches_yet
+            less.puts header
+            no_matches_yet = false
+          end
+          less.puts line.strip.highlight(pattern)
         end
-        less.puts line.strip.highlight(pattern)
       end
     end
   end
+
+end
+
+def dpkg_search_files(args, pattern)
+
+  # oss-linux: /usr/lib/oss/include/internals/timestamp.h
+  # linux-headers-2.6.35-23: /usr/src/linux-headers-2.6.35-23/Documentation/networking/timestamping/Makefile
+  # libpam-modules: /lib/security/pam_timestamp.so
+  # libpam-modules: /usr/share/man/man8/pam_timestamp_check.8.gz
+
+  lesspipe(:wrap=>true) do |less|
+  
+    last_pkg = nil
+  
+    IO.popen("dpkg -S #{args.join ' '} | sort", "r") do |results|
+    
+      for line in results
+        if line =~ /^(\S+): (.+)$/
+          pkg = $1
+          path = $2
+  
+          if last_pkg != pkg
+            less.puts pkg.light_blue + ":".light_black
+          end
+          less.puts "\t#{ path.highlight pattern }"
+          
+          last_pkg = pkg        
+        else
+          puts line
+        end
+      end
+      
+    end    
+  end
+
+end
+
+
+opts, args = ARGV.partition{|arg| arg[/^-\w$/]}
+
+if args.empty?
+  puts USAGE
+  exit 1
+end
+
+
+pattern = Regexp.new( "(" + args.map{|arg| Regexp.escape arg}.join("|") + ")", Regexp::IGNORECASE )
+
+if opts.include? "-f"
+  dpkg_search_files(args, pattern)
+else
+  dpkg_search(pattern)
 end
