@@ -21,6 +21,7 @@ fi
 ## Ruby 1.8
 export RUBYOPT="rubygems"
 
+
 ## colors
 export CLICOLOR=1
 #export TERM=xterm-color
@@ -101,6 +102,7 @@ alias gd="git diff"
 alias ga="git add"
 alias gl="git log"
 alias gc="git checkout"
+alias gcl="git clone"
 
 alias r="rails"
 
@@ -108,6 +110,8 @@ alias git="hub"
 
 #alias gem="sudoifnotroot gem"
 #alias mount="sudoifnotroot mount"
+
+alias tree="tree -C $* | less -RS"
 
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"
