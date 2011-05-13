@@ -1,0 +1,25 @@
+syntax "ml" ".*\.(xml|xul|rdf|rss|xbl|sgml?)$"
+color white "^.+$"
+# Attribute names
+color green start="<" end=">"
+# Attribute text
+color brightgreen ""[^"]+""
+# Tag names
+color brightcyan "<[^> ]+"
+# Alligators
+color cyan "<"
+color cyan ">"
+# DTDs
+color brightyellow start="<!DOCTYPE" end="[/]?>"
+# Comments
+color white start="<!--" end="-->"
+# Entities
+color red "&[^;]*;"
+# Preprocessing instructions
+color brightred "<\?.+?>"
+color red "<\?"
+color red "\?>"
+# CDATA
+color white start="<!\[CDATA\[" end="\]\]>"
+color brightwhite "<!\[CDATA\["
+color brightwhite "\]\]>"

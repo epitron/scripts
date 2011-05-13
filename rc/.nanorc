@@ -244,9 +244,6 @@ include "/usr/share/nano/perl.nanorc"
 ## Python
 include "/usr/share/nano/python.nanorc"
 
-## Ruby
-include "/usr/scripts/nano/ruby.nanorc"
-
 ## Java
 include "/usr/share/nano/java.nanorc"
 
@@ -259,5 +256,31 @@ include "/usr/share/nano/sh.nanorc"
 ## POV-Ray
 include "/usr/share/nano/pov.nanorc"
 
+########## Extras ##########################################
+
+## Ruby
+include "/usr/scripts/nano/ruby.nanorc"
+
 ## Common Lisp
 include "/usr/scripts/nano/lisp.nanorc"
+
+## Config Files (.ini)
+include "/usr/scripts/nano/ini.nanorc"
+
+## Xorg.conf
+include "/usr/scripts/nano/xorg.nanorc"
+
+## CSS
+include "/usr/scripts/nano/css.nanorc"
+
+## XML
+include "/usr/scripts/nano/xml.nanorc"
+
+## Generic .conf
+include "/usr/scripts/nano/conf.nanorc"
+
+## PHP
+include "/usr/scripts/nano/php.nanorc"
+
+## sources.list
+include "/usr/scripts/nano/sourceslist.nanorc"
