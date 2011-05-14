@@ -22,14 +22,13 @@ req 'awesome_print'
 
 ## PrintMembers
 
-req 'print_members'
-
-class Object
-  def meths(pattern=//)
-    PrintMembers.print_members(self, pattern)
+req 'print_members' do
+  class Object
+    def meths(pattern=//)
+      PrintMembers.print_members(self, pattern)
+    end
   end
 end
-
 
 ## Sketches
 
@@ -39,15 +38,22 @@ end
 
 class Pry
   
+  def self.commands(&block)
+    Pry::Commands.class_eval(&block)
+  end
+
   def self.command(*args, &block)
-    Pry::Commands.class_eval do
+    commands do
       command *args, &block
     end    
   end
 
+  #def self.set_alias
+  #end
+
 end
 
-class Pry::Commands
+Pry.commands
   #alias_command "?", "show-doc"
   #alias_command ">", "cd"
   #alias_command "<", "cd .."
