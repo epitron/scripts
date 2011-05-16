@@ -2,48 +2,14 @@
 ###################################################################
 ## Pry tweaks
 
-puts "Loading modules..."
-
-def req(mod)
-  puts "  |_ #{mod}"
-  require mod
-  yield if block_given?
-rescue Exception => e
-  p e
-end
-
-###################################################################
-## Misc Ruby libraries
-
-#req 'open-uri'
-req 'epitools'
-req 'awesome_print'
-
-
-## PrintMembers
-
-req 'print_members' do
-  class Object
-    def meths(pattern=//)
-      PrintMembers.print_members(self, pattern)
-    end
-  end
-end
-
-## Sketches
-
-req 'sketches' do
-  Sketches.config :editor => 'j'
-end
-
 class Pry
   
-  def self.commands(&block)
-    Pry::Commands.class_eval(&block)
-  end
+  #def self.commands(&block)
+  #  Pry::Commands.class_eval(&block)
+  #end
 
   def self.command(*args, &block)
-    commands do
+    Pry::Commands.class_eval do
       command *args, &block
     end    
   end
@@ -53,7 +19,103 @@ class Pry
 
 end
 
-Pry.commands
+###################################################################
+## Gem Loader
+
+puts "Loading gems..."
+
+def req(mod)
+  print "  |_ #{mod}"
+  require mod
+  yield if block_given?
+rescue LoadError => e
+  print " (not installed)"
+ensure 
+  puts
+end
+
+###################################################################
+## Misc Ruby libraries
+
+#req 'open-uri'
+req 'epitools'
+req 'awesome_print'
+
+## PrintMembers
+
+req 'print_members' do
+
+  Pry.command "ls", "PrintMembers ls" do |*args|
+
+    Slop.parse(args) do |opt|
+      history = Readline::HISTORY.to_a
+      opt.banner "Usage: ls [options] [object/regexp]\n"
+
+      #opt.on :e, :exclude, 'Exclude pry and system commands from the history.' do
+      #  history.each_with_index do |element, index|
+      #    unless command_processor.valid_command? element
+      #      output.puts "#{text.blue index}: #{element}"
+      #    end
+      #  end
+      #end
+
+      #opt.on :r, :replay, 'The line (or range of lines) to replay.', true, :as => Range do |range|
+      #  unless opt.grep?
+      #    actions = Array(history[range]).join("\n") + "\n"
+      #    Pry.active_instance.input = StringIO.new(actions)
+      #  end
+      #end
+      
+      opt.on :h, :help, 'Show this message.', :tail => true do
+        unless opt.grep?
+          output.puts opt.help
+        end
+      end
+
+      opt.on_empty do
+        #list = text.with_line_numbers history.join("\n"), 0
+        #stagger_output list
+      end
+    end # end of Slop
+    
+    #if target.eval(arg)
+    begin
+      mod = Object.const_get(args.join)
+      PrintMembers.print_members(mod) #, query)
+    rescue NameError
+      arg = args.first
+      query = arg ? Regexp.new(arg, Regexp::IGNORECASE) : //
+      PrintMembers.print_members(target.eval("self"), query)
+    end
+  end
+    
+end
+
+## Sketches
+
+require 'epitools/sys'
+
+req 'sketches' do
+  if Sys.windows?
+    Sketches.config :editor => nil
+  else
+    Sketches.config :editor => 'j'
+  end
+end
+
+## Fast RI
+
+req 'rdoc/ri/driver' do
+  
+  Pry.command("ri", "RI it up!") do |*args|
+    RDoc::RI::Driver.run args
+  end
+  
+end
+
+
+class Pry::Commands
+  
   #alias_command "?", "show-doc"
   #alias_command ">", "cd"
   #alias_command "<", "cd .."
@@ -72,12 +134,6 @@ Pry.commands
    
   Pry.command "pwd" do; puts Dir.pwd.split("/").map{|s| bright_green s}.join(grey "/"); end
   
-  require 'rdoc/ri/driver'
-  
-  command "ri", "RI it up, muthafucka." do |*args|
-    RDoc::RI::Driver.run args
-  end
-    
   alias_command "gems", "gem-list"
   
   command "gem", "rrrrrrrrrubygems!" do |*args|
@@ -95,11 +151,7 @@ Pry.commands
     end
   end
   
-  command "ls", "Better ls" do |arg|
-    query = arg ? Regexp.new(arg, Regexp::IGNORECASE) : //
-    PrintMembers.print_members(target.eval("self"), query)
-  end
-
+  
 end
 
 
