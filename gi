@@ -52,7 +52,6 @@ else
   puts
   puts "##" * 30
   puts "## New Repository: #{reponame}/ => #{host}:#{repo_remotedir}"
-  puts "##"
   puts
   
 end
