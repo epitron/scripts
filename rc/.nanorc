@@ -282,5 +282,8 @@ include "/usr/scripts/nano/conf.nanorc"
 ## PHP
 include "/usr/scripts/nano/php.nanorc"
 
+## HTML
+include "/usr/scripts/nano/html.nanorc"
+
 ## sources.list
 include "/usr/scripts/nano/sourceslist.nanorc"
