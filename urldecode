@@ -1,7 +1,12 @@
-#!/usr/bin/env php -Cq
-<?
-	$fp = fopen($argv[1], "r");
-	while (!feof($fp)) {
-		echo urldecode(fgets($fp,4096));
-	}
-?>
+#!/usr/bin/env ruby
+require 'epitools'
+
+if ARGV.any?
+  stuff = ARGV
+else
+  stuff = STDIN
+end
+
+stuff.each do |line|
+  puts line.urldecode
+end
