@@ -49,7 +49,7 @@ def dpkg_search_files(args, pattern)
   
     last_pkg = nil
   
-    IO.popen("dpkg -S #{args.join ' '} | sort", "r") do |results|
+    IO.popen("dpkg -S '#{args.join ' '}' | sort", "r") do |results|
     
       for line in results
         if line =~ /^(\S+): (.+)$/

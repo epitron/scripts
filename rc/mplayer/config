@@ -1,0 +1,18 @@
+# Write your default config options here!
+
+#vo=xv
+vo=gl
+
+#ao=alsa
+ao=oss
+
+msgcolor=1
+msgmodule=1
+
+#cache=8000
+
+af=volnorm,scaletempo
+#vf=pp
+#vf=eq2=1.1,gradfun
+vf=eq2=1.15
+vsync=true
