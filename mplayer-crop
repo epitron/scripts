@@ -1,0 +1,2 @@
+#!/bin/bash
+mplayer "$*" -vf rectangle=512:512:0:0 -input conf=crop.conf
