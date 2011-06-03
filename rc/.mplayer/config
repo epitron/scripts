@@ -16,3 +16,6 @@ af=volnorm,scaletempo
 #vf=eq2=1.1,gradfun
 vf=eq2=1.15
 vsync=true
+
+# reduce subfont size
+subfont-text-scale=3
