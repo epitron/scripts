@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+unless Process.uid == 0
+  system("sudo", __FILE__)
+  exit
+end
+
 require 'epitools'
 
 class Path
