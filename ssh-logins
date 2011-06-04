@@ -59,13 +59,14 @@ lesspipe do |less|
         pid = $4
         message = $5
         
-        if message =~ /(.+) password for (invalid user )?(.+) from (.+) port (.+) (ssh.+)$/
+        if message =~ /(.+) (password|pubkey) for (invalid user )?(.+) from (.+) port (.+) (ssh.+)$/
           result = $1
-          invalid = $2
-          user = $3
-          ip = $4
-          port = $5
-          proto = $6
+          authtype = $2
+          invalid = $3
+          user = $4
+          ip = $5
+          port = $6
+          proto = $7
           
           case result
             when "Accepted"
@@ -84,13 +85,14 @@ lesspipe do |less|
           
           thing << "<#{color}>#{result.downcase} "
             
-          thing << "<grey>(<light_blue>#{ip}</light_blue>) "
+          thing << "<grey>(<light_blue>#{ip}</light_blue>)"
           
-          thing << "<light_red>SSH1" if proto == "ssh1"
+          thing << " <light_red>SSH1" if proto == "ssh1"
+          thing << " <light_cyan>Public Key" if authtype == "pubkey"
           less.puts thing.colorize
         end
       end
     end
   end
-
+  
 end
