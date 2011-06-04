@@ -2,53 +2,15 @@
 
 require 'epitools'
 
-class IO
-  def seekend
-    seek(0, IO::SEEK_END)
-  end
-end
-
 class Path
-
   def zopen
     Object.send(:zopen, self)
   end
-
-  def each_backwards(&block)
-    io = self.zopen
-    p [:io, io]
-    bs = 2000
-    
-    last_first = nil
-    io.seekend
-    pos = [io.pos-bs, 0].max
-    
-    while pos > 0
-      p [:pos, pos]
-      io.seek(pos)
-    
-      data = io.read(bs)
-      data << last_first if last_first
-      
-      enum = data.lines
-      last_first = enum.next 
-      
-      data.lines.each do |line|
-        yield line
-      end
-      
-      pos = [pos-bs, 0].max
-    end
-        
-  end
-
 end
 
 # May 29 09:51:34 fizz sshd[17892]: Did not receive identification string from 173.68.130.138
 # Jun  4 04:13:29 Accepted password for epi from ::1 port 32946 ssh2
 # Jun  4 02:34:36 Failed password for root from 124.122.204.163 port 57037 ssh2
-
-Line = Struct.new(:date, :pid, :message)
 
 lesspipe do |less|
 
@@ -59,7 +21,7 @@ lesspipe do |less|
         pid = $4
         message = $5
         
-        if message =~ /(.+) (password|pubkey) for (invalid user )?(.+) from (.+) port (.+) (ssh.+)$/
+        if message =~ /(.+) (password|publickey) for (invalid user )?(.+) from (.+) port (.+) (ssh.+)$/
           result = $1
           authtype = $2
           invalid = $3
@@ -67,7 +29,7 @@ lesspipe do |less|
           ip = $5
           port = $6
           proto = $7
-          
+
           case result
             when "Accepted"
               color = "light_green"
@@ -88,7 +50,7 @@ lesspipe do |less|
           thing << "<grey>(<light_blue>#{ip}</light_blue>)"
           
           thing << " <light_red>SSH1" if proto == "ssh1"
-          thing << " <light_cyan>Public Key" if authtype == "pubkey"
+          thing << " <light_yellow>8=m" if authtype == "publickey"
           less.puts thing.colorize
         end
       end
