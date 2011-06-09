@@ -1,0 +1,31 @@
+#!/usr/bin/ruby
+require 'epitools'
+
+raise "pandoc not found!" unless Path.which("pandoc")
+
+for arg in ARGV
+  html   = Path[arg]
+  epub  = html.with(:ext=>"epub")
+  
+  if epub.exists?
+    puts "- skipping #{html}"
+    next
+  end
+  
+  files = html.with(:ext=>nil)
+  files.filename += "_files"
+  
+  if files.exists?
+    urlencoded = files.dup
+    urlencoded.filename = urlencoded.filename.urlencode
+    FileUtils.ln_s(files, urlencoded)
+  end
+  
+  puts
+  puts "* Converting: #{html}"
+  puts "       |_ to: #{epub}"
+  cmd(["pandoc -f html -t epub ? -o ?", html, epub]) 
+  puts "          (size: #{epub.size} bytes)"
+  
+  urlencoded.rm rescue nil   
+end
