@@ -90,9 +90,10 @@ fi
 alias md='mkdir -p'
 alias rehash='hash -r'
 alias df='df -h'
-alias screen="screen -U"
+alias screen='screen -U'
+alias fdisk='sudoifnotroot fdisk'
 
-alias off="shutdown -h now"
+alias off='shutdown -h now'
 
 alias dict='dictless'
 alias chrome='google-chrome'
