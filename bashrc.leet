@@ -19,8 +19,9 @@ then
 fi
 
 ## Ruby 1.8
-export RUBYOPT="rubygems"
-
+if ruby -rubygems -e 1 > /dev/null 2>&1; then
+  export RUBYOPT="rubygems"
+fi
 
 ## colors
 export CLICOLOR=1
@@ -90,9 +91,10 @@ fi
 alias md='mkdir -p'
 alias rehash='hash -r'
 alias df='df -h'
-alias screen="screen -U"
+alias screen='screen -U'
+alias fdisk='sudoifnotroot fdisk'
 
-alias off="shutdown -h now"
+alias off='shutdown -h now'
 
 alias dict='dictless'
 alias chrome='google-chrome'
