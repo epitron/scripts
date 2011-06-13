@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'epitools'
+
+if ARGV.size < 1 or not ARGV.first =~ /^\w+@[\w\.]+$/
+  puts "usage: ssh-authorize user@host"
+  puts
+  puts "(Copies your id_rsa.pub to the authorized_hosts file of the remote machine.)"
+end
+
+userhost = ARGV.first
+ssh_key = "#{ENV["HOME"]}/.ssh/id_rsa.pub"
+
+unless File.exists? ssh_key
+  puts "* Generating new SSH key..."
+  system "ssh-keygen"
+end
+
+
+puts "* Adding #{ssh_key} to authorized_keys on #{userhost}..."
+system("cat ~/.ssh/id_rsa.pub | ssh #{userhost} 'cat >> ~/.ssh/authorized_keys'")
