@@ -287,3 +287,6 @@ include "/usr/scripts/nano/html.nanorc"
 
 ## sources.list
 include "/usr/scripts/nano/sourceslist.nanorc"
+
+## sources.list
+include "/usr/scripts/nano/js.nanorc"

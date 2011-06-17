@@ -9,13 +9,18 @@ if ARGV.size < 1 or not ARGV.first =~ /^\w+@[\w\.]+$/
 end
 
 userhost = ARGV.first
-ssh_key = "#{ENV["HOME"]}/.ssh/id_rsa.pub"
 
-unless File.exists? ssh_key
+def get_keys
+  Path["~/.ssh/id_{rsa,dsa}.pub"]
+end
+
+if get_keys.empty?
   puts "* Generating new SSH key..."
   system "ssh-keygen"
 end
 
-
-puts "* Adding #{ssh_key} to authorized_keys on #{userhost}..."
-system("cat ~/.ssh/id_rsa.pub | ssh #{userhost} 'cat >> ~/.ssh/authorized_keys'")
+get_keys.each do |key|
+  puts "* Adding #{key} to #{userhost}:.ssh/authorized_keys"
+  #system %{ cat #{key} | ssh #{userhost} 'cat >> ~/.ssh/authorized_keys; cat ~/.ssh/authorized_keys | awk "{print $3}"' }
+  system %{ cat #{key} | ssh #{userhost} 'cat >> ~/.ssh/authorized_keys; echo -n Number of keys: ; wc -l ~/.ssh/authorized_keys' }
+end

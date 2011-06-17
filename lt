@@ -1,1 +1,11 @@
-ls --color=force -hltr "$@" | tail -n 15 | sed -r s/'^(\S+\s+){3}\S+'/''/
+#!/bin/bash
+if [ "$1" == "-s" ]; then
+  # Sort by size
+  shift
+  ARGS="-hlSr"
+else
+  # Sort by time
+  ARGS="-hltr"
+fi
+
+ls --color=force $ARGS "$@" | tail -n 15 | sed -r s/'^(\S+\s+){3}\S+'/''/

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# download latest foobar-portable to ~/.foobar2000
+FBHOME=~/.foobar2000
+
+
+if [ ! -d "$FBHOME" ]; then
+  echo "#######################################"
+  echo "DOWNLOADING FOOBAR2000 PORTABLE EDITION"
+  echo "#######################################"
+  echo
+  mkdir "$FBHOME"
+  FBFN=foobar2000-portable-latest.zip
+  wget -c http://chris.ill-logic.com/files/$FBFN -O ~/.cache
+  unzip ~/.cache/$FBFN $FBHOME
+fi
+
+echo "#####################################"
+echo "LAUNCHING FOOBAR2000 PORTABLE EDITION"
+echo "#####################################"
+echo
+wine $FBHOME/foobar2000.exe
+

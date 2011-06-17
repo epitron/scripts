@@ -1,0 +1,115 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+#################################################################################
+
+def git_repo?
+  path = Path.pwd
+  loop do
+    return true if (path/".git").dir?
+    break unless path.dirs.pop
+  end
+  false
+end
+
+def ensure_git_repo
+  unless git_repo?
+    puts "Error: must be in a git repo."
+    exit 1
+  end
+end
+
+def get_branches
+  ensure_git_repo
+  
+  branches = Branches.new
+  
+  `git branch -a`.lines.map(&:strip).each do |line|
+    if line =~ %r{^\* (.+)$}
+      line = $1
+      branches.current = line
+    end
+
+    case line
+    when /->/
+      # ignore aliases
+    when %r{^remotes/(.+)$}
+      branches.remote << $1
+    else 
+      branches.local << line
+    end
+  end
+  
+  branches
+end  
+
+#################################################################################
+
+class Branches
+
+  attr_accessor :local, :remote, :current
+
+  def initialize
+    @local = []
+    @remote = []
+    @current = nil
+  end
+  
+  def local?(branch); local.include? branch; end
+  def remote?(branch); remote.include? branch; end
+  def current?(branch); current == branch; end
+
+  def print
+  
+    {:local => :yellow, :remote => :green}.each do |type, color|
+      puts "<grey>== <light_white>#{type} branches: <grey>=============".colorize
+      for branch in send(type)
+        selected = (branch == current && type == :local)
+        puts "  #{branch}".send(selected ? :bright_yellow : color)
+      end
+    end
+    
+  end
+  
+end
+
+#################################################################################
+## Main
+
+# TODOS:
+# -r removes a branch
+
+args = ARGV
+
+if args.empty?
+  
+  get_branches.print  
+  
+elsif args.first.in? ["--help", "-h"]
+  
+  puts "usage: gb <branch name>"
+  puts "eg:"
+  puts "  gb existingbranch"
+  puts "  gb newbranch"
+  puts "  gb origin/remotebranch"
+  
+else
+  
+  branches = get_branches
+  
+  branch = args.first
+
+  if branches.local? branch
+    puts "<grey>* <light_white>Switching to <light_yellow>#{branch}".colorize
+    system("git checkout #{branch}")
+  elsif branches.remote? branch
+    puts "<grey>* <light_white>Tracking <light_yellow>#{branch}".colorize
+    system("git checkout -t #{branch}")
+  else
+    puts "* Creating new branch #{branch}"
+    system("git branch #{branch}")
+    system("git checkout #{branch}")
+  end    
+  
+end
