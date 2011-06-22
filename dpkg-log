@@ -32,7 +32,8 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
   end
 
   def to_s
-    "[#{datestr.light_blue}] #{cmd.send(cmd_color)} #{name.light_cyan} #{v2.light_white} (#{v1})"
+    date, time = datestr.split
+    "<grey>[<white>#{date} #{time}<grey>] <#{cmd_color}>#{cmd} <light_cyan>#{name} <light_white>#{v2} <white>(#{v1})".colorize
   end  
 
   def self.parse_date(date)
@@ -44,17 +45,18 @@ end
 
 class History
 
-  def self.each
+  def self.each(reverse=false)
     return Enumerator.new(self, :each) unless block_given?
     
     if @history
       return @history.each(&block)
     end
 
-    logs = Dir["/var/log/dpkg*"].sort_by{|fn| File.mtime(fn)}
+    logs = Path["/var/log/dpkg*"].sort_by(&:mtime)
+    logs = logs.reverse if reverse
 
     logs.each do |log|
-      zopen(log, 'r').each do |line|
+      zopen(log, 'r').send(reverse ? :reverse_each : :each) do |line|
         line.strip!
         if e = Event.from_line(line)
           yield e 
@@ -62,6 +64,10 @@ class History
       end
     end
     
+  end
+  
+  def self.reverse_each(&block)
+    self.each(true, &block)
   end
 
   def self.history
@@ -100,6 +106,12 @@ def show_events(events)
   end
 end
 
+def reverse_show_events(events)
+  lesspipe do |less| 
+    events.reverse_each { |event| less.puts event }
+  end
+end
+
 def show_grouped(g)
   lesspipe do |less|
     g.each do |k,v|
@@ -124,12 +136,15 @@ if $0 == __FILE__
   if args.any?
     command = args.shift
   else
-    command = "list"
+    command = "reverse-list"
   end
   
   case command
     when 'list'
       show_events(History)
+      
+    when 'reverse-list'
+      reverse_show_events(History)
 
     when /^(remove|list)-after$/
       subcmd = $1
@@ -170,7 +185,7 @@ if $0 == __FILE__
       puts '------------------------------------------'
       puts
       puts 'Commands:'
-      puts '    list, list-since <date/time>, remove-since <date/time>'
+      puts '    list, list-reverse, list-since <date/time>, remove-since <date/time>'
       puts
       puts '(Note: date/time has to be parseable by ruby\'s DateTime.parse)'
       puts
