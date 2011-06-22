@@ -2,7 +2,9 @@
 #
 #   TODOS:
 # ----------------------------------------------
-#   * remove (remote) branch
+#   * show "remote" before "local"
+#   * use slop
+#     * -r removes (remote-)branch
 #   * create remote branch (based on current?)
 #   * prompt for confirmation when doing dangerous things
 #     (or things that could be mistakes -- eg: creating a branch)
@@ -72,12 +74,15 @@ class Branches
 
   def print
   
-    {:local => :yellow, :remote => :green}.each do |type, color|
+    puts
+    
+    [ [:remote, :green], [:local, :yellow] ].each do |type, color|
       puts "<grey>== <light_white>#{type} branches: <grey>=============".colorize
       for branch in send(type)
         selected = (branch == current && type == :local)
-        puts "  #{branch}".send(selected ? :bright_yellow : color)
+        puts "   #{branch}".send(selected ? :bright_yellow : color)
       end
+      puts
     end
     
   end
