@@ -110,6 +110,9 @@ alias r="rails"
 
 alias git="hub"
 
+alias bwm="bwm-ng"
+alias bmon="bwm-ng"
+
 #alias gem="sudoifnotroot gem"
 #alias mount="sudoifnotroot mount"
 

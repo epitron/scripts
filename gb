@@ -1,4 +1,14 @@
 #!/usr/bin/env ruby
+#
+#   TODOS:
+# ----------------------------------------------
+#   * remove (remote) branch
+#   * create remote branch (based on current?)
+#   * prompt for confirmation when doing dangerous things
+#     (or things that could be mistakes -- eg: creating a branch)
+#   * eat ugly git messages and make them colourized and pretty 
+
+
 
 require 'epitools'
 
@@ -76,9 +86,6 @@ end
 
 #################################################################################
 ## Main
-
-# TODOS:
-# -r removes a branch
 
 args = ARGV
 
