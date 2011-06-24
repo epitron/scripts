@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+unless Path.which("openssl")
+  puts "Error: The 'openssl' commandline tool is not found. Please install it."
+  exit 4
+end
+
+infile, outfile = ARGV.map{|arg| Path[arg]}
+
+case ARGV.size
+when 1
+  outfile = infile.with(:ext=>".pem")
+when 2
+  # everything's fine
+else
+  puts "Convert .crt binary certificates to .pem ASCII certificates."
+  puts
+  puts "usage: crt2pem <input.crt> [<output.pem>]"
+  puts
+  puts "(Note: If you don't supply <output.pem>, it defaults the input filename"
+  puts "       with the extension changed to .pem)"
+  exit 1
+end
+
+unless infile.exists?
+  puts "Error: #{infile} not found"
+  exit 2
+end  
+
+if outfile.exists?
+  unless prompt("Overwrite #{outfile}?") == "y"
+    puts "Aborting..."
+    exit 3
+  end
+  puts
+end  
+
+puts "* Converting: #{infile}"
+puts "          to: #{outfile}"
+puts
+
+system "openssl x509 -inform der -outform pem < #{infile.inspect} > #{outfile.inspect}"
