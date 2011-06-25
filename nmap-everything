@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo nmap -P0 -sS -sV -O -A --defeat-rst-ratelimit -F "$@"
