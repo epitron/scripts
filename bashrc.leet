@@ -106,6 +106,8 @@ alias gl="git log"
 alias gc="git checkout"
 alias gcl="git clone"
 
+alias cu="pull"
+
 alias r="rails"
 
 alias git="hub"
