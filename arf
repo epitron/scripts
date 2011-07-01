@@ -415,11 +415,11 @@ class SevenZipExtractor(FileExtractor):
         execute('%s x "%s" -o"%s"' % (binary, filename, destdir))
 
 class DebExtractor(FileExtractor):
+    # Note: alternate method is "ar p mypackage.deb data.tar.gz | tar zx"
     exts            = ['.deb']
     streamable      = True
     desc            = "DEBian package"
     binary          = "dpkg"
-    
     def extract_file(self, filename, destdir=None):
         execute('dpkg -x "%s" "%s"' % (filename, destdir))
 
