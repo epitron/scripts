@@ -1,0 +1,9 @@
+#!/bin/bash
+A="$1"
+B="$2"
+TEMP="$A.swapping"
+
+mv "$A" "$TEMP"
+mv "$B" "$A"
+mv "$TEMP" "$B"
+
