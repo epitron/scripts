@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "FIXAUDIO v1.0"
+  echo
+  echo "Purpose:"
+  echo "  fixes 25fps speeded-up video by downscaling the audio to 24fps."
+  echo
+  echo "Usage:"
+  echo "  fixaudio <file.avi>"
+  echo
+  echo "Outputs:"
+  echo "   A fixed copy of 'file.avi' and backs up the original to 'file.avi.bad'."
+  echo
+else
+  echo "Fixing audio..."
+  mencoder "$1" -o "$1.tmp" -speed 0.96 -oac mp3lame -lameopts cbr:br=128 -af resample=44100 -ovc copy
+  mv "$1" "$1.bad"
+  mv "$1.tmp" "$1"
+fi
