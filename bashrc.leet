@@ -117,6 +117,8 @@ alias bmon="bwm-ng"
 
 #alias gem="sudoifnotroot gem"
 #alias mount="sudoifnotroot mount"
+alias iptables="sudoifnotroot iptables"
+alias nethogs="sudoifnotroot nethogs"
 
 alias tree="tree -C $* | less -RS"
 
