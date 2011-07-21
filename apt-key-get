@@ -1,12 +1,14 @@
 #!/bin/bash
 KEYSERVER=keyserver.ubuntu.com
 
-if [ "$1" == "" ]
-then
- echo "usage: apt-key-get <key-ID>"
+if [ "$#" == "0" ]; then
+ echo "usage: apt-key-get [key-IDs...]"
 else
- echo "+ Getting key $1 from $KEYSERVER..."
- #gpg --keyserver subkeys.pgp.net --recv $1 && gpg --export --armor $1 | sudo apt-key add -
- apt-key adv --keyserver $KEYSERVER --recv-keys $1
+  while (( "$#" )); do
+    echo "+ Getting key $1 from $KEYSERVER..."
+    #gpg --keyserver subkeys.pgp.net --recv $1 && gpg --export --armor $1 | sudo apt-key add -
+    apt-key adv --keyserver $KEYSERVER --recv-keys "$1"
+    shift
+  done
 fi
 
