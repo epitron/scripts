@@ -69,6 +69,7 @@ alias nano="nano -w"
 alias pico="nano"
 alias mv="mv -v"
 alias cp="cp -v"
+alias rm='trsh'
 alias less='less -X -F -i'
 alias diff='diff -u'
 alias whois='whois -H'
