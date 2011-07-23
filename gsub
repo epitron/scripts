@@ -22,11 +22,14 @@ opts.parse do |arg|
   end
   
   if path.size > 1.million
-    answer = prompt("You sure you want to gsub a file that's #{path.size.commatize} bytes?")
+    answer = prompt("You sure you want to gsub a #{path.size.commatize}-byte file?")
     next unless answer == "y"
   end
   
   data = path.read
+
+  puts data.gsub(opts[:from]) { |match| opts[:to].light_yellow } if opts.verbose?
+
   changes = 0
   data.gsub! opts[:from] do |match|
     changes += 1
