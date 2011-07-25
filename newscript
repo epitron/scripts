@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-src = Path["~/scripts/script-template.rb"]
+src = Path["~/scripts/newscript-template.rb"]
 
 for arg in ARGV
   dest = Path["~/scripts/#{arg}"]
