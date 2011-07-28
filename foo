@@ -45,6 +45,14 @@ class Foobar
     sock.close
   end
   
+  def toggle_shuffle!
+    command("order")
+    response = readlines
+    response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" } 
+    response.grep("333|Random|") { command("order default"); puts "Shuffle disabled!" }
+  end
+  
+  
   def on_readline(&block)
     loop do
       r, w, e = IO.select([sock])
@@ -62,21 +70,29 @@ class Foobar
       case i
       when Track
         if i.seek < 1.0
-          message = "#{i.artist} - #{i.title}"
+          title = "#{i.artist} - #{i.title}"
+          subtitle = "#{i.album}"
+          subtitle += " (#{i.year})" if i.year > 0
           urgency = "normal"
         end
       when String
-        message = i
+        title = i
         urgency = "low"
       end
       
-      system("notify-send", 
-        "--urgency=#{urgency}", 
-        "--icon=/home/epi/.foobar2000/icon-white.png", 
-        "--expire-time=2", 
-        "foobar2000", 
-        message
-      ) if message
+      if title
+        args = [
+          "notify-send", 
+          "--urgency=#{urgency}", 
+          "--icon=/home/epi/.foobar2000/icon-white.png", 
+          #"--expire-time=2", 
+          title
+        ]
+        
+        args.push(subtitle) if subtitle
+        
+        system(*args)
+      end
     end
   end
   
@@ -84,9 +100,10 @@ class Foobar
   class Track < Struct.new(:x, :pos, :seek, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
     def initialize(*args)
       super
-      self.pos = pos.to_i
-      self.seek = seek.to_f
-      self.bitrate = bitrate.to_i
+      self.pos      = pos.to_i
+      self.seek     = seek.to_f
+      self.bitrate  = bitrate.to_i
+      self.year     = year.to_i
     end
   end
 
@@ -95,12 +112,11 @@ class Foobar
     code, *args = s.split("|")
     
     case code
-    when "111" then Track.new(*args)
-    when "112" then "Stopped"
-    when "113" then "Paused"
-    when "222" then nil # volume
-    else
-      p "Unknown: #{s}"
+      when "111" then Track.new(*args)
+      when "112" then "Stopped"
+      when "113" then "Paused"
+      when "222" then nil # volume
+      when "333" then args.first == "Random" ? "Shuffle ON" : "Shuffle OFF"
     end
     
   end
@@ -128,6 +144,10 @@ if $0 == __FILE__
     elsif ARGV == ["-n"]
       
       notify!
+    
+    elsif ARGV == ["shuffle"]
+    
+      toggle_shuffle!
     
     else
     
