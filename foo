@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
-#require 'epitools'
 require 'socket'
 require 'pp'
+
+####################################################################################################
 
 class Foobar
 
@@ -35,17 +36,11 @@ class Foobar
     readlines.each {|line| puts line }
   end
 
-  %w[ stop play pause next prev ].each do |command|
-    define_method(command) do
-      command(command)
-    end
-  end
-  
   def close
     sock.close
   end
   
-  def toggle_shuffle!
+  def toggle_shuffle
     command("order")
     response = readlines
     response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" } 
@@ -53,15 +48,29 @@ class Foobar
   end
   
   
+  #------------------------------------------------------------------------------------------------
+  
+  class Track < Struct.new(:x, :pos, :seek, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
+    def initialize(*args)
+      super
+      self.pos      = pos.to_i
+      self.seek     = seek.to_f
+      self.bitrate  = bitrate.to_i
+      self.year     = year.to_i
+    end
+  end
+  
   def on_readline(&block)
     loop do
       r, w, e = IO.select([sock])
       readlines.each { |l| yield l.strip } if r.any?
     end
   end
-  
-  def notify!
-    puts "Notifying..."
+
+  def notify_loop!
+    puts "* Monitoring track changes and sending OSD notifications..."
+    puts
+    
     on_readline do |line|
       puts line
       i = parse(line)
@@ -97,18 +106,7 @@ class Foobar
   end
   
  
-  class Track < Struct.new(:x, :pos, :seek, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
-    def initialize(*args)
-      super
-      self.pos      = pos.to_i
-      self.seek     = seek.to_f
-      self.bitrate  = bitrate.to_i
-      self.year     = year.to_i
-    end
-  end
-
   def parse(s)
-  
     code, *args = s.split("|")
     
     case code
@@ -118,13 +116,13 @@ class Foobar
       when "222" then nil # volume
       when "333" then args.first == "Random" ? "Shuffle ON" : "Shuffle OFF"
     end
-    
   end
   
 end
 
+####################################################################################################
+
 if $0 == __FILE__
-  
   
   Foobar.control do
     
@@ -143,11 +141,11 @@ if $0 == __FILE__
       
     elsif ARGV == ["-n"]
       
-      notify!
+      notify_loop!
     
     elsif ARGV == ["shuffle"]
     
-      toggle_shuffle!
+      toggle_shuffle
     
     else
     
@@ -158,3 +156,6 @@ if $0 == __FILE__
   end 
   
 end
+
+####################################################################################################
+
