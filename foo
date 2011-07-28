@@ -1,14 +1,21 @@
 #!/usr/bin/env ruby
-require 'socket'
-require 'pp'
+####################################################################################################
+## Control foobar2000 (using the foo_controlserver.dll plugin)
+####################################################################################################
 
 ####################################################################################################
+# The host/port for the machine running foo_controlserver. 
+FOOBAR_PORT=3333
+FOOBAR_HOST="localhost"
+####################################################################################################
+
+require 'socket'
 
 class Foobar
 
   attr_accessor :sock, :current
 
-  def initialize(host="localhost", port=3334, &block)
+  def initialize(host=FOOBAR_HOST, port=FOOBAR_PORT, &block)
     @sock = TCPSocket.new(host, port)
     raise "Could not connect" unless readlines.grep(/Connected/).any?
     @current = readlines
@@ -68,7 +75,7 @@ class Foobar
   end
 
   def notify_loop!
-    puts "* Monitoring track changes and sending OSD notifications..."
+    puts "* Monitoring foobar2000 to display OSD notifications..."
     puts
     
     on_readline do |line|
