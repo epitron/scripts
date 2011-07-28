@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'open3'
+require 'coderay'
+
+# Run strace and capture stdout/stderr
+lesspipe do |less|
+  Open3.popen3("strace #{ARGV.join ' '}") do |inp,out,err,wait_thr|
+  
+    p [:process_status, wait_thr.value]
+    
+    loop do
+      readers, slurp = IO.select([err, out], [], [], 1)
+      
+      readers.each do |reader|
+      
+        p [:reader, reader]
+        
+        case reader
+        when out
+          #p [:out, reader.read]
+          reader.read.lines.each { |line| less.puts line.strip.light_yellow }
+        when err
+          #p [:err, reader.read]
+          less.puts CodeRay.scan(reader.read, :cplusplus).term
+        else
+          raise "WTF is this?! #{reader.inspect}"
+        end
+        
+      end
+      
+      #p [:process_status, wait_thr.value]
+      break if wait_thr.value.exited?
+    end
+    
+  end
+end
