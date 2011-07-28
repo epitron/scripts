@@ -75,7 +75,8 @@ alias diff='diff -u'
 alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
-
+alias cx='chmod +x'
+alias c-x='chmod -x'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
@@ -120,6 +121,7 @@ alias bmon="bwm-ng"
 #alias mount="sudoifnotroot mount"
 alias iptables="sudoifnotroot iptables"
 alias nethogs="sudoifnotroot nethogs"
+alias bhogs="nethogs"
 
 alias tree="tree -C $* | less -RS"
 
