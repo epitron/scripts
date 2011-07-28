@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+#require 'epitools'
+require 'socket'
+require 'pp'
+
+class Foobar
+
+  attr_accessor :sock, :current
+
+  def initialize(host="localhost", port=3334, &block)
+    @sock = TCPSocket.new(host, port)
+    raise "Could not connect" unless readlines.grep(/Connected/).any?
+    @current = readlines
+  end
+  
+  def self.control(&block)
+    foobar = self.new
+    foobar.instance_eval(&block)
+    foobar.command("exit")
+    foobar.close
+  end
+  
+  def readlines
+    sock.recv(2**16).lines.map { |l| l.strip }
+  end
+  
+  def command(msg, verbose=false)
+    #puts "<light_blue>>> <light_yellow>#{msg}".colorize if verbose
+    puts ">> #{msg}" if verbose
+    sock.write( msg+"\r\n" )
+    print_response if verbose
+  end
+  
+  def print_response
+    readlines.each {|line| puts line }
+  end
+
+  %w[ stop play pause next prev ].each do |command|
+    define_method(command) do
+      command(command)
+    end
+  end
+  
+  def close
+    sock.close
+  end
+  
+end
+
+
+
+Foobar.control do
+  
+  if ARGV.empty?
+  
+    puts "usage: foo <command>"
+    puts
+    puts "Commands:"
+    puts
+    command "help"
+    readlines.each do |line|
+      if line =~ /^999\|(.+)\|$/
+        puts "  #{$1}"
+      end
+    end
+    
+  else
+  
+    command ARGV.join(' '), true
+    
+  end
+  
+end
