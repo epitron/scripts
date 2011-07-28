@@ -45,29 +45,96 @@ class Foobar
     sock.close
   end
   
-end
-
-
-
-Foobar.control do
+  def on_readline(&block)
+    loop do
+      r, w, e = IO.select([sock])
+      readlines.each { |l| yield l.strip } if r.any?
+    end
+  end
   
-  if ARGV.empty?
-  
-    puts "usage: foo <command>"
-    puts
-    puts "Commands:"
-    puts
-    command "help"
-    readlines.each do |line|
-      if line =~ /^999\|(.+)\|$/
-        puts "  #{$1}"
+  def notify!
+    puts "Notifying..."
+    on_readline do |line|
+      puts line
+      i = parse(line)
+      message = nil
+      
+      case i
+      when Track
+        if i.seek < 1.0
+          message = "#{i.artist} - #{i.title}"
+          urgency = "normal"
+        end
+      when String
+        message = i
+        urgency = "low"
       end
+      
+      system("notify-send", 
+        "--urgency=#{urgency}", 
+        "--icon=/home/epi/.foobar2000/icon-white.png", 
+        "--expire-time=2", 
+        "foobar2000", 
+        message
+      ) if message
+    end
+  end
+  
+ 
+  class Track < Struct.new(:x, :pos, :seek, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
+    def initialize(*args)
+      super
+      self.pos = pos.to_i
+      self.seek = seek.to_f
+      self.bitrate = bitrate.to_i
+    end
+  end
+
+  def parse(s)
+  
+    code, *args = s.split("|")
+    
+    case code
+    when "111" then Track.new(*args)
+    when "112" then "Stopped"
+    when "113" then "Paused"
+    when "222" then nil # volume
+    else
+      p "Unknown: #{s}"
     end
     
-  else
-  
-    command ARGV.join(' '), true
-    
   end
+  
+end
+
+if $0 == __FILE__
+  
+  
+  Foobar.control do
+    
+    if ARGV.empty?
+    
+      puts "usage: foo <command>"
+      puts
+      puts "Commands:"
+      puts
+      command "help"
+      readlines.each do |line|
+        if line =~ /^999\|(.+)\|$/
+          puts "  #{$1}"
+        end
+      end
+      
+    elsif ARGV == ["-n"]
+      
+      notify!
+    
+    else
+    
+      command ARGV.join(' '), true
+      
+    end
+    
+  end 
   
 end
