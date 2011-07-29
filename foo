@@ -47,14 +47,6 @@ class Foobar
     sock.close
   end
   
-  def toggle_shuffle
-    command("order")
-    response = readlines
-    response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" } 
-    response.grep("333|Random|") { command("order default"); puts "Shuffle disabled!" }
-  end
-  
-  
   #------------------------------------------------------------------------------------------------
   
   class Track < Struct.new(:x, :pos, :seek, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
@@ -67,52 +59,6 @@ class Foobar
     end
   end
   
-  def on_readline(&block)
-    loop do
-      r, w, e = IO.select([sock])
-      readlines.each { |l| yield l.strip } if r.any?
-    end
-  end
-
-  def notify_loop!
-    puts "* Monitoring foobar2000 to display OSD notifications..."
-    puts
-    
-    on_readline do |line|
-      puts line
-      i = parse(line)
-      message = nil
-      
-      case i
-      when Track
-        if i.seek < 1.0
-          title = "#{i.artist} - #{i.title}"
-          subtitle = "#{i.album}"
-          subtitle += " (#{i.year})" if i.year > 0
-          urgency = "normal"
-        end
-      when String
-        title = i
-        urgency = "low"
-      end
-      
-      if title
-        args = [
-          "notify-send", 
-          "--urgency=#{urgency}", 
-          "--icon=/home/epi/.foobar2000/icon-white.png", 
-          #"--expire-time=2", 
-          title
-        ]
-        
-        args.push(subtitle) if subtitle
-        
-        system(*args)
-      end
-    end
-  end
-  
- 
   def parse(s)
     code, *args = s.split("|")
     
@@ -123,6 +69,66 @@ class Foobar
       when "222" then nil # volume
       when "333" then args.first == "Random" ? "Shuffle ON" : "Shuffle OFF"
     end
+  end
+  
+  
+  def notify(parsed)
+    i = parsed
+  
+    case i
+    when Track
+      title     = "#{i.artist} - #{i.title}"
+      subtitle  = "#{i.album}"
+      subtitle  += " (#{i.year})" if i.year > 0
+      urgency   = "normal"
+    when String
+      title       = i
+      urgency     = "low"
+    end
+    
+    if title
+      cmdline = [
+        "notify-send", 
+        "--urgency=#{urgency}", 
+        "--icon=/home/epi/.foobar2000/icon-white.png", 
+        #"--expire-time=2", 
+        title
+      ]
+      cmdline << subtitle if subtitle
+      system(*cmdline)
+    end
+  end
+  
+  
+  def on_readline(&block)
+    loop do
+      r, w, e = IO.select([sock])
+      readlines.each { |l| yield l } if r.any?
+    end
+  end
+
+  #------------------------------------------------------------------------------------------------
+  
+  def toggle_shuffle
+    command("order")
+    response = readlines
+    response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" } 
+    response.grep("333|Random|") { command("order default"); puts "Shuffle disabled!" }
+  end
+  
+  def notify_loop!
+    puts "* foobar2000 OSD notifications running..."
+    
+    on_readline do |line|
+      puts line
+      i = parse(line)
+      notify(i) if i.seek <= 1.0
+    end
+  end
+  
+  def notify_current
+    command("trackinfo")
+    readlines.each { |line| notify parse(line) }
   end
   
 end
@@ -153,6 +159,10 @@ if $0 == __FILE__
     elsif ARGV == ["shuffle"]
     
       toggle_shuffle
+    
+    elsif ARGV == ["current"]
+    
+      notify_current
     
     else
     
