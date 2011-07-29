@@ -126,9 +126,27 @@ class Foobar
     end
   end
   
-  def notify_current
+  def current
     command("trackinfo")
     readlines.each { |line| notify parse(line) }
+  end
+  
+  def playstatus
+    command("trackinfo")
+    code = readlines.first.split("|").first
+    case code
+      when "111" then :playing
+      when "112" then :stopped
+      when "113" then :paused
+    end
+  end
+  
+  def playpause
+    if playstatus == :stopped
+      command "play"
+    else
+      command "pause"
+    end
   end
   
 end
@@ -153,17 +171,21 @@ if $0 == __FILE__
       end
       
     elsif ARGV == ["-n"]
-      
-      notify_loop!
     
+      notify_loop!
+      
+    elsif ARGV == ["playpause"]
+    
+      playpause
+      
     elsif ARGV == ["shuffle"]
     
       toggle_shuffle
-    
+      
     elsif ARGV == ["current"]
     
-      notify_current
-    
+      current
+      
     else
     
       command ARGV.join(' '), true
