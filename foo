@@ -122,7 +122,7 @@ class Foobar
     on_readline do |line|
       puts line
       i = parse(line)
-      notify(i) if i.seek <= 1.0
+      notify(i) unless i.is_a? Track and i.seek > 1.0
     end
   end
   
