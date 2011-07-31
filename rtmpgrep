@@ -1,2 +1,0 @@
-#!/bin/bash
-ngrep -W byline | grep -Pio '(swfurl\.{2}.*?\.{2})|(\.{2}play.*?\w.*?\.{3})|(tcUrl.*?rtmp://.*?\.{2})|(pageUrl\.{3}.*?\.{2})'
