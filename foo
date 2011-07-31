@@ -56,6 +56,13 @@ class Foobar
       self.seek     = seek.to_f
       self.bitrate  = bitrate.to_i
       self.year     = year.to_i
+      self.num      = num.to_i
+    end
+    
+    COMPARE_FIELDS = [:artist, :album, :year, :genre, :num, :title]
+
+    def ==(other)
+      COMPARE_FIELDS.all? { |field| self[field] == other[field] }
     end
   end
   
@@ -119,10 +126,17 @@ class Foobar
   def notify_loop!
     puts "* foobar2000 OSD notifications running..."
     
+    last_track = nil
+    
     on_readline do |line|
       puts line
       i = parse(line)
-      notify(i) unless i.is_a? Track and i.seek > 1.0
+      if i.is_a? Track
+        notify(i) if last_track.nil? or not i == last_track
+        last_track = i
+      else
+        notify(i)
+      end
     end
   end
   
