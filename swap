@@ -1,0 +1,11 @@
+#!/bin/bash
+# TODO: "swap <file> <symlink-to-file>" should make the file into the symlink, and vice-versa.
+
+A="$1"
+B="$2"
+TEMP="$A.swapping"
+
+mv "$A" "$TEMP"
+mv "$B" "$A"
+mv "$TEMP" "$B"
+

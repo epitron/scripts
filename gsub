@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'slop'
+
+opts = Slop.new :help => true do
+  banner "Usage: gsub -f from -t to [files...]"
+  
+  on :v, :verbose, 'Enable verbose mode'           
+  on :n, :dryrun, 'Dry-run', false                  
+  on :f, :from, 'From', :optional => false      
+  on :t, :to, 'To', :optional => false  
+end
+
+opts.parse do |arg|
+  path = Path[arg]
+
+  puts "* gsubbing: #{path}"
+
+  unless path.exists?
+    puts "  |_ NOT FOUND."
+    next
+  end
+  
+  if path.size > 1.million
+    answer = prompt("You sure you want to gsub a #{path.size.commatize}-byte file?")
+    next unless answer == "y"
+  end
+  
+  data = path.read
+
+  puts data.gsub(opts[:from]) { |match| opts[:to].light_yellow } if opts.verbose?
+
+  changes = 0
+  data.gsub! opts[:from] do |match|
+    changes += 1
+    opts[:to]
+  end
+  
+  puts "  |_ #{changes} changes#{" would be" if opts.dryrun?} made"
+  
+  path.write(data) unless opts.dryrun?
+end
+

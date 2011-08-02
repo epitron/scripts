@@ -2,24 +2,29 @@
 require 'rubygems'
 require 'epitools'
 
-VALID_EXTS = %w[.avi .asf .wmv .mp4 .ogm .mkv .flv]
+#VALID_EXTS = %w[avi asf wmv mp4 ogm mkv flv]
 
 def extract_audio(infile)
 
   infile = Path[infile]
+  
+  p infile
   
   unless infile.exists?
     STDERR.puts "Couldn't find #{infile}"
     return
   end
 
-  unless VALID_EXTS.include? infile.ext
-    STDERR.puts "Unrecognized video format: #{infile.ext}"
-    return
-  end
+  #unless VALID_EXTS.include? infile.ext
+  #  STDERR.puts "Unrecognized video format: #{infile.ext}"
+  #  return
+  #end
   
-  outfile = infile.dup
-  outfile.ext = ".mp3"
+  if infile =~ %r{^/dev/fd/}
+    outfile = Path.pwd/"#{infile.filename}.mp3" 
+  else    
+    outfile = infile.with(:ext=>"mp3")
+  end
 
   if outfile.exists?
     puts "Error: #{outfile} exists!"

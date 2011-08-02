@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'mp3info'
+
+class Mp3Info
+  def to_s; "#{tag.artist} - #{tag.album} - #{tag.title}"; end
+  
+  # POPM: http://www.id3.org/id3v2.3.0#head-2452ec9cf8b42c5c117b518b69e129ff67970852
+  def rating
+    if tag2 and popm = tag2["POPM"]
+      popm.split("\0").last.bytes.first
+    else
+      nil
+    end
+  end
+  
+end
+
+#x = "/d/mp3/Sub Focus - Sub Focus (2009)/01-sub_focus-let_the_story_begin.mp3"
+
+ARGV << "**/*.mp3" unless ARGV.any?
+
+for arg in ARGV
+  [Path[arg]].flatten.each do |path|
+    Mp3Info.open(path) do |mp3|
+      if rating = mp3.rating
+        puts "[#{rating}] #{mp3.inspect}"
+      end
+    end
+  end
+end

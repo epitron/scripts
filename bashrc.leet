@@ -69,12 +69,14 @@ alias nano="nano -w"
 alias pico="nano"
 alias mv="mv -v"
 alias cp="cp -v"
+alias rm='trsh'
 alias less='less -X -F -i'
 alias diff='diff -u'
 alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
-
+alias cx='chmod +x'
+alias c-x='chmod -x'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
@@ -117,6 +119,9 @@ alias bmon="bwm-ng"
 
 #alias gem="sudoifnotroot gem"
 #alias mount="sudoifnotroot mount"
+alias iptables="sudoifnotroot iptables"
+alias nethogs="sudoifnotroot nethogs"
+alias bhogs="nethogs"
 
 alias tree="tree -C $* | less -RS"
 

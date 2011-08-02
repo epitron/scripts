@@ -1,4 +1,18 @@
-#!/bin/bash
-FILES=`ls -l | awk '{if ( $5 == 0 ) { print $9 }}'`
-echo "Removing empty files: $FILES..."
-rm $FILES
+#!/usr/bin/env ruby
+require 'epitools'
+
+if ARGV.any?
+  files = ARGV.map { |arg| Path[arg].ls }.flatten
+else
+  files = Path["*"]
+end
+
+zeros = files.select{|f| f.size == 0 }
+
+zeros.each { |path| puts path }
+
+if prompt("Remove these files?") == "y"
+  puts "Removing files..."
+  zeros.each(&:rm)
+end
+

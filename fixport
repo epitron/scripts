@@ -1,0 +1,26 @@
+#!/usr/bin/env python
+
+from socket import *
+import sys
+
+PROTOCOLS = {
+    "tcp": SOCK_STREAM,
+    "udp": SOCK_DGRAM
+}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print "Usage: fixport <port>"
+        sys.exit()
+
+    for port in sys.argv[1:]:
+        port = int(port)
+        for proto_name, protocol in PROTOCOLS.items():
+            print "* Unborking %s/%s..." % (port, proto_name)
+
+            s = socket(AF_INET, SOCK_STREAM)
+            s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+            s.bind(('', port))
+            s.close()
+
+    

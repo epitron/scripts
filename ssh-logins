@@ -20,6 +20,9 @@ end
 lesspipe do |less|
 
   Path["/var/log/{auth.log,auth.log*.gz}"].sort_by(&:mtime).reverse.each do |path|
+    
+    last_day = nil
+    
     path.zopen.reverse_each do |line|
       if line =~ /^((.+\s+){3})(.+) sshd\[(.+)\]: (.+)$/
         date = $1.strip
@@ -35,6 +38,17 @@ lesspipe do |less|
           port = $6
           proto = $7
 
+          ## date line
+          
+          month, day, time = date.split
+          day = [month, day].join(' ')
+          if last_day != day
+            last_day = day
+            less.puts
+            less.puts "<light_cyan>--- <light_white>#{day} <light_cyan>#{"-"*50}".colorize
+          end
+          
+          ## the line
           case result
             when "Accepted"
               color = "light_green"
@@ -42,7 +56,8 @@ lesspipe do |less|
               color = "light_red"
           end
         
-          thing = "<grey>[<white>#{date}<grey>] "
+          #thing = "<grey>[<white>#{date}<grey>] "
+          thing = "<grey>|<cyan>#{time}<grey>| "
           
           if invalid
             thing << "<grey>#{user} " 
@@ -56,7 +71,9 @@ lesspipe do |less|
           
           thing << " <light_red>SSH1" if proto == "ssh1"
           thing << " <light_yellow>8=m" if authtype == "publickey"
+          
           less.puts thing.colorize
+          
         end
       end
     end

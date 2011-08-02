@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+src = Path["~/scripts/newscript-template.rb"]
+
+for arg in ARGV
+  dest = Path["~/scripts/#{arg}"]
+  if dest.exists?
+    puts "* #{dest.to_s.light_red} already exists!"
+  else
+    dest.write src.read.gsub("<<scriptname>>", arg)
+    cmd ["chmod +x ?", dest]
+    puts "* #{dest.to_s.bright_green} created..."
+  end
+end
+
+  
+
