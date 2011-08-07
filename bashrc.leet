@@ -145,3 +145,4 @@ alias tree="tree -C | less -SR"
 #    . /etc/bash_completion
 #fi
 
+alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
