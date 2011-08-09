@@ -41,7 +41,7 @@ use Fcntl;
 use Term::ANSIColor;
 use Term::ReadKey;
 
-my $VERSION = "3.11-0";
+my $VERSION = "3.13-3";
 
 ##############################################################################
 #			   Function Declarations                             #
@@ -68,7 +68,6 @@ sub FileTypeColor($);
 sub SysMove($$);
 sub SysMkdir($);
 sub SysDelete($$);
-sub AddEscapes($);
 sub RemoveFromTrashRegex($);
 sub DeleteRegex($);
 sub UndoRegex($);
@@ -329,7 +328,7 @@ sub EmptyTrash()
 
 		if(-e "$trsh/metadata") {
 			SysDelete("$trsh/metadata", "-f");
-			system("touch \"$trsh/metadata\"");
+			system("touch", "$trsh/metadata");
 		}
 
 		my @list = GetSpecificTrashContents($trsh);
@@ -385,7 +384,7 @@ sub DeleteFile($)
 	}
 
 	# Error on directories without -r flag.
-	if(-d $path and $OptionRecursive == 0) {
+	if(-d $path and not(-l $path) and $OptionRecursive == 0) {
 		print "trsh: cannot remove `$path': Is a directory\n";
 		return;
 	}
@@ -960,10 +959,10 @@ sub MakeTrashDir($)
 {
 	my $root	=	shift;
 	unless(-d "$root") {
-		system("mkdir -p $root");
+		system("mkdir", "-p", "$root");
 		mkdir "$root/files";
 		mkdir "$root/info";
-		system("touch \"$root/metadata\"");
+		system("touch", "$root/metadata");
 	}
 }
 
@@ -1002,9 +1001,7 @@ sub GetDeviceList()
 	my $df = Df();
 	
 	foreach my $e (keys %{$df}) {
-		#my $mnt = $df->{$e}->{'Mount'};
-	  my $mnt = $df->{$e}->{'Mount'} or next;
-
+		my $mnt = $df->{$e}->{'Mount'};
 		# Do not count mounts which are not writable.
 		unless(-w $mnt) {
 			next;
@@ -1433,21 +1430,14 @@ sub SysMove($$)
 	my $from = shift;
 	my $to = shift;
 
-	$from = AddEscapes($from);
-	$to   = AddEscapes($to);
-
-	my $ret = system("mv \"$from\" \"$to\"");
-	return $ret;
+	return system("mv", $from, $to);
 }
 
 sub SysMkdir($)
 {
 	my $dir = shift;
 
-	$dir = AddEscapes($dir);
-
-	my $ret = system("mkdir -p \"$dir\"");
-	return $ret;
+	return system("mkdir", "-p", $dir);
 }
 
 sub SysDelete($$)
@@ -1455,10 +1445,11 @@ sub SysDelete($$)
 	my $file   = shift;
 	my $flags  = shift;
 
-	$file = AddEscapes($file);
-
-	my $ret = system("rm $flags \"$file\"");
-	return $ret;
+	if($flags =~ /^\s*$/) {
+		return system("rm", $file);
+	} else {
+		return system("rm", $flags, $file);
+	}
 }
 
 sub Df()
@@ -1471,7 +1462,14 @@ sub Df()
 	while(my $line = <IN>) {
 		my $ret = {};
 		chomp($line);
+		next if($line =~ /^\s*$/);
 		my @tmp = split(/\s+/,$line);
+		while(scalar(@tmp) < scalar(@header)) {
+			$line = <IN>;
+			chomp($line);
+			next if($line =~ /^\s*$/);
+			push @tmp, split(/\s+/, $line);
+		}
 		my $dev = shift @tmp;
 		for(my $i = 0; $i < scalar @tmp; $i++) {
 			if($i <= $#header) {
@@ -1483,15 +1481,6 @@ sub Df()
 		$return{$dev} = $ret;
 	}
 	return \%return;
-}
-
-sub AddEscapes($)
-{
-	my $in = shift;
-	$in =~ s/\\/\\\\/g; # back slash in file names cause problems.
-	$in =~ s/\`/\\\`/g; # Back ticks in file names cause problems.
-	$in =~ s/"/\\"/g;   # Double quotes in file names cause problems.
-	return $in;
 }
 
 sub AbsolutePath($)
@@ -1639,6 +1628,11 @@ sub SplitDate($)
 	my @tmp = split(/T/,$tdate);
 	$tdate = $tmp[0];
 	my $ttime = $tmp[1];
+
+	if($ttime =~ /(.+)\+.+/) {
+		$ttime = $1;
+	}
+
 	my @hdate = split(/-/,$tdate);
 	my @htime = split(/:/,$ttime);
 
@@ -1710,7 +1704,10 @@ sub Glob
 	my @patterns	=	@_;
 	my @ret;
 	foreach my $pattern (@patterns) {
-		$pattern = AddEscapes($pattern);
+		$pattern =~ s/\\/\\\\/g;
+		$pattern =~ s/\`/\\\`/g;
+		$pattern =~ s/"/\\"/g;
+		$pattern =~ s/\$/\\\$/g;
 		$pattern =~ s/ /\\ /g;
 		my @list = glob($pattern);
 		foreach my $f (@list) {

@@ -1,33 +1,69 @@
-#!/bin/bash
-if [ "$*" == "" ]; then
-  DIRS=.
-else
-  DIRS="$*"
-fi
+#!/usr/bin/env ruby
+require 'epitools'
 
-for i in $DIRS; do
-echo
-echo -n "=== Updating $i "
-pushd $i > /dev/null
-if [ -d .git ]; then
-        echo "(git pull) ==="
-        echo
-	git pull
-elif [ -d .svn ]; then
-        echo "(svn update) ==="
-        echo
-	svn update
-elif [ -d .hg ]; then
-        echo "(hg pull -u) ==="
-        echo
-	hg pull -u
-elif [ -d CVS ]; then
-        echo "(cvs update) ==="
-        echo
-	cvs update -dP
+class Path
+
+  def in_tree?(filename)
+    p = Path.pwd
+    while p.dirs.any?
+      return true if (p/filename).exists?
+      p.dirs.pop
+    end
+    false
+  end
+
+end
+
+## args
+
+if ARGV.any? 
+  targets = ARGV
 else
-	echo "No repo found..."
-fi
-popd > /dev/null
-echo
-done
+  targets = ['.']
+end
+
+
+## checkout every arg
+
+for target in targets
+
+  case target
+  when %r{^git://}, %r{^https://.+\.git}, %r{\S+@\S+:\s+\.git}
+  
+    cmd = ["git", "clone", target]
+    
+    puts
+    puts "=== Cloning #{target} ==="
+    puts
+    system(*cmd)
+    
+  else
+  
+    path = Path[target]
+
+    if path.exists?
+    
+      if path.in_tree?(".git")
+        cmd = "git pull"
+      elsif path.in_tree?(".hg")
+        cmd = "hg pull -u"
+      elsif (path/".svn").dir?
+        cmd = "svn update"
+      elsif (path/"CVS").dir?
+        cmd = "cvs update -dP"
+      end
+      
+      puts
+      puts "=== Updating #{target} (#{cmd}) === "
+      puts
+      system(cmd)
+      
+    else
+      puts "* #{target.inspect} not found"
+    end
+    
+  end
+  
+end
+
+
