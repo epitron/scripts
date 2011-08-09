@@ -13718,6 +13718,120 @@ sub find_video {
 1;
 }
 ##} blib/lib/FlashVideo/Site/Joemonster.pm
+BEGIN { $INC{'FlashVideo/Site/Kanal5play.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Kanal5play.pm
+{
+package FlashVideo::Site::Kanal5play;
+
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *debug = \&FlashVideo::Utils::debug; *info = \&FlashVideo::Utils::info; *title_to_filename = \&FlashVideo::Utils::title_to_filename; }
+
+my $widths = {
+     "low" => 480,
+     "medium" => 640, 
+     "high" => 1024 };
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  my $has_amf_conn = eval { require AMF::Connection };
+  if (!$has_amf_conn) {
+    die "Must have AMF::Connection installed";
+  }
+  my $player_id = "811317479001";
+  my $video_id = ($browser->content =~ /videoPlayer" value="(.*?)"/)[0];
+  if ($video_id eq ''){die "Could not find video_id";}
+  info "found video_id: $video_id";
+  debug "$prefs->{quality}";
+  my @dump = $self->amfgateway($browser, $player_id, $video_id,$prefs);
+
+  my $width = 0;
+  my $rtmp;
+  my $playpath;
+  my $new_width;
+
+  foreach (@dump) {
+    $new_width = int($_->{width});
+    if(($new_width > $width) and (($widths->{$prefs->{quality}}) >= $new_width)){
+        $width = int($_->{width});
+        $rtmp = $_->{rtmp};
+        $playpath = $_->{mp4};
+    }
+  };
+
+  my @rtmpdump_commands;
+  my $title = ($browser->content =~ /property="og:title" content="(.*?)"/)[0];
+  my $flv_filename = title_to_filename($title, "flv");
+  my $args = {
+      rtmp => $rtmp,
+      swfVfy => "http://admin.brightcove.com/viewer/us1.25.04.01.2011-05-24182704/connection/ExternalConnection_2.swf",
+      playpath => $playpath,
+      flv => $flv_filename
+  };
+  push @rtmpdump_commands, $args;
+  return \@rtmpdump_commands;
+}
+
+sub amfgateway {
+  my($self, $browser, $player_id, $videoId, $prefs) = @_;
+
+  my $endpoint = 'http://c.brightcove.com/services/amfgateway';
+  my $service = 'com.brightcove.templating.TemplatingFacade';
+  my $method = 'getContentForTemplateInstance';
+  my $client = new AMF::Connection( $endpoint );
+  my $params = [
+		$player_id,	# param 1 - playerId
+		{
+		 'fetchInfos' => [
+				  {
+				   'fetchLevelEnum' => '1',
+				   'contentType' => 'VideoLineup',
+				   'childLimit' => '100'
+				  },
+				  {
+				   'fetchLevelEnum' => '3',
+				   'contentType' => 'VideoLineupList',
+				   'grandchildLimit' => '100',
+				   'childLimit' => '100'
+				  }
+				 ],
+		 'optimizeFeaturedContent' => 1,
+		 'lineupRefId' => undef,
+		 'lineupId' => undef,
+		 'videoRefId' => undef,
+		 'videoId' => $videoId, # param 2 - videoId
+		 'featuredLineupFetchInfo' => {
+					       'fetchLevelEnum' => '4',
+					       'contentType' => 'VideoLineup',
+					       'childLimit' => '100'
+					      }
+		}
+	       ];
+
+  my $response = $client->call( $service.'.'.$method, $params );
+  my @dump;
+  if ( $response->is_success ) {
+    my $count = 0;
+    for ($count = 0; $count < 3; $count++){
+      my $defaultURL = $response->{data}[0]->{data}->{videoDTO}->{renditions}[$count]->{defaultURL};
+      my $mp4 = reverse(((reverse($defaultURL)) =~ m/(.*?)&/)[0]);
+      my $width = $response->{data}[0]->{data}->{videoDTO}->{renditions}[$count]->{frameWidth};
+      my $rtmp = ($defaultURL =~ m/(.*?)&/)[0];
+      @dump[$count] = { 'rtmp' => $rtmp,
+			'width' => $width,
+			'mp4' => $mp4
+		      };
+      
+    }
+  } else {
+    die "Can not send remote request for $service.$method method with params on $endpoint using AMF".$client->getEncoding()." encoding.\n";
+  };
+  return @dump;
+}
+1;
+}
+##} blib/lib/FlashVideo/Site/Kanal5play.pm
 BEGIN { $INC{'FlashVideo/Site/Kidswb.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 BEGIN { $INC{'FlashVideo/JSON.pm'}++; }
@@ -16542,6 +16656,118 @@ sub parse_video_info {
 1;
 }
 ##} blib/lib/FlashVideo/Site/Tudou.pm
+BEGIN { $INC{'FlashVideo/Site/Tv3play.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Tv3play.pm
+{
+package FlashVideo::Site::Tv3play;
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; *debug = \&FlashVideo::Utils::debug; *info = \&FlashVideo::Utils::info; *title_to_filename = \&FlashVideo::Utils::title_to_filename; *convert_sami_subtitles_to_srt = \&FlashVideo::Utils::convert_sami_subtitles_to_srt; }
+
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  return $self->find_video_viasat($browser,$embed_url,$prefs);
+}
+
+sub find_video_viasat {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  my $video_id = ($browser->content =~ /id:([0-9]*),/)[0];
+  info "Got video_id: $video_id";
+  my $info_url = "http://viastream.viasat.tv/PlayProduct/$video_id";
+  $browser->get($info_url);
+  my $variable = $browser->content;
+  $variable =~ s/\n//g;
+  my $title = ($variable =~ /<Title><!\[CDATA\[(.*?)\]\]><\/Title>/)[0];
+  my $flv_filename = title_to_filename($title, "flv");
+
+
+
+  my @urls;
+  my $count = 0;
+  my $base = ($variable =~ /<Videos>(.*)<\/Videos>/)[0];
+  for ($count = 0; $count < 3; $count++){
+    my $video = ($base =~ /<Video>(.+)<\/Video>/p)[0];
+    if ($video eq ''){last;};
+    $base = ${^POSTMATCH};    
+    my $bitrate = ($video =~ /<BitRate>([0-9]*)<\/BitRate>/)[0];
+    my $url = ($video =~ /<Url><!\[CDATA\[(.*)]]><\/Url>/)[0];
+    if (not (($url =~ /http:\/\//)[0] eq '')){
+      $browser->get($url);
+      $variable = $browser->content;
+      $variable =~ s/\n//g;
+      $url = ($variable =~ /<Url>(.*)<\/Url>/)[0];
+    }
+    
+    $urls[$count++] = { 'bitrate' => $bitrate,
+		      'rtmp' => $url
+		    };
+  }
+  my $bitrate = 0;
+  my $rtmp;
+  my $new_bitrate;
+
+  foreach (@urls) {
+    $new_bitrate = int($_->{bitrate});
+    if($new_bitrate > $bitrate){
+        $bitrate = int($_->{bitrate});
+        $rtmp = $_->{rtmp};
+    }
+  };
+
+  my @rtmpdump_commands;
+  my $args = {
+      rtmp => $rtmp,
+      swfVfy => "http://flvplayer-viastream-viasat-tv.origin.vss.viasat.tv/play/swf/player110420.swf",
+      flv => $flv_filename
+  };
+  push @rtmpdump_commands, $args;
+  return \@rtmpdump_commands;
+
+}
+
+1;
+}
+##} blib/lib/FlashVideo/Site/Tv3play.pm
+BEGIN { $INC{'FlashVideo/Site/Tv6play.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Tv6play.pm
+{
+package FlashVideo::Site::Tv6play;
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; }
+BEGIN { FlashVideo::Site::Tv3play->import(); } # (added by utils/combine-perl.pl)
+use base 'FlashVideo::Site::Tv3play';
+
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  return $self->find_video_viasat($browser,$embed_url,$prefs);
+}
+1;
+}
+##} blib/lib/FlashVideo/Site/Tv6play.pm
+BEGIN { $INC{'FlashVideo/Site/Tv8play.pm'}++; }
+# Part of get-flash-videos. See get_flash_videos for copyright.
+##{ blib/lib/FlashVideo/Site/Tv8play.pm
+{
+package FlashVideo::Site::Tv8play;
+use strict;
+BEGIN { FlashVideo::Utils->import(); } # (added by utils/combine-perl.pl)
+BEGIN { no strict 'refs'; }
+BEGIN { FlashVideo::Site::Tv3play->import(); } # (added by utils/combine-perl.pl)
+use base 'FlashVideo::Site::Tv3play';
+
+
+sub find_video {
+  my ($self, $browser, $embed_url, $prefs) = @_;
+  return $self->find_video_viasat($browser,$embed_url,$prefs);
+}
+1;
+}
+##} blib/lib/FlashVideo/Site/Tv8play.pm
 BEGIN { $INC{'FlashVideo/Site/Tva.pm'}++; }
 # Part of get-flash-videos. See get_flash_videos for copyright.
 ##{ blib/lib/FlashVideo/Site/Tva.pm
