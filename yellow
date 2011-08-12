@@ -1,8 +1,6 @@
 #!/bin/bash
 if [ "$TERM" == "xterm" -a "$COLORTERM" != "gnome-terminal" ]; then
-    export PROMPT_COMMAND='echo -ne "\033]30;`basename "$PWD"`\007"'
+   export PROMPT_COMMAND='echo -ne "\033]30;[`basename "$PWD"`]\007"'
 fi
 
-export PS1='\[[0m[1;30m\][\[[0m\]\@\[[1;30m\]]\[[0m\] \[[33m\]\u\[[1;30m\]@\[[33m\]\h\[[0m\] \[[1;30m\]::\[[0m\] \[[1;37m\]\w\[[0m\] \$ '
-#export PS1='\[[0m[1;30m\][\[[0m\]\@\[[1;30m\]]\[[0m\] \[[32m\]\u\[[1;30m\]@\[[32m\]\h\[[0m\] \[[1;30m\]::\[[0m\] \[[1;37m\]\w\[[0m\] \$ '
-#  PS1='\u@\h:\w\$ '
+export PS1="\e[30m\e[1m[\e[0m\e[37m\\@\e[0m\e[30m\e[1m] \e[0m\e[33m\\u\e[0m\e[30m\e[1m@\e[0m\e[33m\e[1m\\h \e[0m\e[30m\e[1m:: \e[0m\e[37m\e[1m\\w \e[0m\e[37m$ \e[0m"

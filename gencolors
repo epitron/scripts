@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+# <see scripts/promptinfo for more info> 
+
+puts "* Generating color scripts..."
+
+for color in %w[blue red green yellow purple cyan grey/white]
+  back, fore = color.split('/')
+  fore = "light_#{back}" unless fore
+
+  prompt = "<grey>[<white>\\@<grey>] <#{back}>\\u<grey>@<#{fore}>\\h <grey>:: <light_white>\\w <white>$ ".colorize
+  
+  script = %{#!/bin/bash
+if [ "$TERM" == "xterm" -a "$COLORTERM" != "gnome-terminal" ]; then
+   export PROMPT_COMMAND='echo -ne "\\033]30;[`basename "$PWD"`]\\007"'
+fi
+
+export PS1=#{prompt.inspect}
+}
+
+  #puts script; next
+  
+  path = Path[back]
+
+  next if path.exists? and prompt("Overwrite #{path}?") == 'n' 
+
+  puts "  |_ #{path}"
+  path.truncate; path.write script
+end
+
+
