@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$*" == "" ]; then
+  echo "usage:"
+  echo "  ssl-cert-remove <certificate name>"
+  echo
+  echo "(Use ssl-cert-list to find the name.)"
+else
+  certutil -D -n "$*" -d sql:$HOME/.pki/nssdb
+fi
