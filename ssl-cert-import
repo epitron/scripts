@@ -1,0 +1,20 @@
+#!/bin/sh
+
+if [ "$1" == "" ]; then
+
+  echo "usage:"
+  echo "  ssl-cert-import remote.host.name [port]"
+  echo
+  echo "Note: 'port' defaults to 443"
+
+else
+
+  REMHOST=$1
+  REMPORT=${2:-443}
+  exec 6>&1
+  exec > $REMHOST
+  echo | openssl s_client -connect ${REMHOST}:${REMPORT} 2>&1 |sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'
+  certutil -d sql:$HOME/.pki/nssdb -A -t TC -n "$REMHOST" -i $REMHOST 
+  exec 1>&6 6>&-
+
+fi

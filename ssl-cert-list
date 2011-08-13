@@ -1,0 +1,2 @@
+#!/bin/bash
+certutil -L -d sql:$HOME/.pki/nssdb
