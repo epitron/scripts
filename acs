@@ -15,21 +15,25 @@ IO.popen("apt-cache show #{ARGV * ' '}", "r") do |apt|
     packages = chunks.map{|chunk| chunk.scan(/^([^\s:]+): ([^\n]+(?:\n [^\n]+)*)/m)}.map{|chunk| Hash[chunk]}
 
     for info in packages
+      
+      ## title and version
       ver = info["Version"].scan(/^([\d\.]+)(.*)$/).first
       less.puts
-      less.puts "<14>#{info["Package"]} <15>#{ver.first}<7>#{ver.last} <8>(#{info["Priority"]})".colorize
+      less.puts "<8>=== <14>#{info["Package"]} <15>#{ver.first}<7>#{ver.last} <3>(#{info["Priority"]}) <8>==================".colorize
       less.puts "  size: <15>#{info["Installed-Size"].to_i.commatize}<7>k <8>(<7>#{(info["Size"].to_i / 1024).commatize}k compressed<8>)".colorize
       
+      ## description
       desc = info["Description"].split("\n")
       less.puts
       #less.puts "  description:"
       less.puts "  <15>#{desc.first}".colorize
       desc[1..-1].each { |line| less.puts " #{line}" }
-      
       less.puts
-      less.puts "  depends:"
+      
+      ## dependencies
+      less.puts "  <11>depends:".colorize
       deps      = info["Depends"].scan(/(\S+) \(([^\)]+)\)/)
-      deps      = deps.map { |name, ver| "<11>#{name} <8>(<9>#{ver}<8>)".colorize }
+      deps      = deps.map { |name, ver| "<7>#{name} <8>(<9>#{ver}<8>)".colorize }
       table     = Term::Table.new(deps, :strip_color=>true, :indent=>4)
       less.puts table.by_columns
       
