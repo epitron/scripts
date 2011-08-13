@@ -10,8 +10,8 @@ for color in %w[blue red green yellow purple cyan grey/white]
   fore = "light_#{back}" unless fore
 
   ps1 = "<grey>[<white>\\@<grey>] <#{back}>\\u<grey>@<#{fore}>\\h <grey>:: <light_white>\\w <white>$ "
-  ps1 = ps1.gsub(/(<[^>]+>)/, '\\[\\1\\]') # mark colored sections as nonprinting
   ps1 = ps1.colorize # colorize!
+  ps1 = ps1.gsub(/((?:\e\[\d+m)+)/, "\\\[\\1\\\]") # mark ansi sections as "nonprinting"
   
   script = %{#!/bin/bash
 if [ "$TERM" == "xterm" -a "$COLORTERM" != "gnome-terminal" ]; then
