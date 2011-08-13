@@ -2,7 +2,7 @@
 require 'rubygems'
 require 'epitools'
 
-IO.popen("apt-cache show #{ARGV * ' '}", "r") do |apt|
+IO.popen("apt-cache show #{ARGV * ' '}", "rb") do |apt|
   lesspipe(:wrap=>true) do |less|
     
     separator = ("#"*50).light_cyan
@@ -20,7 +20,7 @@ IO.popen("apt-cache show #{ARGV * ' '}", "r") do |apt|
       ver = info["Version"].scan(/^([\d\.]+)(.*)$/).first
       less.puts
       less.puts "<8>=== <14>#{info["Package"]} <15>#{ver.first}<7>#{ver.last} <3>(#{info["Priority"]}) <8>==================".colorize
-      less.puts "  size: <15>#{info["Installed-Size"].to_i.commatize}<7>k <8>(<7>#{(info["Size"].to_i / 1024).commatize}k compressed<8>)".colorize
+      less.puts "  <11>size: <15>#{info["Installed-Size"].to_i.commatize}<7>k <8>(<7>#{(info["Size"].to_i / 1024).commatize}k compressed<8>)".colorize
       
       ## description
       desc = info["Description"].split("\n")
