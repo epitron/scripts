@@ -83,10 +83,11 @@ alias grep='grep --color=auto'
 
 alias a2="audacious"
 
-if [ "$TERM" == "xterm" ]
-then
-  alias ssh='ssh-termtitle'
-fi
+#if [ "$TERM" == "xterm" ]
+#then
+#  alias ssh='ssh-termtitle'
+#fi
+alias ssh='ssh -2'
 
 #alias ack='ack-grep'
 
