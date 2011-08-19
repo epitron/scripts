@@ -1,2 +1,10 @@
 #!/bin/bash
-mplayer -vc null -vo null -ao pcm:fast "$*"
+while [ -n "$1" ]; do
+  IN="$1"
+  OUT="${IN%.*}.wav"
+  echo "Converting: $IN"
+  echo "        to: $OUT"
+  mplayer -really-quiet -vc null -vo null -ao pcm:fast:file="$OUT" "$IN"
+  echo
+  shift
+done
