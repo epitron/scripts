@@ -1,11 +1,41 @@
-#!/bin/bash
-# TODO: "swap <file> <symlink-to-file>" should make the file into the symlink, and vice-versa.
+#!/usr/bin/env ruby
 
-A="$1"
-B="$2"
-TEMP="$A.swapping"
+def error(message, errorcode=1)
+  puts "Error: #{message}"
+  exit errorcode
+end
 
-mv "$A" "$TEMP"
-mv "$B" "$A"
-mv "$TEMP" "$B"
+args = ARGV.map(&:to_P)
+
+## Check parameters
+
+unless args.size == 2
+  error("you need to supply exactly 2 arguments.")
+end
+
+args.each do |path|
+  error("#{path} does not exist") unless path.exists?
+end
+
+## Swap
+
+a, b = args
+
+swap = a.path += ".swapping"
+
+if swap.exists?
+  error("#{swap} already exists! this program either failed before, or another instance is currently running. you must fix this problem to continue! quitting.")
+end
+
+a.mv(swap) # move a to swap
+b.mv(a)    # move b to a
+
+if swap.symlink? and not a.symlink? # check if only one file is a symlink
+  b.ln_s(a)   # symlink b to a
+  swap.rm     # remove swap (the symlink)
+else
+  swap.mv(b)  # rename swap to b
+end
+
+
 

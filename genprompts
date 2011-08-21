@@ -14,10 +14,9 @@ for color in %w[blue red green yellow purple cyan grey/white]
   ps1 = ps1.gsub(/((?:\e\[\d+m)+)/, "\\\[\\1\\\]") # mark ansi sections as "nonprinting"
   
   script = %{#!/bin/bash
-if [ "$TERM" == "xterm" -a "$COLORTERM" != "gnome-terminal" ]; then
-   export PROMPT_COMMAND='echo -ne "\\033]30;[`basename "$PWD"`]\\007"'
-fi
-
+#if [ "$TERM" == "xterm" -a "$COLORTERM" != "gnome-terminal" ]; then
+#   export PROMPT_COMMAND='echo -ne "\\033]30;[`basename "$PWD"`]\\007"'
+#fi
 export PS1=#{ps1.inspect}
 }
 

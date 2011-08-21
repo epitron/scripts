@@ -109,6 +109,10 @@ alias ga="git add"
 alias gl="git log"
 alias gc="git checkout"
 alias gcl="git clone"
+alias g[[="git stash"
+alias g]]="git stash pop"
+alias g[]="git stash list; git stash show"
+alias g+="git add"
 
 alias cu="pull"
 
