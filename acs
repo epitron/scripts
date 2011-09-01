@@ -19,7 +19,7 @@ IO.popen("apt-cache show #{ARGV * ' '}", "rb") do |apt|
       ## title and version
       ver = info["Version"].scan(/^([\d\.]+)(.*)$/).first
       less.puts
-      less.puts "<8>=== <14>#{info["Package"]} <15>#{ver.first}<7>#{ver.last} <3>(#{info["Priority"]}) <8>==================".colorize
+      less.puts "<8># <14>#{info["Package"]} <15>#{ver.first}<7>#{ver.last} <3>(#{info["Priority"]}) <8>#################################################".colorize
       less.puts "  <11>size: <15>#{info["Installed-Size"].to_i.commatize}<7>k <8>(<7>#{(info["Size"].to_i / 1024).commatize}k compressed<8>)".colorize
       
       ## description
@@ -31,11 +31,14 @@ IO.popen("apt-cache show #{ARGV * ' '}", "rb") do |apt|
       less.puts
       
       ## dependencies
-      less.puts "  <11>depends:".colorize
       deps      = info["Depends"].scan(/(\S+) \(([^\)]+)\)/)
       deps      = deps.map { |name, ver| "<7>#{name} <8>(<9>#{ver}<8>)".colorize }
-      table     = Term::Table.new(deps, :strip_color=>true, :indent=>4)
-      less.puts table.by_columns
+
+      if deps.any?
+        less.puts "  <11>depends:".colorize
+        table     = Term::Table.new(deps, :strip_color=>true, :indent=>4)
+        less.puts table.by_columns
+      end
       
       less.puts
     end
