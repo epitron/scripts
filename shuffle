@@ -12,7 +12,7 @@ require 'epitools'
 require 'pp'
 
 MEDIA_DEFS = [
-  #  labels                            players                      exts
+  #  type of thing                     players                      exts
   [  [/^image/, /^pic/, /^photo/],     ["gthumb"],                  %w[jpg jpeg png gif],                    ],
   [  [/^mov/, /^vid/],                 ["totem", "mplayer"],        %w[avi mov mpg mpeg flv wmv asf m4v ogm],],
   [  [/^mus/, /^aud/, /^song/],        ["audacious", "audacious2", 
@@ -23,7 +23,7 @@ opts = {
   :num => 69,
 }
 
-def find_in_path(*args)
+def which(*args)
   args.map { |arg| Dir.glob( "{#{ENV["PATH"].split(':').join(',')}}/#{arg}" ) }.squash
 end
 
@@ -36,7 +36,7 @@ ARGV.each do |arg|
   when /^\w+$/
     for labels, players, exts, desc in MEDIA_DEFS
       if labels.any? { |pattern| pattern.match(arg) }
-        opts[:player] = find_in_path(*players).first
+        opts[:player] = which(*players).first
         opts[:exts]   = exts  
         opts[:desc]   = arg
       end
@@ -83,8 +83,6 @@ random_files = all_files.shuffle[0...opts[:num]]
 
 puts
 puts "+ Sticking #{random_files.size} random #{opts[:desc]} into #{opts[:player]}..."
-#fork { 
-  exec opts[:player], *random_files 
-#}
+system(opts[:player], *random_files) 
 
 
