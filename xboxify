@@ -35,7 +35,7 @@ end
 
 xres = 640
 # vbitrate = 1000
-command = %{mencoder -oac mp3lame -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2}.split
+command = %{mencoder -oac mp3lame -ovc lavc -lavcopts vcodec=mpeg4:vqscale=2 -nosub}.split
 command += [inp, "-o", out]
 if opts.remove_if{|opt| opt == "-s"}.any?
   command += %{-vf scale -zoom -xy #{xres}}.split

@@ -1,11 +1,21 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
+COLORS = %w[
+  blue
+  red
+  green
+  yellow
+  purple
+  cyan
+  grey/white
+]
+
 # <see scripts/promptinfo for more info> 
 
 puts "* Generating color scripts..."
 
-for color in %w[blue red green yellow purple cyan grey/white]
+for color in COLORS
   back, fore = color.split('/')
   fore = "light_#{back}" unless fore
 
