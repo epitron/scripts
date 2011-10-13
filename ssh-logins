@@ -19,7 +19,7 @@ end
 
 lesspipe do |less|
 
-  Path["/var/log/{auth.log,auth.log*.gz}"].sort_by(&:mtime).reverse.each do |path|
+  Path["/var/log/{auth.log*}"].sort_by(&:mtime).reverse.each do |path|
     
     last_day = nil
     
