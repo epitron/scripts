@@ -8,6 +8,9 @@ lesspipe do |less|
   Open3.popen3("strace #{ARGV.join ' '}") do |inp,out,err,wait_thr|
   
     p [:process_status, wait_thr.value]
+
+    out.sync = true
+    err.sync = true
     
     loop do
       readers, slurp = IO.select([err, out], [], [], 1)

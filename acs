@@ -2,8 +2,8 @@
 require 'rubygems'
 require 'epitools'
 
-IO.popen("apt-cache show #{ARGV * ' '}", "rb") do |apt|
-  lesspipe(:wrap=>true) do |less|
+lesspipe(:wrap=>true) do |less|
+  IO.popen("apt-cache show #{ARGV * ' '}", "rb") do |apt|
     
     separator = ("#"*50).light_cyan
   
@@ -31,8 +31,12 @@ IO.popen("apt-cache show #{ARGV * ' '}", "rb") do |apt|
       less.puts
       
       ## dependencies
-      deps      = info["Depends"].scan(/(\S+) \(([^\)]+)\)/)
-      deps      = deps.map { |name, ver| "<7>#{name} <8>(<9>#{ver}<8>)".colorize }
+      deps      = info["Depends"].scan(/([^\s,]+)(?: \(([^\)]+)\))?/)
+      deps      = deps.map do |name, ver|
+                    result = "<7>#{name} "
+                    result += "<8>(<9>#{ver}<8>)" if ver
+                    result.colorize 
+                  end
 
       if deps.any?
         less.puts "  <11>depends:".colorize
