@@ -17,7 +17,7 @@ class Mount < Struct.new(:dev, :path, :type, :options)
   end
   
 end
-    
+
 mounts = `mount`.lines.map{|line| Mount.from_line(line) }.compact
 
 for arg in args
@@ -29,32 +29,21 @@ for arg in args
     next
   end
   
-  abspath = File.expand_path(arg)
+  realpath = File.realpath(arg)
 
-  matches = mounts.select{|mount| mount.path == abspath }
+  match = mounts.select{|mount| realpath[/^#{Regexp.escape mount.path}/] }.sort_by{|m| m.path.size}.last
   
-  if matches.empty?
+  unless match
     puts "FAIL! (not mounted)"
     next
   end
   
-  if matches.size > 1
-    puts "FAIL! (too many matching mountpoints...)"
-    p matches
-    puts
-    next
-  end
-  
-  for match in matches
-  
-    success = if match.type[/^fuse/]
-                system("fusermount -u #{arg}")
-              else
-                system("sudoifnotroot umount #{arg}")
-              end
+  success = if match.type[/^fuse/]
+              system("fusermount -u #{match.path}")
+            else
+              system("sudoifnotroot umount #{match.path}")
+            end
+    
+  puts( success ? "SUCCESS!" : "FAIL!" )
       
-    puts( success ? "SUCCESS!" : "FAIL!" )
-      
-  end
-  
 end
