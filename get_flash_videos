@@ -1,0 +1,692 @@
+#!/usr/bin/env perl
+#
+# get_flash_videos -- download all the Flash videos off a web page
+#
+#   http://code.google.com/p/get-flash-videos/
+#
+# Copyright 2009, 2010 zakflash, MonsieurVideo and contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain a
+# copy of the License at
+#   http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# Contributions are welcome and encouraged, but please take care to
+# maintain the JustWorks(tm) nature of the program.
+
+package App::get_flash_videos;
+use strict;
+use Encode ();
+use File::Basename qw(basename);
+use File::stat;
+use Getopt::Long;
+use Text::Wrap;
+
+BEGIN {
+  if(!$::SCRIPT_NAME) {
+    # Are we running in development mode?
+    require Cwd;
+    require File::Spec;
+    my($vol, $dir) = (File::Spec->splitpath(Cwd::realpath($0)))[0, 1];
+    unshift @INC, File::Spec->catpath($vol, File::Spec->catdir($dir, "lib"));
+  }
+}
+
+use FlashVideo::URLFinder;
+use FlashVideo::Mechanize;
+use FlashVideo::Downloader;
+use FlashVideo::RTMPDownloader;
+use FlashVideo::Search;
+use FlashVideo::Utils;
+use FlashVideo::VideoPreferences;
+
+unshift @INC, \&plugin_loader;
+
+our $VERSION;
+BEGIN {
+  $VERSION = "1.25";
+}
+
+our %opt;
+BEGIN {
+  my $player = "mplayer -really-quiet";
+  # We have special handling for "VLC" on Windows
+  $player = "VLC" if $^O =~ /MSWin/i;
+  # On OSX we default to open, if mplayer isn't available
+  $player = "open" if $^O =~ /darwin/ && !is_program_on_path("mplayer");
+
+  if(is_program_on_path("xdg-open") && !is_program_on_path("mplayer")) {
+    # If mplayer isn't available, but xdg-open is, use that.
+    $player = "xdg-open";
+  } elsif(is_program_on_path("gnome-open") && !is_program_on_path("mplayer")) {
+    # Alternatively try gnome-open..
+    $player = "gnome-open";
+  } elsif(is_program_on_path("kde-open") && !is_program_on_path("mplayer")) {
+    # Alternatively try kde-open..
+    $player = "kde-open";
+  }
+
+  %opt = (
+    yes => 0,
+    filename => '',
+    version => 0,
+    update => 0,
+    play => 0,
+    player => $player,
+    proxy => '',
+    debug => 0,
+    quiet => 0,
+    quality => "high",
+    subtitles => 0,
+    info => 0
+  );
+}
+
+use constant VER_INFO => <<EOF;
+get_flash_videos version $VERSION (http://code.google.com/p/get-flash-videos/)
+EOF
+
+use constant USAGE => VER_INFO . <<EOF;
+
+Usage: $0 [OPTION]... URL...
+       $0 [OPTION]... search string
+
+Downloads videos from the web pages given in URL or searches Google Video
+Search for 'search string'. If the URL contains characters such as '&' you
+will need to quote it.
+
+Options:
+     --add-plugin Add a plugin from a URL.
+  -d --debug      Print extra debugging information.
+  -f --filename   Filename to save the video as.
+  -p --play       Start playing the video once enough has been downloaded.
+     --player     Player to use for the video (default: $opt{player}).
+     --proxy      Proxy to use, use host:port for SOCKS, or URL for HTTP.
+     --subtitles  Download subtitles where available.
+  -q --quiet      Be quiet (only print errors).
+  -r --quality    Quality to download at (high|medium|low, or site specific).
+  -u --update     Update to latest version.
+  -v --version    Print version.
+  -y --yes        Say yes to any questions (don't prompt for any information).
+  -i --info       Print out info about video instead of downloading.
+
+EOF
+
+use constant REQ_INFO => <<EOF;
+
+A required Perl module for downloading this video is not installed.
+EOF
+
+use constant FRIENDLY_FAILURE => <<EOF;
+
+Couldn't extract Flash movie URL. This site may need specific support adding,
+or fixing.
+
+Please confirm the site is using Flash video and if you have Flash available
+check that the URL really works(!).
+
+Check for updates by running: $0 --update
+
+If the latest version does not support this please open a bug (or
+contribute a patch!) at http://code.google.com/p/get-flash-videos/
+make sure you include the output with --debug enabled.
+EOF
+
+read_conf();
+
+GetOptions(
+  "yes|y"        => \$opt{yes},
+  "filename|f=s" => \$opt{filename},
+  "version|v"    => \$opt{version},
+  "update|u"     => \$opt{update},
+  "help|h"       => \$opt{help},
+  "play|p"       => \$opt{play},
+  "player=s"     => \$opt{player},
+  "proxy=s"      => \$opt{proxy},
+  "debug|d"      => \$opt{debug},
+  "quiet|q"      => \$opt{quiet},
+  "add-plugin=s" => \$opt{add_plugin},
+  "quality|r=s"  => \$opt{quality},
+  "subtitles"    => \$opt{subtitles},
+  "info|i"       => \$opt{info},
+) or die "Try $0 --help for more information.\n";
+
+if($opt{version}) {
+  die VER_INFO;
+} elsif($opt{update}) {
+  exit update();
+} elsif($opt{help}) {
+  die USAGE;
+} elsif($opt{add_plugin}) {
+  exit add_plugin($opt{add_plugin});
+}
+
+if ($opt{debug}) {
+  if(my @plugins = get_installed_plugins()) {
+    debug @plugins . " plugin" . (@plugins != 1 && "s") . " installed:";
+    debug "- $_" for @plugins;
+  } else {
+    debug "No plugins installed";
+  }
+}
+
+if($^O =~ /MSWin/i) {
+  $opt{filename} = Encode::decode(get_win_codepage(), $opt{filename});
+  binmode STDERR, ":encoding(" . get_win_codepage() . ")";
+  binmode STDOUT, ":encoding(" . get_win_codepage() . ")";
+} else {
+  $opt{filename} = Encode::decode("utf-8", $opt{filename});
+  binmode STDERR, ":utf8";
+  binmode STDOUT, ":utf8";
+}
+
+my (@urls) = @ARGV;
+@urls > 0 or die USAGE;
+
+# Search string can either be quoted or unquoted (for ultimate laziness)
+my $search;
+if ( ((@urls == 1) and $urls[0] !~ m'\.') or
+     ( (@urls > 1) and ! grep /^http:\/\/|^[\w\-]+\.[\w\-]+/, @urls)) {
+  $search = join ' ', @urls;
+}
+
+my @download_urls;
+
+if ($search) {
+  if (my @results = FlashVideo::Search->search($search, 10, 20)) {
+    if ($opt{yes} or @results == 1) {
+      my $message = (@results == 1) ?
+        "Downloading only match for '$search': '$results[0]->{name}'" :
+        "Downloading first match for '$search': '$results[0]->{name}'" ;
+      info $message;
+
+      push @download_urls, $results[0]->{url};
+    }
+    else {
+      print "Search for '$search' found these results:\n";
+
+      # Need 5 chars for "[nn] ".
+      my $columns = get_terminal_width() - 5;
+      local $Text::Wrap::columns = $columns;
+
+      my $count = 1;
+      for my $result(@results) {
+        printf "[%2d] %s\n", $count, $result->{name};
+
+        if ($result->{description}) {
+          # Show as much of the description as will fit on at least 2
+          # lines in the current terminal width. (Not exact because
+          # Text::Wrap wraps only after whole words.)
+          print wrap("     ", "     ",
+                     substr($result->{description}, 0, $columns * 2)), "\n";
+        }
+
+        $count++;
+      }
+
+      print "Enter the number(s) or range (e.g. 1-3) of the videos to download " .
+            "(separate multiple with comma or space): ";
+      chomp(my $choice = <STDIN>);
+      $choice ||= 1;
+
+      for(split /[ ,]+/, $choice) {
+        if (/-/) {
+          my ($lower, $upper) = split /-/, $choice;
+          if ($upper > $lower and $upper > 0) {
+            push @download_urls, map { $results[$_]->{url} } $lower - 1 .. $upper - 1;
+            next;
+          }
+          else {
+            print STDERR "Search range '$_' is invalid.\n";
+            exit 1;
+          }
+        }
+
+        $_--;
+
+        if (!$results[$_]) {
+          print STDERR "'$_' is an invalid choice.\n";
+          exit 1;
+        }
+
+        push @download_urls, $results[$_]->{url};
+      }
+    }
+  }
+  else {
+    print STDERR "No results found for '$search'.\n";
+    exit 1;
+  }
+}
+else {
+  @download_urls = @urls;
+}
+
+my $download_count = 0;
+
+# Construct a preferences object for these downloads, currently just based on
+# the command line options.
+my $prefs = FlashVideo::VideoPreferences->new(%opt);
+
+foreach my $url (@download_urls) {
+  if (download($url, $prefs, @download_urls - $download_count)) {
+    $download_count++;
+  }
+}
+
+if($download_count == 0) {
+  info "Couldn't download any videos.";
+  exit 1;
+} elsif($download_count != @download_urls) {
+  info "Problems downloading some videos.";
+  exit 2;
+}
+
+exit 0;
+
+sub download {
+  my($url, $prefs, $remaining) = @_;
+
+  $url = "http://$url" if $url !~ m!^\w+:!;
+
+  # Might be downloading from a site that uses Brightcove or other similar
+  # Flash RTMP streaming server. These are handled differently. Need to get
+  # the page to determine this.
+  info "Downloading $url";
+  my $browser = FlashVideo::Mechanize->new;
+  $browser->get($url);
+
+  # (Redirect check is for Youtube which sometimes redirects to login page
+  # for "mature" videos.)
+  if (!$browser->success and !$browser->response->is_redirect) {
+    if ($opt{proxy}) {
+      if ($browser->response->header('Client-Warning') eq 'Internal response') {
+        info "Couldn't download $url - might not be able to contact " .
+             "your proxy server ($opt{proxy})";
+      }
+    }
+
+    error "Couldn't download '$url': " . $browser->response->status_line;
+  }
+
+  # Figure out what package we need to use to get either the HTTP URL or
+  # rtmpdump data for the video.
+  my($package, $possible_url) = FlashVideo::URLFinder->find_package($url, $browser);
+
+  my($actual_url, @suggested_fnames) = eval {
+    $package->find_video($browser, $possible_url, $prefs);
+  };
+
+  if(!$actual_url) {
+    if($@ =~ /^Must have | requires /) {
+      my $error = "$@";
+      $error =~ s/at $0.*//;
+      print STDERR "$error" . REQ_INFO;
+      return 0;
+    } else {
+      print STDERR "Error: $@" . FRIENDLY_FAILURE;
+      return 0;
+    }
+  }
+
+  my $suggested_filename = $suggested_fnames[-1];
+
+  if (!$opt{play}) {
+    if (!$opt{yes} && @suggested_fnames > 1) {
+      print "There are different suggested filenames, please choose:\n";
+      my $count;
+      foreach my $filename (@suggested_fnames) {
+        $count++;
+        print "$count - $filename\n";
+      }
+
+      print "\nWhich filename would you like to use?: ";
+      chomp(my $chosen_fname = <STDIN>);
+
+      $suggested_filename = $suggested_fnames[$chosen_fname - 1] ||
+        $suggested_fnames[-1];
+    }
+  }
+
+  my $save_as = $opt{filename} || $suggested_filename;
+
+  # Print info instead of downloading
+  if($opt{info}) {
+    print "Filename: " . ($save_as || $actual_url->{flv}) . "\n";
+    $_ = $suggested_filename || $actual_url->{flv};
+    s/_/ /g;
+    s/\.[^\.]*$//;
+    print "Title: " . $_ . "\n";
+    print "Content-Location: ";
+    if(ref($actual_url) eq 'HASH') {
+      print $actual_url->{rtmp} . "\n";
+    } else {
+      print $actual_url . "\n";
+      $browser->head($actual_url);
+      if($browser->response->header('Content-Length')) {
+        print "Content-Length: " . $browser->response->header('Content-Length') . "\n";
+      }
+    }
+    exit;
+  }
+
+  my $action = $opt{play} ? "play" : "download";
+
+  for my $data((ref($actual_url) eq 'ARRAY' ? @$actual_url : $actual_url)) {
+    my $downloader;
+    my $file = $save_as;
+
+    if(ref $data eq 'HASH') {
+      # RTMP data
+      $downloader = FlashVideo::RTMPDownloader->new;
+      $file ||= $data->{flv};
+    } else {
+      # HTTP
+      $downloader = FlashVideo::Downloader->new;
+    }
+
+    # XXX: Needs some thought, but this hack works for Youku for now it seems.
+    if (ref $data eq 'ARRAY') {
+      my ($url, $part_number, $part_count, $part_size) = @$data;
+      $data = $url;
+      if (defined $part_number && defined $part_count) {
+        my $part_suffix = sprintf('.part%02d_of_%02d', $part_number, $part_count);
+        substr $file, rindex($file, '.'), 0, $part_suffix
+          if $part_count > 1;
+      }
+
+      if (defined $part_size && -f $file && -s $file == $part_size) {
+        info "Already downloaded $file ($part_size bytes)";
+        next;
+      }
+    }
+
+    my $size = $downloader->$action($data, $file, $browser) || return 0;
+
+    info "\n" . ($remaining == 1 ? "Done. " : "")
+      . "Saved $size bytes to $downloader->{printable_filename}";
+  }
+
+  return 1;
+}
+
+sub read_conf {
+  for my $file("/etc/get_flash_videosrc", "$ENV{HOME}/.get_flash_videosrc") {
+    open my $fh, "<", $file or next;
+
+    while(<$fh>) {
+      s/\r?\n//;
+      next if /^\s*(#|$)/;
+
+      my($n, $v) = split /\s*=\s*/;
+      $v = 1 unless defined $v;
+      $opt{$n} = $v;
+    }
+  }
+}
+
+sub add_plugin {
+  my($plugin_url) = @_;
+
+  my $uri = URI->new($plugin_url);
+
+  unless(-d get_plugin_dir()) {
+    require File::Path;
+    File::Path::mkpath(get_plugin_dir())
+      or die "Unable to create plugin dir: $!";
+  }
+
+  my $filename = get_plugin_dir() . "/" . basename($uri->path);
+
+  if($filename !~ /\.pm$/) {
+    die "Plugins must have a file extension of '.pm'\n";
+  }
+
+  if(!$uri->scheme) {
+    # Local path given
+    require File::Copy;
+    File::Copy::copy($plugin_url => $filename)
+      || die "Unable to copy plugin to '$filename': $!\n";
+
+    info "Plugin installed.";
+    return 0;
+  } else {
+    my $browser = FlashVideo::Mechanize->new;
+    return !install_plugin($browser, $plugin_url, $filename);
+  }
+}
+
+sub update {
+  my %update_types = (
+    'cpan-cpan' => [1, "cpan " . __PACKAGE__],
+    'cpan-cpanp' => [1, "cpanp i " . __PACKAGE__],
+    'cpan-cpanm' => [1, "cpanm " . __PACKAGE__],
+    'cpan-manual' => [0, "Manual install"],
+  );
+
+  # SCRIPT_NAME is some magic set by combine-perl or via MakeMaker
+  if($::SCRIPT_NAME) {
+    my $browser = FlashVideo::Mechanize->new;
+
+    $browser->get("http://get-flash-videos.googlecode.com/svn/wiki/Version.wiki");
+
+    if(!$browser->response->is_success) {
+      die "Unable to retrieve version data: " . $browser->response->status_line . "\n";
+    }
+
+    my $version = ($browser->content =~ /version: (\S+)/)[0];
+    my $base = ($browser->content =~ /from: (\S+)/)[0];
+    my $info = ($browser->content =~ /info: (\S+)/)[0];
+    my $url = $base . $::SCRIPT_NAME . "-" . $version;
+
+    die "Unable to parse version data" unless $version and $base;
+
+    # Split version on . and compare... (can't yet use version, that is only
+    # core since 5.10).
+    my @v = split /\./, $version;
+    my @V = split /\./, $VERSION;
+
+    my $newer = 0;
+    my $i = 0;
+    for(@v) {
+      $newer = 1 if !defined $V[$i] || $_ > $V[$i];
+      last if $V[$i] > $v[$i];
+      $i++;
+    }
+
+    if($newer) {
+      info "Newer version ($version) available";
+      debug "(Install type: $::INSTALL_TYPE)";
+
+      if($::INSTALL_TYPE =~ /^cpan-/) {
+
+        my $update_method = $update_types{$::INSTALL_TYPE};
+        if($update_method->[0]) {
+          info "This was installed via CPAN, you may upgrade by running:";
+          info $update_method->[1];
+
+          my $run_cpan = $opt{yes} || do {
+            info "Shall I run that for you? (Y/n)";
+            <STDIN> =~ /(?:^\s*$|y)/i;
+          };
+
+          if($run_cpan) {
+            system $update_method->[1];
+          }
+        } else {
+          info "Please visit http://code.google.com/p/get-flash-videos to upgrade";
+        }
+      } else {
+        update_script($browser, $url, $info);
+      }
+    } else {
+      print STDERR "You already have the latest version.\n";
+    }
+  } else {
+    info "Development version, not updated";
+  }
+
+  update_plugins();
+
+  return 0; # exit code
+}
+
+sub update_script {
+  my($browser, $url, $info) = @_;
+
+  info "Downloading new version...";
+  die "Cannot update -- unable to write to $0\n" unless -w $0;
+
+  my $new_file = $0 . ".new";
+  $browser->mirror($url, $new_file);
+
+  if($browser->response->is_success && -f $new_file) {
+    rename $0, "$0.old" or die "Unable to rename $0 to $0.old: $!";
+    rename $new_file, $0 or die "Unable to rename $new_file to $0: $!";
+    chmod 0755, $0;
+
+    info "New version installed as $0";
+    info "(previous version backed up to $0.old).";
+    info $info;
+  } else {
+    die "Download failed: " . $browser->response->status_line;
+  }
+}
+
+sub update_plugins {
+  my $browser = FlashVideo::Mechanize->new;
+
+  foreach my $plugin(get_installed_plugins()) {
+    debug "Seeing if there is an update for $plugin..";
+
+    my $file = get_plugin_dir() . "/$plugin";
+    require $file;
+
+    my $package = "FlashVideo::Site::" . ($plugin =~ /(.*)\.pm$/)[0];
+
+    if($package->can("update")) {
+      # Allow plugin to override generic updater
+      $package->update();
+    } else {
+      no strict 'refs';
+
+      my $downloaded  = 0;
+      my $newer_found = 0;
+
+      foreach my $update_url (@{ "$package\::update_urls" }) {
+        $browser->head($update_url);
+
+        if (!$browser->response->is_success) {
+          # This shouldn't be fatal
+          debug "Couldn't retrieve $update_url for $plugin: " . $browser->response->status_line;
+          next;
+        }
+
+        # Compare the last modified time of the plugin to the time of the file on disk
+        my $file_mtime = stat($file)->mtime;
+
+        my $remote_plugin_mtime = $browser->response->last_modified;
+
+        if ($remote_plugin_mtime > $file_mtime) {
+          info "Newer version of plugin $plugin found at $update_url, trying to download and install";
+          $newer_found = 1;
+
+          if ($downloaded = install_plugin($browser, $update_url, $file)) {
+            last;
+          }
+        }
+        else {
+          debug "Plugin $plugin is already the lastest version.";
+          debug "(Remote: " . $browser->response->header("Last-Modified")
+            . "; Local: " . gmtime($file_mtime) . " GMT)";
+        }
+      }
+
+      if ($newer_found and !$downloaded) {
+        die "Couldn't install $plugin plugin";
+      }
+    }
+  }
+}
+
+# Upgrade a plugin or install a new one.
+sub install_plugin {
+  my ($browser, $url, $file) = @_;
+
+  # So we can track newly installed plugins as well as updated ones
+  my $plugin_exists = -f $file;
+
+  my $new_file = $plugin_exists ? "$file.new" : $file;
+
+  $browser->mirror($url, $new_file);
+
+  if ($browser->response->is_success && -f $new_file) {
+    my $short_name = basename($file);
+
+    if ($plugin_exists) {
+      rename $file, "$file.old" or die "Unable to rename $file to $file.old: $!";
+      rename $new_file, $file   or die "Unable to rename $new_file to $file: $!";
+
+      info "New version of $short_name installed as $file";
+      info "(previous version backed up to $file.old).";
+    }
+    else {
+      info "New plugin $short_name installed as $file";
+    }
+
+    return 1;
+  }
+  else {
+    warn "Download failed: " . $browser->response->status_line;
+  }
+
+  return 0;
+}
+
+# Coderef to this in @INC means Perl will call it for every module that it
+# tries to load, including our internal FlashVideo::Site:: modules. Use
+# this to load plugins off disk to support seperately distributed plugins.
+sub plugin_loader {
+  my (undef, $module) = @_;
+
+  if ($module =~ m'^FlashVideo/Site/(.*)') {
+    # Don't want to force people to have a FlashVideo/Site directory
+    # structure in their plugins directory, as this makes it harder to
+    # install plugins manually.
+    my $plugin_name = $1;
+
+    my $plugin_dir = get_plugin_dir();
+
+    debug "Trying to open plugin $plugin_dir/$plugin_name";
+
+    if (open my $plugin_fh, '<', "$plugin_dir/$plugin_name") {
+      return $plugin_fh; # Perl then reads the plugin from the FH
+    }
+  }
+
+  return;
+}
+
+sub get_installed_plugins {
+  my $plugin_dir = get_plugin_dir();
+
+  my @plugins;
+  if (opendir my $plugin_dir_dh, $plugin_dir) {
+    @plugins = grep /\.pm$/i,
+               readdir $plugin_dir_dh;
+    closedir $plugin_dir_dh;
+  }
+
+  return @plugins;
+}
+
+# This is called in debug mode to get a list of installed plugins, so have
+# it as a separate function.
+sub get_plugin_dir {
+  return get_user_config_dir() . "/plugins";
+}
