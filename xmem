@@ -1,1 +1,2 @@
-./pixmap_mem |ruby -repitools -e 'STDIN.map{|l| l.split }.sort_by{|a| a[0].to_i }.each{|l| s,n,o = l; puts "#{s.to_i.commatize.rjust(14)} | #{n.ljust(40)} | #{o}"}'
+#!/bin/bash
+pixmap_mem | ruby -repitools -e 'STDIN.map{|l| l.split }.sort_by{|a| a[0].to_i }.each{|l| s,n,o = l; puts "#{s.to_i.commatize.rjust(14)} | #{n.ljust(40)} | #{o}"}'
