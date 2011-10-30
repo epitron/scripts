@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IN="$*"
+OUT="${IN%.*}.mp4"
+
+echo "----------------------------------------------------------------"
+echo "* Two-pass encoding:"
+echo "    in: $IN"
+echo "   out: $OUT"
+echo "----------------------------------------------------------------"
+echo
+if [ -f "$OUT" ]; then
+  echo "$OUT already exists. Aborting."
+else
+  #ffmpeg -i "$IN" -f flv -s 320x240 - | flvtool2 -U stdin video.flv
+  ffmpeg -i "$IN" -ar 22050 -ab 32 -f flv -s 320x240 - | flvtool2 -U stdin "$OUT"
+fi

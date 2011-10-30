@@ -1,0 +1,19 @@
+#!/bin/bash
+#ffmpeg -y -i INPUT -r 30000/1001 -b 2M -bt 4M -vcodec libx264 -pass 1 -vpre fastfirstpass -an output.mp4
+#ffmpeg -y -i INPUT -r 30000/1001 -b 2M -bt 4M -vcodec libx264 -pass 2 -vpre hq -acodec libfaac -ac 2 -ar 48000 -ab 192k output.mp4
+
+IN="$*"
+OUT="${IN%.*}.mp4"
+
+echo "----------------------------------------------------------------"
+echo "* Two-pass encoding:"
+echo "    in: $IN"
+echo "   out: $OUT"
+echo "----------------------------------------------------------------"
+echo
+if [ -f "$OUT" ]; then
+  echo "$OUT already exists. Aborting."
+else
+  ffmpeg -y -i "$IN" -b 2M -bt 4M -vcodec libx264 -pass 1 -vpre medium_firstpass -an "$OUT"
+  ffmpeg -y -i "$IN" -b 2M -bt 4M -vcodec libx264 -pass 2 -vpre medium -acodec libfaac -ab 192k "$OUT"
+fi
