@@ -1,0 +1,3 @@
+#!/bin/bash
+EXEPATH="`dirname $0`/win32/sqlitespy.exe"
+wine "$EXEPATH" "$@" > /dev/null 2>&1 &
