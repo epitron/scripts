@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+procs = Sys.ps
+
+to_match = ["ssh", "-D9999", "epi@a"]
+
+proxy_already_running = procs.any?{|proc| to_match.all?{|match| proc.command[match] } }
+
+if proxy_already_running
+  puts "+ Proxy already running!"
+else
+  puts "* Launching Proxy..."
+  fork { system("autossh", "-D9999", "-vv", "epi@a") }
+end
+
+puts
+
+### Launch
+
+command = ["wine", "#{ENV['HOME']}/.wine/drive_c/Program Files/Spotify/Spotify.exe"] 
+puts "* Launching: #{command.inspect}"
+
+if ARGV.any?
+  extras = (["/uri"] + ARGV)
+  puts "  |_ Extra params: #{extras.inspect}" 
+  command += extras
+else
+  extras = []
+end
+
+system *command
+

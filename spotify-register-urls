@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "* Registering Gnome spotify associations (for Firefox/Chrome)..."
+echo
+
+gconftool-2 -t string -s /desktop/gnome/url-handlers/spotify/command "$HOME/scripts/spotify %s"
+gconftool-2 -t bool -s /desktop/gnome/url-handlers/spotify/needs_terminal false
+gconftool-2 -t bool -s /desktop/gnome/url-handlers/spotify/enabled true
