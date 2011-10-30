@@ -1,2 +1,17 @@
-#!/bin/bash
-rsync -rltv --size-only --progress "$1" "$2"
+#!/usr/bin/env ruby
+
+opts, args = ARGV.partition { |arg| arg =~ /^-/ }
+
+if args.any?
+  
+  cmd = ["rsync", "-rltvC", "--size-only", "--progress"]
+  cmd += opts
+  cmd += args
+
+  system *cmd
+  
+else
+  
+  puts "usage: rsync-dirs [options] <src> <dest>"
+  
+end
