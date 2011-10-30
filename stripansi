@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+print ARGF.read.strip_ansi
+
