@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+require 'epitools'
+
 args = ARGV
 
 unless args.any?
@@ -16,6 +18,25 @@ class Mount < Struct.new(:dev, :path, :type, :options)
     end
   end
   
+end
+
+fuser_types = {
+ "c"=>"current directory",
+ "e"=>"executable being run",
+ "f"=>"open file",
+ "F"=>"open file for writing",
+ "r"=>"root directory",
+ "m"=>"mmap'ed file or shared library"
+}  
+
+def processes(mointpoint)
+  procs = Sys.ps
+  # /maverick:            1865 10335c 14155c 14156c 14157c 14165c 14178c
+  if `fuser -M -m #{mountpoint}` =~ /#{mointpoint}:\s+(.+)/
+    pids, types = $1.scan(/(\d+)(.*)/).transpose
+    Sys.ps.zip types
+    
+  end
 end
 
 mounts = `mount`.lines.map{|line| Mount.from_line(line) }.compact
