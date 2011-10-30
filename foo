@@ -97,7 +97,7 @@ class Foobar
       cmdline = [
         "notify-send", 
         "--urgency=#{urgency}", 
-        "--icon=/home/epi/.foobar2000/icon-white.png", 
+        "--icon=#{ENV["HOME"]}/.foobar2000/icon-white.png", 
         #"--expire-time=2", 
         title
       ]
@@ -121,6 +121,16 @@ class Foobar
     response = readlines
     response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" } 
     response.grep("333|Random|") { command("order default"); puts "Shuffle disabled!" }
+  end
+  
+  def shuffleon
+    command("order shuffletrack")
+    puts readlines
+  end
+  
+  def shuffleoff
+    command("order default")
+    puts readlines
   end
   
   def notify_loop!
@@ -165,6 +175,10 @@ class Foobar
   
 end
 
+def which(*args)
+  args.map { |arg| Dir.glob( "{#{ENV["PATH"].split(':').join(',')}}/#{arg}" ) }.flatten.compact.uniq
+end
+
 ####################################################################################################
 
 if $0 == __FILE__
@@ -173,10 +187,20 @@ if $0 == __FILE__
     
     if ARGV.empty?
     
+      puts "------------------------------------------------------------------------------------"
+      puts "  foobar2000 remote controller"
+      puts "------------------------------------------------------------------------------------"
+      puts "(Note: requires foobar2000 to be using the 'foo_controlserver' plugin)"
+      puts 
       puts "usage: foo <command>"
       puts
-      puts "Commands:"
-      puts
+      puts %{
+Commands:
+  playpause                                              - play or pause
+  shuffle                                                - toggle shuffle
+  shuffleon                                              - enable shuffle
+  shuffleoff                                             - disable shuffle
+  current                                                - display currently playing track}
       command "help"
       readlines.each do |line|
         if line =~ /^999\|(.+)\|$/
@@ -184,9 +208,21 @@ if $0 == __FILE__
         end
       end
       
+      puts
+      puts "If you'd like to see desktop notifications whenever a track changes, you need to"
+      puts "run an extra instance of `foo` in 'notification mode' like so:"
+      puts
+      puts "    $ foo -n"
+      puts
+      
     elsif ARGV == ["-n"]
-    
-      notify_loop!
+
+      if which("notify-send").any?
+        notify_loop!
+      else
+        puts "Couldn't find notify-send in the path. This is needed to do on-screen notifications."
+        puts "To install it in Debian/Ubuntu, run: apt-get install libnotify-bin"
+      end
       
     elsif ARGV == ["playpause"]
     
@@ -195,6 +231,14 @@ if $0 == __FILE__
     elsif ARGV == ["shuffle"]
     
       toggle_shuffle
+      
+    elsif ARGV == ["shuffleon"]
+    
+      shuffleon
+      
+    elsif ARGV == ["shuffleoff"]
+    
+      shuffleoff
       
     elsif ARGV == ["current"]
     
