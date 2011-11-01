@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+require 'pry'
+
+unless Process.uid == 0
+  system("sudo", __FILE__, *ARGV)
+  exit
+end
+
+require 'epitools'
+require 'slop'
+
+class Slop
+  def args
+    [].tap {|a| parse { |arg| a << arg } }
+  end
+end
+
+opts = Slop.parse :help => true do
+  banner "Usage: apt-hold [options] <package(s)>"
+  
+  on  :l, :list,   "List specified packages (or ALL packages if none specified)"
+  on  :u, :unhold, "Unhold the package"
+end
+
+args = opts.args
+
+def selections
+  @selections ||= IO.popen("dpkg --get-selections") do |r|
+    Hash[ r.lines.map {|l| l.strip.split } ] 
+  end
+end
+
+def selections_for(packages)
+  s = selections
+  packages.map { |arg| [ arg, s[arg] ] if s[arg] }.compact
+end
+
+def holds
+  selections.select{|pkg,state| state == "hold"}
+end  
+
+STATE_INFO = {
+  "hold"        => ["Hold", :light_green],
+  "install"     => ["None", :grey]
+}
+
+def set_selections(packages, state)
+  input = packages.map { |pkg| "#{pkg} #{state}" }.join("\n")
+  
+  puts input
+  
+  IO.popen("dpkg --set-selections", "w") do |dpkg|
+    dpkg.puts input
+  end
+end
+
+def print_packages(packages)
+  #selections_for(args.flatten).each do |package, state|
+  packages.each do |package, state|
+    desc, color = STATE_INFO[state]
+    col1_width = packages.map{|k,v| k.size}.max + 2
+    puts "#{package.ljust(col1_width).light_yellow} => #{desc.send(color)}"
+  end
+end
+
+if opts.list?
+  if args.any?
+    print_packages selections_for(args)
+  else
+    print_packages holds
+  end
+elsif args.empty?
+  puts
+  puts "<8>### <9>Note: Type --help for more info. <8>###".colorize
+  puts
+  print_packages holds
+elsif opts.unhold?
+  set_selections( args, "install" )
+else
+  set_selections( args, "hold" ) 
+end
+
