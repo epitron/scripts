@@ -4,7 +4,7 @@ opts, args = ARGV.partition { |arg| arg =~ /^-/ }
 
 if args.any?
   
-  cmd = ["rsync", "-rltvC", "--size-only", "--progress"]
+  cmd = ["rsync", "-rltvz", "--size-only", "--progress"]
   cmd += opts
   cmd += args
 

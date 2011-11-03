@@ -1,2 +1,2 @@
 #!/bin/bash
-rsync -rltvC --checksum --progress "$1" "$2"
+rsync -rltvz --checksum --progress "$1" "$2"
