@@ -70,8 +70,7 @@ if opts.list?
     print_packages holds
   end
 elsif args.empty?
-  puts
-  puts "<8>### <9>Note: Type --help for more info. <8>###".colorize
+  puts "<8>(<9>Note: Type <11>--help</11> for directions.<8>)".colorize
   puts
   print_packages holds
 elsif opts.unhold?
