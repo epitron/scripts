@@ -16,7 +16,12 @@ class Slop
 end
 
 opts = Slop.parse :help => true do
-  banner "Usage: apt-hold [options] <package(s)>"
+  banner %{Usage: apt-hold [options] <package(s)>
+
+  Puts packages on "hold", so they won't be automatically upgraded by apt-get.
+
+Example:
+  apt-hold google-chrome-stable} 
   
   on  :l, :list,   "List specified packages (or ALL packages if none specified)"
   on  :u, :unhold, "Unhold the package"
