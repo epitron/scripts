@@ -100,11 +100,35 @@ if args.empty?
   
 elsif args.first.in? ["--help", "-h"]
   
-  puts "usage: gb <branch name>"
-  puts "eg:"
-  puts "  gb existingbranch"
-  puts "  gb newbranch"
-  puts "  gb origin/remotebranch"
+  puts %{usage: gb <branch name>
+
+eg:
+  gb existingbranch           => switch to existing branch         
+  gb newbranch                => create a new branch
+  gb origin/remotebranch      => create/checkout remote branch
+  gb -d branch                => delete local branch
+  gb -d origin/branch         => delete remote branch
+}
+  
+elsif args.first.in? ["-d", "-D"]
+  
+  branches = get_branches
+
+  args.shift
+  branch = args.shift
+  
+  if branches.local? branch
+    puts "<grey>* <light_red>Deleting <light_yellow>#{branch}".colorize
+    system("git branch -D #{branch}")
+  elsif branches.remote? branch
+    if prompt("You wanna delete a remote branch???") == "y"
+      system("git push origin :#{branch}")
+    else
+      puts "Whew."
+    end
+  else
+    puts "Unknown branch."
+  end
   
 else
   
