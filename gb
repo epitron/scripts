@@ -118,16 +118,24 @@ elsif args.first.in? ["-d", "-D"]
   branch = args.shift
   
   if branches.local? branch
-    puts "<grey>* <light_red>Deleting <light_yellow>#{branch}".colorize
+    puts "<grey>* <light_cyan>Deleting <light_yellow>#{branch}".colorize
     system("git branch -D #{branch}")
   elsif branches.remote? branch
-    if prompt("You wanna delete a remote branch???") == "y"
-      system("git push origin :#{branch}")
+    if prompt("You sure you wanna delete a remote branch???".light_red) == "y"
+      puts
+      puts "Okay!"
+      puts
+      
+      remote, branch = branch.split("/")
+      
+      puts "<grey>* <light_cyan>Deleting <light_yellow>#{branch} <light_cyan>from <light_green>#{remote}".colorize
+      
+      system("git push #{remote} :#{branch}")
     else
-      puts "Whew."
+      puts "Whew!".light_white
     end
   else
-    puts "Unknown branch."
+    puts "Unknown branch: #{branch}"
   end
   
 else
