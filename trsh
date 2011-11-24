@@ -41,7 +41,7 @@ use Fcntl;
 use Term::ANSIColor;
 use Term::ReadKey;
 
-my $VERSION = "3.13-3";
+my $VERSION = "3.14-0";
 
 ##############################################################################
 #			   Function Declarations                             #
@@ -73,6 +73,7 @@ sub DeleteRegex($);
 sub UndoRegex($);
 sub HumanReadableSize($);
 sub DirSize($);
+sub DirCount($);
 sub FileSize($);
 sub EntrySize($);
 sub PrintTrashSize();
@@ -84,6 +85,7 @@ sub HumanReadableDate($);
 sub SplitDate($);
 sub SetWidths($);
 sub GetTrashSize($);
+sub GetTrashCount($);
 sub MakeTrashDir($);
 sub UpdateSizeMetadata($);
 sub GetSizeMetadata($);
@@ -307,7 +309,36 @@ sub UndoRegex($)
 
 sub EmptyTrash()
 {
-	if($OptionForce == 0 and GetUserPermission("Completely empty the trash?") == 0) {
+	my $fileCount = 0;
+	my $trshSize = 0;
+	my $tmp_human_readable_option = $OptionHumanReadable;
+
+	# Temp, disable human readable so we get actual sizes we can add.
+	$OptionHumanReadable = 0;
+
+
+	foreach my $dev (keys %SystemDevices, $Session{HomePath}) {
+		next if($dev eq $Session{HomeDev});
+		my $sz = GetTrashSize(GetDeviceTrash($dev));
+		my $cnt = GetTrashCount(GetDeviceTrash($dev));
+		$fileCount += $cnt;
+		$trshSize  += $sz;
+	}
+	$trshSize = HumanReadableSize($trshSize);
+	# Restore.
+	$OptionHumanReadable = $tmp_human_readable_option;
+
+	my $prompt = "Completely empty the trash with $fileCount ($trshSize) file(s)?";
+
+	if($OptionVerbose > 0) {
+		print "Trash Contents:\n";
+		ListTrashContents();
+		print "\n";
+		$prompt = "Completely remove the above $fileCount ($trshSize) file(s)?";
+	}
+
+
+	if($OptionForce == 0 and GetUserPermission($prompt) == 0) {
 		exit;
 	}
 
@@ -394,7 +425,7 @@ sub DeleteFile($)
 	}
 
 	# Always ask for permission for write-protected files
-	unless(-w $path) {
+	if((!-l $path) and (!-w $path)) {
 		my $what_file = FileTypeString($path);
 		if($OptionForce == 0 and GetUserPermission("trsh: delete write-protected $what_file `$path'?") == 0) {
 			return;
@@ -582,6 +613,20 @@ sub GetTrashSize($)
 	$sz = HumanReadableSize($sz) if($OptionHumanReadable > 0);
 
 	return $sz;
+}
+
+sub GetTrashCount($)
+{
+	my $trash_path = shift;
+
+	unless(-d $trash_path) {
+		return 0;
+	}
+	$trash_path = "$trash_path/files";
+	unless(-d $trash_path) {
+		return 0;
+	}
+	return DirCount($trash_path);
 }
 
 sub UpdateSizeMetadata($)
@@ -1531,6 +1576,23 @@ sub DirSize($)
 	closedir($fd);
 
 	return $size;
+}
+
+sub DirCount($)
+{
+	my $path = shift;
+	my $fd;
+	unless(-d $path) {
+		return 0;
+	}
+	my $cnt = 0;
+	opendir($fd, $path) or die "$!\n";
+	for my $item (readdir($fd)) {
+		next if($item =~ /^\.\.?$/);
+		my $path = "$path/$item";
+		$cnt += ((-d $path) ? DirCount($path) : 1);
+	}
+	return $cnt;
 }
 
 sub FileSize($)
