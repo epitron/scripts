@@ -33,21 +33,24 @@ def get_links(pageurl)
 
   result = {
 
-  :links => page.search("a").map { |a|
-    linkurl = a["href"]
-  }.squash,
-  
-  :embeds => page.search("embed").map { |embed|
-    linkurl = embed["src"]
-    #if embed["type"].in? %w(application/x-mplayer2)
-  }.squash,
-  
-  :images => page.search("img").map { |img|
-    linkurl = img["src"]
-  }.squash,
+    :links => page.search("a").map { |a|
+      linkurl = a["href"]
+    }.squash,
+    
+    :embeds => page.search("embed").map { |embed|
+      linkurl = embed["src"]
+      #if embed["type"].in? %w(application/x-mplayer2)
+    }.squash,
+    
+    :images => page.search("img").map { |img|
+      linkurl = img["src"]
+    }.squash,
+    
+    :enclosures => page.search("enclosure").map { |e|
+      linkurl = e["url"]
+    }.squash,
 
   }
-  
 
   result.map_values! { |links| 
     links.map { |linkurl|
