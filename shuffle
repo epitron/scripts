@@ -10,6 +10,7 @@
 require 'rubygems'
 require 'epitools'
 require 'pp'
+require 'slop'
 
 MEDIA_DEFS = [
   #  type of thing                     players                      exts

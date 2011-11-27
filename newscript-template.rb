@@ -11,16 +11,22 @@ opts = Slop.new :help => true do
   on :t, :to, 'To', :optional => false  
 end
 
+## Handle arguments
 
-## << One at a time...>>
+/ << One at a time...>> /
 
 opts.parse do |arg|
   puts if opts.verbose?
   arg unless opts.dryrun?
 end
 
-## << ... or all at once? >>
+/ << ... or all at once? >> /
 
 args = []
 opts.parse { |arg| args << arg }
+
+
+case command = args.shift
+when "help"
+end
 

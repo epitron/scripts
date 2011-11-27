@@ -1,2 +1,2 @@
-#!/bin/bash
-`which whois` -H $* | less -b 0
+#`which whois` -h whois.opensrs.net -H $* | less -b 0
+open "http://whois.domaintools.com/$1"
