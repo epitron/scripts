@@ -1,2 +1,2 @@
 #!/bin/bash
-rsync -rltvz --checksum --progress "$1" "$2"
+rsync -rltvz --checksum --progress --copy-links "$1" "$2"
