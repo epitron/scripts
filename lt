@@ -1,4 +1,5 @@
 #!/bin/bash
+
 if [ "$1" == "-s" ]; then
   # Sort by size
   shift
@@ -8,4 +9,10 @@ else
   ARGS="-hltr"
 fi
 
-ls --color=force $ARGS "$@" | tail -n 15 | sed -r s/'^(\S+\s+){3}\S+'/''/
+if [ "$1" == "-a" ]; then
+  ls --color=force $ARGS "$@" | sed -r s/'^(\S+\s+){3}\S+'/''/ | less -R "+\\>"
+else
+  ls --color=force $ARGS "$@" | tail -n 15 | sed -r s/'^(\S+\s+){3}\S+'/''/
+fi
+
+
