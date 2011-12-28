@@ -1,0 +1,7 @@
+#!/bin/bash
+if [[ "$1" == "-v" ]]; then
+  git log
+else
+  git log --graph --format='%C(blue bold)%h %C(cyan bold)%aN%Cblue%d %Creset%s %C(black bold)(%cr)%Creset' "$@"
+fi
+

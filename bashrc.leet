@@ -96,7 +96,6 @@ alias rehash='hash -r'
 alias df='df -h'
 alias screen='screen -U'
 alias fdisk='sudoifnotroot fdisk'
-alias rtmpsniff='sudoifnotroot rtmpsniff'
 
 alias off='shutdown -h now'
 
@@ -106,7 +105,7 @@ alias chrome='google-chrome'
 alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
-alias gl="git log"
+#alias gl="git log"
 alias gc="git clone"
 alias gch="git checkout"
 alias g[[="git stash"
