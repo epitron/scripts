@@ -10,7 +10,8 @@ else
 fi
 
 if [ "$1" == "-a" ]; then
-  ls --color=force $ARGS "$@" | sed -r s/'^(\S+\s+){3}\S+'/''/ | less -R "+\\>"
+  shift
+  ls --color=force $ARGS "$@" | sed -r s/'^(\S+\s+){3}\S+'/''/ | less -R -X "+\\>"
 else
   ls --color=force $ARGS "$@" | tail -n 15 | sed -r s/'^(\S+\s+){3}\S+'/''/
 fi
