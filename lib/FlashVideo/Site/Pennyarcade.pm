@@ -7,13 +7,22 @@ use FlashVideo::Utils;
 sub find_video {
   my ($self, $browser, $embed_url) = @_;
 
-  my($id) = $browser->content =~ m{"http://api.indieclicktv.com/player/show/([a-f0-9/]*)/default/mplayer.js};
-  die "No Video Urls Found" unless $id;
+  my $id;
+	my $title;
+	if ($browser->content =~/<h2>(.*?)<\/h2>/) {
+		$title = $1;
+		$title =~ s/<[^>]*>//g;
+	}
+	if ($browser->content =~/http:\/\/blip.tv\/play\/(.*).html/) {
+		$id = $1;
+	} else {
+		die "No ID found\n";
+	}
 
-  my $url = "http://ictv-pa-ec.indieclicktv.com/media/videos/$id/video.mp4";
-  my($title) = $browser->content =~ /<div class="title"><h1>([^<]*)<\/h1>/;
-
-  return $url, title_to_filename($title, "mp4");
+	# They actually check this...
+	$browser->add_header("User-Agent" => "Android");
+	$browser->allow_redirects;
+	return "http://blip.tv/play/$id.mp4", title_to_filename($title);
 }
 
 1;

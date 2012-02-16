@@ -1,17 +1,48 @@
 #!/usr/bin/env ruby
 
 opts, args = ARGV.partition { |arg| arg =~ /^-/ }
+opts.uniq!
 
 if args.any?
-  
-  cmd = ["rsync", "-rltvz", "--size-only", "--progress"]
-  cmd += opts
-  cmd += args
 
+  letters = %w[r l t z]
+    
+  params = []
+  unless opts.delete "-q"
+    params << "--progress"        
+    letters << "v"
+  end
+
+  params << "--bwlimit=40"      if opts.delete "-l"  # limit bandwidth
+  params << "--append-verify"   if opts.delete "-k"  # keep larger remote files
+  params << "--partial"         if opts.delete "-p"  # partials
+  
+  if opts.delete "-b" # binary mode
+    params += ["--checksum", "--copy-links"]
+  else
+    params << "--size-only"
+  end
+
+  params += opts
+  params += args
+
+  cmd = ["rsync", "-#{letters.join ''}"] + params
+
+  puts "Executing:"
+  puts "\t#{cmd.join ' '}"
+  puts
   system *cmd
   
 else
   
   puts "usage: rsync-dirs [options] <src> <dest>"
+  puts
+  puts "Special options:"
+  puts "    -q    Quiet mode"
+  puts "    -l    Limit bandwidth to 40k/sec"
+  puts "    -k    Keep remote files if they're bigger"
+  puts "    -b    Binary rsync (and dereference symlinks)"
+  puts "    -p    Keep partially-transferred files"
+  puts
   
 end
