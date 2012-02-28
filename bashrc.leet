@@ -128,6 +128,8 @@ alias iptables="sudoifnotroot iptables"
 alias nethogs="sudoifnotroot nethogs"
 alias bhogs="sudoifnotroot nethogs"
 
+alias reset="tput reset"
+
 alias tree="tree -C $* | less -RS"
 
 if [ "$OSTYPE" == "cygwin" ]; then

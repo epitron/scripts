@@ -41,7 +41,7 @@ use Fcntl;
 use Term::ANSIColor;
 use Term::ReadKey;
 
-my $VERSION = "3.14-0";
+my $VERSION = "3.14-2";
 
 ##############################################################################
 #			   Function Declarations                             #
@@ -64,6 +64,7 @@ sub RemoveFromTrash($);
 sub UndoLatestFiles();
 sub UndoFile($);
 sub GetUserPermission($);
+sub GetUserPermissionTri($);
 sub FileTypeColor($);
 sub SysMove($$);
 sub SysMkdir($);
@@ -312,6 +313,7 @@ sub EmptyTrash()
 	my $fileCount = 0;
 	my $trshSize = 0;
 	my $tmp_human_readable_option = $OptionHumanReadable;
+	my $user_wish = 0; # -1 no, 1 yes, 0 show details.
 
 	# Temp, disable human readable so we get actual sizes we can add.
 	$OptionHumanReadable = 0;
@@ -330,16 +332,18 @@ sub EmptyTrash()
 
 	my $prompt = "Completely empty the trash with $fileCount ($trshSize) file(s)?";
 
-	if($OptionVerbose > 0) {
-		print "Trash Contents:\n";
-		ListTrashContents();
-		print "\n";
-		$prompt = "Completely remove the above $fileCount ($trshSize) file(s)?";
-	}
-
-
-	if($OptionForce == 0 and GetUserPermission($prompt) == 0) {
-		exit;
+	if($OptionForce == 0){
+		while($user_wish == 0) {
+			$user_wish = GetUserPermissionTri($prompt);
+			if($user_wish == 0) {
+				# Set parameters for list.
+				$OptionSize = 1;
+				$OptionHumanReadable = 1;
+				ListTrashContents();
+				print "\n\n";
+			}
+		}
+		exit if($user_wish == -1);
 	}
 
 	# Set Force to 1 so that The rest of subs do not nag the user.
@@ -1562,6 +1566,27 @@ sub GetUserPermission($)
 	}
 }
 
+sub GetUserPermissionTri($)
+{
+	my $question = shift;
+	my $ret = -1;
+	my $ans;
+	while(1) {
+		print "$question (y/n/d): ";
+		$ans = <STDIN>;
+		chomp($ans);
+		if($ans eq "y") {
+			return 1;
+		}
+		if($ans eq "n") {
+			return -1;
+		}
+		if($ans eq "d") {
+			return 0;
+		}
+	}
+}
+
 sub DirSize($)
 {
 	my $path = shift;
@@ -1589,8 +1614,7 @@ sub DirCount($)
 	opendir($fd, $path) or die "$!\n";
 	for my $item (readdir($fd)) {
 		next if($item =~ /^\.\.?$/);
-		my $path = "$path/$item";
-		$cnt += ((-d $path) ? DirCount($path) : 1);
+		$cnt += 1;
 	}
 	return $cnt;
 }

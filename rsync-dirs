@@ -6,16 +6,18 @@ opts.uniq!
 if args.any?
 
   letters = %w[r l t z]
-    
-  params = []
+  params  = []
+
   unless opts.delete "-q"
-    params << "--progress"        
+    params  << "--progress"        
     letters << "v"
   end
 
   params << "--bwlimit=40"      if opts.delete "-l"  # limit bandwidth
+  params << "--append"          if opts.delete "-a"  # append to smaller remote files
   params << "--append-verify"   if opts.delete "-k"  # keep larger remote files
   params << "--partial"         if opts.delete "-p"  # partials
+  params << "--delete-after"    if opts.delete "-d"  # delete remote
   
   if opts.delete "-b" # binary mode
     params += ["--checksum", "--copy-links"]
@@ -39,10 +41,13 @@ else
   puts
   puts "Special options:"
   puts "    -q    Quiet mode"
-  puts "    -l    Limit bandwidth to 40k/sec"
-  puts "    -k    Keep remote files if they're bigger"
   puts "    -b    Binary rsync (and dereference symlinks)"
+  puts "    -a    Append to smaller remote files"
+  puts "    -k    Keep larger remote files"
+  puts "          (and their overlap has the same checksum)"
+  puts "    -d    Delete remote files if they don't exist locally"
   puts "    -p    Keep partially-transferred files"
+  puts "    -l    Limit bandwidth to 40k/sec"
   puts
   
 end
