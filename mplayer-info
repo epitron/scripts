@@ -1,0 +1,125 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+require 'awesome_print'
+
+
+data = %{ IDENTIFY: ID_VIDEO_ID=0
+ IDENTIFY: ID_AUDIO_ID=0
+ IDENTIFY: ID_AID_0_LANG=eng
+ IDENTIFY: ID_CLIP_INFO_NAME0=major_brand
+ IDENTIFY: ID_CLIP_INFO_VALUE0=mp42
+ IDENTIFY: ID_CLIP_INFO_NAME1=minor_version
+ IDENTIFY: ID_CLIP_INFO_VALUE1=1
+ IDENTIFY: ID_CLIP_INFO_NAME2=compatible_brands
+ IDENTIFY: ID_CLIP_INFO_VALUE2=mp42avc1
+ IDENTIFY: ID_CLIP_INFO_NAME3=creation_time
+ IDENTIFY: ID_CLIP_INFO_VALUE3=2007-11-01 09:48:46
+ IDENTIFY: ID_CLIP_INFO_NAME4=artist
+ IDENTIFY: ID_CLIP_INFO_VALUE4=TVO | Big Ideas
+ IDENTIFY: ID_CLIP_INFO_NAME5=album
+ IDENTIFY: ID_CLIP_INFO_VALUE5=Big Ideas
+ IDENTIFY: ID_CLIP_INFO_NAME6=genre
+ IDENTIFY: ID_CLIP_INFO_VALUE6=Podcast
+ IDENTIFY: ID_CLIP_INFO_NAME7=date
+ IDENTIFY: ID_CLIP_INFO_VALUE7=2007
+ IDENTIFY: ID_CLIP_INFO_NAME8=title
+ IDENTIFY: ID_CLIP_INFO_VALUE8=January 24 2004: Lee Smolin
+ IDENTIFY: ID_CLIP_INFO_N=9
+ IDENTIFY: ID_FILENAME=BI_Full_LeeSmolin_012404.mp4
+ IDENTIFY: ID_DEMUXER=lavfpref
+ IDENTIFY: ID_VIDEO_FORMAT=H264
+ IDENTIFY: ID_VIDEO_BITRATE=259576
+ IDENTIFY: ID_VIDEO_WIDTH=320
+ IDENTIFY: ID_VIDEO_HEIGHT=240
+ IDENTIFY: ID_VIDEO_FPS=15.000
+ IDENTIFY: ID_VIDEO_ASPECT=0.0000
+ IDENTIFY: ID_AUDIO_FORMAT=MP4A
+ IDENTIFY: ID_AUDIO_BITRATE=48104
+ IDENTIFY: ID_AUDIO_RATE=32000
+ IDENTIFY: ID_AUDIO_NCH=1
+ IDENTIFY: ID_START_TIME=0.00
+ IDENTIFY: ID_LENGTH=3003.49
+ IDENTIFY: ID_SEEKABLE=1
+ IDENTIFY: ID_CHAPTERS=0
+ IDENTIFY: ID_VIDEO_CODEC=ffh264
+ IDENTIFY: ID_AUDIO_BITRATE=48104
+ IDENTIFY: ID_AUDIO_CODEC=ffaac
+ IDENTIFY: ID_EXIT=EOF
+}
+
+def parse_info(output)
+
+  clip_info = {}
+  video_info = {}
+  audio_info = {}
+  info = {}
+
+  output.lines.each do |line|
+
+    if line =~ /ID_([\dA-Z_]+)=(.+)$/
+
+      name, val = $1, $2
+
+      case name
+      when /CLIP_INFO_(NAME|VALUE)(\d)+/
+        clip_info[$2] ||= {}
+        clip_info[$2][$1.downcase] = val
+      when "EXIT", "DEMUXER", "CLIP_INFO_N", "FILENAME", "SEEKABLE"
+        # skip it
+      when /VIDEO_(.+)/
+        video_info[$1.downcase] = val
+      when /AUDIO_(.+)/
+        audio_info[$1.downcase] = val
+      else
+        info[name.downcase] = val
+      end
+
+    end
+
+  end
+
+  keyvals = clip_info.map do |k, v|
+    [v["name"], v["value"]]
+  end
+
+  clip_info_unsorted = Hash[ *keyvals.flatten ]
+
+  clip_info_keys = [
+   "title",
+   "artist",
+   "date",
+   "creation_time",
+   "album",
+   "genre",
+  ]
+
+  clip_info = Hash[ *clip_info_keys.map { |key| [key, clip_info_unsorted.delete(key)] if clip_info_unsorted[key] }.compact.flatten ]
+  clip_info.merge!(clip_info_unsorted)
+
+  {
+    "metadata" => clip_info,
+    "video" => video_info,
+    "audio" => audio_info,
+    "info" => info,
+  }
+end
+
+if $0 == __FILE__
+  if ARGV.any?
+    lesspipe do |less|
+      ARGV.each do |arg|
+        less.puts "<8>### <14>#{arg} <8>#{"#"*30}".colorize
+        less.puts
+        output = `mplayer -vo null -ao null -frames 0 -identify "#{arg}" 2>/dev/null|grep IDENTIFY`
+        less.puts parse_info(output).ai
+        less.puts
+      end
+    end
+  else  
+    puts "Usage: mplayer-info <video file(s)...>"
+  end
+end
+
+
+
