@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'pry'
+
+class String
+  def is_link?
+    !!(self =~ %r{^https?://.+/.+})
+  end
+end
+
+def despam(link)
+  uri = URI.parse(link)
+  uri.query.to_params.values.select(&:is_link?)
+end
+
+if $0 == __FILE__
+
+  args = ARGV
+
+  if args.any?
+    args.each do |arg|
+      puts "Despamming: #{arg.inspect}"
+      links = despam(arg)
+
+      if links.any?
+        links.each { |link| puts "\t#{link}" }
+      else
+        puts "\tnone found"
+      end
+
+    end
+  end
+
+end
