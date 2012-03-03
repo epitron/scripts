@@ -48,8 +48,9 @@ data = %{ IDENTIFY: ID_VIDEO_ID=0
  IDENTIFY: ID_EXIT=EOF
 }
 
-def parse_info(output)
+def mplayer_identify(filename)
 
+  output = `mplayer -vo null -ao null -frames 0 -identify "#{filename}" 2>/dev/null|grep IDENTIFY`
   clip_info = {}
   video_info = {}
   audio_info = {}
@@ -111,8 +112,7 @@ if $0 == __FILE__
       ARGV.each do |arg|
         less.puts "<8>### <14>#{arg} <8>#{"#"*30}".colorize
         less.puts
-        output = `mplayer -vo null -ao null -frames 0 -identify "#{arg}" 2>/dev/null|grep IDENTIFY`
-        less.puts parse_info(output).ai
+        less.puts mplayer_identify(arg).ai
         less.puts
       end
     end
