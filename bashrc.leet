@@ -58,6 +58,7 @@ alias ll='ls -l'
 
 alias +='pushd .'
 alias -- -='popd'
+alias cd..='cd ..'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
