@@ -1,2 +1,2 @@
 #!/bin/bash
-du --max-depth=1 -c -m $*
+du --max-depth=1 -c -m -x $*
