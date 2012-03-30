@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'slop'
+
+opts = Slop.new :help => true do
+  banner "Usage: mem -f from -t to [files...]"
+  
+  on :v, :verbose, 'Enable verbose mode'           
+  on :n, :dryrun, 'Dry-run', false                  
+  on :f, :from, 'From', :optional => false      
+  on :t, :to, 'To', :optional => false  
+end
+
+## Handle arguments
+
+args = []
+opts.parse { |arg| args << arg }
+
+Result = Struct.new(:pid, :user, :command, :swap, :uss, :pss, :rss)
+
+
+def stats
+  File.read("/proc/meminfo").nicelines.map do |line|
+    if line =~ /(\w)+:\s+(\d+)( kB)?/
+      [$1, $2, $3]
+    else
+      nil
+    end
+  end.compact
+end
+  
+  #Area                           Used      Cache   Noncache 
+  #firmware/hardware                 0          0          0 
+  #kernel image                      0          0          0 
+  #kernel dynamic memory       3459736    3322948     136788 
+  #userspace memory            2853816     254028    2599788 
+  #free memory                 1950300    1950300          0 
+  #stats = `smem -w`.find(//).drop(1).map(&:split)
+
+  
+command = args.shift
+case command
+when "help"
+else
+  results = `sudo smem`.lines.drop(1).map {|l| fields = l.split; p fields; Result.new fields }
+  p results
+  results.each{|r| puts "#{r.pid} #{r.pss} #{r.command}" }
+  pss_total = results.map(&:pss).map(&:to_i).sum
+  puts "PSS Total: #{pss_total}"
+  p stats
+end
+

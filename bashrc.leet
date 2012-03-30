@@ -117,6 +117,7 @@ alias g+="git add"
 alias cu="pull"
 
 alias r="rails"
+alias pad="padrino"
 
 alias git="hub"
 
