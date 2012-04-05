@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+EDITOR = "s"
+
+options, args = ARGV.partition { |e| e[/^-/] }
+
+paths = args.map do |arg| 
+  spec = Gem::Specification.find_by_name(arg)
+  spec and spec.full_gem_path
+end.compact
+
+system EDITOR, *(options + paths)
