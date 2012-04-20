@@ -121,8 +121,12 @@ alias pad="padrino"
 
 alias git="hub"
 
+alias lk="luakit -n -u"
+
 alias bwm="bwm-ng"
 alias bmon="bwm-ng"
+
+alias dmenu="dmenu -l 50"
 
 #alias gem="sudoifnotroot gem"
 #alias mount="sudoifnotroot mount"

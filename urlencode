@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+if ARGV.any?
+  puts ARGV.join(" ").urlencode
+else
+  STDIN.each do |line|
+    puts line.urlencode
+  end
+end

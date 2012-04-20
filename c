@@ -38,12 +38,10 @@ end
 
 args = ARGV
 
-lesspipe do |less|
-  if args.any?
-    args.each do |arg|
-      less.puts CodeRay.scan_file(arg).term
-    end
-  else
-    less.puts CodeRay.scan($stdin).term
+if args.any?
+  args.each do |arg|
+    lesspipe() { |less| less.puts CodeRay.scan_file(arg).term }
   end
+else
+  lesspipe() { |less| less.puts CodeRay.scan($stdin).term }
 end

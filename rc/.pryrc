@@ -109,19 +109,69 @@ end
 
 ## Sketches
 
-req 'sketches' do
-  Sketches.config :editor => 'j'
-end
+#req 'sketches' do
+#  Sketches.config :editor => 's'
+#end
 
 =begin
 req 'rdoc/ri/driver' do
-  
-  Commands.command "ri", "RI it up, muthafucka." do |*args|
-    RDoc::RI::Driver.run args
+
+  class RDoc::RI::Driver
+    def page
+      lesspipe {|less| yield less}
+    end
+
+    def formatter(io)
+      if @formatter_klass then
+        @formatter_klass.new
+      else
+        RDoc::Markup::ToAnsi.new
+      end
+    end
   end
-  
-end
+
+  Pry.commands.command "ri", "RI it up!" do |*names|
+    ri = RDoc::RI::Driver.new :use_stdout => true, :interactive => false
+    ri.display_names names
+  end
+
+end  
 =end
+
+Pry.commands.command "ri", "RI it up!" do |*names|
+  # lazy loading
+  require 'rdoc/ri/driver'
+
+  unless RDoc::RI::Driver.responds_to? :monkeypatched?
+    class RDoc::RI::Driver
+      def page
+        lesspipe {|less| yield less}
+      end
+
+      def formatter(io)
+        if @formatter_klass then
+          @formatter_klass.new
+        else
+          RDoc::Markup::ToAnsi.new
+        end
+      end
+
+      def monkeypatched?
+        true
+      end
+    end
+  end
+
+  ri = RDoc::RI::Driver.new :use_stdout => true, :interactive => false
+  
+  begin
+    ri.display_names names
+  rescue RDoc::RI::Driver::NotFoundError => e
+    $stderr.puts "error: '#{e.name}' not found"
+  end
+
+end
+
 
 module Pry::Helpers::Text
   class << self
@@ -130,8 +180,30 @@ module Pry::Helpers::Text
   end
 end
 
+
 Pry.commands.instance_eval do
   
+  command "grep" do |*args|
+
+    queries = []
+    targets = []
+
+    args.each do |arg|
+
+      case arg
+      when %r{^/([^/]+)/$}
+        queries << Regexp.new($1)
+      when %r{^([A-Z]\w+)$}
+        targets << Object.const_get($1)
+      else
+      end
+
+    end
+
+    p [:queries, queries]
+    p [:targets, targets]
+  end
+
   #alias_command "?", "show-doc"
   #alias_command ">", "cd"
   #alias_command "<", "cd .."
