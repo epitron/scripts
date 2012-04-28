@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+if ARGV.size == 2
+  a, b = ARGV
+  puts (b.from_hms - a.from_hms).to_hms
+else
+  puts "Usage: timediff [start time] [end time]"
+  puts
+  puts "Example:"
+  puts "  $ timediff 1:47 3:18"
+  puts "  01:31"
+  puts
+end

@@ -16,7 +16,7 @@ color brightmagenta "/([^/]|(\\/))*/[iomx]*" "%r\{([^}]|(\\}))*\}[iomx]*"
 ## "double-quotish" (to use a perlism).
 color brightblue "`[^`]*`" "%x\{[^}]*\}"
 ## Strings, double-quoted
-color green ""([^"]|(\\"))*"" "%[QW]?\{[^}]*\}" "%[QW]?\([^)]*\)" "%[QW]?<[^>]*>" "%[QW]?\[[^]]*\]" "%[QW]?\$[^$]*\$" "%[QW]?\^[^^]*\^" "%[QW]?![^!]*!"
+color green "\"([^\"]|(\\\"))*\"" "%[QW]?\{[^}]*\}" "%[QW]?\([^)]*\)" "%[QW]?<[^>]*>" "%[QW]?\[[^]]*\]" "%[QW]?\$[^$]*\$" "%[QW]?\^[^^]*\^" "%[QW]?![^!]*!"
 ## Expression substitution.  These go inside double-quoted strings,
 ## "like #{this}".
 color brightgreen "#\{[^}]*\}"
