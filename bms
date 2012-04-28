@@ -1,0 +1,98 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+###############################################################
+args = ARGV
+opts, args = args.partition { |arg| arg[/^-./] }
+
+def help
+  puts "Usage: gbm [options] <query>"
+  puts
+  puts "Purpose: Search google chrome's bookmarks."
+  puts
+  puts "Options:"
+  puts "   -c   Case sensitive"
+  puts
+  exit
+end  
+
+help if args.empty?
+###############################################################
+
+class Hash
+  def find_bookmark(query, trail=[])
+    results = []
+    trail = trail.dup
+
+    case self["type"]
+    when "folder"
+      trail << self["name"]
+
+      if children = self["children"]
+        children.each do |child|
+          results += child.find_bookmark(query, trail)
+        end
+      end
+
+    when "url"
+      if self["name"][query] or self["url"][query]
+        results << [trail, self]
+      end
+
+    end
+
+    results
+  end
+end
+
+def formatdate(dt, width=11)
+  time = "%l:%M%P"
+  date = "%d %b %g"
+  #dt.strftime("#{date} #{time}")
+  
+  [
+    dt.strftime(date).ljust(width), 
+    dt.strftime(time).ljust(width)
+  ]
+end
+
+def highlight(str, query, color="black_on_yellow")
+  str.highlight(query) { |m| "<#{color}>#{m}</#{color}>"}
+end
+
+def display_result(trail, result, query, output)
+  ## TODO: Columns!
+
+  indent = " " * 11
+
+  name = result["name"]
+  url  = result["url"]
+  dt   = result["date_added"]
+  dt.insert(-8,".")
+  dt   = Time.at dt.to_f
+
+  date, time = formatdate(dt)
+
+  output.puts "<14>#{date}<15>#{highlight name, query}".colorize
+  output.puts "<13>#{time}<9>#{highlight url, query}".colorize
+  output.puts "#{indent}<3>(<11>#{trail.reverse.join(" <3><-</3> ")}</11><3>)".colorize
+  output.puts
+end
+
+marks = Path["~/.config/google-chrome/Default/Bookmarks"].read.from_json
+
+if opts.include? "-c"
+  query = Regexp.new(args.join)
+else
+  query = Regexp.new(args.join, Regexp::IGNORECASE)
+end
+
+results = marks["roots"]["other"].find_bookmark(query)
+results = results.sort_by { |trail,result| result["date_added"] }
+
+lesspipe do |less|
+  results.each do |trail, result|
+    display_result(trail, result, query, less)
+  end
+end
+
