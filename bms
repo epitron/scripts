@@ -88,7 +88,7 @@ else
 end
 
 results = marks["roots"]["other"].find_bookmark(query)
-results = results.sort_by { |trail,result| result["date_added"] }
+results = results.sort_by { |trail,result| result["date_added"] }.reverse
 
 lesspipe do |less|
   results.each do |trail, result|
