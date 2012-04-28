@@ -36,12 +36,33 @@ end
 
 ##############################################################################
 
+def render(arg)
+  if arg == $stdin
+    CodeRay.scan($stdin).term
+  elsif File.exists? arg
+    CodeRay.scan_file(arg).term
+  else
+    "\e[31m\e[1mFile not found.\e[0m"
+  end
+end
+
+##############################################################################
+
 args = ARGV
 
-if args.any?
-  args.each do |arg|
-    lesspipe() { |less| less.puts CodeRay.scan_file(arg).term }
+
+lesspipe do |less|
+  case args.size
+  when 0
+    less.puts render($stdin)
+  when 1
+    less.puts render(args.first)
+  else # 2 or more args
+    args.each do |arg|
+      less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
+      less.puts
+      less.puts render(arg)
+      less.puts
+    end
   end
-else
-  lesspipe() { |less| less.puts CodeRay.scan($stdin).term }
 end

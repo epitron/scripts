@@ -81,7 +81,6 @@ alias c-x='chmod -x'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
-
 alias a2="audacious"
 
 #if [ "$TERM" == "xterm" ]
@@ -102,6 +101,7 @@ alias off='shutdown -h now'
 
 alias dict='dictless'
 alias chrome='google-chrome'
+alias m='mplayer'
 
 alias gs="git status"
 alias gd="git diff"
