@@ -17,9 +17,14 @@ if $0 == __FILE__
 
   args = ARGV
 
+  if args.empty?
+    print "Paste link: "
+    args << gets.strip
+  end
+
   if args.any?
     args.each do |arg|
-      puts "Despamming: #{arg.inspect}"
+      puts "Extracted links:"
       links = despam(arg)
 
       if links.any?
