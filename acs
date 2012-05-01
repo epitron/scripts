@@ -31,20 +31,22 @@ lesspipe(:wrap=>true) do |less|
       less.puts
       
       ## dependencies
-      deps      = info["Depends"].scan(/([^\s,]+)(?: \(([^\)]+)\))?/)
-      deps      = deps.map do |name, ver|
-                    result = "<7>#{name} "
-                    result += "<8>(<9>#{ver}<8>)" if ver
-                    result.colorize 
-                  end
+      if deps = info["Depends"]
+        deps = deps.scan(/([^\s,]+)(?: \(([^\)]+)\))?/)
+        deps = deps.map do |name, ver|
+          result = "<7>#{name} "
+          result += "<8>(<9>#{ver}<8>)" if ver
+          result.colorize 
+        end
 
-      if deps.any?
-        less.puts "  <11>depends:".colorize
-        table     = Term::Table.new(deps, :strip_color=>true, :indent=>4)
-        less.puts table.by_columns
+        if deps.any?
+          less.puts "  <11>depends:".colorize
+          table     = Term::Table.new(deps, :strip_color=>true, :indent=>4)
+          less.puts table.by_columns
+        end
+        less.puts
       end
-      
-      less.puts
+
     end
     
   end

@@ -121,8 +121,6 @@ alias pad="padrino"
 
 alias git="hub"
 
-alias lk="luakit -n -u"
-
 alias bwm="bwm-ng"
 alias bmon="bwm-ng"
 
@@ -161,3 +159,5 @@ shopt -s globstar
 #fi
 
 alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
+alias a='sudoifnotroot aptitude'
+alias sus='ssu'
