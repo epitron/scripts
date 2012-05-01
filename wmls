@@ -6,7 +6,7 @@
 #   |_ also, "fetch" window
 # * winfetch: dmenu of windows on other desktops (wmctrl -F -R windowname)
 #
-gem 'epitools', ">= 0.5.5"; require 'epitools'
+gem 'epitools', ">= 0.5.6"; require 'epitools'
 gem 'slop', "< 3.0";        require 'slop'
 
 def show_desktop(desktop, quiet, query=nil)
