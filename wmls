@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+#
+# Use cases:
+# * SublimeText context-sensitive launcher
+# * dmenu window picker (list of "#{number} :: Windowname" => type number, go to window!)
+#   |_ also, "fetch" window
+# * winfetch: dmenu of windows on other desktops (wmctrl -F -R windowname)
+#
+gem 'epitools', ">= 0.5.5"; require 'epitools'
+gem 'slop', "< 3.0";        require 'slop'
+
+def show_desktop(desktop, quiet, query=nil)
+  ## Header
+  a,b = desktop.current? ? [8,11] : [8,8]
+  puts "<#{a}>=== <#{b}>#{desktop.name} <#{a}>======================".colorize unless quiet
+
+  ## Windows
+  query_success = query ? false : true
+  desktop.windows.each do |window|
+    sticky = window.sticky? ? "<12>* STICKY " : ""
+    title = "#{sticky}<8>(<2>#{window.process.name}<8>) <10>#{window.title}"
+
+    if query
+      next unless title =~ query
+      title = title.highlight(query) { |m| "<black_on_yellow>#{m}</black_on_yellow>" }
+      query_success = true
+    end
+
+    puts title.colorize unless quiet
+  end
+  puts unless quiet
+
+  ## Did query succeed?
+  query_success
+end
+
+if $0 == __FILE__
+
+  opts = Slop.new :help => true do
+    banner "Usage: winls [options] <regexp query to run again window title and process name>"
+    
+    on :a, :all,    'Windows on all desktops'
+    on :q, :quiet,  'No console output (exit code gives success of query)'
+    on :y, :yank,   'Move the window to current desktop.'
+  end
+
+  args = []
+  opts.parse { |arg| args << arg }
+
+  quiet = opts[:quiet]
+  query = args.any? ? Regexp.new(args.join(' '), Regexp::IGNORECASE) : nil
+
+  query_success = if opts[:all]
+    WM.desktops.each { |desktop| show_desktop desktop, quiet, query }
+  else
+    show_desktop WM.current_desktop, quiet, query
+  end
+
+  exit 1 if query and not query_success # ERRORN
+end

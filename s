@@ -1,2 +1,9 @@
 #!/bin/bash
-~/opt/sublime/sublime_text $* &
+
+CMD=~/opt/sublime/sublime_text
+
+if wmls -q sublime_text; then
+  $CMD $* 2>&1 > /dev/null &
+else
+  $CMD -n $* 2>&1 > /dev/null &
+fi
