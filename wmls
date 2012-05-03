@@ -16,8 +16,10 @@ def show_desktop(desktop, quiet, query=nil)
 
   ## Windows
   query_success = query ? false : true
-  desktop.windows.each do |window|
-    sticky = window.sticky? ? "<12>* STICKY " : ""
+  windows = desktop.windows
+  windows += WM.sticky if desktop.current?
+  windows.each do |window|
+    sticky = window.sticky? ? "<12>* " : ""
     title = "#{sticky}<8>(<2>#{window.process.name}<8>) <10>#{window.title}"
 
     if query
