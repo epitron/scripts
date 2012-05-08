@@ -16,7 +16,7 @@ end
 
 ## args
 
-if ARGV.any? 
+if ARGV.any?
   targets = ARGV
 else
   targets = ['.']
@@ -29,20 +29,20 @@ for target in targets
 
   case target
   when %r{^git://}, %r{^https://.+\.git}, %r{\S+@\S+:\s+\.git}
-  
+
     cmd = ["git", "clone", target]
-    
+
     puts
     puts "=== Cloning #{target} ==="
     puts
     system(*cmd)
-    
+
   else
-  
+
     path = Path[target]
 
     if path.exists?
-    
+
       if path.in_tree?(".git")
         cmd = "git pull"
       elsif path.in_tree?(".hg")
@@ -51,19 +51,25 @@ for target in targets
         cmd = "svn update"
       elsif (path/"CVS").dir?
         cmd = "cvs update -dP"
+      else
+        puts
+        puts "No version control found. Terminating!!!"
+        puts "(ie: run it in a folder with a .svn, .git, CVS, or .hg folder in it)"
+        puts
+        next
       end
-      
+
       puts
       puts "=== Updating #{target} (#{cmd}) === "
       puts
       system(cmd)
-      
+
     else
       puts "* #{target.inspect} not found"
     end
-    
+
   end
-  
+
 end
 
 
