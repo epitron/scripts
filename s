@@ -3,7 +3,7 @@
 CMD=~/opt/sublime/sublime_text
 
 if wmls -q sublime_text; then
-  $CMD $* 2>&1 > /dev/null &
+  $CMD "$@" 2>&1 > /dev/null &
 else
-  $CMD -n $* 2>&1 > /dev/null &
+  $CMD -n "$@" 2>&1 > /dev/null &
 fi
