@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'open-uri'
+
+query = ARGV.join(" ")
+result = open("http://api.duckduckgo.com/?q=#{query.urlencode}&format=json&pretty=1").read.from_json
+
+def puts_if(thing)
+  puts thing if thing
+end
+
+if definition = result["Definition"] and !definition.blank?
+  puts "<11>>> <14>#{definition}".gsub(" definition: ", "<8>: <7>").colorize
+  puts
+end
+
+if abstract = result["Abstract"] and !abstract.blank?
+  puts "<15>Abstract: <7>#{abstract}".colorize
+end
+
+result["RelatedTopics"].each do |related|
+
+  if topics = related["Topics"]
+
+    puts "<8>== <11>#{related["Name"]} <8>==".colorize
+    puts
+    topics.each do |topic|
+      puts "  <3>* <7>#{topic["Text"]} <8>(<9>#{topic["FirstURL"]}<8>)".colorize
+    end
+    puts
+
+  elsif text = related["Text"]
+    puts "<9>* <7>#{text}".colorize
+    puts
+  end
+
+end
