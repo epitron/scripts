@@ -34,17 +34,21 @@ class DirLister
   end
 
   SIZE_COLORS = Rash.new(
-                 0..0 => :grey,
-                1...1_000 => :yellow,
-            1_000...1_000_000 => :cyan,
-        1_000_000...1_000_000_000 => :light_blue,
-    1_000_000_000...1_000_000_000_000 => :purple
+                0...100 => :grey,
+              100...1_000 => :blue,
+            1_000...1_000_000 => :light_blue,
+        1_000_000...1_000_000_000 => :light_cyan,
+    1_000_000_000...1_000_000_000_000 => :light_white
   )
 
-  class Integer
-    def colorized
+  class ::Integer
+    def colorized(rjust=15)
       color = SIZE_COLORS[self] || :white
-      to_s.send(color)
+      s = commatize
+      padding = " " * (rjust - s.size)
+
+      "#{padding}<#{color}>#{s.gsub(",", "<8>,</8>")}".colorize
+      #to_s.send(color)
     end
 
     def rjust(*args)
@@ -60,13 +64,23 @@ class DirLister
     fn = path.colorized(true)
     time = (path.mtime.strftime("%Y-%m-%d %H:%M:%S") rescue "").ljust(10)
     size = path.size rescue nil
-    size = size.commatize.rjust(15).send(SIZE_COLORS[size] || :white) rescue ''
+    #size = size.commatize.rjust(15).send(SIZE_COLORS[size] || :white) rescue ''
+    size = size.colorized
     puts "#{size} #{time} #{fn}"
   end
 
   def list_dir(dir, opts)
     root = ::Path[dir]
-    paths = root.ls.sort
+
+    paths = root.ls
+
+    if opts[:time] or opts["reverse-time"]
+      paths.sort_by!(&:mtime)
+    elsif opts[:size] or opts["reverse-size"]
+      paths.sort_by!(&:size)
+    end
+
+    paths.reverse! if opts["reverse-size"] or opts["reverse-time"]
 
     if opts.long?
       paths.each do |path|
@@ -86,6 +100,11 @@ class DirLister
 
       on :v, :verbose,  'Enable verbose mode'
       on :l, :long,     'Wide mode'
+      on :r, :recursive,'Recursive'
+      on :t, :time,     'Sort by modification time'
+      on :T, "reverse-time", 'Sort by modification time (reversed)'
+      on :s, :size,     'Sort by size'
+      on :S, "reverse-size", 'Sort by size (reversed)'
       on :n, :dryrun,   'Dry-run', false
     end
 

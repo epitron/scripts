@@ -11,7 +11,7 @@ gem 'slop', "< 3.0";        require 'slop'
 
 def show_desktop(desktop, quiet, query=nil)
   ## Header
-  a,b = desktop.current? ? [8,11] : [8,8]
+  a,b = desktop.current? ? [11,15] : [8,7]
   puts "<#{a}>=== <#{b}>#{desktop.name} <#{a}>======================".colorize unless quiet
 
   ## Windows
@@ -20,7 +20,7 @@ def show_desktop(desktop, quiet, query=nil)
   windows += WM.sticky if desktop.current?
   windows.each do |window|
     sticky = window.sticky? ? "<12>* " : ""
-    title = "#{sticky}<8>(<2>#{window.process.name}<8>) <10>#{window.title}"
+    title = "#{sticky}<8>(<2>#{window.process && window.process.name}<8>) <10>#{window.title}"
 
     if query
       next unless title =~ query
@@ -39,9 +39,9 @@ end
 if $0 == __FILE__
 
   opts = Slop.new :help => true do
-    banner "Usage: winls [options] <regexp query to run again window title and process name>"
-    
-    on :a, :all,    'Windows on all desktops'
+    banner "Usage: winls [options] <regexp query to run again window titles and process names>"
+
+    on :c, :current,'Current desktop only'
     on :q, :quiet,  'No console output (exit code gives success of query)'
     on :y, :yank,   'Move the window to current desktop.'
   end
@@ -52,10 +52,10 @@ if $0 == __FILE__
   quiet = opts[:quiet]
   query = args.any? ? Regexp.new(args.join(' '), Regexp::IGNORECASE) : nil
 
-  query_success = if opts[:all]
-    WM.desktops.each { |desktop| show_desktop desktop, quiet, query }
-  else
+  query_success = if opts[:current]
     show_desktop WM.current_desktop, quiet, query
+  else
+    WM.desktops.each { |desktop| show_desktop desktop, quiet, query }
   end
 
   exit 1 if query and not query_success # ERRORN
