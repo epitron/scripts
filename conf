@@ -1,0 +1,36 @@
+#!/bin/bash
+unset CC CFLAGS CXX CXXFLAGS MAKE PARAMS
+
+CONFIGFILE=buildconfig
+PARAMS=""
+
+if [ -f $CONFIGFILE ]
+then
+   echo "==================== Loading parameters... ======================"
+   . $CONFIGFILE
+fi
+
+export CC CFLAGS CXX CXXFLAGS MAKE PARAMS
+
+echo ""
+echo " Procssors: $PROCESSORS"
+echo ""
+echo " ====== Parameters: ==========================="
+echo "            CC=$CC"
+echo "        CFLAGS=$CFLAGS"
+echo "           CXX=$CXX"
+echo "      CXXFLAGS=$CXXFLAGS"
+echo "          MAKE=$MAKE"
+echo "        PARAMS=$PARAMS"
+echo ""
+
+if [ -f configure ]
+then
+   echo "============================ Configuring... ==============================="
+   if ./configure $PARAMS
+   then
+      echo "============================ DONE! =================================="
+   else
+      echo "===================== Configure failed! ========================"
+   fi
+fi

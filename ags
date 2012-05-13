@@ -1,10 +1,20 @@
 #!/usr/bin/env ruby
+#
+# TODO
+# ----------------------------
+# * results in columns
+# * include dpkg results (parallel pipes)
+# * use apt-cache records for descriptions
+#   |_ abstract it all with ruby-dpkg?
+#
+
 require 'rubygems'
 require 'epitools'
 
+
 pattern = Regexp.new( "(" + ARGV.map{|arg| Regexp.escape arg}.join("|") + ")", Regexp::IGNORECASE )
 
-lesspipe do |less| 
+lesspipe do |less|
   IO.popen("apt-cache search #{ARGV * ' '} | sort", "r") do |apt|
     for line in apt
       less.puts line.highlight(pattern)

@@ -6,7 +6,7 @@
 #  def self.command(*args, &block)
 #    Pry::Commands.class_eval do
 #      command *args, &block
-#    end    
+#    end
 #  end
 #end
 
@@ -88,17 +88,17 @@ Pry.config.prompt = [
 
 req 'print_members' do
 
-  
+
   Pry.commands.instance_eval do
     rename_command "oldls", "ls"
-    
+
     command "ls", "Better ls" do |arg|
       #if target.eval(arg)
       query = arg ? Regexp.new(arg, Regexp::IGNORECASE) : //
       PrintMembers.print_members(target.eval("self"), query)
     end
   end
-  
+
 end
 
 Pry.commands.command(/^wtf([?!]*)/, "show backtrace") do |arg|
@@ -135,7 +135,7 @@ req 'rdoc/ri/driver' do
     ri.display_names names
   end
 
-end  
+end
 =end
 
 Pry.commands.command "ri", "RI it up!" do |*names|
@@ -163,7 +163,7 @@ Pry.commands.command "ri", "RI it up!" do |*names|
   end
 
   ri = RDoc::RI::Driver.new :use_stdout => true, :interactive => false
-  
+
   begin
     ri.display_names names
   rescue RDoc::RI::Driver::NotFoundError => e
@@ -181,8 +181,26 @@ module Pry::Helpers::Text
 end
 
 
+
+
 Pry.commands.instance_eval do
-  
+
+  command "gem-search" do |*args|
+    require 'open-uri'
+
+    query   = args.join ' '
+    results = open("http://rubygems.org/api/v1/search.json?query=#{query.urlencode}").read.from_json
+
+    if !results.is_a?(Array) || results.empty?
+      output.puts 'No results'
+    else
+      for result in results
+        output.puts "#{''.red}<11>#{result["name"]} <8>(<9>#{result["version"]}<8>)".colorize
+        output.puts "  <7>#{result["info"]}".colorize
+      end
+    end
+  end
+
   command "grep" do |*args|
 
     queries = []
@@ -214,24 +232,24 @@ Pry.commands.instance_eval do
     cmd << " --color=always" if Pry.color
     run cmd, *args
   end
-  
+
   command "lcd", "Change the current (working) directory" do |*args|
     run ".cd", *args
     run "pwd"
   end
-   
+
   command "pwd" do
     puts Dir.pwd.split("/").map{|s| text.bright_green s}.join(text.grey "/")
   end
-  
+
   #alias_command "gems", "gem-list"
-  
+
   command "gem", "rrrrrrrrrubygems!" do |*args|
     gem_home = Gem.instance_variable_get(:@gem_home) || Gem.instance_variable_get(:@paths).home
-  
+
     cmd = ["gem"] + args
     cmd.unshift "sudo" unless File.writable?(gem_home)
-  
+
     output.puts "Executing: #{text.bright_yellow cmd.join(' ')}"
     if system(*cmd)
       Gem.refresh
@@ -252,14 +270,14 @@ Pry.commands.instance_eval do
       end
       result
     end
-  
+
     def print_module_tree mods
       mods = mods.select  { |mod| not mod < Exception }
       mods = mods.map     { |mod| mod.to_s.split("::") }
-  
-      mod_tree = {} 
+
+      mod_tree = {}
       mods.sort.each { |path| mod_tree.mkdir_p(path) }
-      
+
       results = tree_to_array(mod_tree)
       table = Term::Table.new(results, :cols=>3, :vertically => true)
       puts table
@@ -284,7 +302,7 @@ Pry.commands.instance_eval do
         if gem_installed? gem
           output.puts e.inspect
         else
-          output.puts "#{bright_red(gem)} not found"
+          output.puts "#{gem.bright_red} not found"
           if prompt("Install the gem?") == "y"
             run "gem-install", gem
             run "req", gem
@@ -307,19 +325,19 @@ end
 req 'terminal-table/import' do
 
   Commands.instance_eval do
-    
-    
+
+
     #  command "ls", "List Stuff" do |*args|
     #    target.eval('self').meths(*args)
     #  end
-    
+
     def hash_mkdir_p(hash, path)
       return if path.empty?
       dir = path.first
       hash[dir] ||= {}
       hash_mkdir_p(hash[dir], path[1..-1])
     end
-    
+
     def hash_print_tree(hash, indent=0)
       result = []
       dent = "  " * indent
@@ -329,7 +347,7 @@ req 'terminal-table/import' do
       end
       result
     end
-    
+
     helper :print_module_tree do |mods|
       mod_tree = {}
       mods = mods.select  { |mod| not mod < Exception }
@@ -344,9 +362,9 @@ req 'terminal-table/import' do
       end
       puts table(nil, *table.rows.to_a)
     end
-    
-  end  
-    
+
+  end
+
 
 end
 =end

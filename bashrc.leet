@@ -147,6 +147,9 @@ alias tree="tree -C | less -SR"
 # Enable recursive glob (eg: **/*.txt)
 shopt -s globstar
 
+# Verify ! history expansions
+shopt -s histverify
+
 ## no display!
 #unset DISPLAY
 

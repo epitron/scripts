@@ -2,107 +2,52 @@
 package FlashVideo::Site::Kanal5play;
 
 use strict;
+use warnings;
 use FlashVideo::Utils;
+use FlashVideo::JSON;
 
-my $widths = {
-     "low" => 480,
-     "medium" => 640, 
-     "high" => 1024 };
+
+my $bitrates = {
+     "low" => 250000,
+     "medium" => 450000, 
+     "high" => 900000 };
 
 sub find_video {
   my ($self, $browser, $embed_url, $prefs) = @_;
-  my $has_amf_conn = eval { require AMF::Connection };
-  if (!$has_amf_conn) {
-    die "Must have AMF::Connection installed";
+  if(!($browser->uri->as_string =~ m/video\/([0-9]*)/)){
+      die "No video id found in url";
   }
-  my $player_id = "811317479001";
-  my $video_id = ($browser->content =~ /videoPlayer" value="(.*?)"/)[0];
-  if ($video_id eq ''){die "Could not find video_id";}
-  info "found video_id: $video_id";
-  debug "$prefs->{quality}";
-  my @dump = $self->amfgateway($browser, $player_id, $video_id,$prefs);
+  my ($video_id) = $1;
+  my $info_url = "http://www.kanal5play.se/api/getVideo?format=FLASH&videoId=$video_id";
+  $browser->get($info_url);
+  
+  if (!$browser->success){
+      die "Couldn't download $info_url: " . $browser->response->status_line;
+  }
 
-  my $width = 0;
-  my $rtmp;
-  my $playpath;
-  my $new_width;
+  my $jsonstr = $browser->content;
+  my $json = from_json($jsonstr);
 
-  foreach (@dump) {
-    $new_width = int($_->{width});
-    if(($new_width > $width) and (($widths->{$prefs->{quality}}) >= $new_width)){
-        $width = int($_->{width});
-        $rtmp = $_->{rtmp};
-        $playpath = $_->{mp4};
-    }
-  };
+  my $name = $json->{program}->{name};
+  my $episode = $json->{episodeNumber};
+  my $season = $json->{seasonNumber};
+  my $filename = sprintf "%s - S%02dE%02d", $name, $season, $episode;
+  my ($rtmp) = "rtmp://fl1.c00608.cdn.qbrick.com:1935/00608";
+  my ($playpath) = $json->{streams}[0]->{source};
 
-  my @rtmpdump_commands;
-  my $title = ($browser->content =~ /property="og:title" content="(.*?)"/)[0];
-  my $flv_filename = title_to_filename($title, "flv");
-  my $args = {
+  my  $i;
+  foreach $i (keys $json->{streams}) {
+      my ($rate) = int($json->{streams}[$i]->{bitrate});
+      if($bitrates->{$prefs->{quality}} == $rate){
+	  $playpath = $json->{streams}[$i]->{source};
+      }
+  }
+  return {
+      flv => title_to_filename($filename, "flv"),
       rtmp => $rtmp,
-      swfVfy => "http://admin.brightcove.com/viewer/us1.25.04.01.2011-05-24182704/connection/ExternalConnection_2.swf",
       playpath => $playpath,
-      flv => $flv_filename
+      swfVfy => "http://www.kanal5play.se/flash/StandardPlayer.swf"
   };
-  push @rtmpdump_commands, $args;
-  return \@rtmpdump_commands;
-}
 
-sub amfgateway {
-  my($self, $browser, $player_id, $videoId, $prefs) = @_;
-
-  my $endpoint = 'http://c.brightcove.com/services/amfgateway';
-  my $service = 'com.brightcove.templating.TemplatingFacade';
-  my $method = 'getContentForTemplateInstance';
-  my $client = new AMF::Connection( $endpoint );
-  my $params = [
-		$player_id,	# param 1 - playerId
-		{
-		 'fetchInfos' => [
-				  {
-				   'fetchLevelEnum' => '1',
-				   'contentType' => 'VideoLineup',
-				   'childLimit' => '100'
-				  },
-				  {
-				   'fetchLevelEnum' => '3',
-				   'contentType' => 'VideoLineupList',
-				   'grandchildLimit' => '100',
-				   'childLimit' => '100'
-				  }
-				 ],
-		 'optimizeFeaturedContent' => 1,
-		 'lineupRefId' => undef,
-		 'lineupId' => undef,
-		 'videoRefId' => undef,
-		 'videoId' => $videoId, # param 2 - videoId
-		 'featuredLineupFetchInfo' => {
-					       'fetchLevelEnum' => '4',
-					       'contentType' => 'VideoLineup',
-					       'childLimit' => '100'
-					      }
-		}
-	       ];
-
-  my $response = $client->call( $service.'.'.$method, $params );
-  my @dump;
-  if ( $response->is_success ) {
-    my $count = 0;
-    for ($count = 0; $count < 3; $count++){
-      my $defaultURL = $response->{data}[0]->{data}->{videoDTO}->{renditions}[$count]->{defaultURL};
-      my $mp4 = reverse(((reverse($defaultURL)) =~ m/(.*?)&/)[0]);
-      my $width = $response->{data}[0]->{data}->{videoDTO}->{renditions}[$count]->{frameWidth};
-      my $rtmp = ($defaultURL =~ m/(.*?)&/)[0];
-      @dump[$count] = { 'rtmp' => $rtmp,
-			'width' => $width,
-			'mp4' => $mp4
-		      };
-      
-    }
-  } else {
-    die "Can not send remote request for $service.$method method with params on $endpoint using AMF".$client->getEncoding()." encoding.\n";
-  };
-  return @dump;
 }
 1;
