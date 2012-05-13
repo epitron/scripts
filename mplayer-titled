@@ -1,0 +1,4 @@
+#!/bin/bash
+TITLE="`basename "$*"`"
+echo $TITLE
+mplayer "$*" -title "$TITLE"
