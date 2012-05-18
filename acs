@@ -34,7 +34,7 @@ lesspipe(:wrap=>true) do |less|
           unsplit.split(" | ").map do |dep|
             if dep =~ /([^\s,]+)(?: \(([^\)]+)\))?/
               name, ver = $1, $2
-              result = "<7>#{name} "
+              result = "<7>#{name}"
               result += "<8>(<9>#{ver}<8>)" if ver
             end
             result

@@ -288,5 +288,8 @@ include "/usr/scripts/nano/html.nanorc"
 ## sources.list
 include "/usr/scripts/nano/sourceslist.nanorc"
 
-## sources.list
+## javascript
 include "/usr/scripts/nano/js.nanorc"
+
+## lua
+include "/usr/scripts/nano/lua.nanorc"

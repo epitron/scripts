@@ -1,0 +1,20 @@
+## Lua
+syntax "Lua" "\.lua$"
+## Keywords
+color brightblue "\<(and|break|do|else|elseif|end|for|function|if|in|local|not|or|repeat|return|then|until|while)\>"
+## Builtin methods
+color green "\<(setmetatable|getmetatable|type|print|pcall|pairs|ipairs|assert|loadstring|next|select|xpcall|rawget|rawset|tostring|tonumber)\>"
+## Constants
+color red "\<(false|nil|true)\>"
+## Numerals
+color magenta "[0-9]"
+## Strings
+color magenta "\"(\\.|[^\"])*\""
+## [[]]-type strings
+color magenta start="\[\=*?\[" end="\]\=*?\]"
+## #tbl counters
+color yellow "\#(\\.|[^'])*[[:space:]]"
+## Line comments
+color blue "--.*"
+## Multiline comments
+color blue start="--\[\[" end="\]\]"

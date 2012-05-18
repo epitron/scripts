@@ -164,3 +164,5 @@ shopt -s histverify
 alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
 alias a='sudoifnotroot aptitude'
 alias sus='ssu'
+
+alias pacman='pacman-color'

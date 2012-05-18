@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  luakit 2>&1 > /dev/null &
+elif [ "${1:0:4}" == "http" ]; then
+  luakit -u "$*" 2>&1 > /dev/null &
+else
+  goog "$*"
+fi
