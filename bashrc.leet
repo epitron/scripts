@@ -166,3 +166,6 @@ alias a='sudoifnotroot aptitude'
 alias sus='ssu'
 
 alias pacman='pacman-color'
+
+alias mplayer='mplayer-titled'
+alias dpkg="sudoifnotroot dpkg"
