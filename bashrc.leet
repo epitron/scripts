@@ -165,7 +165,15 @@ alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
 alias a='sudoifnotroot aptitude'
 alias sus='ssu'
 
-alias pacman='pacman-color'
+alias pacman='sudo pacman-color'
 
 alias mplayer='mplayer-titled'
 alias dpkg="sudoifnotroot dpkg"
+
+
+alias pmi='pacman -S'
+alias pms='pacman -Ss'
+alias pmg='pacman -Qg'
+alias pmu='pacman -Syu'
+alias pminfo='pacman -Qi'
+alias y='yaourt'
