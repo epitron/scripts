@@ -1,10 +1,13 @@
+[default]
 # Write your default config options here!
 
 #vo=xv
-vo=gl
+#vo=gl
+vo=gl:swapinterval=1
 
+ao=pulse
 #ao=alsa
-ao=oss
+#ao=oss
 
 msgcolor=1
 msgmodule=1
@@ -12,10 +15,14 @@ msgmodule=1
 #cache=8000
 
 af=volnorm,scaletempo
+#af=volnorm=1:0.25,scaletempo # default
+#af=volnorm=2:1,scaletempo
+
 #vf=pp
 #vf=eq2=1.1,gradfun
-vf=eq2=1.15
-vsync=true
+vf=eq2=1.1
+#vf=eq2=1.15
+#vsync=true
 
 # reduce subfont size
 subfont-text-scale=3
