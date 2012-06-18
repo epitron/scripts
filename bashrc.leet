@@ -138,7 +138,9 @@ alias tree="tree -C $* | less -RS"
 
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"
-else
+elif [ -f /usr/bin/exo-open ]; then
+  alias open="exo-open"
+elif [ -f /usr/bin/gnome-open ]; then
   alias open="gnome-open"
 fi
 

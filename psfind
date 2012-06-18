@@ -5,7 +5,7 @@ if [ "$PLATFORM" == "Darwin" ]
 then
   ps ax | grep -si "$*" | grep -v "psfind" | grep -v "grep -si"
 else
-  ps afx -eo '%p %u %t %a' | grep -si "$*" | grep -v "psfind" | grep -v "grep -si"
+  ps afx -eo '%p %u %t %a' | grep -si --color=always "$*" | grep -v "psfind" | grep -v "grep -si --color=always"
 fi
 
 exit $?

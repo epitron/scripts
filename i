@@ -4,10 +4,15 @@
 
 args = ARGV
 
+initdir = %w[
+	/etc/init.d
+	/etc/rc.d
+].find {|dir| File.directory? dir }
+
 if args.empty? # No args
 
 	require 'epitools'
-	scripts = Path["/etc/init.d/*"].map(&:filename).sort
+	scripts = Path["#{initdir}/*"].map(&:filename).compact.sort
 
 	puts "Init scripts:"
 	puts "============================="
@@ -17,7 +22,7 @@ if args.empty? # No args
 elsif args.first =~ %r{/(.+?)/}
 
 	require 'epitools'
-	scripts = Path["/etc/init.d/*"].map(&:filename).sort
+	scripts = Path["#{initdir}/*"].map(&:filename).compact.sort
 
 	puts "Init scripts (filtered by /#{$1}/):"
 	puts "================================================="
@@ -36,9 +41,9 @@ else
 		daemon, command = args.first, "restart"
 	end
 
-	system("sudoifnotroot", "/etc/init.d/#{daemon}", "#{command}")
+	system("sudoifnotroot", "#{initdir}/#{daemon}", "#{command}")
 
-end		
+end
 
 =begin
 if ARGV.first[ "$1" == "" ]
