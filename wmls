@@ -9,6 +9,8 @@
 gem 'epitools', ">= 0.5.6"; require 'epitools'
 gem 'slop', "< 3.0";        require 'slop'
 
+require 'pry'
+
 def show_desktop(desktop, quiet, query=nil)
   ## Header
   a,b = desktop.current? ? [11,15] : [8,7]
@@ -44,6 +46,9 @@ if $0 == __FILE__
     on :c, :current,'Current desktop only'
     on :q, :quiet,  'No console output (exit code gives success of query)'
     on :y, :yank,   'Move the window to current desktop.'
+    on :p, :process,   'Match the process name'
+    on :t, :title,   'Match the title'
+    on :a, :activate, 'Activate the window'
   end
 
   args = []
@@ -56,6 +61,10 @@ if $0 == __FILE__
     show_desktop WM.current_desktop, quiet, query
   else
     WM.desktops.each { |desktop| show_desktop desktop, quiet, query }
+  end
+
+  if opts.activate?
+    window.actiate!
   end
 
   exit 1 if query and not query_success # ERRORN

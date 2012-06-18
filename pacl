@@ -1,7 +1,7 @@
 #!/bin/bash
 if [[ "$1" == "" ]]; then
-  pacman -Q
+  pacman-color -Q
 else
-  pacman -Ql "$*"
+  pacman-color -Ql "$*"
 fi
 
