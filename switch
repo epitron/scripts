@@ -24,7 +24,7 @@ wins.reject! { |desk, w| desk == -1 }
 data = wins.map { |desk, w| "#{desk} | #{w}" }.join("\n")
 
 # pick a window
-picked, status = Open3.capture2("dmenu -i -l 50 -p Name:", :stdin_data=>data)
+picked, status = Open3.capture2("dmenu -i -l 50 -b -p Name:", :stdin_data=>data)
 
 if status == 0 # did the user pick something?
   # switch to it
