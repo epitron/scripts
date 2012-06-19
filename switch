@@ -2,6 +2,18 @@
 require 'epitools'
 require 'open3'
 
+missing_binaries = false
+
+# check for required binaries
+%w[wmctrl dmenu].each do |thing|
+  unless Path.which thing
+    puts "Missing command: #{thing} (you must install this package first)"
+    missing_binaries = true
+  end
+end
+
+exit if missing_binaries
+
 # list windows
 wins = WM.windows.sort_by { |w| [w.desktop_id, w.title] }.map { |w| [w.desktop_id, "#{w.addr} | #{w.title} ::: (#{w.process.command})"]}
 
@@ -14,6 +26,8 @@ data = wins.map { |desk, w| "#{desk} | #{w}" }.join("\n")
 # pick a window
 picked, status = Open3.capture2("dmenu -i -l 50 -p Name:", :stdin_data=>data)
 
-# switch to it
-addr = picked.split(" | ")[1]
-system("wmctrl", "-i", "-a", addr)
+if status == 0 # did the user pick something?
+  # switch to it
+  addr = picked.split(" | ")[1]
+  system("wmctrl", "-i", "-a", addr)
+end
