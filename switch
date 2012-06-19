@@ -3,17 +3,16 @@ require 'epitools'
 require 'open3'
 
 # list windows
-wins = WM.windows.map { |w| [w.desktop_id, "#{w.addr} | #{w.title} (#{w.process.command})"]}
+wins = WM.windows.sort_by { |w| [w.desktop_id, w.title] }.map { |w| [w.desktop_id, "#{w.addr} | #{w.title} ::: (#{w.process.command})"]}
 
-# filter/sort
+# remove non-window windows
 wins.reject! { |desk, w| desk == -1 }
-wins.sort!
 
 # create a blob of text for dmenu
 data = wins.map { |desk, w| "#{desk} | #{w}" }.join("\n")
 
 # pick a window
-picked, status = Open3.capture2("dmenu -i -l 69 -p Type:", :stdin_data=>data)
+picked, status = Open3.capture2("dmenu -i -l 50 -p Name:", :stdin_data=>data)
 
 # switch to it
 addr = picked.split(" | ")[1]
