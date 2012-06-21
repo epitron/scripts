@@ -14,7 +14,7 @@ def help
   puts "   -c   Case sensitive"
   puts
   exit
-end  
+end
 
 help if args.empty?
 ###############################################################
@@ -49,9 +49,9 @@ def formatdate(dt, width=11)
   time = "%l:%M%P"
   date = "%d %b %g"
   #dt.strftime("#{date} #{time}")
-  
+
   [
-    dt.strftime(date).ljust(width), 
+    dt.strftime(date).ljust(width),
     dt.strftime(time).ljust(width)
   ]
 end
@@ -79,20 +79,28 @@ def display_result(trail, result, query, output)
   output.puts
 end
 
-marks = Path["~/.config/google-chrome/Default/Bookmarks"].read.from_json
+bookmarks_files = %w[
+  ~/.config/google-chrome
+  ~/.config/chromium
+].map{|dir| Path["#{dir}/Default/Bookmarks"] }.select(&:exists?)
 
-if opts.include? "-c"
-  query = Regexp.new(args.join)
-else
-  query = Regexp.new(args.join, Regexp::IGNORECASE)
-end
+for file in bookmarks_files
+  marks = file.read.from_json
 
-results = marks["roots"]["other"].find_bookmark(query)
-results = results.sort_by { |trail,result| result["date_added"] }.reverse
+  p marks.keys
 
-lesspipe do |less|
-  results.each do |trail, result|
-    display_result(trail, result, query, less)
+  if opts.include? "-c"
+    query = Regexp.new(args.join)
+  else
+    query = Regexp.new(args.join, Regexp::IGNORECASE)
+  end
+
+  results = marks["roots"]["other"].find_bookmark(query)
+  results = results.sort_by { |trail,result| result["date_added"] }.reverse
+
+  lesspipe do |less|
+    results.each do |trail, result|
+      display_result(trail, result, query, less)
+    end
   end
 end
-
