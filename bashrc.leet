@@ -1,20 +1,13 @@
-#if [ -f /etc/profile ]
-#then
-#  . /etc/profile
-#fi
-
+#if [ -f /etc/profile ]; then . /etc/profile; fi
 #PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 
-if [ -d /usr/scripts ]
-then
+if [ -d /usr/scripts ]; then
   export PATH=/usr/scripts:$PATH
-elif [ -d ~/scripts ]
-then
+elif [ -d ~/scripts ]; then
   export PATH=~/scripts:$PATH
 fi
 
-if [ -d ~/bin ]
-then
+if [ -d ~/bin ]; then
   export PATH=$PATH:~/bin
 fi
 
@@ -30,18 +23,18 @@ export CLICOLOR=1
 
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
-    #export LS_OPTIONS='--color=auto'
-    
-    if [ "`uname -s`" == "Darwin" ]
-    then
-      alias ls="ls -G"
-    else
-      eval `dircolors -b`
-      alias ls="ls --color=auto"
-    fi
+  #export LS_OPTIONS='--color=auto'
+
+  if [ "`uname -s`" == "Darwin" ]
+  then
+    alias ls="ls -G"
+  else
+    eval `dircolors -b`
+    alias ls="ls --color=auto"
+  fi
 fi
 
-## FUCK YOU ^S AND ^Q!!
+## FUCK YOU, ^S AND ^Q!!
 #stty stop undef
 #stty start undef
 
@@ -101,8 +94,10 @@ alias off='shutdown -h now'
 
 alias dict='dictless'
 alias chrome='google-chrome'
-alias m='mplayer'
+alias m='mplayer-titled'
 
+## Git aliases
+alias git="hub"
 alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
@@ -113,19 +108,17 @@ alias g[[="git stash"
 alias g]]="git stash pop"
 alias g[]="git stash list; git stash show"
 alias g+="git add"
-
 alias cu="pull"
 
 alias r="rails"
 alias pad="padrino"
-
-alias git="hub"
 
 alias bwm="bwm-ng"
 alias bmon="bwm-ng"
 
 alias dmenu="dmenu -l 50"
 
+## Automatic sudo
 #alias gem="sudoifnotroot gem"
 #alias mount="sudoifnotroot mount"
 alias iptables="sudoifnotroot iptables"
@@ -138,10 +131,10 @@ alias tree="tree -C $* | less -RS"
 
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"
-elif [ -f /usr/bin/exo-open ]; then
-  alias open="exo-open"
 elif [ -f /usr/bin/gnome-open ]; then
   alias open="gnome-open"
+elif [ -f /usr/bin/exo-open ]; then
+  alias open="exo-open"
 fi
 
 alias tree="tree -C | less -SR"
@@ -167,17 +160,14 @@ alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
 alias a='sudoifnotroot aptitude'
 alias sus='ssu'
 
-alias mplayer='mplayer-titled'
 alias dpkg="sudoifnotroot dpkg"
 
-## Pacman (Arch linux)
+## Arch linux
 alias pacman='sudo pacman-color'
-
 alias pac='pacman -S'
 alias pacs='pacman -Ss'
 alias pacg='pacman -Qg'
 alias pacu='pacman -Syu'
 alias paci='pacman -Qi'
 alias pacr='pacman -Rs'
-
 alias y='yaourt'
