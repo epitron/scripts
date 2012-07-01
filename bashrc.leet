@@ -90,7 +90,8 @@ alias df='df -h'
 alias screen='screen -U'
 alias fdisk='sudoifnotroot fdisk'
 
-alias off='shutdown -h now'
+alias off='sudoifnotroot shutdown -h now'
+alias reboot='sudoifnotroot shutdown -r now'
 
 alias dict='dictless'
 alias chrome='google-chrome'
@@ -124,6 +125,7 @@ alias dmenu="dmenu -l 50"
 alias iptables="sudoifnotroot iptables"
 alias nethogs="sudoifnotroot nethogs"
 alias bhogs="sudoifnotroot nethogs"
+alias ufw="sudoifnotroot ufw"
 
 alias reset="tput reset"
 

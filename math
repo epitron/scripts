@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
 require 'epitools/numwords'
+require 'epitools/core_ext/numbers'
+require 'bigdecimal'
 
 p eval ARGV.join(' ')
