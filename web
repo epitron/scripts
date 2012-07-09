@@ -2,6 +2,18 @@
 
 require 'epitools/sys'
 require 'epitools/wm'
+require 'epitools/path'
+
+## Check for required binaries in the path
+missing = false
+%w[wmctrl xse xclip].each do |requirement|
+  unless Path.which(requirement)
+    puts "* '#{requirement}' not found in path; please install."
+    missing = true
+  end
+end
+exit 1 if missing
+
 
 BROWSERS = %w[
   opera
