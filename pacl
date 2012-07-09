@@ -2,6 +2,16 @@
 if [[ "$1" == "" ]]; then
   pacman-color -Q
 else
-  pacman-color -Ql "$*"
+  if pacman-color -Ql "$*"
+  then
+    # yay it worked
+    echo
+  else
+    echo
+    echo "* Searching for '$*'..."
+    echo
+    
+    pacman-color -Q | grep --color "$*"
+  fi
 fi
 

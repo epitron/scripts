@@ -174,3 +174,4 @@ alias pacd='pacman -Syuw'
 alias paci='pacman -Qi'
 alias pacr='pacman -Rs'
 alias y='yaourt'
+
