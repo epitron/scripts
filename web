@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+
+require 'epitools/sys'
+require 'epitools/wm'
+
+BROWSERS = %w[
+  opera
+  google-chrome
+  chromium
+  jumanji
+]
+
+def select_parents(query, &block)
+  process = Sys.ps($$).first.parent
+
+  parents = []
+  while process
+    parents << process
+    process = process.parent
+  end
+
+  block ||= proc { |process| process.command[query] }
+
+  parents.select &block
+end
+
+def opened_by?(program)
+  find_in_parents(program)
+end
+
+def find_browsers(windows)
+  BROWSERS.map do |browser_name|
+    browser_window = windows.select { |w| w.command[browser_name] }.first
+    [ browser_name, browser_window ] if browser_window
+  end.compact
+end
+
+def best_browser
+  # Group by browsers
+  browsers_on_current_desktop = find_browsers(WM.current_desktop.windows)
+
+  if browsers_on_current_desktop.any?
+    browser_name, win = browsers_on_current_desktop.first
+    p [:activating_browser_on_current_desktop, win]
+  elsif 
+    browsers_on_all_desktops = find_browsers(WM.windows)
+    if browsers_on_all_desktops.any?
+      browser_name, win  = browsers_on_all_desktops.first
+      p [:activating_browser_on_other_desktop, win]
+    end
+  end
+
+  [browser_name, win]
+end
+
+def to_clipboard(string)
+  IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
+end
+
+def route(url)
+  name, browser = best_browser
+
+  puts "* Opening #{url}"
+  puts "  (using #{name} on #{browser.desktop.name})"
+  puts
+
+  to_clipboard(url)
+
+  browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
+  sleep 0.2
+  browser.send_keys("<Ctrl-L><Return>")
+  
+  browser.activate!
+end
+
+if $0 == __FILE__
+  if url = ARGV.first
+    route url
+  else
+    puts "usage: browser-router <url>"
+  end
+end
