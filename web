@@ -17,8 +17,9 @@ exit 1 if missing
 
 BROWSERS = %w[
   opera
-  google-chrome
+  chrome
   chromium
+  firefox
   jumanji
 ]
 
