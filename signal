@@ -1,0 +1,94 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+class Disconnected < Exception; end
+class NoDevice < Exception; end
+
+def iwconfig
+  #output = `iwconfig 2>&1|grep Quality`
+  output = `iwconfig 2>&1`
+  
+        devices = output.lines.split_before(/^\w/)
+        
+        wifi_devs = devices.select {|array| array.any? and array.first[/^(wlan|ath)/] }
+        
+        wifi_devs = Hash[ wifi_devs.map do |lines|
+          name = lines.first.scan(/^\S+/).first
+          pairs = lines.map { |line| line.scan(/\b([A-Z][\w\s]+)[=:]"?(\S+)\b/) }.flatten(1)
+          [name, Hash[pairs]]
+        end ]
+        wifi_devs
+end
+
+
+def get_wlan0
+  devs = iwconfig
+  devs["wlan0"]
+end
+
+
+width = 8
+
+begin
+  loop do
+    # {"wlan0"=>
+    #   {"ESSID"=>"zen",
+    #    "Mode"=>"Managed",
+    #    "Frequency"=>"2.427",
+    #    "AC"=>"81:12:EF:2F:84",
+    #    "Bit Rate"=>"78",
+    #    "Power"=>"20",
+    #    "Retry  long limit"=>"7",
+    #    "RTS thr"=>"off",
+    #    "Fragment thr"=>"off",
+    #    "Power Management"=>"off",
+    #    "Link Quality"=>"34/70",
+    #    "Signal level"=>"-76",
+    #    "Rx invalid nwid"=>"0",
+    #    "Rx invalid crypt"=>"0",
+    #    "Rx invalid frag"=>"0",
+    #    "Tx excessive retries"=>"2533",
+    #    "Invalid misc"=>"1483",
+    #    "Missed beacon"=>"0"}}
+
+    dev = get_wlan0
+    unless dev
+      puts "wlan0 not found"
+      sleep 4
+      next
+    end
+
+    if name = dev["ESSID"]
+
+      signal = dev["Signal level"].to_i
+
+      begin
+        quality, total = dev["Link Quality"].split("/").map(&:to_i)
+        multiplier = (quality.to_f/total)
+        percent = (multiplier * 100).round(1)
+        blocks = (multiplier * width).round
+        bar = "<11>#{ "#"*blocks }<9>#{"."*(width-blocks)}"
+      rescue 
+      end
+      
+      msg = ("   <7>#{name} <1>-> #{bar}" +
+             " <15>#{percent}<7>%" +
+             " <8>(<3>#{signal} dBm<8>)      ").colorize
+
+      print msg
+      print "\b"*60
+      sleep 1
+
+    else
+      puts "Link down"
+      sleep 2
+    end
+  end
+
+rescue Interrupt
+  puts
+  exit
+end
+
+
