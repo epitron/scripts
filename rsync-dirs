@@ -18,6 +18,7 @@ if args.any?
   params << "--append-verify"   if opts.delete "-k"  # keep larger remote files
   params << "--partial"         if opts.delete "-p"  # partials
   params << "--delete-after"    if opts.delete "-d"  # delete destination files
+  params << "--remove-source-files" if opts.delete "-m" # move files (delete source files)
   
   if opts.delete "-b" # binary mode
     params += ["--checksum", "--copy-links"]
@@ -46,6 +47,7 @@ else
   puts "    -k    Keep larger remote files"
   puts "          (and their overlap has the same checksum)"
   puts "    -d    Delete destination files that aren't in the source"
+  puts "    -m    Move files"
   puts "    -p    Keep partially-transferred files"
   puts "    -l    Limit bandwidth to 40k/sec"
   puts

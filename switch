@@ -15,7 +15,9 @@ end
 exit if missing_binaries
 
 # list windows
-wins = WM.windows.sort_by { |w| [w.desktop_id, w.title] }.map { |w| [w.desktop_id, "#{w.addr} | #{w.title} ::: (#{w.process.command})"]}
+wins = WM.windows
+         .sort_by { |w| [w.desktop_id, w.title] }
+         .map { |w| [w.desktop_id, "#{w.addr} | #{w.title} ::: (#{w.process && w.process.command})"]}
 
 # remove non-window windows
 wins.reject! { |desk, w| desk == -1 }

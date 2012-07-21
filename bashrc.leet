@@ -88,10 +88,6 @@ alias md='mkdir -p'
 alias rehash='hash -r'
 alias df='df -h'
 alias screen='screen -U'
-alias fdisk='sudoifnotroot fdisk'
-
-alias off='sudoifnotroot shutdown -h now'
-alias reboot='sudoifnotroot shutdown -r now'
 
 alias dict='dictless'
 alias chrome='google-chrome'
@@ -126,6 +122,11 @@ alias iptables="sudoifnotroot iptables"
 alias nethogs="sudoifnotroot nethogs"
 alias bhogs="sudoifnotroot nethogs"
 alias ufw="sudoifnotroot ufw"
+alias fdisk='sudoifnotroot fdisk'
+alias ifconfig='sudoifnotroot ifconfig'
+
+alias off='sudoifnotroot shutdown -h now'
+alias reboot='sudoifnotroot shutdown -r now'
 
 alias reset="tput reset"
 
