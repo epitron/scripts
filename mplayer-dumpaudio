@@ -4,7 +4,7 @@ while [ -n "$1" ]; do
   OUT="${IN%.*}.wav"
   echo "Converting: $IN"
   echo "        to: $OUT"
-  mplayer -really-quiet -vc null -vo null -ao pcm:fast:file="$OUT" "$IN"
+  mplayer -vc null -vo null -ao pcm:fast:file="$OUT" "$IN"
   echo
   shift
 done
