@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if ! which certutil > /dev/null
+then
+  echo "'certutil' not found. Install libnss3-tools."
+fi
+
+if ! which openssl > /dev/null
+then
+  echo "'openssl' not found. Install openssl."
+fi
+
 if [ "$1" == "" ]; then
 
   echo "usage:"

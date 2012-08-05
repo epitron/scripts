@@ -167,12 +167,13 @@ alias dpkg="sudoifnotroot dpkg"
 
 ## Arch linux
 alias pacman='sudo pacman-color'
-alias pac='pacman -S'
-alias pacs='pacman -Ss'
-alias pacg='pacman -Qg'
-alias pacu='pacman -Syu'
-alias pacd='pacman -Syuw'
-alias paci='pacman -Qi'
-alias pacr='pacman -Rs'
+alias pac='pacman -S'     # install package
+alias pacs='pacman -Ss'   # search for package
+alias pacg='pacman -Qg'   # show groups
+alias pacu='pacman -Syu'  # update packages
+alias pacd='pacman -Syuw' # only download updates (no install)
+alias paci='pacman -Si'   # show package info
+alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
+alias pacf='pacman -Qo'   # which package contains this file?
 alias y='yaourt'
 
