@@ -43,7 +43,10 @@ end
 
 def find_browsers(windows)
   BROWSERS.map do |browser_name|
-    browser_window = windows.select { |w| w.command[browser_name] }.first
+    browser_window = windows.select do |w|
+      bin = w.command.split.first
+      bin[browser_name]
+    end.first
     [ browser_name, browser_window ] if browser_window
   end.compact
 end
