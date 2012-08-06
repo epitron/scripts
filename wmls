@@ -7,7 +7,8 @@
 # * winfetch: dmenu of windows on other desktops (wmctrl -F -R windowname)
 #
 gem 'epitools', ">= 0.5.6"; require 'epitools'
-gem 'slop', "< 3.0";        require 'slop'
+#gem 'slop', "< 3.0";        require 'slop'
+gem 'slop'; require 'slop'
 
 require 'pry'
 
@@ -40,7 +41,7 @@ end
 
 if $0 == __FILE__
 
-  opts = Slop.new :help => true do
+  opts = Slop.new(:help => true) do
     banner "Usage: winls [options] <regexp query to run again window titles and process names>"
 
     on :c, :current,'Current desktop only'
@@ -50,12 +51,16 @@ if $0 == __FILE__
     on :t, :title,   'Match the title'
     on :a, :activate, 'Activate the window'
   end
+  exit if opts[:help]
 
+  # get arguments
   args = []
   opts.parse { |arg| args << arg }
 
-  quiet = opts[:quiet]
+  # parse the arguments  
   query = args.any? ? Regexp.new(args.join(' '), Regexp::IGNORECASE) : nil
+
+  quiet = opts[:quiet]
 
   query_success = if opts[:current]
     show_desktop WM.current_desktop, quiet, query
