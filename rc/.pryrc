@@ -1,14 +1,9 @@
 #!/usr/bin/ruby
-###################################################################
-## Pry tweaks
 
-#class Commands
-#  def self.command(*args, &block)
-#    Pry::Commands.class_eval do
-#      command *args, &block
-#    end
-#  end
-#end
+# theme
+#Pry.config.theme = "tomorrow"
+#Pry.config.theme = "vim-detailed"
+Pry.config.theme = "zenburn"
 
 ###################################################################
 ## Gem Loader
