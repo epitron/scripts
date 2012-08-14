@@ -1,0 +1,201 @@
+#!/usr/bin/ruby
+require 'rubygems'
+require 'epitools'
+require 'date'
+require 'pry-capture'
+require 'pry-stack_explorer'
+
+Colored.force!
+
+class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
+
+  # 2010-12-03 01:36:56 remove gir1.0-mutter-2.31 2.31.5-0ubuntu9 2.31.5-0ubuntu9
+  # 2010-12-03 01:36:58 install gir1.0-mutter-2.91 <none> 2.91.2+git20101114.982a10ac-0ubuntu1~11.04~ricotz0  
+  #LINE_RE = /^(.+ .+) (status \w+|\w+) (.+) (.+)$/
+  LINE_RE = /^\[(.+ .+)\] (removed|installed|upgraded) (.+) \((.+)(?: -> (.+))?\)$/
+
+  CMD_COLORS = {
+    'removed' => :light_red,
+    'installed' => :light_yellow,
+    'upgraded' => :light_green,
+    nil => :white,
+  }
+  
+  def self.from_line(line)
+    if line =~ LINE_RE
+      new($1, parse_date($1), $2, $3, $4, $5)
+    else
+      nil
+    end
+  end    
+  
+  def cmd_color
+    CMD_COLORS[cmd]
+  end
+
+  def to_s
+    date, time = datestr.split
+    "<grey>[<white>#{date} #{time}<grey>] <#{cmd_color}>#{cmd} <light_cyan>#{name} <light_white>#{v2} <white>(#{v1})".colorize
+  end  
+
+  def self.parse_date(date)
+    DateTime.strptime(date, "%Y-%m-%d %H:%M")
+  end
+ 
+end
+
+
+class History
+
+  def self.each(reverse=false)
+    return Enumerator.new(self, :each) unless block_given?
+    
+    if @history
+      return @history.each(&block)
+    end
+
+    logs = Path["/var/log/pacman.log*"].sort_by(&:mtime)
+    logs = logs.reverse if reverse
+
+    logs.each do |log|
+      zopen(log, 'r').send(reverse ? :reverse_each : :each) do |line|
+        line.strip!
+        if e = Event.from_line(line)
+          yield e 
+        end
+      end
+    end
+    
+  end
+  
+  def self.reverse_each(&block)
+    self.each(true, &block)
+  end
+
+  def self.history
+    @history ||= each.to_a
+  end
+  
+  def self.all; history; end
+
+  def self.installed; history.select{|e| e.cmd[/^(installed|upgraded)$/] }; end
+
+  def self.by_name
+    @by_name ||= group_by_name
+  end
+
+  def self.group_by_name(es)
+    result = Hash.of_arrays
+    es.each {|e| result[e.name] << e}
+    result
+  end
+
+  def self.after(datestr)
+    date = DateTime.parse(datestr)
+    all.select{|e| e.date > date }
+  end
+  
+  def self.before(datestr)
+    date = DateTime.parse(datestr)
+    all.select{|e| e.date < date }
+  end
+
+end
+
+def show_events(events)
+  lesspipe(:tail=>true) do |less| 
+    events.each { |event| less.puts event }
+  end
+end
+
+def reverse_show_events(events)
+  lesspipe do |less| 
+    events.reverse_each { |event| less.puts event }
+  end
+end
+
+def show_grouped(g)
+  lesspipe do |less|
+    g.each do |k,v|
+      less.puts k.light_white
+      v.each{|e| less.puts "  #{e}" }
+      less.puts
+    end
+  end
+end                
+
+def install(es)
+  system *(['apt-get', 'install'] + es.map(&:name)) 
+end
+
+def forced_remove(es)
+  system *(["dpkg", "--force-all", "-r"] + es.map(&:name))
+end
+
+
+def main
+  args = ARGV
+  
+  if args.any?
+    command = args.shift
+  else
+    command = "reverse-list"
+  end
+  
+  case command
+    when 'list'
+      show_events(History)
+      
+    when 'reverse-list'
+      reverse_show_events(History)
+
+    when /^(remove|list)-after$/
+      subcmd = $1
+      es = History.after(args.join(' ')).select{|e| e.cmd != 'remove'}
+      case subcmd
+        when 'remove'
+          #pkgs = History.group_by_name(es)
+          #show_grouped(pkgs)
+          forced_remove(es)
+          
+        when 'list'
+          show_events(es)
+      end
+      
+    when /^(install|list)-before$/
+      subcmd = $1
+      date = args.shift
+      p [:before, date]
+      es = History.before(date)
+      case subcmd
+        when 'install'
+          puts "Installing: #{es.map(&:name).join(', ')}"
+          install(es)
+        when 'list'
+          show_events(es)
+      end
+         
+          
+    when 'install-between'
+      first = DateTime.parse args.shift
+      last = DateTime.parse args.shift
+      p [:range, first, last]
+      
+      es = History.between(first, last)
+
+    else
+      puts 'dhist (dpkg install history)'
+      puts '------------------------------------------'
+      puts
+      puts 'Commands:'
+      puts '    list, list-reverse, list-since <date/time>, remove-since <date/time>'
+      puts
+      puts '(Note: date/time has to be parseable by ruby\'s DateTime.parse)'
+      puts
+  end
+      
+end
+
+if $0 == __FILE__
+  Pry.capture { main }
+end

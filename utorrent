@@ -1,3 +1,3 @@
 #!/bin/bash
 EXEPATH="`dirname $0`/win32/utorrent.exe"
-wine "$EXEPATH" /noinstall $* > /dev/null 2>&1 &
+wine "$EXEPATH" /noinstall "$*" > /dev/null 2>&1 &
