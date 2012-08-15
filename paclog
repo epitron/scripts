@@ -2,8 +2,6 @@
 require 'rubygems'
 require 'epitools'
 require 'date'
-require 'pry-capture'
-require 'pry-stack_explorer'
 
 Colored.force!
 
@@ -197,5 +195,5 @@ def main
 end
 
 if $0 == __FILE__
-  Pry.capture { main }
+  main
 end
