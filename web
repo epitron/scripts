@@ -6,7 +6,7 @@ require 'epitools/path'
 
 ## Check for required binaries in the path
 missing = false
-{"wmctrl"=>"wmctrl", "xse" => "xsendevents", "xclip" => "xclip"}.each do |bin, package|
+{"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
   unless Path.which(bin)
     puts "* '#{bin}' not found in path; please install the '#{package}' package."
     missing = true
