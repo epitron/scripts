@@ -137,7 +137,7 @@ alias bhogs="sudoifnotroot nethogs"
 alias ufw="sudoifnotroot ufw"
 alias fdisk='sudoifnotroot fdisk'
 alias ifconfig='sudoifnotroot ifconfig'
-
+alias netcfg='sudoifnotroot netcfg'
 alias off='sudoifnotroot shutdown -h now'
 alias reboot='sudoifnotroot shutdown -r now'
 
