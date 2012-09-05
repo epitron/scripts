@@ -94,6 +94,8 @@ alias a2="audacious"
 #  alias ssh='ssh-termtitle'
 #fi
 alias ssh='ssh -2'
+alias scpfast='scp -c arcfour128'
+alias sshfast='ssh -c arcfour128'
 
 #alias ack='ack-grep'
 
@@ -140,6 +142,7 @@ alias iptables="sudoifnotroot iptables"
 alias ifconfig='sudoifnotroot ifconfig'
 alias route='sudoifnotroot route'
 alias netcfg='sudoifnotroot netcfg'
+alias dhcpcd='sudoifnotroot dhcpcd'
 
 alias off='sudoifnotroot shutdown -h now'
 alias reboot='sudoifnotroot shutdown -r now'
