@@ -1,0 +1,10 @@
+#!/bin/bash
+# sudoifnotroot
+
+LAN_IF=eth0
+WAN_IF=wlan0
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o $WAN_IF -j MASQUERADE
+iptables -A FORWARD -i $WAN_IF -o $LAN_IF -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A FORWARD -i $LAN_IF -o $WAN_IF -j ACCEPT
