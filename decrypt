@@ -1,0 +1,6 @@
+#!/bin/bash
+IN="$@"
+OUT="${IN%.enc}"
+
+echo "Decrypting '$IN' to '$OUT'..."
+openssl enc -d -aes-256-cbc -in "$IN" -out "$OUT"

@@ -1,10 +1,28 @@
 #!/usr/bin/env ruby
 
+##############################################################
+
 require 'epitools/sys'
 require 'epitools/wm'
 require 'epitools/path'
+require 'epitools/rash'
 
-## Check for required binaries in the path
+##############################################################
+
+BROWSERS = %w[
+  opera
+  chrome
+  chromium
+  firefox
+  jumanji
+]
+
+BROWSER_OVERRIDES = {
+  proc { host["youtube.com"] } => %w[chrome chromium firefox],
+}
+
+##############################################################
+## Check for required binaries (in the path)
 missing = false
 {"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
   unless Path.which(bin)
@@ -14,14 +32,7 @@ missing = false
 end
 exit 1 if missing
 
-
-BROWSERS = %w[
-  opera
-  chrome
-  chromium
-  firefox
-  jumanji
-]
+##############################################################
 
 def select_parents(query, &block)
   process = Sys.ps($$).first.parent
@@ -41,8 +52,19 @@ def opened_by?(program)
   find_in_parents(program)
 end
 
-def find_browsers(windows)
-  BROWSERS.map do |browser_name|
+def browsers_for(url)
+  uri = URI.parse(url)
+  _, override = BROWSER_OVERRIDES.find { |tester, _| uri.instance_eval(&tester) }
+
+  if override
+    override | BROWSERS
+  else
+    BROWSERS
+  end
+end
+
+def find_browsers(windows, browsers)
+  browsers.map do |browser_name|
     browser_window = windows.select do |w|
       bin = w.command.split.first
       bin[browser_name]
@@ -51,9 +73,12 @@ def find_browsers(windows)
   end.compact
 end
 
-def best_browser
+def best_browser_for(url)
+
+  browsers = browsers_for(url)
+
   # Group by browsers
-  browsers_on_current_desktop = find_browsers(WM.current_desktop.windows)
+  browsers_on_current_desktop = find_browsers(WM.current_desktop.windows, browsers)
 
   if browsers_on_current_desktop.any?
     browser_name, win = browsers_on_current_desktop.first
@@ -74,7 +99,7 @@ def to_clipboard(string)
 end
 
 def route(url)
-  name, browser = best_browser
+  name, browser = best_browser_for(url)
 
   puts "* Opening #{url}"
   puts "  (using #{name} on #{browser.desktop.name})"
@@ -88,6 +113,8 @@ def route(url)
   
   browser.activate!
 end
+
+##############################################################
 
 if $0 == __FILE__
   if url = ARGV.first
