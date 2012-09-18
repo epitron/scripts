@@ -149,7 +149,7 @@ alias reboot='sudoifnotroot shutdown -r now'
 
 alias reset="tput reset"
 
-alias tree="tree -C $* | less -RS"
+alias tree="t"
 
 if [ "$OSTYPE" == "cygwin" ]; then
   alias open="cygstart"
