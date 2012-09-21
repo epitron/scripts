@@ -10,9 +10,40 @@
 #     (or things that could be mistakes -- eg: creating a branch)
 #   * eat ugly git messages and make them colourized and pretty 
 
-
-
+#################################################################################
 require 'epitools'
+#################################################################################
+
+class Branches
+
+  attr_accessor :local, :remote, :current
+
+  def initialize
+    @local = []
+    @remote = []
+    @current = nil
+  end
+  
+  def local?(branch); local.include? branch; end
+  def remote?(branch); remote.include? branch; end
+  def current?(branch); current == branch; end
+
+  def print
+  
+    puts
+    
+    [ [:remote, :green], [:local, :yellow] ].each do |type, color|
+      puts "<grey>== <light_white>#{type} branches: <grey>=============".colorize
+      for branch in send(type)
+        selected = (branch == current && type == :local)
+        puts "   #{branch}".send(selected ? :bright_yellow : color)
+      end
+      puts
+    end
+    
+  end
+  
+end
 
 #################################################################################
 
@@ -57,39 +88,6 @@ def get_branches
 end  
 
 #################################################################################
-
-class Branches
-
-  attr_accessor :local, :remote, :current
-
-  def initialize
-    @local = []
-    @remote = []
-    @current = nil
-  end
-  
-  def local?(branch); local.include? branch; end
-  def remote?(branch); remote.include? branch; end
-  def current?(branch); current == branch; end
-
-  def print
-  
-    puts
-    
-    [ [:remote, :green], [:local, :yellow] ].each do |type, color|
-      puts "<grey>== <light_white>#{type} branches: <grey>=============".colorize
-      for branch in send(type)
-        selected = (branch == current && type == :local)
-        puts "   #{branch}".send(selected ? :bright_yellow : color)
-      end
-      puts
-    end
-    
-  end
-  
-end
-
-#################################################################################
 ## Main
 
 args = ARGV
@@ -105,13 +103,20 @@ elsif args.first.in? ["--help", "-h"]
 eg:
   gb existingbranch           => switch to existing branch         
   gb newbranch                => create a new branch
-  gb origin/remotebranch      => create/checkout remote branch
+  gb origin/remotebranch      => create/checkout/track remote branch
+  gb -p [<remote>]            => push current branch to remote (default: origin)
   gb -d branch                => delete local branch
   gb -d origin/branch         => delete remote branch
+  gb -t [<remote>[/<branch>]] => track current branch on origin/<branchname> (or <remote>/<branchname>)
+  gb -r <new_name>            => rename current branch to <new_name>
 }
-  
-elsif args.first.in? ["-d", "-D"]
-  
+# TODO: 'gb -t' tracks current branch (git branch --set-upstream <branch> origin/<branch>)
+# TODO: auto-stash uncommitted changes when switching branches, and auto-unstash when switching back.
+# TODO: 'gb -r <dest>' renames current branch to <dest> (git branch -m <src> <dest>)
+
+elsif args.first.downcase == "-d"
+  ## Delete
+
   branches = get_branches
 
   args.shift
@@ -137,9 +142,32 @@ elsif args.first.in? ["-d", "-D"]
   else
     puts "Unknown branch: #{branch}"
   end
-  
+
+elsif args.first.downcase == "-p"
+  ## Push
+
+  args.shift
+  remote = args.shift || "origin"
+
+  # Track if not already tracked
+  #system("git branch --set-upstream <branch> origin/<branch>")
+
+elsif args.first.downcase == "-t"
+  ## Track
+  branches = get_branches
+  current = branches.current
+
+  args.shift
+  remote = args.shift || "origin"
+
+  unless remote["/"]
+    remote = "#{remote}/#{current}"
+  end
+
+  puts "<grey>* <light_yellow>#{current} <white>tracking <light_green>#{remote}".colorize
+  system("git branch --set-upstream #{current} #{remote}")
 else
-  
+  ## Branch
   branches = get_branches
   
   branch = args.first
@@ -149,7 +177,7 @@ else
     system("git checkout #{branch}")
   elsif branches.remote? branch
     puts "<grey>* <light_white>Tracking <light_yellow>#{branch}".colorize
-    system("git checkout -t #{branch}")
+    system("git checkout --track #{branch}")
   else
     puts "* Creating new branch #{branch}"
     system("git branch #{branch}")

@@ -195,4 +195,4 @@ alias paci='pacman -Si'   # show package info
 alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
 alias pacf='pacman -Qo'   # which package contains this file?
 alias y='yaourt'
-
+alias z='zeus'
