@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ "$1" == "--help" ]; then
+  echo "usage: gp <commit message>"
+  echo
+  echo ' "git commit" all modified files, then "git push" if successful.'
+  echo
+  exit 1
+fi
+
 echo "Committing"
 echo "------------------------------"
 
