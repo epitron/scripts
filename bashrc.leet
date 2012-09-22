@@ -147,7 +147,7 @@ alias dhcpcd='sudoifnotroot dhcpcd'
 alias off='sudoifnotroot shutdown -h now'
 alias reboot='sudoifnotroot shutdown -r now'
 
-alias reset="tput reset"
+alias resett="tput reset"
 
 alias tree="t"
 
