@@ -149,8 +149,12 @@ elsif args.first.downcase == "-p"
   args.shift
   remote = args.shift || "origin"
 
+  current = get_branches.current
+
   # Track if not already tracked
-  #system("git branch --set-upstream <branch> origin/<branch>")
+  system "git push #{remote} #{current}"
+
+  args = ["-t"]
 
 elsif args.first.downcase == "-t"
   ## Track
