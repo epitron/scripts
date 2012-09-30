@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+$stdout.sync = true
+
+prev_i    = nil
+prev_time = nil
+prev_string = nil
+
+#system("clear")
+
+log = Path["netwatch.log"]
+
+IO.popen("ping bito").each do |line|
+  if line =~ /icmp_req=(\d+)/
+    i    = $1.to_i
+    time = Time.now
+  
+    if prev_i and prev_time
+
+      # how many packets did we miss since the last response?
+      if i < prev_i
+        dropped = (i+65535) - prev_i
+      else
+        dropped = i - prev_i
+      end
+      
+      elapsed = time - prev_time
+  
+      # report dropped packets
+      if dropped > 1
+        puts
+        message = "<1>[#{time}] <15>#{dropped} <7>dropped <8>(<11>#{elapsed.round} <9>sec<8>)".colorize
+        ###########\n".colorize
+        log << message + " <7>-- <3>down since <11>#{prev_time.strftime("%H:%M:%S")}".colorize + "\n"
+        puts message
+      end
+      
+      print ("\b"*prev_string.size) if prev_string
+      print 
+      print (prev_string = "[#{time}] req = #{i} ")
+    end
+    
+    prev_i    = i
+    prev_time = time
+  else
+    puts line
+  end
+end
+
