@@ -1,0 +1,15 @@
+#!/bin/bash
+gtk-redshift -t 6500:3700 -l 42.8142432:-73.9395687
+# -t DAY:NIGHT	Color temperature to set at daytime/night
+# 
+# The neutral temperature is 6500K. Using this value will not
+# change the color temperature of the display. Setting the
+# color temperature to a value higher than this results in
+# more blue light, and setting a lower value will result in
+# more red light.
+# 
+# Default values:
+# 
+#   Daytime temperature: 5500K
+#     Night temperature: 3700K
+     
