@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Type=Application
+Name=uTorrent
+Exec=utorrent %U
+TryExec=/usr/scripts/utorrent
+Icon=/usr/scripts/win32/utorrent_icon.png
+Terminal=false
+StartupNotify=false
+Categories=Network;FileTransfer;P2P;
+MimeType=application/x-bittorrent;x-scheme-handler/magnet;
+X-Desktop-File-Install-Version=0.20
