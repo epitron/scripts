@@ -12,9 +12,9 @@ if [ -d ~/bin ]; then
 fi
 
 ## Ruby 1.8
-if ruby -rubygems -e 1 > /dev/null 2>&1; then
-  export RUBYOPT="rubygems"
-fi
+#if ruby -rubygems -e 1 > /dev/null 2>&1; then
+#  export RUBYOPT="rubygems"
+#fi
 
 ## colors
 export CLICOLOR=1
