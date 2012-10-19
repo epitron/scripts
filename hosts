@@ -1,0 +1,2 @@
+#!/bin/bash
+sudoifnotroot nano /etc/hosts

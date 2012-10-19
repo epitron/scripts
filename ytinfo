@@ -1,0 +1,84 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+require 'mechanize'
+
+class YouTubeVideo < Struct.new(
+                :title,
+                :thumbnails,
+                :link,
+                :description,
+                :length,
+                :user,
+                :published,
+                :updated,
+                :rating,
+                :raters,
+                :keywords,
+                :favorites,
+                :views
+              )
+
+  def initialize(rec)
+
+    media = rec["media$group"]
+
+    self.title        = media["media$title"]["$t"]
+    self.thumbnails   = media["media$thumbnail"].map{|r| r["url"]}
+    self.link         = media["media$player"].first["url"].gsub('&feature=youtube_gdata_player','')
+    self.description  = media["media$description"]["$t"]
+    self.length       = media["yt$duration"]["seconds"].to_i
+    self.user         = rec["author"].first["name"]["$t"]
+    self.published    = DateTime.parse rec["published"]["$t"]
+    self.updated      = DateTime.parse rec["updated"]["$t"]
+    self.rating       = rec["gd$rating"]["average"]
+    self.raters       = rec["gd$rating"]["numRaters"]
+    self.keywords     = rec["media$group"]["media$keywords"]["$t"]
+    self.favorites    = rec["yt$statistics"]["favoriteCount"].to_i
+    self.views        = rec["yt$statistics"]["viewCount"].to_i
+  end
+
+end
+
+
+agent = Mechanize.new do |a|
+  a.user_agent_alias          = "Windows IE 7"
+  a.max_history               = 0
+  a.verify_mode               = OpenSSL::SSL::VERIFY_NONE
+end
+
+
+args = ARGV
+
+if args.empty?
+  print "Enter youtube url: "
+  args << gets.strip
+end
+
+for arg in args
+  if arg =~ %r{https?://(www\.)?youtube\.com/watch\?}
+    uri = URI.parse(arg)
+
+    #views = at("span.watch-view-count").clean_text
+    #date  = at("#eow-date").clean_text
+    #time  = at("span.video-time").clean_text
+    #title = at("#eow-title").clean_text
+
+    video_id = uri.params["v"]
+    page     = agent.get("http://gdata.youtube.com/feeds/api/videos/#{video_id}?v=1&alt=json")
+    json     = page.body.from_json
+
+    video    = YouTubeVideo.new(json["entry"])
+
+    views    = video.views.commatize
+    date     = video.published.strftime("%Y-%m-%d")
+    time     = video.length.to_hms
+    title    = video.title
+    rating   = video.rating ? "%0.1f" % video.rating : "?"
+
+    puts "<14>#{title} <8>\n\t<3>url: <15>#{uri}\n\t<3>length: <11>#{time}\n\t<3>views: <11>#{views}\n\t<3>rating: <11>#{rating}<8>\n\t<3>posted: <11>#{date}".colorize
+    #"< #{title} (length: #{time}, views: #{views}, posted: #{date}) >"
+  else
+    puts "Cannot recognize #{arg}"
+  end
+end
