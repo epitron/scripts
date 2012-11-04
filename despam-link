@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'epitools'
-require 'pry'
 
 class String
   def is_link?
