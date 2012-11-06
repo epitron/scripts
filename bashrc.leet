@@ -38,7 +38,7 @@ man() {
 if [ "$TERM" != "dumb" ]; then
   #export LS_OPTIONS='--color=auto'
 
-  if [ "`uname -s`" == "Darwin" ]
+  if [ $(uname -s | grep -E '(Darwin|BSD)') ]
   then
     alias ls="ls -G"
   else
