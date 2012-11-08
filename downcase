@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$*" == "" ]; then
-  files="*"
+  echo "usage: downcase <filenames>"
 else
   files="$@"
 fi
