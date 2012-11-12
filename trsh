@@ -41,7 +41,7 @@ use Fcntl;
 use Term::ANSIColor;
 use Term::ReadKey;
 
-my $VERSION = "3.15-2";
+my $VERSION = "3.15-6";
 
 ##############################################################################
 #			   Function Declarations                             #
@@ -546,7 +546,8 @@ sub PrintTrashSize()
 	foreach my $dev (keys %SystemDevices) {
 		next if($dev eq $Session{HomeDev});
 		$sz = GetTrashSize(GetDeviceTrash($dev));
-		PrintTrashSizeLine("$dev Trash", HumanReadableSize($sz));
+		$sz = HumanReadableSize($sz) if($OptionHumanReadable > 0);
+		PrintTrashSizeLine("$dev Trash", $sz);
 	}
 }
 
@@ -597,7 +598,6 @@ sub GetTrashSize($)
 
 	unless (-d $trash_path) {
 		$sz = 0;
-		$sz = HumanReadableSize($sz) if($OptionHumanReadable > 0);
 		return $sz;
 	}
 
@@ -615,8 +615,6 @@ sub GetTrashSize($)
 			return GetTrashSize($trash_path);
 		}
 	}
-
-	$sz = HumanReadableSize($sz) if($OptionHumanReadable > 0);
 
 	return $sz;
 }

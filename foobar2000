@@ -2,8 +2,8 @@
 
 # download latest foobar-portable to ~/.foobar2000
 FBHOME=~/.foobar2000
-  FBFN=foobar2000-portable-latest.zip
- FBURL=http://chris.ill-logic.com/files/$FBFN
+FBFN=foobar2000-portable-latest.zip
+FBURL=http://chris.ill-logic.com/files/$FBFN
 
 if [ ! -d "$FBHOME" ]; then
   echo

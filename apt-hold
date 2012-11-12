@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
-require 'pry'
 
+# sudoifnotroot, ruby style.
 unless Process.uid == 0
   system("sudo", __FILE__, *ARGV)
   exit

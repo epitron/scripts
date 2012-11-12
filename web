@@ -67,6 +67,7 @@ end
 def find_browsers(windows, browsers)
   browsers.map do |browser_name|
     browser_window = windows.select do |w|
+      next if w.command.nil?
       bin = w.command.split.first
       bin[browser_name]
     end.first
@@ -83,12 +84,12 @@ def best_browser_for(url)
 
   if browsers_on_current_desktop.any?
     browser_name, win = browsers_on_current_desktop.first
-    p [:activating_browser_on_current_desktop, win]
+    # p [:activating_browser_on_current_desktop, win]
   elsif 
     browsers_on_all_desktops = find_browsers(WM.windows)
     if browsers_on_all_desktops.any?
       browser_name, win  = browsers_on_all_desktops.first
-      p [:activating_browser_on_other_desktop, win]
+      # p [:activating_browser_on_other_desktop, win]
     end
   end
 
@@ -102,9 +103,7 @@ end
 def route(url)
   name, browser = best_browser_for(url)
 
-  puts "* Opening #{url}"
-  puts "  (using #{name} on #{browser.desktop.name})"
-  puts
+  puts "* Opening #{url.inspect} in #{name} on #{browser.desktop.name}"
 
   to_clipboard(url)
 
@@ -118,6 +117,21 @@ end
 ##############################################################
 
 if $0 == __FILE__
+  if ARGV.any? { |arg| arg == "--help" }
+    puts "== Usage: =="
+    puts " web <url>"
+    puts
+    puts "== What it Does: =="
+    puts " Opens the url in the best browser on the current desktop."
+    puts " If there's no browser on the current desktop, it finds the"
+    puts " best browser on the nearest desktop and jumps to that one."
+    puts
+    puts "== These are the browsers it will try to use (in order): =="
+    puts " #{BROWSERS.join(", ")}"
+    puts
+    exit
+  end
+
   if url = ARGV.first
     route url
   else
