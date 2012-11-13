@@ -164,6 +164,9 @@ alias tree="tree -C | less -SR"
 # Enable recursive glob (eg: **/*.txt)
 shopt -s globstar
 
+# make readline know that the window has resized
+shopt -s checkwinsize
+
 # Verify ! history expansions
 shopt -s histverify
 
