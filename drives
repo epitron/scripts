@@ -1,12 +1,21 @@
 #!/usr/bin/env ruby
 
-unless Process.uid == 0
-  system("sudo", __FILE__, *ARGV)
-  exit
+require 'epitools'
+# require 'awesome_print'
+
+def root_exec(command)
+  if Process.uid == 0
+    `#{command}`
+  else
+    `sudo #{command}`
+  end
 end
 
-require 'epitools'
-require 'awesome_print'
+#unless
+#  system("sudo", __FILE__, *ARGV)
+#  exit
+#end
+
 
 # Naming scheme:
 #   drivename = sda
@@ -34,10 +43,10 @@ class Drive < TypedStruct["drivename model family serial firmware size healthy s
         when /INFORMATION SECTION/
           fields = Hash[ section[1..-1].map { |line| line.split(/:\s+/) } ]
 
-          if fields["User Capacity"] =~ /([\d,]+) bytes \[([^\]]+)\]/
+          if fields["User Capacity"] =~ /([\d,]+) bytes/
             size = $1.gsub(",", '').to_i
           else
-            size = fields["User Capacity"]
+            size = nil #fields["User Capacity"]
           end
 
           opts.update(
@@ -83,7 +92,7 @@ class Drive < TypedStruct["drivename model family serial firmware size healthy s
 
       if not removable?(drivename)
         # data = (@@smartctl_cache[drivename] ||= `smartctl -i -H /dev/#{drivename}`)
-        data = `smartctl -i -H /dev/#{drivename}`
+        data = root_exec "smartctl -i -H /dev/#{drivename}"
         raise "Permission denied" if data[/Permission denied/]
 
         opts.update parse_info(data) 
@@ -145,7 +154,7 @@ end
 class Partition < TypedStruct["label uuid type dev drivename part:int size:int drive"]
 
   def self.all
-    `blkid`.nice_lines.
+    root_exec("blkid").nice_lines.
       map     { |line| Partition.from_line line }.
       sort_by { |part| 
         priority = case part.drivename
