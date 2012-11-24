@@ -1,13 +1,19 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 
-if [ -f /usr/bin/subl ]; then
-  CMD=/usr/bin/subl
-else
-  CMD=~/opt/sublime/sublime_text
-fi
+require 'epitools/wm'
+#require 'epitools/path'
 
-if wmls -c -q sublime_text; then
-  $CMD "$@" 2>&1 > /dev/null &
+cmd = %w[
+  /usr/bin/subl
+  ~/opt/sublime/sublime_text
+  /opt/sublime/sublime_text
+].map { |fn| File.expand_path fn }.find { |path| File.exists? path }
+
+raise "Sublime Text executable not found." unless cmd
+
+if WM.current_desktop.windows.find { |win| win.command =~ /sublime_text/ }
+  # "$@" 2>&1 > /dev/null &  
+  system(cmd, *ARGV)
 else
-  $CMD -n "$@" 2>&1 > /dev/null &
-fi
+  system(cmd, "-n", *ARGV)
+end
