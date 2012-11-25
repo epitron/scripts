@@ -1,0 +1,18 @@
+#!/bin/bash
+echo "* Rendering smb.conf.erb => smb.conf..."
+
+# backup the old one
+if [ -f smb.conf ]; then mv smb.conf smb.conf-old; fi
+
+erb smb.conf.erb > smb.conf
+
+echo "* Testing smb.conf..."
+
+if testparm -s smb.conf > /dev/null; then
+  echo "* Config file passed."
+  echo "* Restarting samba..."
+  i smbd
+  i nmbd
+else
+  echo "* Config file FAILED! Quitting..."
+fi

@@ -1,0 +1,72 @@
+<%
+shares = %{
+
+  video-1 /e/video
+  tv-1 /e/tv
+  tv-2 /f/tv
+  tv-3 /g/tv
+  talks /d/talks
+  mp3-1 /d/mp3
+  mp3-2 /e/mp3
+  movies-1 /e/movies
+  movies-2 /f/movies
+  movies-3 /g/movies
+  iso-1 /d/iso
+  musicvideos /d/musicvideos
+  documentaries /d/documentaries
+  apps /d/apps
+
+  incoming /home/epi/incoming rw
+
+  tv /home/epi/tv
+  movies /home/epi/movies
+  
+}.lines.map{|line| line.strip.split}.select{|pair| pair.any?}
+%>
+[global]
+	#netbios name = fizz
+	#server string = %h server (Samba, Ubuntu)
+	server string = A box full of wires and stuff.
+	#map to guest = Bad User
+	obey pam restrictions = Yes
+	pam password change = Yes
+	passwd program = /usr/bin/passwd %u
+	passwd chat = *Enter\snew\s*\spassword:* %n\n *Retype\snew\s*\spassword:* %n\n *password\supdated\ssuccessfully* .
+	unix password sync = Yes
+	syslog = 0
+	log file = /var/log/samba/log.%m
+	max log size = 1000
+	dns proxy = No
+	usershare allow guests = Yes
+	panic action = /usr/share/samba/panic-action %d
+
+	security = share
+
+	vfs objects = full_audit
+ 
+	full_audit:prefix = %u|%I|%m|%S
+	full_audit:success = mkdir rename unlink rmdir pwrite
+	full_audit:failure = none
+	full_audit:facility = LOCAL7
+	full_audit:priority = NOTICE
+
+[printers]
+	comment = All Printers
+	path = /var/spool/samba
+	create mask = 0700
+	printable = Yes
+	browseable = No
+
+[print$]
+	comment = Printer Drivers
+	path = /var/lib/samba/printers
+
+<% for name, path, opts in shares %>
+[<%= name %>]
+   read only = <%= (opts and opts[/w/]) ? "no" : "yes" %>
+   locking = no
+   path = <%= path %>
+   guest ok = yes
+   
+<% end %>
+
