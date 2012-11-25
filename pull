@@ -1,10 +1,17 @@
 #!/usr/bin/env ruby
-require 'epitools'
+require 'epitools/path'
+require 'epitools/colored'
+
+def show_help
+  puts DATA.read
+
+  exit 1
+end
 
 class Path
 
   def in_tree?(filename)
-    p = Path.pwd
+    p = Path[self.path]
     while p.dirs.any?
       return true if (p/filename).exists?
       p.dirs.pop
@@ -14,62 +21,65 @@ class Path
 
 end
 
-## args
 
-if ARGV.any?
-  targets = ARGV
-else
-  targets = ['.']
-end
+def pull(path)
 
+  path = Path[path]
 
-## checkout every arg
+  if path.dir?
 
-for target in targets
-
-  case target
-  when %r{^git://}, %r{^https://.+\.git}, %r{\S+@\S+:\s+\.git}
-
-    cmd = ["git", "clone", target]
-
-    puts
-    puts "=== Cloning #{target} ==="
-    puts
-    system(*cmd)
-
-  else
-
-    path = Path[target]
-
-    if path.exists?
-
-      if path.in_tree?(".git")
-        cmd = "git pull"
-      elsif path.in_tree?(".hg")
-        cmd = "hg pull -u"
-      elsif (path/".svn").dir?
-        cmd = "svn update"
-      elsif (path/"CVS").dir?
-        cmd = "cvs update -dP"
-      else
-        puts
-        puts "No version control found. Terminating!!!"
-        puts "(ie: run it in a folder with a .svn, .git, CVS, or .hg folder in it)"
-        puts
-        next
-      end
-
-      puts
-      puts "=== Updating #{target} (#{cmd}) === "
-      puts
-      system(cmd)
-
+    if path.in_tree?(".git")
+      cmd = "git pull"
+    elsif path.in_tree?(".hg")
+      cmd = "hg pull -u"
+    elsif (path/".svn").dir?
+      cmd = "svn update"
+    elsif (path/"CVS").dir?
+      cmd = "cvs update -dP"
+    elsif false #bzr
+      cmd = "bzr update"
     else
-      puts "* #{target.inspect} not found"
+      puts
+      puts "<4>### <14>Skipping <10>#{path} <8>(<7>not version controlled<8>) <4>###".colorize
+      puts
+      return
     end
 
-  end
+    puts
+    puts "<7>=== <15>Updating <11>#{path} <8>(<3>#{cmd}<8>) <7>===".colorize
+    puts
+    
+    path.cd do
+      system(cmd)
+    end
 
+  elsif path.file?
+    puts
+    puts "<4>### <14>Skipping <10>#{path} <8>(<12>not a directory<8>) <4>###".colorize
+  else
+    puts
+    puts "<4>### <14>Skipping <10>#{path} <8>(<9>doesn't exist!<8>) <4>###".colorize
+  end
 end
 
+
+if $0 == __FILE__
+  show_help if ARGV.include? "--help"
+  args = ARGV.any? ? ARGV : [Path.pwd]
+
+  args.each { |arg| pull(arg) }
+end
+
+
+__END__
+Usage:
+
+    pull
+    pull <path(s)>
+
+Effect:
+    If the path(s) (or current directory) is a version controlled checkout,
+    it updates it.
+    
+    Supports git, svn, cvs, and mercurial.
 
