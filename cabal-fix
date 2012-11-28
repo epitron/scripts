@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+## How to fix many cabal package situations:
+## http://stackoverflow.com/questions/7961604/fixing-issues-noted-by-ghc-pkg-check
+
+
+splitted = `ghc-pkg check 2>&1`.lines.split_after("listed above, or because they depend on a broken package.")
+
+if splitted.size > 1
+  broken_packages = splitted.last
+
+  puts "Broken packages:"  
+  pp broken_packages
+
+  puts
+  if prompt("Remove them?") == "y"
+    pkgs = broken_packages.lines.map {|line| puts line.strip.split("-")[0..-2].join("-") }
+    pkgs.each { |pkg| system("ghc-pkg unregister --force --user #{pkg}") }
+  else
+    puts "Aborting..."
+  end  
+
+else
+  puts "No broken packages!"
+end
+
