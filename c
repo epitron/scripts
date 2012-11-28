@@ -4,18 +4,6 @@ require 'coderay'
 ##############################################################################
 
 
-
-### Markdown Renderer (BlackCarpet) ##########################################
-
-def render_markdown(data)
-  # Lazily load markdown renderer
-  eval DATA.read
-
-  carpet = Redcarpet::Markdown.new(BlackCarpet, :fenced_code_blocks=>true)
-  carpet.render(data)
-end
-
-
 ##############################################################################
 
 def lesspipe(*args)
@@ -67,6 +55,17 @@ end
 
 ##############################################################################
 
+def render_markdown(data)
+  # Lazily load markdown renderer
+  eval DATA.read
+
+  carpet = Redcarpet::Markdown.new(BlackCarpet, :fenced_code_blocks=>true)
+  carpet.render(data)
+end
+
+
+##############################################################################
+
 args = ARGV
 
 lesspipe(:wrap=>true) do |less|
@@ -86,6 +85,7 @@ lesspipe(:wrap=>true) do |less|
 end
 
 
+### Markdown ANSI Renderer ("BlackCarpet") #######################################
 __END__
 
 require 'epitools/colored'
