@@ -1,8 +1,7 @@
 #!/usr/bin/env ruby
 ##############################################################################
-require 'coderay'
-##############################################################################
 
+require 'coderay'
 
 ##############################################################################
 
@@ -64,7 +63,7 @@ def render_markdown(data)
 end
 
 
-##############################################################################
+### MAIN #####################################################################
 
 args = ARGV
 
@@ -85,8 +84,11 @@ lesspipe(:wrap=>true) do |less|
 end
 
 
-### Markdown ANSI Renderer ("BlackCarpet") #######################################
+### Markdown ANSI Renderer ("BlackCarpet") ###################################
+
 __END__
+
+# This gets lazily loaded if markdown is to be rendered.
 
 require 'epitools/colored'
 require 'redcarpet'
