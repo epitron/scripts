@@ -1,42 +1,192 @@
-## colors
+#if [ -f /etc/profile ]; then . /etc/profile; fi
+#PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 
+if [ -d /usr/scripts ]; then
+  export PATH=/usr/scripts:$PATH
+elif [ -d ~/scripts ]; then
+  export PATH=~/scripts:$PATH
+fi
+
+if [ -d ~/bin ]; then
+  export PATH=$PATH:~/bin
+fi
+
+## Ruby 1.8
+#if ruby -rubygems -e 1 > /dev/null 2>&1; then
+#  export RUBYOPT="rubygems"
+#fi
+
+## colors
 export CLICOLOR=1
 #export TERM=xterm-color
-eval `dircolors -b`
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
+
+# colorful manpages
+man() {
+	env \
+		LESS_TERMCAP_mb=$(printf "\e[1;33m") \
+		LESS_TERMCAP_md=$(printf "\e[1;36m") \
+		LESS_TERMCAP_me=$(printf "\e[0m") \
+		LESS_TERMCAP_se=$(printf "\e[0m") \
+		LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+		LESS_TERMCAP_ue=$(printf "\e[0m") \
+		LESS_TERMCAP_us=$(printf "\e[1;38m") \
+			man "$@"
+}
 
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
-    #export LS_OPTIONS='--color=auto'
+  #export LS_OPTIONS='--color=auto'
+
+  if [ $(uname -s | grep -E '(Darwin|BSD)') ]
+  then
+    alias ls="ls -G"
+  else
+    eval `dircolors -b`
     alias ls="ls --color=auto"
+  fi
 fi
+
+## FUCK YOU, ^S AND ^Q!!
+#stty stop undef
+#stty start undef
+
+## Pager
+
+export PAGER=less
 
 ## aliases
 
 alias ll='ls -l'
-alias l='ls -alF'
+alias l='ls -al'
 alias la='ls -la'
 alias ll='ls -l'
 
+# alias +='pushd .'
+alias -- -='popd'
+alias cd..='cd ..'
 alias ..='cd ..'
 alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias ......='cd ../../../../..'
+alias .......='cd ../../../../../..'
 
 alias nano="nano -w"
 alias pico="nano"
 alias mv="mv -v"
 alias cp="cp -v"
+alias rm='trsh'
 alias less='less -X -F -i'
 alias diff='diff -u'
 alias whois='whois -H'
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
-alias ssh='ssh-termtitle'
+alias cx='chmod +x'
+alias c-x='chmod -x'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+alias a2="audacious"
+
+#if [ "$TERM" == "xterm" ]
+#then
+#  alias ssh='ssh-termtitle'
+#fi
+alias ssh='ssh -2'
+alias scpfast='scp -c arcfour128'
+alias sshfast='ssh -c arcfour128'
+
+#alias ack='ack-grep'
 
 alias md='mkdir -p'
 alias rehash='hash -r'
 alias df='df -h'
+alias screen='screen -U'
 
+alias dict='dictless'
+alias chrome='google-chrome'
+alias m='mplayer-titled'
 
-# uberprompt
-. ~/scripts/zsh-prompt
+## Git aliases
+alias git="hub"
+alias gs="git status"
+alias gd="git diff"
+alias ga="git add"
+#alias gl="git log"
+alias gc="git clone"
+alias gch="git checkout"
+# alias g[[="git stash"
+# alias g]]="git stash pop"
+# alias g[]="git stash list; git stash show"
+# alias g+="git add"
+alias cu="pull"
 
+alias r="rails"
+alias pad="padrino"
+
+alias bwm="bwm-ng"
+alias bmon="bwm-ng"
+
+alias dmenu="dmenu -l 50"
+
+## Automatic sudo
+#alias gem="sudoifnotroot gem"
+#alias mount="sudoifnotroot mount"
+alias ufw="sudoifnotroot ufw"
+alias fdisk='sudoifnotroot fdisk'
+
+alias nethogs="sudoifnotroot nethogs"
+alias bhogs="sudoifnotroot nethogs"
+alias iptables="sudoifnotroot iptables"
+alias ifconfig='sudoifnotroot ifconfig'
+alias route='sudoifnotroot route'
+alias netcfg='sudoifnotroot netcfg'
+alias dhcpcd='sudoifnotroot dhcpcd'
+
+alias off='sudoifnotroot shutdown -h now'
+alias reboot='sudoifnotroot shutdown -r now'
+
+alias resett="tput reset"
+
+alias tree="t"
+
+if [ "$OSTYPE" == "cygwin" ]; then
+  alias open="cygstart"
+elif [ -f /usr/bin/gnome-open ]; then
+  alias open="gnome-open"
+elif [ -f /usr/bin/exo-open ]; then
+  alias open="exo-open"
+fi
+
+alias tree="tree -C | less -SR"
+
+## no display!
+#unset DISPLAY
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+
+#if [ -f /etc/bash_completion ]; then
+#    . /etc/bash_completion
+#fi
+
+alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
+alias a='sudoifnotroot aptitude'
+alias sus='ssu'
+
+alias dpkg="sudoifnotroot dpkg"
+
+## Arch linux
+alias pacman='sudo pacman-color'
+alias pac='pacman -S'     # install package
+alias pacs='pacman -Ss'   # search for package
+alias pacg='pacman -Qg'   # show groups
+alias pacu='pacman -Syu'  # update packages
+alias pacd='pacman -Syuw' # only download updates (no install)
+alias paci='pacman -Si'   # show package info
+alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
+alias pacf='pacman -Qo'   # which package contains this file?
+alias y='yaourt'
+alias z='zeus'

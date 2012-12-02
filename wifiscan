@@ -4,7 +4,7 @@ require 'rubygems'
 require 'epitools'
 require 'pp'
 
-devs = `iwconfig 2> /dev/null`.grep(/802\.11/).map{|l| l.split.first }.compact
+devs = `iwconfig 2> /dev/null`.lines.grep(/802\.11/).map{|l| l.split.first }.compact
 
 for dev in devs
 
@@ -18,7 +18,7 @@ for dev in devs
   #data = open("iwlist.txt").read
     
   puts
-  results = data.split_before(/Cell (\d+)/).map do |ap|
+  results = data.lines.split_before(/Cell (\d+)/).map do |ap|
   
     result = {}
     
@@ -50,7 +50,7 @@ for dev in devs
  
   end.select(&:any?)
   
-  pp results
+  #pp results
   
   for channel, results in results.group_by{|result| result[:channel]}.sort
     puts "Channel: #{channel}"
