@@ -36,6 +36,7 @@ def extract_audio(infile)
   puts "Output: #{outfile}"
   puts
   
+  # -lameopts q=5
   cmd = %w[mencoder -of rawaudio -oac mp3lame -ovc copy -o] + [outfile.to_s, infile.to_s]
   system(*cmd)
   

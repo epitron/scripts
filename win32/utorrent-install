@@ -1,0 +1,4 @@
+# Run "sudo desktop-file-install utorrent.desktop" to install to /usr/share/applications and setup mime associations.
+echo "Setting up file associations/magnet URL handler..."
+sudo desktop-file-install utorrent.desktop
+echo "Done."
