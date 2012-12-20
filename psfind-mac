@@ -1,0 +1,11 @@
+#!/bin/bash
+PLATFORM=`uname`
+
+if [ "$PLATFORM" == "Darwin" ]
+then
+  ps ax | grep -v "psfind" | grep -v "grep --color -si" | grep --color -si "$*"
+else
+  ps afx -eo '%p %u %t %a' | grep -v "psfind" | grep -v "grep --color -si" | grep --color -si "$*"
+fi
+
+exit $?
