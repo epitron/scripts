@@ -1,6 +1,6 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl -X
 # cloc -- Count Lines of Code {{{1
-# Copyright (C) 2006-2010 Northrop Grumman Corporation
+# Copyright (C) 2006-2011 Northrop Grumman Corporation
 # Author:  Al Danial <al.danial@gmail.com>
 #          First release August 2006
 #
@@ -33,7 +33,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 # 1}}}
-my $VERSION = sprintf("%.2f", 1.51);
+my $VERSION = sprintf("%.2f", 1.56);
 my $URL     = "http://cloc.sourceforge.net";
 require 5.006;
 # use modules                                  {{{1
@@ -114,51 +114,58 @@ if (defined $Algorithm::Diff::VERSION) {
 
 use Text::Tabs qw { expand };
 use Cwd qw { cwd };
+use File::Glob;
 # 1}}}
 # Usage information, options processing.       {{{1
 my $ON_WINDOWS = 0;
    $ON_WINDOWS = 1 if ($^O =~ /^MSWin/) or ($^O eq "Windows_NT");
-   $ON_WINDOWS = 0 if $ENV{'SHELL'};  # make Cygwin look like Unix
-
-my $CLOC_XSL   = "cloc.xsl"; # created with --xsl
+if ($ON_WINDOWS and $ENV{'SHELL'}) {
+    if ($ENV{'SHELL'} =~ m{^/}) {
+        $ON_WINDOWS = 0;  # make Cygwin look like Unix
+    } else {
+        $ON_WINDOWS = 1;  # MKS defines $SHELL but still acts like Windows
+    }
+}
 
 my $NN     = chr(27) . "[0m";  # normal
-   $NN     = "" if $ON_WINDOWS;
+   $NN     = "" if $ON_WINDOWS or !(-t STDERR); # -t STDERR:  is it a terminal?
 my $BB     = chr(27) . "[1m";  # bold
-   $BB     = "" if $ON_WINDOWS;
+   $BB     = "" if $ON_WINDOWS or !(-t STDERR);
 my $script = basename $0;
 my $usage  = "
-Usage: $script [options] <file(s)/dir(s)> | <report files>
+Usage: $script [options] <file(s)/dir(s)> | <set 1> <set 2> | <report files>
 
- Count physical lines of source code in the given files (may be
- archives such as compressed tarballs or zip files) and/or
- recursively below the given directories.
+ Count, or compute differences of, physical lines of source code in the
+ given files (may be archives such as compressed tarballs or zip files)
+ and/or recursively below the given directories.
 
  ${BB}Input Options${NN}
    --extract-with=<cmd>      This option is only needed if cloc is unable
                              to figure out how to extract the contents of
                              the input file(s) by itself.
                              Use <cmd> to extract binary archive files (e.g.:
-                             .tar.gz, .zip, .Z).  Use the literal '>FILE<' as 
+                             .tar.gz, .zip, .Z).  Use the literal '>FILE<' as
                              a stand-in for the actual file(s) to be
                              extracted.  For example, to count lines of code
-                             in the input files 
-                                gcc-4.2.tar.gz  perl-5.8.8.tar.gz  
-                             on Unix use  
+                             in the input files
+                                gcc-4.2.tar.gz  perl-5.8.8.tar.gz
+                             on Unix use
                                --extract-with='gzip -dc >FILE< | tar xf -'
                              or, if you have GNU tar,
-                               --extract-with='tar zxf >FILE<' 
-                             and on Windows use: 
+                               --extract-with='tar zxf >FILE<'
+                             and on Windows use:
                                --extract-with=\"\\\"c:\\Program Files\\WinZip\\WinZip32.exe\\\" -e -o >FILE< .\"
                              (if WinZip is installed there).
-   --list-file=<file>        Take the list of file and/or directory names to 
-                             process from <file> which has one file/directory 
+   --list-file=<file>        Take the list of file and/or directory names to
+                             process from <file> which has one file/directory
                              name per line.  See also --exclude-list-file.
    --unicode                 Check binary files to see if they contain Unicode
                              expanded ASCII text.  This causes performance to
                              drop noticably.
 
  ${BB}Processing Options${NN}
+   --autoconf                Count .in files (as processed by GNU autoconf) of
+                             recognized languages.
    --by-file                 Report results for every source file encountered.
    --by-file-by-lang         Report results for every source file encountered
                              in addition to reporting by language.
@@ -166,23 +173,37 @@ Usage: $script [options] <file(s)/dir(s)> | <report files>
                              source file(s) of <set1> and <set2>.  The inputs
                              may be pairs of files, directories, or archives.
                              Use --diff-alignment to generate a list showing
-                             which file pairs where compared.
+                             which file pairs where compared.  See also
+                             --ignore-case, --ignore-whitespace.
+   --follow-links            [Unix only] Follow symbolic links to directories
+                             (sym links to files are always followed).
    --force-lang=<lang>[,<ext>]
-                             Process all files that have a <ext> extension 
-                             with the counter for language <lang>.  For 
-                             example, to count all .f files with the 
-                             Fortran 90 counter (which expects files to 
-                             end with .f90) instead of the default Fortran 77 
+                             Process all files that have a <ext> extension
+                             with the counter for language <lang>.  For
+                             example, to count all .f files with the
+                             Fortran 90 counter (which expects files to
+                             end with .f90) instead of the default Fortran 77
                              counter, use
                                --force-lang=\"Fortran 90\",f
                              If <ext> is omitted, every file will be counted
-                             with the <lang> counter.  This option can be 
+                             with the <lang> counter.  This option can be
                              specified multiple times (but that is only
-                             useful when <ext> is given each time).  
-                             See also --script-lang.
+                             useful when <ext> is given each time).
+                             See also --script-lang, --lang-no-ext.
+   --ignore-whitespace       Ignore horizontal white space when comparing files
+                             with --diff.  See also --ignore-case.
+   --ignore-case             Ignore changes in case; consider upper- and lower-
+                             case letters equivalent when comparing files with
+                             --diff.  See also --ignore-whitespace.
+   --lang-no-ext=<lang>      Count files without extensions using the <lang>
+                             counter.  This option overrides internal logic
+                             for files without extensions (where such files
+                             are checked against known scripting languages
+                             by examining the first line for #!).  See also
+                             --force-lang, --script-lang.
    --read-binary-files       Process binary files in addition to text files.
                              This is usually a bad idea and should only be
-                             attempted with text files that have embedded 
+                             attempted with text files that have embedded
                              binary data.
    --read-lang-def=<file>    Load from <file> the language processing filters.
                              (see also --write-lang-def) then use these filters
@@ -195,8 +216,9 @@ Usage: $script [options] <file(s)/dir(s)> | <report files>
                                 --script-lang=Perl,perl5.8.8
                              The language name is case insensitive but the
                              name of the script language executable, <s>,
-                             must have the right case.  This option can be 
-                             specified multiple times.  See also --force-lang.
+                             must have the right case.  This option can be
+                             specified multiple times.  See also --force-lang,
+                             --lang-no-ext.
    --sdir=<dir>              Use <dir> as the scratch directory instead of
                              letting File::Temp chose the location.  Files
                              written to this location are not removed at
@@ -205,19 +227,27 @@ Usage: $script [options] <file(s)/dir(s)> | <report files>
                              a performance boost at the expense of counting
                              files with identical contents multiple times
                              (if such duplicates exist).
+   --stdin-name=<file>       Give a file name to use to determine the language
+                             for standard input.
    --strip-comments=<ext>    For each file processed, write to the current
                              directory a version of the file which has blank
                              lines and comments removed.  The name of each
-                             stripped file is the original file name with 
+                             stripped file is the original file name with
                              .<ext> appended to it.  It is written to the
                              current directory unless --original-dir is on.
-   --original-dir            [Only effective in combination with 
-                             --strip-comments]  Write the stripped files 
+   --original-dir            [Only effective in combination with
+                             --strip-comments]  Write the stripped files
                              to the same directory as the original files.
    --sum-reports             Input arguments are report files previously
                              created with the --report-file option.  Makes
                              a cumulative set of results containing the
                              sum of data from the individual report files.
+   --unix                    Override the operating system autodetection
+                             logic and run in UNIX mode.  See also
+                             --windows, --show-os.
+   --windows                 Override the operating system autodetection
+                             logic and run in Microsoft Windows mode.
+                             See also --unix, --show-os.
 
  ${BB}Filter Options${NN}
    --exclude-dir=<D1>[,D2,]  Exclude the given comma separated directories
@@ -225,27 +255,37 @@ Usage: $script [options] <file(s)/dir(s)> | <report files>
                              example  --exclude-dir=.cache,test  will skip
                              all files that have /.cache/ or /test/ as part
                              of their path.
-                             Directories named .cvs and .svn are always
-                             excluded.
+                             Directories named .bzr, .cvs, .hg, .git, and
+                             .svn are always excluded.
+   --exclude-ext=<ext1>[,<ext2>[...]]
+                             Do not count files having the given file name
+                             extensions.
    --exclude-lang=<L1>[,L2,] Exclude the given comma separated languages
                              L1, L2, L3, et cetera, from being counted.
-   --exclude-list-file=<file>  Ignore files whose names appear in <file>.
-                             <file> should have one entry per line.  Relative
-                             path names will be resolved starting from the
-                             directory where cloc is invoked.  See also
-                             --list-file.
-   --match-f=<regex>         Only count files whose basenames match the Perl 
+   --exclude-list-file=<file>  Ignore files and/or directories whose names
+                             appear in <file>.  <file> should have one entry
+                             per line.  Relative path names will be resolved
+                             starting from the directory where cloc is
+                             invoked.  See also --list-file.
+   --match-f=<regex>         Only count files whose basenames match the Perl
                              regex.  For example
                                --match-f=^[Ww]idget
                              only counts files that start with Widget or widget.
    --not-match-f=<regex>     Count all files except those whose basenames
                              match the Perl regex.
+   --match-d=<regex>         Only count files in directories matching the Perl
+                             regex.  For example
+                               --match-d=/src/
+                             only counts files in directories containing
+                             /src/
+   --not-match-d=<regex>     Count all files except those in directories
+                             matching the Perl regex.
    --skip-win-hidden         On Windows, ignore hidden files.
 
  ${BB}Debug Options${NN}
    --categorized=<file>      Save names of categorized files to <file>.
    --counted=<file>          Save names of processed source files to <file>.
-   --diff-alignment=<file>   Write to <file> a list of files and file pairs 
+   --diff-alignment=<file>   Write to <file> a list of files and file pairs
                              showing which files were added, removed, and/or
                              compared during a run with --diff.  This switch
                              forces the --diff mode on.
@@ -253,12 +293,14 @@ Usage: $script [options] <file(s)/dir(s)> | <report files>
    --found=<file>            Save names of every file found to <file>.
    --ignored=<file>          Save names of ignored files and the reason they
                              were ignored to <file>.
-   --print-filter-stages     Print to STDOUT processed source code before and 
+   --print-filter-stages     Print to STDOUT processed source code before and
                              after each filter is applied.
    --show-ext[=<ext>]        Print information about all known (or just the
                              given) file extensions and exit.
    --show-lang[=<lang>]      Print information about all known (or just the
                              given) languages and exit.
+   --show-os                 Print the value of the operating system mode
+                             and exit.  See also --unix, --windows.
    -v[=<n>]                  Verbose switch (optional numeric value).
    --version                 Print the version of this program and exit.
 
@@ -280,19 +322,25 @@ Usage: $script [options] <file(s)/dir(s)> | <report files>
    --report-file=<file>      Write the results to <file> instead of STDOUT.
    --out=<file>              Synonym for --report-file=<file>.
    --csv                     Write the results as comma separated values.
+   --csv-delimiter=<C>       Use the character <C> as the delimiter for comma
+                             separated files instead of ,.  This switch forces
+                             --csv to be on.
    --sql=<file>              Write results as SQL create and insert statements
                              which can be read by a database program such as
-                             SQLite.  If <file> is 1, output is sent to STDOUT.
-   --sql-project=<name>      Use <name> as the project identifier for the 
+                             SQLite.  If <file> is -, output is sent to STDOUT.
+   --sql-project=<name>      Use <name> as the project identifier for the
                              current run.  Only valid with the --sql option.
    --sql-append              Append SQL insert statements to the file specified
-                             by --sql and do not generate table creation 
+                             by --sql and do not generate table creation
                              statements.  Only valid with the --sql option.
+   --sum-one                 For plain text reports, show the SUM: output line
+                             even if only one input file is processed.
    --xml                     Write the results in XML.
-   --xsl[=<file>]            Reference <file> as an XSL stylesheet within
-                             the XML output.  If <file> is not given, writes
-                             a default stylesheet, $CLOC_XSL.  This switch
-                             forces --xml to be on.
+   --xsl=<file>              Reference <file> as an XSL stylesheet within
+                             the XML output.  If <file> is 1 (numeric one),
+                             writes a default stylesheet, cloc.xsl (or
+                             cloc-diff.xsl if --diff is also given).
+                             This switch forces --xml on.
    --yaml                    Write the results in YAML.
 
 ";
@@ -308,6 +356,7 @@ my (
     $opt_categorized          ,
     $opt_found                ,
     @opt_force_lang           ,
+    $opt_lang_no_ext          ,
     @opt_script_lang          ,
     $opt_diff                 ,
     $opt_diff_alignment       ,
@@ -341,17 +390,30 @@ my (
     $opt_xsl                  ,
     $opt_yaml                 ,
     $opt_csv                  ,
-	$opt_match_f              ,
-	$opt_not_match_f          ,
-	$opt_skip_uniqueness      ,
-	$opt_list_file            ,
-	$opt_help                 ,
-	$opt_skip_win_hidden      ,
-	$opt_read_binary_files    ,
-	$opt_sql                  ,
-	$opt_sql_append           ,
-	$opt_sql_project          ,
-	$opt_inline               ,
+    $opt_csv_delimiter        ,
+    $opt_match_f              ,
+    $opt_not_match_f          ,
+    $opt_match_d              ,
+    $opt_not_match_d          ,
+    $opt_skip_uniqueness      ,
+    $opt_list_file            ,
+    $opt_help                 ,
+    $opt_skip_win_hidden      ,
+    $opt_read_binary_files    ,
+    $opt_sql                  ,
+    $opt_sql_append           ,
+    $opt_sql_project          ,
+    $opt_inline               ,
+    $opt_exclude_ext          ,
+    $opt_ignore_whitespace    ,
+    $opt_ignore_case          ,
+    $opt_follow_links         ,
+    $opt_autoconf             ,
+    $opt_sum_one              ,
+    $opt_stdin_name           ,
+    $opt_force_on_windows     ,
+    $opt_force_on_unix        ,   # actually forces !$ON_WINDOWS
+    $opt_show_os              ,
    );
 my $getopt_success = GetOptions(
    "by_file|by-file"                         => \$opt_by_file             ,
@@ -361,7 +423,7 @@ my $getopt_success = GetOptions(
    "exclude_lang|exclude-lang=s"             => \$opt_exclude_lang        ,
    "exclude_dir|exclude-dir=s"               => \$opt_exclude_dir         ,
    "exclude_list_file|exclude-list-file=s"   => \$opt_exclude_list_file   ,
-   "extract_with|extract-with=s"             => \$opt_extract_with        , 
+   "extract_with|extract-with=s"             => \$opt_extract_with        ,
    "found=s"                                 => \$opt_found               ,
    "diff"                                    => \$opt_diff                ,
    "diff-alignment|diff_alignment=s"         => \$opt_diff_alignment      ,
@@ -388,12 +450,16 @@ my $getopt_success = GetOptions(
    "version"                                 => \$opt_version             ,
    "write_lang_def|write-lang-def=s"         => \$opt_write_lang_def      ,
    "xml"                                     => \$opt_xml                 ,
-   "xsl:s"                                   => \$opt_xsl                 ,
+   "xsl=s"                                   => \$opt_xsl                 ,
    "force_lang|force-lang=s"                 => \@opt_force_lang          ,
+   "lang_no_ext|lang-no-ext=s"               => \$opt_lang_no_ext         ,
    "yaml"                                    => \$opt_yaml                ,
    "csv"                                     => \$opt_csv                 ,
+   "csv_delimeter|csv-delimiter=s"           => \$opt_csv_delimiter       ,
    "match_f|match-f=s"                       => \$opt_match_f             ,
    "not_match_f|not-match-f=s"               => \$opt_not_match_f         ,
+   "match_d|match-d=s"                       => \$opt_match_d             ,
+   "not_match_d|not-match-d=s"               => \$opt_not_match_d         ,
    "list_file|list-file=s"                   => \$opt_list_file           ,
    "help"                                    => \$opt_help                ,
    "skip_win_hidden|skip-win-hidden"         => \$opt_skip_win_hidden     ,
@@ -402,8 +468,20 @@ my $getopt_success = GetOptions(
    "sql_project|sql-project=s"               => \$opt_sql_project         ,
    "sql_append|sql-append"                   => \$opt_sql_append          ,
    "inline"                                  => \$opt_inline              ,
+   "exclude_ext|exclude-ext=s"               => \$opt_exclude_ext         ,
+   "ignore_whitespace|ignore-whitespace"     => \$opt_ignore_whitespace   ,
+   "ignore_case|ignore-case"                 => \$opt_ignore_case         ,
+   "follow_links|follow-links"               => \$opt_follow_links        ,
+   "autoconf"                                => \$opt_autoconf            ,
+   "sum_one|sum-one"                         => \$opt_sum_one             ,
+   "stdin_name|stdin-name=s"                 => \$opt_stdin_name          ,
+   "windows"                                 => \$opt_force_on_windows    ,
+   "unix"                                    => \$opt_force_on_unix       ,
+   "show_os|show-os"                         => \$opt_show_os             ,
   );
 $opt_by_file  = 1 if defined  $opt_by_file_by_lang;
+my $CLOC_XSL = "cloc.xsl"; # created with --xsl
+   $CLOC_XSL = "cloc-diff.xsl" if $opt_diff;
 die "\n" unless $getopt_success;
 die $usage if $opt_help;
 my %Exclude_Language = ();
@@ -412,12 +490,23 @@ my %Exclude_Language = ();
 my %Exclude_Dir      = ();
    %Exclude_Dir      = map { $_ => 1 } split(/,/, $opt_exclude_dir ) 
         if $opt_exclude_dir ;
-# Forcibly exclude .svn and .cvs directories.  The contents of these
+# Forcibly exclude .svn, .cvs, .hg, .git, .bzr directories.  The contents of these
 # directories often conflict with files of interest.
-$opt_exclude_dir     = 1;
-$Exclude_Dir{".svn"} = 1;
-$Exclude_Dir{".cvs"} = 1;
-$opt_diff            = 1 if $opt_diff_alignment;
+$opt_exclude_dir       = 1;
+$Exclude_Dir{".svn"}   = 1;
+$Exclude_Dir{".cvs"}   = 1;
+$Exclude_Dir{".hg"}    = 1;
+$Exclude_Dir{".git"}   = 1;
+$Exclude_Dir{".bzr"}   = 1;
+$opt_diff              = 1  if $opt_diff_alignment;
+$opt_exclude_ext       = "" unless $opt_exclude_ext;
+$opt_ignore_whitespace = 0  unless $opt_ignore_whitespace;
+$opt_ignore_case       = 0  unless $opt_ignore_case;
+$opt_lang_no_ext       = 0  unless $opt_lang_no_ext;
+$opt_follow_links      = 0  unless $opt_follow_links;
+$opt_csv               = 1  if $opt_csv_delimiter;
+$ON_WINDOWS            = 1  if $opt_force_on_windows;
+$ON_WINDOWS            = 0  if $opt_force_on_unix;
 
 # Options defaults:
 $opt_progress_rate = 100 unless defined $opt_progress_rate;
@@ -427,12 +516,12 @@ if (!defined $opt_v) {
     $opt_v  = 1;
 }
 if (defined $opt_xsl) {
-    $opt_xml  = 1;
-    $opt_xsl  = $CLOC_XSL unless $opt_xsl;
+    $opt_xsl = $CLOC_XSL if $opt_xsl eq "1";
+    $opt_xml = 1;
 }
 my $skip_generate_report = 0;
 $opt_sql = 0 unless defined $opt_sql;
-if ($opt_sql eq "1") { # stream SQL output to STDOUT
+if ($opt_sql eq "-" || $opt_sql eq "1") { # stream SQL output to STDOUT
     $opt_quiet            = 1;
     $skip_generate_report = 1;
     $opt_by_file          = 1;
@@ -446,9 +535,10 @@ if ($opt_sql eq "1") { # stream SQL output to STDOUT
 die $usage unless defined $opt_version         or
                   defined $opt_show_lang       or
                   defined $opt_show_ext        or
+                  defined $opt_show_os         or
                   defined $opt_write_lang_def  or
                   defined $opt_list_file       or
-                  defined $opt_list_file       or
+                  defined $opt_xsl             or
                   scalar @ARGV >= 1;
 die "--diff requires at least two arguments\n" 
     if $opt_diff and scalar @ARGV < 2;
@@ -463,8 +553,10 @@ my $nFiles_Found = 0;  # updated in make_file_list
 my (%Language_by_Extension, %Language_by_Script,
     %Filters_by_Language, %Not_Code_Extension, %Not_Code_Filename,
     %Language_by_File, %Scale_Factor, %Known_Binary_Archives,
+    %EOL_Continuation_re,
    );
 my $ALREADY_SHOWED_HEADER = 0;
+my $ALREADY_SHOWED_XML_SECTION = 0;
 my %Error_Codes = ( 'Unable to read'                => -1,
                     'Neither file nor directory'    => -2, 
                     'Diff error (quoted comments?)' => -3, 
@@ -480,6 +572,7 @@ if ($opt_read_lang_def) {
         \%Not_Code_Extension   , # Not_Code_Extension{jpg}     = 1
         \%Not_Code_Filename    , # Not_Code_Filename{README}   = 1
         \%Scale_Factor         , # Scale_Factor{Perl}          = 4.0
+        \%EOL_Continuation_re  , # EOL_Continuation_re{C++}    = '\\$'
         );
 } else {
     set_constants(               #
@@ -492,7 +585,11 @@ if ($opt_read_lang_def) {
         \%Not_Code_Filename    , # Not_Code_Filename{README}   = 1
         \%Scale_Factor         , # Scale_Factor{Perl}          = 4.0
         \%Known_Binary_Archives, # Known_Binary_Archives{.tar} = 1
+        \%EOL_Continuation_re  , # EOL_Continuation_re{C++}    = '\\$'
         );
+}
+if ($opt_lang_no_ext and !defined $Filters_by_Language{$opt_lang_no_ext}) {
+    die_unknown_lang($opt_lang_no_ext, "--lang-no-ext")
 }
 
 # Process command line provided extention-to-language mapping overrides.
@@ -534,12 +631,23 @@ foreach my $pair (@opt_script_lang) {
     $Language_by_Script{$script_name} = $Recognized_Language_lc{$lang_lc};
 }
 
-# If SQL output is requested, keep track of directory names generated by 
-# File::Temp::tempdir and used to temporarily hold the results of compressed
-# archives.  Contents of the SQL table 't' will be much cleaner if these
-# meaningless directory names are stripped from the front of files pulled
-# from the archives.
+# If user provided file extensions to ignore, add these to
+# the exclusion list.
+foreach my $ext (map { $_ => 1 } split(/,/, $opt_exclude_ext ) ) {
+    $ext = lc $ext if $ON_WINDOWS;
+    $Not_Code_Extension{$ext} = 1;
+}
+
+# If SQL or --by-file output is requested, keep track of directory names
+# generated by File::Temp::tempdir and used to temporarily hold the results
+# of compressed archives.  Contents of the SQL table 't' will be much
+# cleaner if these meaningless directory names are stripped from the front
+# of files pulled from the archives.
 my %TEMP_DIR = ();
+my $TEMP_OFF =  0;  # Needed for --sdir; keep track of the number of
+                    # scratch directories made in this run to avoid
+                    # file overwrites by multiple extractions to same
+                    # sdir.
 
 # invert %Language_by_Script hash to get an easy-to-look-up list of known
 # scripting languages
@@ -555,13 +663,37 @@ exit if (defined $opt_show_ext) or (defined $opt_show_lang);
 @ARGV = windows_glob(@ARGV) if $ON_WINDOWS;
 #print "after  glob have [", join(",", @ARGV), "]\n";
 
+if ($opt_sum_reports and $opt_diff) {
+    my @results = ();
+    if ($opt_list_file) { # read inputs from the list file
+        my @list = read_list_file($opt_list_file);
+        @results = combine_diffs(\@list);
+    } else { # get inputs from the command line
+        @results = combine_diffs(\@ARGV);
+    }
+    if ($opt_report_file) {
+        write_file($opt_report_file, @results);
+    } else {
+        print "\n", join("\n", @results), "\n";
+    }
+    exit;
+}
 if ($opt_sum_reports) {
     my %Results = ();
     foreach my $type( "by language", "by report file" ) {
-        my $found_lang = combine_results(\@ARGV, 
-                                          $type, 
-                                         \%{$Results{ $type }}, 
-                                         \%Filters_by_Language );
+        my $found_lang = undef; 
+        if ($opt_list_file) { # read inputs from the list file
+            my @list = read_list_file($opt_list_file);
+            $found_lang = combine_results(\@list, 
+                                           $type, 
+                                          \%{$Results{ $type }}, 
+                                          \%Filters_by_Language );
+        } else { # get inputs from the command line
+            $found_lang = combine_results(\@ARGV, 
+                                           $type, 
+                                          \%{$Results{ $type }}, 
+                                          \%Filters_by_Language );
+        }
         next unless %Results;
         my $end_time = time();
         my @results  = generate_report($VERSION, $end_time - $start_time,
@@ -587,7 +719,16 @@ if ($opt_write_lang_def) {
                   \%Not_Code_Extension   ,
                   \%Not_Code_Filename    ,
                   \%Scale_Factor         ,
+                  \%EOL_Continuation_re  ,
                   );
+    exit;
+}
+if ($opt_show_os) {
+    if ($ON_WINDOWS) {
+        print "Windows\n";
+    } else {
+        print "UNIX\n";
+    }
     exit;
 }
 # 1}}}
@@ -607,10 +748,18 @@ if ($opt_extract_with) {
 #print "cwd main = [$cwd]\n";
     my @extract_location = ();
     foreach my $bin_file (@ARGV) {
-        my $extract_dir = tempdir( CLEANUP => 1 );  # 1 = delete on exit
-        $TEMP_DIR{ $extract_dir } = 1 if $opt_sql;
-        print "mkdir $extract_dir\n" if $opt_v;
-        print "cd    $extract_dir\n" if $opt_v;
+        my $extract_dir = undef;
+        if ($opt_sdir) {
+            ++$TEMP_OFF;
+            $extract_dir = "$opt_sdir/$TEMP_OFF";
+            File::Path::rmtree($extract_dir) if     is_dir($extract_dir);
+            File::Path::mkpath($extract_dir) unless is_dir($extract_dir);
+        } else {
+            $extract_dir = tempdir( CLEANUP => 1 );  # 1 = delete on exit
+        }
+        $TEMP_DIR{ $extract_dir } = 1 if $opt_sql or $opt_by_file;
+        print "mkdir $extract_dir\n"  if $opt_v;
+        print "cd    $extract_dir\n"  if $opt_v;
         chdir $extract_dir;
         my $bin_file_full_path = "";
         if (File::Spec->file_name_is_absolute( $bin_file )) {
@@ -633,16 +782,25 @@ if ($opt_extract_with) {
     my $binary_archives_exist = 1;
     my $count_binary_archives = 0;
     my $previous_count        = 0;
+    my $n_pass                = 0;
     while ($binary_archives_exist) {
         @binary_archive = ();
         foreach my $dir (@extract_location) {
             find(\&archive_files, $dir);  # populates global @binary_archive
         }
         foreach my $archive (@binary_archive) {
-            my     $extract_dir = tempdir( CLEANUP => 1 ); # 1 = delete on exit
-            $TEMP_DIR{ $extract_dir } = 1 if $opt_sql;
-            print "mkdir $extract_dir\n" if $opt_v;
-            print "cd    $extract_dir\n" if $opt_v;
+            my $extract_dir = undef;
+            if ($opt_sdir) {
+                ++$TEMP_OFF;
+                $extract_dir = "$opt_sdir/$TEMP_OFF";
+                File::Path::rmtree($extract_dir) if     is_dir($extract_dir);
+                File::Path::mkpath($extract_dir) unless is_dir($extract_dir);
+            } else {
+                $extract_dir = tempdir( CLEANUP => 1 );  # 1 = delete on exit
+            }
+            $TEMP_DIR{ $extract_dir } = 1 if $opt_sql or $opt_by_file;
+            print "mkdir $extract_dir\n"  if $opt_v;
+            print "cd    $extract_dir\n"  if $opt_v;
             chdir  $extract_dir;
 
             my     $extract_cmd = uncompress_archive_cmd($archive);
@@ -677,10 +835,18 @@ if ($opt_extract_with) {
 #print "full_path = [$full_path]\n";
         my $extract_cmd = uncompress_archive_cmd($full_path);
         if ($extract_cmd) {
-            my     $extract_dir = tempdir( CLEANUP => 1 ); # 1 = delete on exit
-            $TEMP_DIR{ $extract_dir } = 1 if $opt_sql;
-            print "mkdir $extract_dir\n" if $opt_v;
-            print "cd    $extract_dir\n" if $opt_v;
+            my $extract_dir = undef;
+            if ($opt_sdir) {
+                ++$TEMP_OFF;
+                $extract_dir = "$opt_sdir/$TEMP_OFF";
+                File::Path::rmtree($extract_dir) if     is_dir($extract_dir);
+                File::Path::mkpath($extract_dir) unless is_dir($extract_dir);
+            } else {
+                $extract_dir = tempdir( CLEANUP => 1 ); # 1 = delete on exit
+            }
+            $TEMP_DIR{ $extract_dir } = 1 if $opt_sql or $opt_by_file;
+            print "mkdir $extract_dir\n"  if $opt_v;
+            print "cd    $extract_dir\n"  if $opt_v;
             chdir  $extract_dir;
             print  $extract_cmd, "\n" if $opt_v;
             system $extract_cmd;
@@ -702,9 +868,14 @@ my %Ignored   = ();  # files that are not counted (language not recognized or
 my @Lines_Out = ();
 if ($opt_diff) {
 # Step 4:  Separate code from non-code files. {{{1
-my @fh;
+my @fh            = ();
 my @files_for_set = ();
 # make file lists for each separate argument
+if ($opt_exclude_list_file) {
+    process_exclude_list_file($opt_exclude_list_file, 
+                             \%Exclude_Dir,
+                             \%Ignored);
+}
 for (my $i = 0; $i < scalar @ARGV; $i++) {
     push @fh, 
          make_file_list([ $ARGV[$i] ], \%Error_Codes, \@Errors, \%Ignored);
@@ -757,6 +928,40 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
                    \@files_removed                       , # out
                    \@file_pairs                          , # out
                    );
+    my %already_counted = (); # already_counted{ filename } = 1
+                              
+    if (!@file_pairs) {
+        # Special case where all files were either added or deleted.
+        # In this case, one of these arrays will be empty: 
+        #   @files_added, @files_removed
+        # so loop over both to cover both cases.
+        my $status = @files_added ? 'added' : 'removed';
+        my $offset = @files_added ? 1       : 0        ;
+        foreach my $file (@files_added, @files_removed) {
+            next unless defined $Language{$fh[$F+$offset]}{$file};
+            my $Lang = $Language{$fh[$F+$offset]}{$file};
+            next if $Lang eq '(unknown)';
+            my ($all_line_count,
+                $blank_count   ,
+                $comment_count ,
+               ) = call_counter($file, $Lang, \@Errors);
+            $already_counted{$file} = 1;
+            my $code_count = $all_line_count-$blank_count-$comment_count;
+            if ($opt_by_file) {
+                $Delta_by_File{$file}{'code'   }{$status} += $code_count   ;
+                $Delta_by_File{$file}{'blank'  }{$status} += $blank_count  ;
+                $Delta_by_File{$file}{'comment'}{$status} += $comment_count;
+                $Delta_by_File{$file}{'lang'   }{$status}  = $Lang         ;
+                $Delta_by_File{$file}{'nFiles' }{$status} += 1             ;
+            }
+            $Delta_by_Language{$Lang}{'code'   }{$status} += $code_count   ;
+            $Delta_by_Language{$Lang}{'blank'  }{$status} += $blank_count  ;
+            $Delta_by_Language{$Lang}{'comment'}{$status} += $comment_count;
+        }
+    }
+   #use Data::Dumper::Simple;
+   #use Data::Dumper;
+   #print Dumper(\@files_added, \@files_removed, \@file_pairs);
     my @alignment = (); # only  used if --diff-alignment
 #print "after align_by_pairs:\n";
 
@@ -764,10 +969,32 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
     push @alignment, sprintf "Files added: %d\n", scalar @files_added
         if $opt_diff_alignment;
     foreach my $f (@files_added) {
+        next if $already_counted{$f};
 #printf "%10s -> %s\n", $f, $Language{$fh[$F+1]}{$f};
+        # Don't proceed unless the file (both L and R versions)
+        # is in a known language.
+        next if $Language{$fh[$F+1]}{$f} eq "(unknown)";
+        next if $Exclude_Language{$Language{$fh[$F+1]}{$f}};
         push @alignment, sprintf "  + %s ; %s\n", $f, $Language{$fh[$F+1]}{$f}
             if $opt_diff_alignment;
         ++$Delta_by_Language{ $Language{$fh[$F+1]}{$f} }{'nFiles'}{'added'};
+        # Additionally, add contents of file $f to 
+        #        Delta_by_File{$f}{comment/blank/code}{'added'}
+        #        Delta_by_Language{$lang}{comment/blank/code}{'added'}
+        my ($all_line_count,
+            $blank_count   ,
+            $comment_count ,
+           ) = call_counter($f, $Language{$fh[$F+1]}{$f}, \@Errors);
+        $Delta_by_Language{ $Language{$fh[$F+1]}{$f} }{'comment'}{'added'} +=
+            $comment_count;
+        $Delta_by_Language{ $Language{$fh[$F+1]}{$f} }{'blank'}{'added'}   +=
+            $blank_count;
+        $Delta_by_Language{ $Language{$fh[$F+1]}{$f} }{'code'}{'added'}    +=
+            $all_line_count - $blank_count - $comment_count;
+        $Delta_by_File{ $f }{'comment'}{'added'} = $comment_count;
+        $Delta_by_File{ $f }{'blank'}{'added'}   = $blank_count;
+        $Delta_by_File{ $f }{'code'}{'added'}    = 
+            $all_line_count - $blank_count - $comment_count;
     }
     push @alignment, "\n";
 
@@ -775,10 +1002,32 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
     push @alignment, sprintf "Files removed: %d\n", scalar @files_removed
         if $opt_diff_alignment;
     foreach my $f (@files_removed) {
+        next if $already_counted{$f};
+        # Don't proceed unless the file (both L and R versions)
+        # is in a known language.
+        next if $Language{$fh[$F  ]}{$f} eq "(unknown)";
+        next if $Exclude_Language{$Language{$fh[$F  ]}{$f}};
         ++$Delta_by_Language{ $Language{$fh[$F  ]}{$f} }{'nFiles'}{'removed'};
         push @alignment, sprintf "  - %s ; %s\n", $f, $Language{$fh[$F]}{$f}
             if $opt_diff_alignment;
 #printf "%10s -> %s\n", $f, $Language{$fh[$F  ]}{$f};
+        # Additionally, add contents of file $f to 
+        #        Delta_by_File{$f}{comment/blank/code}{'removed'}
+        #        Delta_by_Language{$lang}{comment/blank/code}{'removed'}
+        my ($all_line_count,
+            $blank_count   ,
+            $comment_count ,
+           ) = call_counter($f, $Language{$fh[$F  ]}{$f}, \@Errors);
+        $Delta_by_Language{ $Language{$fh[$F  ]}{$f} }{'comment'}{'removed'} +=
+            $comment_count;
+        $Delta_by_Language{ $Language{$fh[$F  ]}{$f} }{'blank'}{'removed'}   +=
+            $blank_count;
+        $Delta_by_Language{ $Language{$fh[$F  ]}{$f} }{'code'}{'removed'}    +=
+            $all_line_count - $blank_count - $comment_count;
+        $Delta_by_File{ $f }{'comment'}{'removed'} = $comment_count;
+        $Delta_by_File{ $f }{'blank'}{'removed'}   = $blank_count;
+        $Delta_by_File{ $f }{'code'}{'removed'}    = 
+            $all_line_count - $blank_count - $comment_count;
     }
     push @alignment, "\n";
 
@@ -798,8 +1047,8 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
 
         # filter out excluded or unrecognized languages
         if ($Exclude_Language{$Lang_L} or $Exclude_Language{$Lang_R}) {
-            $Ignored{$file_L} = "--exclude_lang=$Lang_L}";
-            $Ignored{$file_R} = "--exclude_lang=$Lang_R}";
+            $Ignored{$file_L} = "--exclude-lang=$Lang_L}";
+            $Ignored{$file_R} = "--exclude-lang=$Lang_R}";
             next;
         }
         if (!defined @{$Filters_by_Language{$Lang_L} } or
@@ -858,20 +1107,22 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
 #print "Diff blank removal L language= $Lang_L";
 #print " scalar(lines_L)=", scalar @lines_L, "\n";
         my @original_minus_blanks_L 
-                    = rm_blanks(  \@lines_L, $Lang_L);
+                    = rm_blanks(  \@lines_L, $Lang_L, \%EOL_Continuation_re);
 #print "1: scalar(original_minus_blanks_L)=", scalar @original_minus_blanks_L, "\n";
         @lines_L    = @original_minus_blanks_L;
 #print "2: scalar(lines_L)=", scalar @lines_L, "\n";
         @lines_L    = add_newlines(\@lines_L); # compensate for rm_comments()
-        @lines_L    = rm_comments( \@lines_L, $Lang_L, $file_L);
+        @lines_L    = rm_comments( \@lines_L, $Lang_L, $file_L,
+                                   \%EOL_Continuation_re);
 #print "3: scalar(lines_L)=", scalar @lines_L, "\n";
 
 #print "Diff blank removal R language= $Lang_R\n";
         my @original_minus_blanks_R 
-                    = rm_blanks(  \@lines_R, $Lang_R);
+                    = rm_blanks(  \@lines_R, $Lang_R, \%EOL_Continuation_re);
         @lines_R    = @original_minus_blanks_R;
         @lines_R    = add_newlines(\@lines_R); # taken away by rm_comments()
-        @lines_R    = rm_comments( \@lines_R, $Lang_R, $file_R);
+        @lines_R    = rm_comments( \@lines_R, $Lang_R, $file_R,
+                                   \%EOL_Continuation_re);
 
         my (@diff_LL, @diff_LR, );
         array_diff( $file_L                  ,   # in
@@ -923,6 +1174,21 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
             }
         }
 
+        if ($opt_ignore_whitespace) {
+            # strip all whitespace from each line of source code
+            # and comments then use these stripped arrays in diffs
+            foreach (@code_L) { s/\s+//g }
+            foreach (@code_R) { s/\s+//g }
+            foreach (@comm_L) { s/\s+//g }
+            foreach (@comm_R) { s/\s+//g }
+        }
+        if ($opt_ignore_case) {
+            # change all text to lowercase in diffs
+            foreach (@code_L) { $_ = lc }
+            foreach (@code_R) { $_ = lc }
+            foreach (@comm_L) { $_ = lc }
+            foreach (@comm_R) { $_ = lc }
+        }
         # step 3: compute code diffs
         array_diff("$file_L v. $file_R"   ,   # in
                    \@code_L               ,   # in
@@ -939,6 +1205,8 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
                 ++$Delta_by_File{$file_L}{'code'}{$status};
             }
         }
+#use Data::Dumper;
+#print Dumper("code diffs:", \@diff_LL, \@diff_LR);
 
         # step 4: compute comment diffs
         array_diff("$file_L v. $file_R"   ,   # in
@@ -955,8 +1223,12 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
                 ++$Delta_by_File{$file_L}{'comment'}{$status};
             }
         }
+#print Dumper("comment diffs:", \@diff_LL, \@diff_LR);
+#die; here=  need to save original line number in diff result for html display
 
         # step 5: compute difference in blank lines (kind of pointless)
+        next if $Lang_L eq '(unknown)' or 
+                $Lang_R eq '(unknown)';
         my ($all_line_count_L,
             $blank_count_L   ,
             $comment_count_L ,
@@ -971,7 +1243,7 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
             my $D = $blank_count_R - $blank_count_L;
             $Delta_by_Language{$Lang_L}{'blank'}{'added'}   += $D;
         } else {
-            my $D = $blank_count_R - $blank_count_L;
+            my $D = $blank_count_L - $blank_count_R;
             $Delta_by_Language{$Lang_L}{'blank'}{'removed'} += $D;
         }
         if ($opt_by_file) {
@@ -979,7 +1251,7 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
                 my $D = $blank_count_R - $blank_count_L;
                 $Delta_by_File{$file_L}{'blank'}{'added'}   += $D;
             } else {
-                my $D = $blank_count_R - $blank_count_L;
+                my $D = $blank_count_L - $blank_count_R;
                 $Delta_by_File{$file_L}{'blank'}{'removed'} += $D;
             }
         }
@@ -991,6 +1263,8 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
             $Results_by_File{$file_L}{'comment'} = $comment_count_L ;
             $Results_by_File{$file_L}{'lang'   } = $Lang_L          ;
             $Results_by_File{$file_L}{'nFiles' } = 1                ;
+        } else {
+            $Results_by_File{$file_L} = 1;  # just keep track of counted files
         }
    
         $Results_by_Language{$Lang_L}{'nFiles'}++;
@@ -1002,11 +1276,14 @@ foreach (my $F = 0; $F < scalar @fh - 1; $F++) {
 
 }
 #use Data::Dumper;
-#print Dumper("Delta_by_Language:", \%Delta_by_Language);
-
+#print Dumper("Delta_by_Language:"  , \%Delta_by_Language);
+#print Dumper("Results_by_Language:", \%Results_by_Language);
+#print Dumper("Delta_by_File:"      , \%Delta_by_File);
+#print Dumper("Results_by_File:"    , \%Results_by_File);
+#die;
 my @ignored_reasons = map { "$_: $Ignored{$_}" } sort keys %Ignored;
 write_file($opt_ignored, @ignored_reasons   ) if $opt_ignored;
-write_file($opt_counted, sort keys %Language) if $opt_counted;
+write_file($opt_counted, sort keys %Results_by_File) if $opt_counted;
 # 1}}}
 # Step 7:  Assemble results.                      {{{1
 #
@@ -1014,7 +1291,10 @@ my $end_time = time();
 printf "%8d file%s ignored.                           \n", 
     plural_form(scalar keys %Ignored) unless $opt_quiet;
 print_errors(\%Error_Codes, \@Errors) if @Errors;
-exit unless %Results_by_Language;
+if (!%Delta_by_Language) {
+    print "Nothing to count.\n";
+    exit;
+}
 
 if ($opt_by_file) {
     @Lines_Out = diff_report($VERSION, time() - $start_time,
@@ -1039,21 +1319,9 @@ if ($opt_list_file) {
     #     File::Find's find() which in turn calls files()
 }
 if ($opt_exclude_list_file) {
-    # now reject a specific set of files
-    my @reject_list   = read_list_file($opt_exclude_list_file);
-
-    # Normalize file names for better comparison.
-    my %normalized_input  = normalize_file_names(@file_list);
-    my %normalized_reject = normalize_file_names(@reject_list);
-
-    foreach my $F (keys %normalized_input) {
-        if ($normalized_reject{$F}) {
-            my $orig_F = $normalized_input{$F};
-            $Ignored{$orig_F} = "listed in exclusion file $opt_exclude_list_file";
-            print "Ignoring $orig_F because it appears in $opt_exclude_list_file\n" 
-                if $opt_v > 1;
-        }
-    }
+    process_exclude_list_file($opt_exclude_list_file, 
+                             \%Exclude_Dir,
+                             \%Ignored);
 }
 if ($opt_skip_win_hidden and $ON_WINDOWS) {
     my @file_list_minus_hidded = ();
@@ -1105,7 +1373,7 @@ foreach my $file (sort keys %unique_source_file) {
         unless (!$opt_progress_rate or ($nCounted % $opt_progress_rate));
     next if $Ignored{$file};
     if ($Exclude_Language{$Language{$file}}) {
-        $Ignored{$file} = "--exclude_lang=$Language{$file}";
+        $Ignored{$file} = "--exclude-lang=$Language{$file}";
         next;
     }
     if (!defined @{$Filters_by_Language{$Language{$file}} }) {
@@ -1128,6 +1396,8 @@ foreach my $file (sort keys %unique_source_file) {
         $Results_by_File{$file}{'comment'} = $comment_count  ;
         $Results_by_File{$file}{'lang'   } = $Language{$file};
         $Results_by_File{$file}{'nFiles' } = 1;
+    } else {
+        $Results_by_File{$file} = 1;  # just keep track of counted files
     }
 
     $Results_by_Language{$Language{$file}}{'nFiles'}++;
@@ -1137,7 +1407,7 @@ foreach my $file (sort keys %unique_source_file) {
 }
 my @ignored_reasons = map { "$_: $Ignored{$_}" } sort keys %Ignored;
 write_file($opt_ignored, @ignored_reasons   ) if $opt_ignored;
-write_file($opt_counted, sort keys %Language) if $opt_counted;
+write_file($opt_counted, sort keys %Results_by_File) if $opt_counted;
 # 1}}}
 # Step 7:  Assemble results.                      {{{1
 #
@@ -1172,6 +1442,37 @@ if      ($opt_by_file_by_lang) {
 if ($opt_report_file) { write_file($opt_report_file, @Lines_Out); } 
 else                  { print "\n", join("\n", @Lines_Out), "\n"; }
 
+sub process_exclude_list_file {              # {{{1
+    my ($list_file      , # in
+        $rh_exclude_dir , # out
+        $rh_ignored     , # out
+       ) = @_;
+    print "-> process_exclude_list_file($list_file)\n" if $opt_v > 2;
+    # reject a specific set of files and/or directories
+    my @reject_list   = read_list_file($list_file);
+    my @file_reject_list = ();
+    foreach my $F_or_D (@reject_list) {
+        if (is_dir($F_or_D)) {
+            $rh_exclude_dir->{$F_or_D} = 1;
+        } elsif (is_file($F_or_D)) {
+            push @file_reject_list, $F_or_D;
+        }
+    }
+
+    # Normalize file names for better comparison.
+    my %normalized_input   = normalize_file_names(@file_list);
+    my %normalized_reject  = normalize_file_names(@file_reject_list);
+    my %normalized_exclude = normalize_file_names(keys %{$rh_exclude_dir});
+    foreach my $F (keys %normalized_input) {
+        if ($normalized_reject{$F} or is_excluded($F, \%normalized_exclude)) {
+            my $orig_F = $normalized_input{$F};
+            $rh_ignored->{$orig_F} = "listed in exclusion file $opt_exclude_list_file";
+            print "Ignoring $orig_F because it appears in $opt_exclude_list_file\n" 
+                if $opt_v > 1;
+        }
+    }
+    print "<- process_exclude_list_file\n" if $opt_v > 2;
+} # 1}}}
 sub combine_results {                        # {{{1
     # returns 1 if the inputs are categorized by language
     #         0 if no identifiable language was found
@@ -1181,6 +1482,7 @@ sub combine_results {                        # {{{1
         $rhaa_Filters_by_Language , # in
        ) = @_;
 
+    print "-> combine_results(report_type=$report_type)\n" if $opt_v > 2;
     my $found_language = 0;
 
     foreach my $file (@{$ra_report_files}) {
@@ -1234,7 +1536,7 @@ sub combine_results {                        # {{{1
                    )?
                    $}x) {
                 if ($report_type eq "by language") {
-                    next unless defined %{$rhaa_Filters_by_Language->{$1}};
+                    next unless %{$rhaa_Filters_by_Language->{$1}};
                     # above test necessary to avoid trying to sum reports
                     # of reports (which have no language breakdown).
                     $found_language = 1;
@@ -1253,11 +1555,21 @@ sub combine_results {                        # {{{1
             }
         }
     }
+    print "<- combine_results\n" if $opt_v > 2;
     return $found_language;
-
 } # 1}}}
 sub diff_report     {                        # {{{1
     # returns an array of lines containing the results
+    print "-> diff_report\n" if $opt_v > 2;
+
+    if ($opt_xml or $opt_yaml) {
+        print "<- diff_report\n" if $opt_v > 2;
+        return diff_xml_yaml_report(@_) 
+    } elsif ($opt_csv) {
+        print "<- diff_report\n" if $opt_v > 2;
+        return diff_csv_report(@_) 
+    }
+
     my ($version    , # in
         $elapsed_sec, # in
         $report_type, # in  "by language" | "by report file" | "by file"
@@ -1265,9 +1577,10 @@ sub diff_report     {                        # {{{1
         $rh_scale   , # in
        ) = @_;
 
+#use Data::Dumper;
 #print "diff_report: ", Dumper($rhhh_count), "\n";
     my @results       = ();
-    
+
     my $languages     = ();
     my %sum           = (); # sum{nFiles|blank|comment|code}{same|modified|added|removed}
     my $max_len       = 0;
@@ -1337,29 +1650,27 @@ sub diff_report     {                        # {{{1
     }
 
     my $header_line  = sprintf "%s v %4.2f", $URL, $version;
-my $sum_files=1;
-my $sum_lines=1;
+    my $sum_files    = 1;
+    my $sum_lines    = 1;
        $header_line .= sprintf("  T=%.1f s (%.1f files/s, %.1f lines/s)",
                         $elapsed_sec           ,
                         $sum_files/$elapsed_sec,
                         $sum_lines/$elapsed_sec) unless $opt_sum_reports;
-    if ($ALREADY_SHOWED_HEADER) {
-        push @results, "";
-    } else {
-        push @results, $header_line;
-        $ALREADY_SHOWED_HEADER = 1;
+    if ($Style eq "txt") {
+        push @results, output_header($header_line, $hyphen_line, $BY_FILE);
+    } elsif ($Style eq "csv") {
+        die "csv";
     }
-    push @results, $hyphen_line;
 
     # column headers
     if (!$opt_3 and $BY_FILE) {
         my $spacing_n = $spacing_1 - 11;
-        $data_line  = sprintf "%-${spacing_n}s ", $first_column;
+        $data_line  = sprintf "%-${spacing_n}s" , $first_column;
     } else {
         $data_line  = sprintf "%-${spacing_1}s ", $first_column;
     }
     if ($BY_FILE) {
-        $data_line .= sprintf "%${spacing_2}s "  , " "    ;
+        $data_line .= sprintf "%${spacing_2}s"   , ""     ;
     } else {
         $data_line .= sprintf "%${spacing_2}s "  , "files";
     }
@@ -1367,21 +1678,36 @@ my $sum_lines=1;
         "blank"         ,
         "comment"       ,
         "code";
-    push @results, $data_line;
-    push @results, $hyphen_line;
 
+    if ($Style eq "txt") {
+        push @results, $data_line;
+        push @results, $hyphen_line;
+    }
+
+####foreach my $lang_or_file (keys %{$rhhh_count}) {
+####    $rhhh_count->{$lang_or_file}{'code'} = 0 unless 
+####        defined $rhhh_count->{$lang_or_file}{'code'};
+####}
     foreach my $lang_or_file (sort {
                                  $rhhh_count->{$b}{'code'} <=>
                                  $rhhh_count->{$a}{'code'}
                                }
                           keys %{$rhhh_count}) {
 
-        push @results, "$lang_or_file";
+        if ($BY_FILE) {
+            push @results, rm_leading_tempdir($lang_or_file, \%TEMP_DIR);
+        } else {
+            push @results, $lang_or_file;
+        }
         foreach my $S (qw(same modified added removed)) {
             my $indent = $spacing_1 - 2;
-            my $line .= sprintf "  %-${indent}s %${spacing_2}s %${spacing_2}s %${spacing_2}s %${spacing_2}s",
-                $S                                          ,
-                $rhhh_count->{$lang_or_file}{'nFiles'}{$S}  ,
+            my $line .= sprintf " %-${indent}s", $S;
+            if ($BY_FILE) {
+                $line .= sprintf "   ";
+            } else {
+                $line .= sprintf "  %${spacing_2}s", $rhhh_count->{$lang_or_file}{'nFiles'}{$S};
+            }
+            $line .= sprintf " %${spacing_2}s %${spacing_2}s %${spacing_2}s",
                 $rhhh_count->{$lang_or_file}{'blank'}{$S}   ,
                 $rhhh_count->{$lang_or_file}{'comment'}{$S} ,
                 $rhhh_count->{$lang_or_file}{'code'}{$S}    ;
@@ -1392,17 +1718,291 @@ my $sum_lines=1;
     push @results, "SUM:";
     foreach my $S (qw(same modified added removed)) {
         my $indent = $spacing_1 - 2;
-        my $line .= sprintf "  %-${indent}s %${spacing_2}s %${spacing_2}s %${spacing_2}s %${spacing_2}s",
-            $S                  ,
-            $sum{'nFiles'}{$S}  ,
+        my $line .= sprintf " %-${indent}s", $S;
+            if ($BY_FILE) {
+                $line .= sprintf "   ";
+            } else {
+                $line .= sprintf "  %${spacing_2}s", $sum{'nFiles'}{$S};
+            }
+        $line .= sprintf " %${spacing_2}s %${spacing_2}s %${spacing_2}s",
             $sum{'blank'}{$S}   ,
             $sum{'comment'}{$S} ,
             $sum{'code'}{$S}    ;
         push @results, $line;
     }
     push @results, "-" x 79;
+    write_xsl_file() if $opt_xsl and $opt_xsl eq $CLOC_XSL;
+    print "<- diff_report\n" if $opt_v > 2;
 
     return @results;
+} # 1}}}
+sub xml_or_yaml_header {                     # {{{1
+    my ($URL, $version, $elapsed_sec, $sum_files, $sum_lines, $by_file) = @_;
+    print "-> xml_or_yaml_header\n" if $opt_v > 2;
+    my $header      = "";
+    my $file_rate   = $sum_files/$elapsed_sec;
+    my $line_rate   = $sum_lines/$elapsed_sec;
+    my $type        = ""; 
+       $type        = "diff_" if $opt_diff;
+    my $report_file = "";
+    if ($opt_report_file) {
+        if ($opt_sum_reports) {
+            if ($by_file) {
+                $report_file = "  <report_file>$opt_report_file.file</report_file>"
+            } else {
+                $report_file = "  <report_file>$opt_report_file.lang</report_file>"
+            }
+        } else {
+            $report_file = "  <report_file>$opt_report_file</report_file>"
+        }
+    }
+    if ($opt_xml) {
+        $header = "<?xml version=\"1.0\"?>";
+        $header .= "\n<?xml-stylesheet type=\"text/xsl\" href=\"" . $opt_xsl . "\"?>" if $opt_xsl;
+        $header .= "<${type}results>
+<header>
+  <cloc_url>$URL</cloc_url>
+  <cloc_version>$version</cloc_version>
+  <elapsed_seconds>$elapsed_sec</elapsed_seconds>
+  <n_files>$sum_files</n_files>
+  <n_lines>$sum_lines</n_lines>
+  <files_per_second>$file_rate</files_per_second>
+  <lines_per_second>$line_rate</lines_per_second>";
+        $header .= "\n$report_file"
+            if $opt_report_file;
+        $header .= "\n</header>";
+    } elsif ($opt_yaml) {
+        $header = "---\n# $URL
+header :
+  cloc_url           : http://cloc.sourceforge.net
+  cloc_version       : $version
+  elapsed_seconds    : $elapsed_sec
+  n_files            : $sum_files
+  n_lines            : $sum_lines
+  files_per_second   : $file_rate
+  lines_per_second   : $line_rate";
+        if ($opt_report_file) {
+            if ($opt_sum_reports) {
+                if ($by_file) {
+                    $header .= "\n  report_file        : $opt_report_file.file"
+                } else {
+                    $header .= "\n  report_file        : $opt_report_file.lang"
+                }
+            } else {
+                $header .= "\n  report_file        : $opt_report_file";
+            }
+        }
+    }
+    print "<- xml_or_yaml_header\n" if $opt_v > 2;
+    return $header;
+} # 1}}}
+sub diff_xml_yaml_report {                   # {{{1
+    # returns an array of lines containing the results
+    my ($version    , # in
+        $elapsed_sec, # in
+        $report_type, # in  "by language" | "by report file" | "by file"
+        $rhhh_count , # in  count{TYPE}{nFiles|code|blank|comment}{a|m|r|s}
+        $rh_scale   , # in
+       ) = @_;
+    print "-> diff_xml_yaml_report\n" if $opt_v > 2;
+
+#print "diff_report: ", Dumper($rhhh_count), "\n";
+    my @results       = ();
+    
+    my $languages     = ();
+    my %sum           = (); # sum{nFiles|blank|comment|code}{same|modified|added|removed}
+
+    my $sum_files = 0;
+    my $sum_lines = 0;
+    foreach my $language (keys %{$rhhh_count}) {
+        foreach my $V (qw(nFiles blank comment code)) {
+            foreach my $S (qw(added same modified removed)) {
+                $rhhh_count->{$language}{$V}{$S} = 0 unless
+                    defined $rhhh_count->{$language}{$V}{$S};
+                $sum{$V}{$S}  += $rhhh_count->{$language}{$V}{$S};
+                if ($V eq "nFiles") {
+                    $sum_files += $rhhh_count->{$language}{$V}{$S};
+                } else {
+                    $sum_lines += $rhhh_count->{$language}{$V}{$S};
+                }
+            }
+        }
+    }
+    $elapsed_sec = 0.5 unless $elapsed_sec;
+
+    my $data_line   = "";
+    my $BY_LANGUAGE = 0;
+    my $BY_FILE     = 0;
+    if      ($report_type eq "by language") {
+        $BY_LANGUAGE  = 1;
+    } elsif ($report_type eq "by file")     {
+        $BY_FILE      = 1;
+    }
+
+    if (!$ALREADY_SHOWED_HEADER) {
+        push @results,
+              xml_or_yaml_header($URL, $version, $elapsed_sec, 
+                                 $sum_files, $sum_lines, $BY_FILE);
+        $ALREADY_SHOWED_HEADER = 1;
+    }
+
+    foreach my $S (qw(same modified added removed)) {
+        if ($opt_xml) {
+            push @results, "  <$S>";
+        } elsif ($opt_yaml) {
+            push @results, "$S :";
+        }
+########foreach my $lang_or_file (keys %{$rhhh_count}) {
+########    $rhhh_count->{$lang_or_file}{'code'} = 0 unless 
+########        defined $rhhh_count->{$lang_or_file}{'code'};
+########}
+        foreach my $lang_or_file (sort {
+                                     $rhhh_count->{$b}{'code'} <=>
+                                     $rhhh_count->{$a}{'code'}
+                                   }
+                              keys %{$rhhh_count}) {
+            my $L = "";
+            if ($opt_xml) {
+                if ($BY_FILE) {
+                    $L .= sprintf "    <file name=\"%s\" files_count=\"1\" ", 
+                            rm_leading_tempdir($lang_or_file, \%TEMP_DIR);
+                } else {
+                    $L .= sprintf "    <language name=\"%s\" files_count=\"%d\" ",
+                            $lang_or_file ,
+                            $rhhh_count->{$lang_or_file}{'nFiles'}{$S};
+                }
+                foreach my $T (qw(blank comment code)) {
+                    $L .= sprintf "%s=\"%d\" ", 
+                            $T, $rhhh_count->{$lang_or_file}{$T}{$S};
+                }
+                push @results, $L . "/>";
+            } elsif ($opt_yaml) {
+                if ($BY_FILE) {
+                    push @results, sprintf "  - file : %s", 
+                                   rm_leading_tempdir($lang_or_file, \%TEMP_DIR);
+                    push @results, sprintf "    files_count : 1", 
+                } else {
+                    push @results, sprintf "  - language : %s", $lang_or_file;
+                    push @results, sprintf "    files_count : %d", 
+                            $rhhh_count->{$lang_or_file}{'nFiles'}{$S};
+                }
+                foreach my $T (qw(blank comment code)) {
+                    push @results, sprintf "    %s : %d", 
+                            $T, $rhhh_count->{$lang_or_file}{$T}{$S};
+                }
+            }
+        }
+
+        if ($opt_xml) {
+            my $L = sprintf "    <total sum_files=\"%d\" ", $sum{'nFiles'}{$S};
+            foreach my $V (qw(blank comment code)) {
+                $L .= sprintf "%s=\"%d\" ", $V, $sum{$V}{$S};
+            }
+            push @results, $L . "/>";
+            push @results, "  </$S>";
+        } elsif ($opt_yaml) {
+            push @results, sprintf "%s_total :\n    sum_files : %d", 
+                                $S, $sum{'nFiles'}{$S};
+            foreach my $V (qw(blank comment code)) {
+                push @results, sprintf "    %s : %d", $V, $sum{$V}{$S};
+            }
+        }
+    }
+
+    if ($opt_xml) {
+        push @results, "</diff_results>";
+    }
+    write_xsl_file() if $opt_xsl and $opt_xsl eq $CLOC_XSL;
+    print "<- diff_xml_yaml_report\n" if $opt_v > 2;
+    return @results;
+} # 1}}}
+sub diff_csv_report {                        # {{{1
+    # returns an array of lines containing the results
+    my ($version    , # in
+        $elapsed_sec, # in
+        $report_type, # in  "by language" | "by report file" | "by file"
+        $rhhh_count , # in  count{TYPE}{nFiles|code|blank|comment}{a|m|r|s}
+        $rh_scale   , # in  unused
+       ) = @_;
+    print "-> diff_csv_report\n" if $opt_v > 2;
+
+#use Data::Dumper;
+#print "diff_csv_report: ", Dumper($rhhh_count), "\n";
+#die;
+    my @results       = ();
+    my $languages     = ();
+
+    my $data_line   = "";
+    my $BY_LANGUAGE = 0;
+    my $BY_FILE     = 0;
+    if      ($report_type eq "by language") {
+        $BY_LANGUAGE  = 1;
+    } elsif ($report_type eq "by file")     {
+        $BY_FILE      = 1;
+    }
+    my $DELIM = ",";
+       $DELIM = $opt_csv_delimiter if defined $opt_csv_delimiter;
+
+    $elapsed_sec = 0.5 unless $elapsed_sec;
+
+    my $line = "Language${DELIM} ";
+       $line = "File${DELIM} " if $BY_FILE;
+    foreach my $item (qw(files blank comment code)) {
+        next if $BY_FILE and $item eq 'files';
+        foreach my $symbol ( '==', '!=', '+', '-', ) {
+            $line .= "$symbol $item${DELIM} ";
+        }
+    }
+    $line .= "\"$URL v $version T=$elapsed_sec s\"";
+    push @results, $line;
+
+    foreach my $lang_or_file (keys %{$rhhh_count}) {
+        $rhhh_count->{$lang_or_file}{'code'}{'added'} = 0 unless 
+            defined $rhhh_count->{$lang_or_file}{'code'};
+    }
+    foreach my $lang_or_file (sort {
+                                 $rhhh_count->{$b}{'code'} <=>
+                                 $rhhh_count->{$a}{'code'}
+                               }
+                          keys %{$rhhh_count}) {
+        if ($BY_FILE) {
+            $line = rm_leading_tempdir($lang_or_file, \%TEMP_DIR) . "$DELIM ";
+        } else {
+            $line = $lang_or_file . "${DELIM} ";
+        }
+        foreach my $item (qw(nFiles blank comment code)) {
+            next if $BY_FILE and $item eq 'nFiles';
+            foreach my $symbol (qw(same modified added removed)) {
+                if (defined $rhhh_count->{$lang_or_file}{$item}{$symbol}) {
+                    $line .= "$rhhh_count->{$lang_or_file}{$item}{$symbol}${DELIM} ";
+                } else {
+                    $line .= "0${DELIM} ";
+                }
+            }
+        }
+        push @results, $line;
+    }
+
+    print "<- diff_csv_report\n" if $opt_v > 2;
+    return @results;
+} # 1}}}
+sub rm_leading_tempdir {                     # {{{1
+    my ($in_file, $rh_temp_dirs, ) = @_;
+    my $clean_filename = $in_file;
+    foreach my $temp_d (keys %{$rh_temp_dirs}) {
+        if ($ON_WINDOWS) {
+        # \ -> / necessary to allow the next if test's
+        # m{} to work in the presence of spaces in file names
+            $temp_d         =~ s{\\}{/}g;
+            $clean_filename =~ s{\\}{/}g;
+        }
+        if ($clean_filename =~ m{^$temp_d/}) {
+            $clean_filename =~ s{^$temp_d/}{};
+            last;
+        }
+    }
+    $clean_filename =~ s{/}{\\}g if $ON_WINDOWS; # then go back from / to \
+    return $clean_filename;
 } # 1}}}
 sub generate_sql    {                        # {{{1
     my ($elapsed_sec, # in
@@ -1452,19 +2052,8 @@ create table t        (
         # archive file [.tar.gz, etc]), strip the temporary
         # directory name which was used to expand the archive
         # from the file name.
-        foreach my $temp_d (keys %TEMP_DIR) {
-            if ($ON_WINDOWS) {
-            # \ -> / necessary to allow the next if test's
-            # m{} to work in the presence of spaces in file names
-                $temp_d         =~ s{\\}{/}g;
-                $clean_filename =~ s{\\}{/}g;
-            }
-            if ($clean_filename =~ m{^$temp_d/}) {
-                $clean_filename =~ s{^$temp_d/}{};
-                last;
-            }
-        }
-        $clean_filename =~ s{/}{\\}g if $ON_WINDOWS; # then go back from / to \
+
+        $clean_filename = rm_leading_tempdir($clean_filename, \%TEMP_DIR);
         printf $fh "insert into t values('%s', '%s', '%s', %d, %d, %d, %f);\n",
                     $opt_sql_project           ,
                     $language                  ,
@@ -1495,6 +2084,44 @@ create table t        (
     #          from t group by Project, Language order by Project, Code desc;
     #
 } # 1}}}
+sub output_header   {                        # {{{1
+    my ($header_line, 
+        $hyphen_line,
+        $BY_FILE    ,)    = @_;
+    print "-> output_header\n" if $opt_v > 2;
+    my @R = ();
+    if      ($opt_xml) {
+        if (!$ALREADY_SHOWED_XML_SECTION) {
+            push @R, "<?xml version=\"1.0\"?>";
+            push @R, '<?xml-stylesheet type="text/xsl" href="' .
+                            $opt_xsl . '"?>' if $opt_xsl;
+            push @R, "<results>";
+            push @R, "<header>$header_line</header>";
+            $ALREADY_SHOWED_XML_SECTION = 1;
+        }
+        if ($BY_FILE) {
+            push @R, "<files>";
+        } else {
+            push @R, "<languages>";
+        }
+    } elsif ($opt_yaml) {
+        push @R, "---\n# $header_line";
+    } elsif ($opt_csv) {
+        # append the header to the end of the column headers
+        # to keep the output a bit cleaner from a spreadsheet
+        # perspective
+    } else {
+        if ($ALREADY_SHOWED_HEADER) {
+            push @R, "";
+        } else {
+            push @R, $header_line;
+            $ALREADY_SHOWED_HEADER = 1;
+        }
+        push @R, $hyphen_line;
+    }
+    print "<- output_header\n" if $opt_v > 2;
+    return @R;
+} # 1}}}
 sub generate_report {                        # {{{1
     # returns an array of lines containing the results
     my ($version    , # in
@@ -1503,6 +2130,10 @@ sub generate_report {                        # {{{1
         $rhh_count  , # in  count{TYPE}{nFiles|code|blank|comment|scaled}
         $rh_scale   , # in
        ) = @_;
+
+    print "-> generate_report\n" if $opt_v > 2;
+    my $DELIM = ",";
+       $DELIM = $opt_csv_delimiter if defined $opt_csv_delimiter;
 
     my @results       = ();
     
@@ -1559,7 +2190,6 @@ sub generate_report {                        # {{{1
        $Style = "xml" if $opt_yaml;  # not a typo; just set to anything but txt
        $Style = "xml" if $opt_csv ;  # not a typo; just set to anything but txt
 
-    my $URL        = "http://cloc.sourceforge.net";
     my $hyphen_line = sprintf "%s", '-' x (79 + $column_1_offset);
        $hyphen_line = sprintf "%s", '-' x (68 + $column_1_offset) 
             if (!$opt_3) and (68 + $column_1_offset) > 79;
@@ -1573,6 +2203,9 @@ sub generate_report {                        # {{{1
     } elsif ($report_type eq "by file")     {
         $first_column = "File";
         $BY_FILE      = 1;
+    } elsif ($report_type eq "by report file")     {
+        $first_column = "File";
+        $BY_FILE      = 1;
     } else {
         $first_column = "Report File";
     }
@@ -1582,31 +2215,23 @@ sub generate_report {                        # {{{1
                         $elapsed_sec           ,
                         $sum_files/$elapsed_sec,
                         $sum_lines/$elapsed_sec) unless $opt_sum_reports;
-    if      ($opt_xml) {
-        push @results, "<?xml version=\"1.0\"?>";
-        push @results, '<?xml-stylesheet type="text/xsl" href="' .
-                        $opt_xsl . '"?>' if $opt_xsl;
-        push @results, "<results>";
-        push @results, "<header>$header_line</header>";
-        if ($BY_FILE) {
-            push @results, "<files>";
-        } else {
-            push @results, "<languages>";
+    if ($opt_xml or $opt_yaml) {
+        if (!$ALREADY_SHOWED_HEADER) {
+            push @results, xml_or_yaml_header($URL, $version, $elapsed_sec, 
+                                              $sum_files, $sum_lines, $BY_FILE);
+            $ALREADY_SHOWED_HEADER = 1 unless $opt_sum_reports;
+            # --sum-reports yields two xml or yaml files, one by
+            # language and one by report file, each of which needs a header
         }
-    } elsif ($opt_yaml) {
-        push @results, "---\n# $header_line";
-    } elsif ($opt_csv) {
-        # append the header to the end of the column headers
-        # to keep the output a bit cleaner from a spreadsheet
-        # perspective
+        if ($opt_xml) {
+            if ($BY_FILE) {
+                push @results, "<files>";
+            } else {
+                push @results, "<languages>";
+            }
+        }
     } else {
-        if ($ALREADY_SHOWED_HEADER) {
-            push @results, "";
-        } else {
-            push @results, $header_line;
-            $ALREADY_SHOWED_HEADER = 1;
-        }
-        push @results, $hyphen_line;
+        push @results, output_header($header_line, $hyphen_line, $BY_FILE);
     }
 
     if ($Style eq "txt") {
@@ -1636,22 +2261,27 @@ sub generate_report {                        # {{{1
     if ($opt_csv) {
         my $header2;
         if ($BY_FILE) {
-            $header2 = "language,filename";
+            $header2 = "language${DELIM}filename";
         } else {
-            $header2 = "files,language";
+            $header2 = "files${DELIM}language";
         }
-        $header2 .= ",blank,comment,code";
-        $header2 .= ",scale,3rd gen. equiv" if $opt_3;
-        $header2 .= ',"' . $header_line . '"';
+        $header2 .= "${DELIM}blank${DELIM}comment${DELIM}code";
+        $header2 .= "${DELIM}scale${DELIM}3rd gen. equiv" if $opt_3;
+        $header2 .= ${DELIM} . '"' . $header_line . '"';
         push @results, $header2;
     }
 
     my $sum_scaled = 0;
+####foreach my $lang_or_file (keys %{$rhh_count}) {
+####    $rhh_count->{$lang_or_file}{'code'} = 0 unless 
+####        defined $rhh_count->{$lang_or_file}{'code'};
+####}
     foreach my $lang_or_file (sort {
                                  $rhh_count->{$b}{'code'} <=>
                                  $rhh_count->{$a}{'code'}
                                }
                           keys %{$rhh_count}) {
+        next if $lang_or_file eq "by report file";
         my ($factor, $scaled);
         if ($BY_LANGUAGE or $BY_FILE) {
             $factor = 1;
@@ -1662,6 +2292,8 @@ sub generate_report {                        # {{{1
                     warn "No scale factor for $lang_or_file; using 1.00";
                 }
             } else { # by individual code file
+                next unless defined $rhh_count->{$lang_or_file}{'lang'};
+                next unless defined $rh_scale->{$rhh_count->{$lang_or_file}{'lang'}};
                 $factor = $rh_scale->{$rhh_count->{$lang_or_file}{'lang'}};
             }
             $scaled = $factor*$rhh_count->{$lang_or_file}{'code'};
@@ -1682,7 +2314,8 @@ sub generate_report {                        # {{{1
         }
 
         if ($BY_FILE) {
-            $data_line  = sprintf $Format{'1'}{$Style}, $lang_or_file;
+            my $clean_filename = rm_leading_tempdir($lang_or_file, \%TEMP_DIR);
+            $data_line  = sprintf $Format{'1'}{$Style}, $clean_filename;
         } else {
             $data_line  = sprintf $Format{'2'}{$Style}, $lang_or_file;
         }
@@ -1706,9 +2339,9 @@ sub generate_report {                        # {{{1
                 $data_line.=' language="' . $lang . '" ';
             }
             if ($BY_FILE) {
-                push @results, "<file " . $data_line . "/>";
+                push @results, "  <file " . $data_line . "/>";
             } else {
-                push @results, "<language " . $data_line . "/>";
+                push @results, "  <language " . $data_line . "/>";
             }
         } elsif ($opt_yaml) {
             push @results,$lang_or_file . ":";
@@ -1725,23 +2358,27 @@ sub generate_report {                        # {{{1
             }
         } elsif ($opt_csv) {
             my $extra_3 = "";
-               $extra_3 = ",$factor,$scaled" if $opt_3;
-            my $str;
-            if ($BY_FILE) {
-                $str = $rhh_count->{$lang_or_file}{'lang'}   . ",";
+               $extra_3 = "${DELIM}$factor${DELIM}$scaled" if $opt_3;
+            my $first_column = undef;
+            my $clean_name   = $lang_or_file;
+            if ($BY_FILE) { 
+                $first_column = $rhh_count->{$lang_or_file}{'lang'};
+                $clean_name   = rm_leading_tempdir($lang_or_file, \%TEMP_DIR);
             } else {
-                $str = $rhh_count->{$lang_or_file}{'nFiles'} . ",";
-            }
-            $str .= $lang_or_file                         . "," .
-                    $rhh_count->{$lang_or_file}{'blank'}  . "," .
-                    $rhh_count->{$lang_or_file}{'comment'}. "," .
-                    $rhh_count->{$lang_or_file}{'code'}         .
-                    $extra_3;
+                $first_column = $rhh_count->{$lang_or_file}{'nFiles'};
+            } 
+            my $str = $first_column                         . ${DELIM} .
+                      $clean_name                           . ${DELIM} .
+                      $rhh_count->{$lang_or_file}{'blank'}  . ${DELIM} .
+                      $rhh_count->{$lang_or_file}{'comment'}. ${DELIM} .
+                      $rhh_count->{$lang_or_file}{'code'}   .
+                      $extra_3;
             push @results, $str;
         } else {
             push @results, $data_line;
         }
     }
+
     my $avg_scale = 1;  # weighted average of scale factors
        $avg_scale = sprintf("%.2f", $sum_scaled / $sum_code) 
             if $sum_code and $opt_3;
@@ -1758,18 +2395,22 @@ sub generate_report {                        # {{{1
         $data_line .= sprintf $Format{'5'}{$Style},
             $avg_scale   ,
             $sum_scaled  if $opt_3;
-        push @results, "<total " . $data_line . "/>";
-        
+        push @results, "  <total " . $data_line . "/>";
+
         if ($BY_FILE) {
             push @results, "</files>";
         } else {
             foreach my $language (keys %{$languages}) {
-                push @results, '<language name="' . $language . '"/>';
+                push @results, '  <language name="' . $language . '"/>';
             }
             push @results, "</languages>";
         }
-        
-        push @results, "</results>";
+
+        if (!$opt_by_file_by_lang or $ALREADY_SHOWED_XML_SECTION) {
+    	    push @results, "</results>";
+        } else {
+            $ALREADY_SHOWED_XML_SECTION = 1;
+        }
     } elsif ($opt_yaml) {
         push @results, "SUM:";
         push @results, "  blank: "  . $sum_blank  ;
@@ -1783,7 +2424,7 @@ sub generate_report {                        # {{{1
     } elsif ($opt_csv) {
         # do nothing
     } else {
- 
+
         if ($BY_FILE) {
             $data_line  = sprintf "%-${spacing_0}s ", "SUM:"  ;
         } else {
@@ -1797,11 +2438,12 @@ sub generate_report {                        # {{{1
         $data_line .= sprintf $Format{'5'}{$Style},
             $avg_scale   ,
             $sum_scaled if $opt_3;
-        push @results, $hyphen_line if $sum_files > 1;
-        push @results, $data_line   if $sum_files > 1;
+        push @results, $hyphen_line if $sum_files > 1 or $opt_sum_one;
+        push @results, $data_line   if $sum_files > 1 or $opt_sum_one;
         push @results, $hyphen_line;
     }
     write_xsl_file() if $opt_xsl and $opt_xsl eq $CLOC_XSL;
+    print "<- generate_report\n" if $opt_v > 2;
     return @results;
 } # 1}}}
 sub print_errors {                           # {{{1
@@ -1809,6 +2451,7 @@ sub print_errors {                           # {{{1
         $raa_errors    , # in
        ) = @_;
 
+    print "-> print_errors\n" if $opt_v > 2;
     my %error_string = reverse(%{$rh_Error_Codes});
     my $nErrors      = scalar @{$raa_errors};
     warn sprintf "\n%d error%s:\n", plural_form(scalar @Errors);
@@ -1817,6 +2460,7 @@ sub print_errors {                           # {{{1
                      $error_string{ $raa_errors->[$i][0] },
                      $raa_errors->[$i][1] ;
     }
+    print "<- print_errors\n" if $opt_v > 2;
 
 } # 1}}}
 sub write_lang_def {                         # {{{1
@@ -1828,13 +2472,17 @@ sub write_lang_def {                         # {{{1
         $rh_Not_Code_Extension    , # in
         $rh_Not_Code_Filename     , # in
         $rh_Scale_Factor          , # in
+        $rh_EOL_Continuation_re   , # in
        ) = @_;
 
+    print "-> write_lang_def($file)\n" if $opt_v > 2;
     my $OUT = new IO::File $file, "w";
     die "Unable to write to $file\n" unless defined $OUT;
 
     foreach my $language (sort keys %{$rhaa_Filters_by_Language}) {
-        next if $language eq "MATLAB/Objective C/MUMPS";
+        next if $language eq "MATLAB/Objective C/MUMPS" or
+                $language eq "PHP/Pascal"               or
+                $language eq "Lisp/OpenCL";
         printf $OUT "%s\n", $language;
         foreach my $filter (@{$rhaa_Filters_by_Language->{$language}}) {
             printf $OUT "    filter %s", $filter->[0];
@@ -1857,9 +2505,14 @@ sub write_lang_def {                         # {{{1
             }
         }
         printf $OUT "    3rd_gen_scale %.2f\n", $rh_Scale_Factor->{$language};
+        if (defined $rh_EOL_Continuation_re->{$language}) {
+            printf $OUT "    end_of_line_continuation %s\n", 
+                $rh_EOL_Continuation_re->{$language};
+        }
     }
 
     $OUT->close;
+    print "<- write_lang_def\n" if $opt_v > 2;
 } # 1}}}
 sub read_lang_def {                          # {{{1
     my ($file                     ,
@@ -1870,8 +2523,12 @@ sub read_lang_def {                          # {{{1
         $rh_Not_Code_Extension    , # out
         $rh_Not_Code_Filename     , # out
         $rh_Scale_Factor          , # out
+        $rh_EOL_Continuation_re   , # out
+        $rh_EOL_abc,
        ) = @_;
 
+
+    print "-> read_lang_def($file)\n" if $opt_v > 2;
     my $IN = new IO::File $file, "r";
     die "Unable to read $file.\n" unless defined $IN;
 
@@ -1911,12 +2568,16 @@ sub read_lang_def {                          # {{{1
         } elsif (/^    3rd_gen_scale\s+(\S+)\s*$/) {
             $rh_Scale_Factor->{$language} = $1;
 
+        } elsif (/^    end_of_line_continuation\s+(\S+)\s*$/) {
+            $rh_EOL_Continuation_re->{$language} = $1;
+
         } else {
             die "Unexpected data line $. of $file:\n$_\n";
         }
 
     }
     $IN->close;
+    print "<- read_lang_def\n" if $opt_v > 2;
 } # 1}}}
 sub print_extension_info {                   # {{{1
     my ($extension,) = @_;
@@ -1956,6 +2617,10 @@ sub print_language_info {                    # {{{1
         push @{$extensions{'MATLAB'}}     , "m";
         push @{$extensions{'MUMPS'}}      , "m";
         delete $extensions{'MATLAB/Objective C/MUMPS'};
+    } elsif ($language =~ /^(Lisp|OpenCL)$/i) {
+        push @{$extensions{'Lisp'}}  , "cl";
+        push @{$extensions{'OpenCL'}}, "cl";
+        delete $extensions{'Lisp/OpenCL'};
     }
 
     if (%extensions) {
@@ -2015,7 +2680,7 @@ sub make_file_list {                         # {{{1
                 }
             }
             push @file_list, "$file_or_dir";
-        } elsif (is_dir ($file_or_dir)) {
+        } elsif (is_dir($file_or_dir)) {
             push @dir_list, $file_or_dir;
         } else {
             push @{$raa_errors}, [$rh_Err->{'Neither file nor directory'} , $file_or_dir];
@@ -2024,7 +2689,8 @@ sub make_file_list {                         # {{{1
     }
     foreach my $dir (@dir_list) {
 #print "make_file_list dir=$dir\n";
-        find(\&files, $dir);  # populates global variable @file_list
+        # populates global variable @file_list
+        find({wanted => \&files, follow => $opt_follow_links }, $dir);  
     }
     $nFiles_Found = scalar @file_list;
     printf "%8d text file%s.\n", plural_form($nFiles_Found) unless $opt_quiet;
@@ -2112,6 +2778,7 @@ sub remove_duplicate_files {                 # {{{1
             $rh_unique_source_file->{$files_by_size{$bytes}[0]} = 1;
             next;
         } else {
+#print "equally sized files: ",join(", ", @{$files_by_size{$bytes}}), "\n";
             foreach my $F (different_files(\@{$files_by_size{$bytes}},
                                             $rh_Err     ,
                                             $raa_errors ,
@@ -2123,24 +2790,33 @@ sub remove_duplicate_files {                 # {{{1
     print "<- remove_duplicate_files\n" if $opt_v > 2;
 } # 1}}}
 sub files {                                  # {{{1
-    # invoked by File::Find's find()   Populates global variable @file_list
-    if ($opt_exclude_dir) {
+    # invoked by File::Find's find()   Populates global variables,
+    # @file_list, %Ignored
+    if ($opt_exclude_dir or $opt_exclude_list_file) {
         my $return = 0;
         foreach my $skip_dir (keys %Exclude_Dir) {
-            if ($File::Find::dir =~ m{/$skip_dir(/|$)} ) {
-                $Ignored{$File::Find::name} = "--exclude_dir=$skip_dir";
+            # File::Find::dir used to always start with / but
+            # newer versions (1.13) no longer do; have to correct for this
+            my $dir = $File::Find::dir;
+               $dir = "./$dir" unless $dir =~ m{^/};
+            if ($dir =~ m{/\Q$skip_dir\E(/|$)} ) {
+                $Ignored{$File::Find::name} = "--exclude-dir=$skip_dir";
                 $return = 1;
                 last;
             }
         }
         return if $return;
     }
+    my $Dir = cwd(); # not $File::Find::dir which just gives relative path
 	if ($opt_match_f    ) {	return unless /$opt_match_f/;     }
     if ($opt_not_match_f) {	return if     /$opt_not_match_f/; }
-		
+	if ($opt_match_d    ) {	return unless $Dir =~ m{$opt_match_d}     }
+    if ($opt_not_match_d) {	return if     $Dir =~ m{$opt_not_match_d} }
+
     my $nBytes = -s     $_ ;
-    if (!$nBytes and $opt_v > 5) {
-        printf "files(%s)  zero size\n", $File::Find::name;
+    if (!$nBytes) {
+        $Ignored{$File::Find::name} = 'zero sized file';
+        printf "files(%s)  zero size\n", $File::Find::name if $opt_v > 5;
     }
     return unless $nBytes  ; # attempting other tests w/pipe or socket will hang
     my $is_dir = is_dir($_);
@@ -2190,6 +2866,15 @@ sub is_dir {                                 # {{{1
         return (-d $item);  # works on Unix, Linux, CygWin, z/OS
     }
 } # 1}}}
+sub is_excluded {                            # {{{1
+    my ($file       , # in
+        $excluded   , # in   hash of excluded directories
+       ) = @_;
+    my($filename, $filepath, $suffix) = fileparse($file);
+    foreach my $path (sort keys %{$excluded}) {
+        return 1 if ($filepath =~ m{^$path/}i);
+    }
+} # 1}}}
 sub classify_file {                          # {{{1
     my ($full_file   , # in
         $rh_Err      , # in   hash of error codes
@@ -2200,14 +2885,34 @@ sub classify_file {                          # {{{1
     print "-> classify_file($full_file)\n" if $opt_v > 2;
     my $language = "(unknown)";
 
+    if (basename($full_file) eq "-" && defined $opt_stdin_name) {
+       $full_file = $opt_stdin_name;
+    }
+
     my $look_at_first_line = 0;
     my $file = basename $full_file; 
+    if ($opt_autoconf and $file =~ /\.in$/) {
+       $file =~ s/\.in$//;
+    }
     return $language if $Not_Code_Filename{$file}; # (unknown)
     return $language if $file =~ m{~$}; # a temp edit file (unknown)
+    if (defined $Language_by_File{$file}) {
+        return $Language_by_File{$file};
+    }
 
     if ($file =~ /\.(\w+)$/) { # has an extension
-        print "$full_file extension=[$1]\n" if $opt_v > 2;
-        my $extension = $1;
+      print "$full_file extension=[$1]\n" if $opt_v > 2;
+      my $extension = $1;
+         # Windows file names are case insensitive so map 
+         # all extensions to lowercase there.
+         $extension = lc $extension if $ON_WINDOWS;  
+      my @extension_list = ( $extension );
+      if ($file =~ /\.(\w+\.\w+)$/) { # has a double extension
+          my $extension = $1;
+          $extension = lc $extension if $ON_WINDOWS;  
+          unshift @extension_list, $extension;  # examine double ext first
+      }
+      foreach my $extension (@extension_list) {
         if ($Not_Code_Extension{$extension} and 
            !$Forced_Extension{$extension}) {
            # If .1 (for example) is an extention that would ordinarily be
@@ -2232,14 +2937,44 @@ sub classify_file {                          # {{{1
                         'failure in matlab_or_objective_C()';
                     return $language; # (unknown)
                 }
+            } elsif ($Language_by_Extension{$extension} eq 'PHP/Pascal') {
+                if (really_is_php($full_file)) {
+                    return 'PHP';
+                } elsif (really_is_incpascal($full_file)) {
+                    return 'Pascal';
+                } else {
+                    return $language; # (unknown)
+                }
+            } elsif ($Language_by_Extension{$extension} eq 'Lisp/OpenCL') {
+                return Lisp_or_OpenCL($full_file, $rh_Err, $raa_errors);
+            } elsif ($Language_by_Extension{$extension} eq 'Smarty') {
+                # Smarty extension .tpl is generic; make sure the
+                # file at least roughly resembles PHP.  Alternatively,
+                # if the user forces the issue, do the count.
+                my $force_smarty = 0;
+                foreach (@opt_force_lang) {
+                    if (lc($_) eq "smarty,tpl") {
+                        $force_smarty = 1; 
+                        last;
+                    }
+                }
+                if (really_is_php($full_file) or $force_smarty) {
+                    return 'Smarty';
+                } else {
+                    return $language; # (unknown)
+                }
             } else {
                 return $Language_by_Extension{$extension};
             }
         } else { # has an unmapped file extension
             $look_at_first_line = 1;
         }
+      }
     } elsif (defined $Language_by_File{lc $file}) {
         return $Language_by_File{lc $file};
+    } elsif ($opt_lang_no_ext and 
+             defined $Filters_by_Language{$opt_lang_no_ext}) {
+        return $opt_lang_no_ext;
     } else {  # no file extension
         $look_at_first_line = 1;
     }
@@ -2325,7 +3060,7 @@ sub different_files {                        # {{{1
        ) = @_;
 
     print "-> different_files(@{$ra_files})\n" if $opt_v > 2;
-    my %file_hash = ();  # file_hash{ md5 hash } = file name
+    my %file_hash = ();  # file_hash{md5 hash} = [ file1, file2, ... ]
     foreach my $F (@{$ra_files}) {
         next if is_dir($F);  # needed for Windows
         my $IN = new IO::File $F, "r";
@@ -2335,15 +3070,32 @@ sub different_files {                        # {{{1
         } else {
             if ($HAVE_Digest_MD5) {
                 binmode $IN;
-                $file_hash{ Digest::MD5->new->addfile($IN)->hexdigest } = $F;
+                my $MD5 = Digest::MD5->new->addfile($IN)->hexdigest;
+                push @{$file_hash{$MD5}}, $F;
             } else {
                 # all files treated unique
-                $file_hash{ $F } = $F;
+                push @{$file_hash{$F}}, $F;
             }
             $IN->close;
         }
     }
-    my @unique = values %file_hash;
+
+    # Loop over file sets having identical MD5 sums.  Within
+    # each set, pick the file that most resembles known source 
+    # code.
+    my @unique = ();
+    for my $md5 (sort keys %file_hash) {
+        my $i_best = 0;
+        for (my $i = 1; $i < scalar(@{$file_hash{$md5}}); $i++) {
+            my $F = $file_hash{$md5}[$i];
+            my (@nul_a, %nul_h);
+            my $language = classify_file($F, $rh_Err, 
+                                        # don't save these errors; pointless
+                                        \@nul_a, \%nul_h);
+            $i_best = $i if $language ne "(unknown)";
+        }
+        push @unique, $file_hash{$md5}[$i_best];
+    }
     print "<- different_files(@unique)\n" if $opt_v > 2;
     return @unique;
 } # 1}}}
@@ -2390,12 +3142,13 @@ sub call_counter {                           # {{{1
     my $total_lines    = scalar @lines;
 
     print_lines($file, "Original file:", \@lines) if $opt_print_filter_stages;
-    @lines = rm_blanks(\@lines, $language); # remove blank lines
+    @lines = rm_blanks(\@lines, $language, \%EOL_Continuation_re); # remove blank lines
     my $blank_lines = $total_lines - scalar @lines;
     print_lines($file, "Blank lines removed:", \@lines) 
         if $opt_print_filter_stages;
 
-    @lines = rm_comments(\@lines, $language, $file);
+    @lines = rm_comments(\@lines, $language, $file,
+                               \%EOL_Continuation_re);
 
     my $comment_lines = $total_lines - $blank_lines - scalar  @lines;
     if ($opt_strip_comments) {
@@ -2407,7 +3160,7 @@ sub call_counter {                           # {{{1
         }
         write_file($stripped_file, @lines);
     }
-    if ($opt_html) {
+    if ($opt_html and !$opt_diff) {
         chomp(@original_lines);  # includes blank lines, comments
         chomp(@lines);           # no blank lines, no comments
 
@@ -2463,7 +3216,7 @@ sub write_file {                             # {{{1
     if ($ON_WINDOWS) {
         $file = (windows_glob($file))[0];
     } else {
-        $file = glob($file);  # sometimes returns null string
+        $file = File::Glob::glob($file);
     }
 #print "write_file 3 [$file]\n";
     $file = $preglob_filename unless $file;
@@ -2499,8 +3252,11 @@ sub read_file  {                             # {{{1
     if (defined $IN) {
         @lines = <$IN>;
         $IN->close;
-        # Some files don't end with a new line.  Force this:
-        $lines[$#lines] .= "\n" unless $lines[$#lines] =~ m/\n$/;
+        if ($lines[$#lines]) {  # test necessary for zero content files
+                                # (superfluous?)
+            # Some files don't end with a new line.  Force this:
+            $lines[$#lines] .= "\n" unless $lines[$#lines] =~ m/\n$/;
+        }
     } else {
         warn "Unable to read $file\n";
     }
@@ -2508,14 +3264,24 @@ sub read_file  {                             # {{{1
     return @lines;
 } # 1}}}
 sub rm_blanks {                              # {{{1
-    my ($ra_in, $language) = @_;
+    my ($ra_in    ,
+        $language ,
+        $rh_EOL_continuation_re) = @_;
+    print "-> rm_blanks(language=$language)\n" if $opt_v > 2;
 #print "rm_blanks: language = [$language]\n";
     my @out = ();
     if ($language eq "COBOL") {
         @out = remove_cobol_blanks($ra_in);
     } else {
-        @out = remove_matches($ra_in, '^\s*$'); # removes blank lines
+        # removes blank lines
+        if (defined $rh_EOL_continuation_re->{$language}) {
+            @out = remove_matches_2re($ra_in, '^\s*$', 
+                                      $rh_EOL_continuation_re->{$language}); 
+        } else {
+            @out = remove_matches($ra_in, '^\s*$');
+        }
     }
+    print "<- rm_blanks(language=$language)\n" if $opt_v > 2;
     return @out;
 } # 1}}}
 sub rm_comments {                            # {{{1
@@ -2523,7 +3289,9 @@ sub rm_comments {                            # {{{1
         $language , # in
         $file     , # in (some language counters, eg Haskell, need 
                     #     access to the original file)
+        $rh_EOL_continuation_re , # in
        ) = @_;
+    print "-> rm_comments(file=$file)\n" if $opt_v > 2;
     my @routines       = @{$Filters_by_Language{$language}};
     my @lines          = @{$ra_lines};
     my @original_lines = @{$ra_lines};
@@ -2547,7 +3315,13 @@ sub rm_comments {                            # {{{1
 
         print_lines($file, "After $subroutine(@args)", \@lines) 
             if $opt_print_filter_stages;
-        @lines = remove_matches(\@lines, '^\s*$'); # then remove blank lines
+        # then remove blank lines which are created by comment removal
+        if (defined $rh_EOL_continuation_re->{$language}) {
+            @lines = remove_matches_2re(\@lines, '^\s*$',
+                                        $rh_EOL_continuation_re);
+        } else {
+            @lines = remove_matches(\@lines, '^\s*$');
+        }
         
         print_lines($file, "post $subroutine(@args) blank cleanup:", \@lines) 
             if $opt_print_filter_stages;
@@ -2560,6 +3334,7 @@ sub rm_comments {                            # {{{1
          $lines[0] ne $original_lines[0])) {
         unshift @lines, $original_lines[0];  # add the first line back
     }
+    print "<- rm_comments\n" if $opt_v > 2;
     return @lines;
 } # 1}}}
 sub remove_f77_comments {                    # {{{1
@@ -2569,6 +3344,7 @@ sub remove_f77_comments {                    # {{{1
     my @save_lines = ();
     foreach (@{$ra_lines}) {
         next if m{^[*cC]};
+        next if m{^\s*!};
         push @save_lines, $_;
     }
 
@@ -2609,6 +3385,31 @@ sub remove_matches {                         # {{{1
 
     print "<- remove_matches\n" if $opt_v > 2;
 #print "remove_matches returning\n   ", join("\n   ", @save_lines), "\n";
+    return @save_lines;
+} # 1}}}
+sub remove_matches_2re {                     # {{{1
+    my ($ra_lines, # in
+        $pattern1, # in Perl regex 1 (case insensitive) to match
+        $pattern2, # in Perl regex 2 (case insensitive) to not match prev line
+       ) = @_;
+    print "-> remove_matches_2re(pattern=$pattern1,$pattern2)\n" if $opt_v > 2;
+
+    my @save_lines = ();
+    for (my $i = 0; $i < scalar @{$ra_lines}; $i++) {
+#print "remove_matches_2re [$pattern1] [$pattern2] [$ra_lines->[$i]]\n";
+        if ($i) {
+#print "remove_matches_2re prev=[$ra_lines->[$i-1]] this=[$ra_lines->[$i]]\n";
+            next if ($ra_lines->[$i]   =~ m{$pattern1}i) and 
+                    ($ra_lines->[$i-1] !~ m{$pattern2}i);
+        } else {
+            # on first line
+            next if $ra_lines->[$i]   =~  m{$pattern1}i;
+        }
+        push @save_lines, $ra_lines->[$i];
+    }
+
+    print "<- remove_matches_2re\n" if $opt_v > 2;
+#print "remove_matches_2re returning\n   ", join("\n   ", @save_lines), "\n";
     return @save_lines;
 } # 1}}}
 sub remove_inline {                          # {{{1
@@ -2753,8 +3554,15 @@ sub remove_cobol_blanks {                    # {{{1
         if ($free_format) {
             push @save_lines, $_;
         } else {
-            push @save_lines, $_ unless m/^\d{6}\s*$/ or
-                              ($line =~ m/^\d{6}\s{66}/);
+            # Greg Toth:
+            #  (1) Treat lines with any alphanum in cols 1-6 and 
+            #      blanks in cols 7 through 71 as blank line, and
+            #  (2) Treat lines with any alphanum in cols 1-6 and 
+            #      slash (/) in col 7 as blank line (this is a 
+            #      page eject directive). 
+            push @save_lines, $_ unless m/^\d{6}\s*$/             or 
+                                        ($line =~ m/^.{6}\s{66}/) or 
+                                        ($line =~ m/^......\//);
         }
     }
     return @save_lines;
@@ -2888,6 +3696,20 @@ sub docstring_to_C {                         # {{{1
     print "<- docstring_to_C\n" if $opt_v > 2;
     return @{$ra_lines};
 } # 1}}}
+sub smarty_to_C {                            # {{{1
+    my ($ra_lines, ) = @_;
+    # Converts Smarty comments to C comments.
+
+    print "-> smarty_to_C()\n" if $opt_v > 2;
+
+    foreach (@{$ra_lines}) {
+        s[{\*][/*]g;
+        s[\*}][*/]g;
+    }
+
+    print "<- smarty_to_C\n" if $opt_v > 2;
+    return @{$ra_lines};
+} # 1}}}
 sub determine_lit_type {                     # {{{1
   my ($file) = @_;
 
@@ -2968,6 +3790,7 @@ sub set_constants {                          # {{{1
         $rh_Not_Code_Filename     , # out
         $rh_Scale_Factor          , # out
         $rh_Known_Binary_Archives , # out
+        $rh_EOL_continuation_re   , # out
        ) = @_;
 # 1}}}
 %{$rh_Language_by_Extension} = (                 # {{{1
@@ -2977,6 +3800,7 @@ sub set_constants {                          # {{{1
             'adb'         => 'Ada'                   ,
             'ads'         => 'Ada'                   ,
             'adso'        => 'ADSO/IDSM'             ,
+            'ahk'         => 'AutoHotkey'            ,
             'am'          => 'make'                  ,
             'ample'       => 'AMPLE'                 ,
             'as'          => 'ActionScript'          ,
@@ -3002,22 +3826,30 @@ sub set_constants {                          # {{{1
             'C'           => 'C++'                   ,
             'cc'          => 'C++'                   ,
             'ccs'         => 'CCS'                   ,
+            'cfc'         => 'ColdFusion CFScript'   ,
             'cfm'         => 'ColdFusion'            ,
-            'cl'          => 'Lisp'                  ,
+            'cl'          => 'Lisp/OpenCL'           ,
+            'clj'         => 'Clojure'               ,
+            'cljs'        => 'ClojureScript'         ,
             'cls'         => 'Visual Basic'          ,
+            'CMakeLists.txt' => 'CMake'              ,
             'cob'         => 'COBOL'                 ,
             'COB'         => 'COBOL'                 ,
+            'coffee'      => 'CoffeeScript'          ,
             'config'      => 'ASP.Net'               ,
             'cpp'         => 'C++'                   ,
             'cs'          => 'C#'                    ,
             'csh'         => 'C Shell'               ,
             'css'         => "CSS"                   ,
+            'ctl'         => 'Visual Basic'          ,
             'cxx'         => 'C++'                   ,
             'd'           => 'D'                     ,
             'da'          => 'DAL'                   ,
+            'dart'        => 'Dart'                  ,
             'def'         => 'Teamcenter def'        ,
             'dmap'        => 'NASTRAN DMAP'          ,
             'dpr'         => 'Pascal'                ,
+            'dsr'         => 'Visual Basic'          ,
             'dtd'         => 'DTD'                   ,
             'ec'          => 'C'                     ,
             'el'          => 'Lisp'                  ,
@@ -3036,6 +3868,8 @@ sub set_constants {                          # {{{1
             'frm'         => 'Visual Basic'          ,
             'gnumakefile' => 'make'                  ,
             'Gnumakefile' => 'make'                  ,
+            'go'          => 'Go'                    ,
+            'groovy'      => 'Groovy'                ,
             'h'           => 'C/C++ Header'          ,
             'H'           => 'C/C++ Header'          ,
             'hh'          => 'C/C++ Header'          ,
@@ -3046,10 +3880,11 @@ sub set_constants {                          # {{{1
             'html'        => 'HTML'                  ,
             'i3'          => 'Modula3'               ,
             'idl'         => 'IDL'                   ,
+            'pro'         => 'IDL'                   ,
             'ig'          => 'Modula3'               ,
             'il'          => 'SKILL'                 ,
             'ils'         => 'SKILL++'               ,
-            'inc'         => 'inc'                   , # might be PHP
+            'inc'         => 'PHP/Pascal'            , # might be PHP or Pascal
             'itk'         => 'Tcl/Tk'                ,
             'java'        => 'Java'                  ,
             'jcl'         => 'JCL'                   , # IBM Job Control Lang.
@@ -3061,6 +3896,7 @@ sub set_constants {                          # {{{1
             'lhs'         => 'Haskell'               ,
             'l'           => 'lex'                   ,
             'lsp'         => 'Lisp'                  ,
+            'lisp'        => 'Lisp'                  ,
             'lua'         => 'Lua'                   ,
             'm3'          => 'Modula3'               ,
             'm4'          => 'm4'                    ,
@@ -3068,11 +3904,13 @@ sub set_constants {                          # {{{1
             'Makefile'    => 'make'                  ,
             'met'         => 'Teamcenter met'        ,
             'mg'          => 'Modula3'               , 
-            'mli'         => 'ML'                    ,
-            'ml'          => 'ML'                    , 
+#           'mli'         => 'ML'                    , # ML not implemented
+#           'ml'          => 'ML'                    , 
+            'ml'          => 'Ocaml'                 , 
             'm'           => 'MATLAB/Objective C/MUMPS' ,
-            'wdproj'      => 'MSBuild scripts' ,
-            'csproj'      => 'MSBuild scripts' ,
+            'mm'          => 'Objective C++'         ,
+            'wdproj'      => 'MSBuild scripts'       ,
+            'csproj'      => 'MSBuild scripts'       ,
             'mps'         => 'MUMPS'                 ,
             'mth'         => 'Teamcenter mth'        ,
             'oscript'     => 'LiveLink OScript'      ,
@@ -3095,6 +3933,8 @@ sub set_constants {                          # {{{1
             'pp'          => 'Pascal'                ,
             'psql'        => 'SQL'                   ,
             'py'          => 'Python'                ,
+            'pyx'         => 'Cython'                ,
+            'qml'         => 'QML'                   ,
             'rb'          => 'Ruby'                  ,
          #  'resx'        => 'ASP.Net'               ,
             'rex'         => 'Oracle Reports'        ,
@@ -3102,6 +3942,7 @@ sub set_constants {                          # {{{1
             'rhtml'       => 'Ruby HTML'             ,
             's'           => 'Assembly'              ,
             'S'           => 'Assembly'              ,
+            'scala'       => 'Scala'                 ,
             'sbl'         => 'Softbridge Basic'      ,
             'SBL'         => 'Softbridge Basic'      ,
             'sc'          => 'Lisp'                  ,
@@ -3110,11 +3951,18 @@ sub set_constants {                          # {{{1
             'ses'         => 'Patran Command Language'   ,
             'pcl'         => 'Patran Command Language'   ,
             'sh'          => 'Bourne Shell'          ,
+            'smarty'      => 'Smarty'                ,
             'sql'         => 'SQL'                   ,
             'SQL'         => 'SQL'                   ,
+            'sproc.sql'   => 'SQL Stored Procedure'  ,
+            'spoc.sql'    => 'SQL Stored Procedure'  ,
+            'spc.sql'     => 'SQL Stored Procedure'  ,
+            'udf.sql'     => 'SQL Stored Procedure'  ,
+            'data.sql'    => 'SQL Data'              ,
             'tcl'         => 'Tcl/Tk'                ,
             'tcsh'        => 'C Shell'               ,
             'tk'          => 'Tcl/Tk'                ,
+            'tpl'         => 'Smarty'                ,
             'vhd'         => 'VHDL'                  ,
             'VHD'         => 'VHDL'                  ,
             'vhdl'        => 'VHDL'                  ,
@@ -3130,8 +3978,10 @@ sub set_constants {                          # {{{1
             'webinfo'     => 'ASP.Net'               ,
             'xml'         => 'XML'                   ,
             'XML'         => 'XML'                   ,
+            'mxml'        => 'MXML'                  ,
             'build'       => 'NAnt scripts'          ,
             'vim'         => 'vim script'            ,
+            'xaml'        => 'XAML'                  ,
             'xsd'         => 'XSD'                   ,
             'XSD'         => 'XSD'                   ,
             'xslt'        => 'XSLT'                  ,
@@ -3167,10 +4017,11 @@ sub set_constants {                          # {{{1
             );
 # 1}}}
 %{$rh_Language_by_File}      = (                 # {{{1
-            'Makefile'    => 'make'                  ,
-            'makefile'    => 'make'                  ,
-            'gnumakefile' => 'make'                  ,
-            'Gnumakefile' => 'make'                  ,
+            'Makefile'       => 'make'               ,
+            'makefile'       => 'make'               ,
+            'gnumakefile'    => 'make'               ,
+            'Gnumakefile'    => 'make'               ,
+            'CMakeLists.txt' => 'CMake'              ,
             );
 # 1}}}
 %{$rhaa_Filters_by_Language} = (                 # {{{1
@@ -3190,6 +4041,10 @@ sub set_constants {                          # {{{1
                                 [ 'remove_matches'      , '^\s*;'  ],
                                 [ 'call_regexp_common'  , 'C'      ], 
                                 [ 'remove_inline'       , '//.*$'  ], 
+                                [ 'remove_inline'       , ';.*$'   ],
+                            ],
+    'AutoHotkey'         => [   
+                                [ 'remove_matches'      , '^\s*;'  ],
                                 [ 'remove_inline'       , ';.*$'   ],
                             ],
     'awk'                => [   
@@ -3215,12 +4070,19 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'C'      ], 
                                 [ 'remove_inline'       , '//.*$'  ], 
                             ],
-    'C#'                 => [   
-                                [ 'remove_matches'      , '^\s*//' ], 
-                                [ 'call_regexp_common'  , 'C'      ],
-                                [ 'remove_inline'       , '//.*$'  ], 
+    'Clojure'            => [   [ 'remove_matches'      , '^\s*;'  ], ],
+    'ClojureScript'      => [   [ 'remove_matches'      , '^\s*;'  ], ],
+    'CMake'              => [   
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_inline'       , '#.*$'   ], 
                             ],
-    'D'                  => [   
+    'Cython'             => [   
+                                [ 'remove_matches'      , '^\s*#'  ], 
+                                [ 'docstring_to_C'                 ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                                [ 'remove_inline'       , '#.*$'   ],
+                            ], 
+    'C#'                 => [   
                                 [ 'remove_matches'      , '^\s*//' ], 
                                 [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_inline'       , '//.*$'  ], 
@@ -3228,10 +4090,29 @@ sub set_constants {                          # {{{1
     'CCS'                => [   [ 'call_regexp_common'  , 'C'      ], ],
     'CSS'                => [   [ 'call_regexp_common'  , 'C'      ], ],
     'COBOL'              => [   [ 'remove_cobol_comments',         ], ],
+    'CoffeeScript'       => [   
+                                [ 'remove_matches'      , '^\s*#'  ],
+                                [ 'remove_inline'       , '#.*$'   ], 
+                            ],
     'ColdFusion'         => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
+    'ColdFusion CFScript'=> [
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                                [ 'remove_inline'       , '//.*$'  ], 
+                            ],
     'Crystal Reports'    => [   [ 'remove_matches'      , '^\s*//' ], ],
+    'D'                  => [   
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                                [ 'remove_inline'       , '//.*$'  ], 
+                            ],
     'DAL'                => [   [ 'remove_between'      , '[]',    ], ],
+    'Dart'               => [   
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'remove_inline'       , '//.*$'  ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                            ],
     'NASTRAN DMAP'       => [   
                                 [ 'remove_matches'      , '^\s*\$' ], 
                                 [ 'remove_inline'       , '\$.*$'  ], 
@@ -3262,6 +4143,16 @@ sub set_constants {                          # {{{1
                                 [ 'remove_f90_comments' ,          ], 
                                 [ 'remove_inline'       , '\!.*$'  ],
                             ],
+    'Go'                 => [   
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'remove_inline'       , '//.*$'  ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                            ],
+    'Groovy'             => [   
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'remove_inline'       , '//.*$'  ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                            ],
     'HTML'               => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
     'Haskell'            => [   [ 'remove_haskell_comments', '>filename<' ], ],
@@ -3285,6 +4176,7 @@ sub set_constants {                          # {{{1
                             ],
     'JCL'                => [   [ 'remove_jcl_comments' ,          ], ],
     'Lisp'               => [   [ 'remove_matches'      , '^\s*;'  ], ],
+    'Lisp/OpenCL'        => [ [ 'die' ,          ], ], # never called
     'LiveLink OScript'   => [   [ 'remove_matches'      , '^\s*//' ], ],
 #   'Lua'                => [   [ 'call_regexp_common'  , 'lua'    ], ],
     'Lua'                => [   [ 'remove_matches'      , '^\s*\-\-' ], ],
@@ -3304,6 +4196,20 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'C'      ], 
                                 [ 'remove_inline'       , '//.*$'  ], 
                             ], 
+    'Objective C++'      => [   
+                                [ 'remove_matches'      , '^\s*//' ],
+                                [ 'call_regexp_common'  , 'C'      ], 
+                                [ 'remove_inline'       , '//.*$'  ], 
+                            ], 
+    'Ocaml'              => [   
+                                [ 'call_regexp_common'  , 'Pascal' ], 
+                            ],
+    'OpenCL'             => [   
+                                [ 'remove_matches'      , '^\s*//' ], # C99
+                                [ 'call_regexp_common'  , 'C'      ], 
+                                [ 'remove_inline'       , '//.*$'  ], # C99
+                            ],
+    'PHP/Pascal'               => [ [ 'die' ,          ], ], # never called
     'MATLAB/Objective C/MUMPS' => [ [ 'die' ,          ], ], # never called
     'MUMPS'              => [   [ 'remove_matches'      , '^\s*;'  ], ], 
     'Octave'             => [   
@@ -3312,7 +4218,10 @@ sub set_constants {                          # {{{1
                             ], 
     'Oracle Forms'       => [   [ 'call_regexp_common'  , 'C'      ], ],
     'Oracle Reports'     => [   [ 'call_regexp_common'  , 'C'      ], ],
-    'Pascal'             => [   [ 'call_regexp_common'  , 'Pascal' ], ],
+    'Pascal'             => [   
+                                [ 'call_regexp_common'  , 'Pascal' ], 
+                                [ 'remove_matches'      , '^\s*//' ],
+                            ],
     'Patran Command Language'=> [   
                                 [ 'remove_matches'      , '^\s*#'   ], 
                                 [ 'remove_matches'      , '^\s*\$#' ], 
@@ -3323,11 +4232,12 @@ sub set_constants {                          # {{{1
                                 [ 'remove_below_above'  , '^=head1', '^=cut'  ], 
                                 [ 'remove_inline'       , '#.*$'   ],
                             ], 
-    'Python'             => [   [ 'remove_matches'      , '^\s*#'  ], 
+    'Python'             => [   
+                                [ 'remove_matches'      , '^\s*#'  ], 
                                 [ 'docstring_to_C'                 ], 
                                 [ 'call_regexp_common'  , 'C'      ],
                                 [ 'remove_inline'       , '#.*$'   ],
-                                ], 
+                            ], 
     'PHP'                => [   
                                 [ 'remove_matches'      , '^\s*#'  ],
                                 [ 'remove_matches'      , '^\s*//' ], 
@@ -3335,13 +4245,24 @@ sub set_constants {                          # {{{1
                                 [ 'remove_inline'       , '#.*$'   ],
                                 [ 'remove_inline'       , '//.*$'  ],
                             ],
+    'QML'                => [   
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                                [ 'remove_inline'       , '//.*$'  ], 
+                            ],
     'Rexx'               => [   [ 'call_regexp_common'  , 'C'      ], ],
     'Ruby'               => [   
                                 [ 'remove_matches'      , '^\s*#'  ], 
+                                [ 'remove_below_above'  , '^=begin', '^=end' ], 
                                 [ 'remove_inline'       , '#.*$'   ],
                             ], 
     'Ruby HTML'          => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
+    'Scala'              => [   
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'remove_inline'       , '//.*$'  ], 
+                                [ 'call_regexp_common'  , 'C'      ],
+                            ],
     'SKILL'              => [   
                                 [ 'call_regexp_common'  , 'C'      ], 
                                 [ 'remove_matches'      , '^\s*;'  ],
@@ -3355,9 +4276,23 @@ sub set_constants {                          # {{{1
                                 [ 'remove_matches'      , '^\s*--' ],
                                 [ 'remove_inline'       , '--.*$'  ],
                             ],
+    'SQL Stored Procedure'=> [   
+                                [ 'call_regexp_common'  , 'C'      ], 
+                                [ 'remove_matches'      , '^\s*--' ],
+                                [ 'remove_inline'       , '--.*$'  ],
+                            ],
+    'SQL Data'           => [   
+                                [ 'call_regexp_common'  , 'C'      ], 
+                                [ 'remove_matches'      , '^\s*--' ],
+                                [ 'remove_inline'       , '--.*$'  ],
+                            ],
     'sed'                => [   
                                 [ 'remove_matches'      , '^\s*#'  ], 
                                 [ 'remove_inline'       , '#.*$'   ],
+                            ], 
+    'Smarty'             => [   
+                                [ 'smarty_to_C'                    ], 
+                                [ 'call_regexp_common'  , 'C'      ],
                             ], 
     'Bourne Again Shell' => [   
                                 [ 'remove_matches'      , '^\s*#'  ], 
@@ -3406,12 +4341,20 @@ sub set_constants {                          # {{{1
     'Visual Basic'       => [   [ 'remove_above'        , '^\s*Attribute\s+VB_Name\s+=' ],               
                                 [ 'remove_matches'      , '^\s*Attribute\s+'],
                                 [ 'remove_matches'      , '^\s*\47'], ],  # \47 = '
-    'yacc'               => [   [ 'call_regexp_common'  , 'C'      ], ],
+    'yacc'               => [   
+                                [ 'call_regexp_common'  , 'C'      ], 
+                                [ 'remove_matches'      , '^\s*//' ], 
+                                [ 'remove_inline'       , '//.*$'  ], 
+                            ],
     'YAML'               => [   
                                 [ 'remove_matches'      , '^\s*#'  ], 
                                 [ 'remove_inline'       , '#.*$'   ], 
                             ],
     'lex'                => [   [ 'call_regexp_common'  , 'C'      ], ],
+    'XAML'               => [   [ 'remove_html_comments',          ],
+                                [ 'call_regexp_common'  , 'HTML'   ], ],
+    'MXML'               => [   [ 'remove_html_comments',          ],
+                                [ 'call_regexp_common'  , 'HTML'   ], ],
     'XML'                => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
     'XSD'                => [   [ 'remove_html_comments',          ],
@@ -3422,6 +4365,46 @@ sub set_constants {                          # {{{1
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
     'MSBuild scripts'    => [   [ 'remove_html_comments',          ],
                                 [ 'call_regexp_common'  , 'HTML'   ], ],
+    );
+# 1}}}
+%{$rh_EOL_continuation_re} = (                 # {{{1
+    'ActionScript'       =>     '\\\\$'         ,
+    'Assembly'           =>     '\\\\$'         ,
+    'ASP'                =>     '\\\\$'         ,
+    'ASP.Net'            =>     '\\\\$'         ,
+    'Ada'                =>     '\\\\$'         ,
+    'awk'                =>     '\\\\$'         ,
+    'bc'                 =>     '\\\\$'         ,
+    'C'                  =>     '\\\\$'         ,
+    'C++'                =>     '\\\\$'         ,
+    'C/C++ Header'       =>     '\\\\$'         ,
+    'CMake'              =>     '\\\\$'         ,
+    'Cython'             =>     '\\\\$'         ,
+    'C#'                 =>     '\\\\$'         ,
+    'D'                  =>     '\\\\$'         ,
+    'Dart'               =>     '\\\\$'         ,
+    'Expect'             =>     '\\\\$'         ,
+    'Go'                 =>     '\\\\$'         ,
+    'Java'               =>     '\\\\$'         ,
+    'Javascript'         =>     '\\\\$'         ,
+    'Lua'                =>     '\\\\$'         ,
+    'make'               =>     '\\\\$'         ,
+    'MATLAB'             =>     '\.\.\.\s*$'    ,
+    'Objective C'        =>     '\\\\$'         ,
+    'Objective C++'      =>     '\\\\$'         ,
+    'Ocaml'              =>     '\\\\$'         ,
+    'Octave'             =>     '\.\.\.\s*$'    ,
+    'Patran Command Language'=> '\\\\$'         ,
+    'Python'             =>     '\\\\$'         ,
+    'Ruby'               =>     '\\\\$'         ,
+    'sed'                =>     '\\\\$'         ,
+    'Bourne Again Shell' =>     '\\\\$'         ,
+    'Bourne Shell'       =>     '\\\\$'         ,
+    'C Shell'            =>     '\\\\$'         ,
+    'Kermit'             =>     '\\\\$'         ,
+    'Korn Shell'         =>     '\\\\$'         ,
+    'Tcl/Tk'             =>     '\\\\$'         ,
+    'lex'                =>     '\\\\$'         ,
     );
 # 1}}}
 %{$rh_Not_Code_Extension}    = (                 # {{{1
@@ -3550,6 +4533,8 @@ sub set_constants {                          # {{{1
     'ansi cobol 74'                =>   0.75,
     'ansi cobol 85'                =>   0.88,
     'SQL'                          =>   6.15,
+    'SQL Stored Procedure'         =>   6.15,
+    'SQL Data'                     =>   1.00,
     'answer/db'                    =>   6.15,
     'apl 360/370'                  =>   2.50,
     'apl default'                  =>   2.50,
@@ -3590,6 +4575,7 @@ sub set_constants {                          # {{{1
     'Assembly (macro)'             =>   0.51,
     'associative default'          =>   1.25,
     'autocoder'                    =>   0.25,
+    'AutoHotkey'                   =>   1.29,
     'awk'                          =>   3.81,
     'aztec c'                      =>   0.63,
     'balm'                         =>   0.75,
@@ -3620,7 +4606,8 @@ sub set_constants {                          # {{{1
     'cbasic'                       =>   0.88,
     'cdadl'                        =>   4.00,
     'cellsim'                      =>   1.74,
-'ColdFusion'               =>   4.00,
+    'ColdFusion'                   =>   4.00,
+    'ColdFusion CFScript'          =>   4.00,
     'chili'                        =>   0.75,
     'chill'                        =>   0.75,
     'cics'                         =>   1.74,
@@ -3630,7 +4617,10 @@ sub set_constants {                          # {{{1
     'clipper'                      =>   2.05,
     'clipper db'                   =>   2.00,
     'clos'                         =>   3.81,
+    'Clojure'                      =>   1.25,
+    'ClojureScript'                =>   1.25,
     'clout'                        =>   2.00,
+    'CMake'                        =>   1.00,
     'cms2'                         =>   0.75,
     'cmsgen'                       =>   4.21,
     'COBOL'                        =>   1.04,
@@ -3639,6 +4629,7 @@ sub set_constants {                          # {{{1
     'cobra'                        =>   4.00,
     'codecenter'                   =>   2.22,
     'cofac'                        =>   2.22,
+    'CoffeeScript'                 =>   2.00,
     'cogen'                        =>   2.22,
     'cognos'                       =>   2.22,
     'cogo'                         =>   1.13,
@@ -3664,6 +4655,7 @@ sub set_constants {                          # {{{1
     'cygnet'                       =>   4.21,
     'D'                            =>   1.70,
     'DAL'                          =>   1.50,
+    'Dart'                         =>   2.00,
     'data base default'            =>   2.00,
     'dataflex'                     =>   2.00,
     'datatrieve'                   =>   4.00,
@@ -3740,6 +4732,8 @@ sub set_constants {                          # {{{1
     'gpss'                         =>   1.74,
     'guest'                        =>   2.86,
     'guru'                         =>   1.63,
+    'Go'                           =>   2.50,
+    'Groovy'                       =>   4.10,
     'gw basic'                     =>   0.82,
     'Haskell'                      =>   2.11,
     'high c'                       =>   0.63,
@@ -3748,6 +4742,7 @@ sub set_constants {                          # {{{1
 
 'HTML'          => 1.90 ,
 'XML'           => 1.90 ,
+'MXML'          => 1.90 ,
 'XSLT'          => 1.90 ,
 'DTD'           => 1.90 ,
 'XSD'           => 1.90 ,
@@ -3869,8 +4864,10 @@ sub set_constants {                          # {{{1
     'object pascal'                =>   2.76,
     'object star'                  =>   5.00,
     'Objective C'                  =>   2.96,
+    'Objective C++'                =>   2.96,
     'objectoriented default'       =>   2.76,
     'objectview'                   =>   3.20,
+    'Ocaml'                        =>   3.00,
     'ogl'                          =>   1.00,
     'omnis 7'                      =>   2.00,
     'oodl'                         =>   2.76,
@@ -3921,6 +4918,7 @@ sub set_constants {                          # {{{1
     'qbasic'                       =>   1.38,
     'qbe'                          =>   6.15,
     'qmf'                          =>   5.33,
+    'QML'                          =>   1.25,
     'qnial'                        =>   1.63,
     'quattro'                      =>  13.33,
     'quattro pro'                  =>  13.33,
@@ -3957,6 +4955,7 @@ sub set_constants {                          # {{{1
     'sas'                          =>   1.95,
     'savvy'                        =>   6.15,
     'sbasic'                       =>   0.88,
+    'Scala'                        =>   4.10,
     'sceptre'                      =>   1.13,
     'scheme'                       =>   1.51,
     'screen painter default'       =>  13.33,
@@ -3978,6 +4977,7 @@ sub set_constants {                          # {{{1
     'smalltalk 286'                =>   3.81,
     'smalltalk 80'                 =>   3.81,
     'smalltalk/v'                  =>   3.81,
+    'Smarty'                       =>   3.50,
     'snap'                         =>   1.00,
     'snobol24'                     =>   0.63,
     'softscreen'                   =>   5.71,
@@ -4074,6 +5074,7 @@ sub set_constants {                          # {{{1
     'whip'                         =>   0.88,
     'wizard'                       =>   2.86,
     'xlisp'                        =>   1.25,
+    'XAML'                         =>   1.90,
     'yacc'                         =>   1.51,
     'yacc++'                       =>   1.51,
     'YAML'                         =>   0.90,
@@ -4092,10 +5093,12 @@ sub set_constants {                          # {{{1
 'Modula3' => 2.00,
 'PHP'     => 3.50,
 'Python'  => 4.20,
+'Cython'  => 3.80,
 'Ruby'    => 4.20,
 'Ruby HTML' => 4.00,
 'sed'     => 4.00,
 'Lua'     => 4.00,
+'OpenCL'  => 1.50,
 );
 # 1}}}
 %{$rh_Known_Binary_Archives} = (                 # {{{1
@@ -4882,8 +5885,10 @@ EOD
     $HAVE_Rexexp_Common = 0;
     my $dir             = "";
     if ($opt_sdir) {
-        # write to the user-defined scratch directory
-        $dir = $opt_sdir;
+        ++$TEMP_OFF;
+        $dir = "$opt_sdir/$TEMP_OFF";
+        File::Path::rmtree($dir) if     is_dir($dir);
+        File::Path::mkpath($dir) unless is_dir($dir);
     } else {
         # let File::Temp create a suitable temporary directory
         $dir = tempdir( CLEANUP => 1 );  # 1 = delete on exit
@@ -5746,8 +6751,10 @@ EOAlgDiff
     $HAVE_Algorith_Diff = 0;
     my $dir             = "";
     if ($opt_sdir) {
-        # write to the user-defined scratch directory
-        $dir = $opt_sdir;
+        ++$TEMP_OFF;
+        $dir = "$opt_sdir/$TEMP_OFF";
+        File::Path::rmtree($dir) if     is_dir($dir);
+        File::Path::mkpath($dir) unless is_dir($dir);
     } else {
         # let File::Temp create a suitable temporary directory
         $dir = tempdir( CLEANUP => 1 );  # 1 = delete on exit
@@ -5908,6 +6915,38 @@ printf ".m:  pcent  obj C=% 2d  matlab=% 2d  mumps=% 2d\n", $objective_C_points,
     }
 
 } # 1}}}
+sub Lisp_or_OpenCL {                         # {{{1
+    my ($file        , # in
+        $rh_Err      , # in   hash of error codes
+        $raa_errors  , # out
+       ) = @_;
+
+    print "-> Lisp_or_OpenCL\n" if $opt_v > 2;
+
+    my $lang = undef;
+    my $IN = new IO::File $file, "r";
+    if (!defined $IN) {
+        push @{$raa_errors}, [$rh_Err->{'Unable to read'} , $file];
+        return $lang;
+    }
+    my $lisp_points   = 0;
+    my $opcl_points = 0;
+    while (<$IN>) {
+        ++$lisp_points if  /^\s*;/;
+        ++$lisp_points if  /\((def|eval|require|export|let|loop|dec|format)/;
+        ++$opcl_points if  /^\s*(int|float|const|{)/;
+    }
+    $IN->close;
+    # print "lisp_points=$lisp_points   opcl_points=$opcl_points\n";
+    if ($lisp_points > $opcl_points) {
+        $lang = "Lisp";
+    } else {
+        $lang = "OpenCL";
+    }
+
+    print "<- Lisp_or_OpenCL\n" if $opt_v > 2;
+    return $lang;
+} # 1}}}
 sub html_colored_text {                      # {{{1
     # http://www.pagetutor.com/pagetutor/makapage/pics/net216-2.gif
     my ($color, $text) = @_;
@@ -6020,6 +7059,9 @@ sub write_comments_to_html {                 # {{{1
         return;
     }
 
+    my $approx_line_count = scalar @{$rah_diff_L};
+    my $n_digits = 1 + int(log($approx_line_count)/2.30258509299405); # log_10
+
     my $html_out = html_header($filename);
 
     my $comment_line_number = 0;
@@ -6031,11 +7073,12 @@ sub write_comments_to_html {                 # {{{1
         }
         my $line_num = "";
         my $pre      = "";
-        my $post     = "</span>";
-die "undef rah_diff_R[$i]{type} " unless defined $rah_diff_R->[$i]{type};
+        my $post     = '</span> &nbsp;';
+warn "undef rah_diff_R[$i]{type} " unless defined $rah_diff_R->[$i]{type};
         if ($rah_diff_R->[$i]{type} eq 'nonexist') {
             ++$comment_line_number;
-            $line_num = '<span class="clinenum">' . $comment_line_number . $post;
+            $line_num = sprintf "\&nbsp; <span class=\"clinenum\"> %0${n_digits}d %s",
+                            $comment_line_number, $post;
             $pre = '<span class="comment">';
             $html_out .= $line_num;  
             $html_out .= $pre .  
@@ -6046,8 +7089,8 @@ die "undef rah_diff_R[$i]{type} " unless defined $rah_diff_R->[$i]{type};
         if      ($rah_diff_R->[$i]{type} eq 'code' and
                  $rah_diff_R->[$i]{desc} eq 'same') {
             # entire line remains as-is
-            $line_num = '<span class="linenum">' .
-                         $rah_diff_R->[$i]{lnum} . $post;
+            $line_num = sprintf "\&nbsp; <span class=\"linenum\"> %0${n_digits}d %s",
+                            $rah_diff_R->[$i]{lnum}, $post;
             $pre    = '<span class="normal">';
             $html_out .= $line_num;  
             $html_out .= $pre . 
@@ -6271,17 +7314,35 @@ sub remove_leading_dir {                     # {{{1
     #      b.txt
     #      dir3/c.txt
     #
+    print "-> remove_leading_dir()\n" if $opt_v > 2;
     my @D = (); # a matrix:   [ [ dir1, dir2 ],         # dir1/dir2/a.txt
                 #               [ dir1, dir2 ],         # dir1/dir2/b.txt
                 #               [ dir1, dir2 , dir3] ]  # dir1/dir2/dir3/c.txt
+    if ($ON_WINDOWS) {
+        foreach my $F (@filenames) {
+            $F =~ s{\\}{/}g;
+            $F = ucfirst($F) if $F =~ /^\w:/;  # uppercase drive letter
+        }
+    }
+    if (scalar @filenames == 1) {
+        # special case:  with only one filename
+        # cannot determine a baseline
+        return ( basename $filenames[0] );
+    }
     foreach my $F (@filenames) {
         my ($Vol, $Dir, $File) = File::Spec->splitpath($F);
         my @x = File::Spec->splitdir( $Dir );
         pop @x unless $x[$#x]; # last entry usually null, remove it
+        if ($ON_WINDOWS) {
+            if (defined($Vol) and $Vol) {
+                # put the drive letter, eg, C:, at the front
+                unshift @x, uc $Vol;
+            }
+        }
 #print "F=$F, Dir=$Dir  x=[", join("][", @x), "]\n";
         push @D, [ @x ];
     }
-    
+
     # now loop over columns until either they are all
     # eliminated or a unique column is found
 
@@ -6292,7 +7353,7 @@ sub remove_leading_dir {                     # {{{1
     my $mismatch = 0;
     while (!$mismatch) {
         for (my $row = 1; $row < scalar @D; $row++) {
-# print "comparing $D[$row][0] to $D[0][0]\n";
+#print "comparing $D[$row][0] to $D[0][0]\n";
 
             if (!defined $D[$row][0] or !defined $D[0][0] or
                 ($D[$row][0] ne $D[0][0])) {
@@ -6321,6 +7382,7 @@ sub remove_leading_dir {                     # {{{1
         $F =~ s{^$leading}{};
     }
 
+    print "<- remove_leading_dir()\n" if $opt_v > 2;
     return @filenames;
 
 } # 1}}}
@@ -6331,22 +7393,35 @@ sub align_by_pairs {                         # {{{1
         $ra_removed            , # out
         $ra_compare_list       , # out
         ) = @_;
+    print "-> align_by_pairs()\n" if $opt_v > 2;
     @{$ra_compare_list} = ();
 
     my @files_L = sort keys %{$rh_file_list_L};
     my @files_R = sort keys %{$rh_file_list_R};
-    return () unless @files_L and @files_R;
+    return () unless @files_L or  @files_R;  # at least one must have stuff
+    if      ( @files_L and !@files_R) {
+        # left side has stuff, right side is empty; everything deleted
+        @{$ra_added   }     = ();
+        @{$ra_removed }     = @files_L;
+        @{$ra_compare_list} = ();
+        return;
+    } elsif (!@files_L and  @files_R) {
+        # left side is empty, right side has stuff; everything added
+        @{$ra_added   }     = @files_R;
+        @{$ra_removed }     = ();
+        @{$ra_compare_list} = ();
+        return;
+    }
 #use Data::Dumper::Simple;
 #print Dumper("align_by_pairs", @files_L, @files_R);
 #die;
-    if (scalar @files_L == 1 or scalar @files_R == 1) {
+    if (scalar @files_L == 1 and scalar @files_R == 1) {
         # The easy case:  compare two files.
         push @{$ra_compare_list}, [ $files_L[0],  $files_R[0] ]; 
         @{$ra_added  } = ();
         @{$ra_removed} = ();
         return;
     }
-
     # The harder case:  compare groups of files.  This only works
     # if the groups are in different directories so the first step
     # is to strip the leading directory names from file lists to
@@ -6389,6 +7464,7 @@ sub align_by_pairs {                         # {{{1
     @{$ra_added   } = keys %added  ;
     @{$ra_removed } = keys %deleted;
 
+    print "<- align_by_pairs()\n" if $opt_v > 2;
     return;
 #print Dumper("align_by_pairs", @files_L_minus_dir, @files_R_minus_dir);
 #die;
@@ -6451,7 +7527,8 @@ sub die_unknown_lang {                       # {{{1
     my ($lang, $option_name) = @_;
     die "Unknown language '$lang' used with $option_name option.  " .
         "The command\n  $script --show-lang\n" .
-        "will print all recognized languages.\n" ;
+        "will print all recognized languages.  Language names are " .
+        "case sensitive.\n" ;
 } # 1}}}
 sub unicode_file {                           # {{{1
     my $file = shift @_; 
@@ -6529,16 +7606,22 @@ sub unicode_to_ascii {                       # {{{1
 sub uncompress_archive_cmd {                 # {{{1
     my ($archive_file, ) = @_;
 
+    # Wrap $archive_file in single or double quotes in the system
+    # commands below to avoid filename chicanery (including
+    # spaces in the names).
+
     print "-> uncompress_archive_cmd($archive_file)\n" if $opt_v > 2;
     my $extract_cmd = "";
     my $missing     = "";
     if ($opt_extract_with) {
         ( $extract_cmd = $opt_extract_with ) =~ s/>FILE</$archive_file/g;
+    } elsif (basename($archive_file) eq "-" and !$ON_WINDOWS) {
+        $extract_cmd = "cat > -";
     } elsif (($archive_file =~ /\.tar\.(gz|Z)$/ or 
               $archive_file =~ /\.tgz$/       ) and !$ON_WINDOWS)    {
         if (external_utility_exists("gzip --version")) {
             if (external_utility_exists("tar --version")) {
-                $extract_cmd = "gzip  -dc $archive_file | tar xf -";
+                $extract_cmd = "gzip -dc '$archive_file' | tar xf -";
             } else {
                 $missing = "tar";
             }
@@ -6548,7 +7631,7 @@ sub uncompress_archive_cmd {                 # {{{1
     } elsif ($archive_file =~ /\.tar\.bz2$/ and !$ON_WINDOWS)    {
         if (external_utility_exists("bzip2 --help")) {
             if (external_utility_exists("tar --version")) {
-                $extract_cmd = "bzip2 -dc $archive_file | tar xf -";
+                $extract_cmd = "bzip2 -dc '$archive_file' | tar xf -";
             } else {
                 $missing = "tar";
             }
@@ -6556,11 +7639,11 @@ sub uncompress_archive_cmd {                 # {{{1
             $missing = "bzip2";
         }
     } elsif ($archive_file =~ /\.tar$/ and !$ON_WINDOWS)    {
-        $extract_cmd = "tar xf $archive_file";
+        $extract_cmd = "tar xf '$archive_file'";
     } elsif ($archive_file =~ /\.src\.rpm$/i and !$ON_WINDOWS) {
         if (external_utility_exists("cpio --version")) {
             if (external_utility_exists("rpm2cpio")) {
-                $extract_cmd = "rpm2cpio $archive_file | cpio -i";
+                $extract_cmd = "rpm2cpio '$archive_file' | cpio -i";
             } else {
                 $missing = "rpm2cpio";
             }
@@ -6569,7 +7652,7 @@ sub uncompress_archive_cmd {                 # {{{1
         }
     } elsif ($archive_file =~ /\.zip$/i and !$ON_WINDOWS)    {
         if (external_utility_exists("unzip")) {
-            $extract_cmd = "unzip -qq -d . $archive_file";
+            $extract_cmd = "unzip -qq -d . '$archive_file'";
         } else {
             $missing = "unzip";
         }
@@ -6578,7 +7661,7 @@ sub uncompress_archive_cmd {                 # {{{1
         $extract_cmd = "";
         my $WinZip = '"C:\\Program Files\\WinZip\\WinZip32.exe"';
         if (external_utility_exists($WinZip)) {
-            $extract_cmd = "$WinZip -e -o $archive_file .";
+            $extract_cmd = "$WinZip -e -o \"$archive_file\" .";
 #print "trace 5 extract_cmd=[$extract_cmd]\n";
         } else {
 #print "trace 6\n";
@@ -6637,9 +7720,11 @@ sub write_xsl_file {                         # {{{1
         warn "Unable to write $CLOC_XSL  $!\n";
         return;
     }
-my $XSL = <<'EOCommon'; # {{{2
-<?xml version="1.0" encoding="US-ASCII"?>
-<!-- XLS file by Paul Schwann, January 2009 -->
+    my $XSL =             # <style>  </style> {{{2
+'<?xml version="1.0" encoding="US-ASCII"?>
+<!-- XLS file by Paul Schwann, January 2009.
+     Fixes for by-file and by-file-by-lang by d_uragan, November 2010.
+     -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:output method="html"/>
   <xsl:template match="/">
@@ -6668,7 +7753,66 @@ my $XSL = <<'EOCommon'; # {{{2
       </style>
       <body>
         <h3><xsl:value-of select="results/header"/></h3>
-        <table>
+';
+# 2}}}
+
+    if ($opt_by_file) {
+        $XSL .=             # <table> </table>{{{2
+'        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>
+              <th>Language</th>
+';
+        $XSL .=
+'             <th>3<sup>rd</sup> Generation Equivalent</th>
+              <th>Scale</th>
+' if $opt_3;
+        $XSL .=
+'           </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="results/files/file">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>
+              <td><xsl:value-of select="@language"/></td>
+';
+        $XSL .=
+'             <td><xsl:value-of select="@factor"/></td>
+              <td><xsl:value-of select="@scaled"/></td>
+' if $opt_3;
+        $XSL .=
+'           </tr>
+          </xsl:for-each>
+            <tr>
+              <th>Total</th>
+              <th><xsl:value-of select="results/files/total/@blank"/></th>
+              <th><xsl:value-of select="results/files/total/@comment"/></th>
+              <th><xsl:value-of select="results/files/total/@code"/></th>
+              <th><xsl:value-of select="results/files/total/@language"/></th>
+';
+        $XSL .=
+'             <th><xsl:value-of select="results/files/total/@factor"/></th>
+              <th><xsl:value-of select="results/files/total/@scaled"/></th>
+' if $opt_3;
+        $XSL .=
+'           </tr>
+          </tbody>
+        </table>
+        <br/>
+';
+# 2}}}
+    }
+
+    if (!$opt_by_file or $opt_by_file_by_lang) {
+        $XSL .=             # <table> </table> {{{2
+'       <table>
           <thead>
             <tr>
               <th>Language</th>
@@ -6676,9 +7820,13 @@ my $XSL = <<'EOCommon'; # {{{2
               <th>Blank</th>
               <th>Comment</th>
               <th>Code</th>
-              <th>Scale</th>
+';
+        $XSL .=
+'             <th>Scale</th>
               <th>3<sup>rd</sup> Generation Equivalent</th>
-            </tr>
+' if $opt_3;
+        $XSL .=
+'           </tr>
           </thead>
           <tbody>
           <xsl:for-each select="results/languages/language">
@@ -6688,9 +7836,13 @@ my $XSL = <<'EOCommon'; # {{{2
               <td><xsl:value-of select="@blank"/></td>
               <td><xsl:value-of select="@comment"/></td>
               <td><xsl:value-of select="@code"/></td>
-              <td><xsl:value-of select="@factor"/></td>
+';
+        $XSL .=
+'             <td><xsl:value-of select="@factor"/></td>
               <td><xsl:value-of select="@scaled"/></td>
-            </tr>
+' if $opt_3;
+        $XSL .=
+'          </tr>
           </xsl:for-each>
             <tr>
               <th>Total</th>
@@ -6698,20 +7850,278 @@ my $XSL = <<'EOCommon'; # {{{2
               <th><xsl:value-of select="results/languages/total/@blank"/></th>
               <th><xsl:value-of select="results/languages/total/@comment"/></th>
               <th><xsl:value-of select="results/languages/total/@code"/></th>
-              <th><xsl:value-of select="results/languages/total/@factor"/></th>
+';
+        $XSL .=
+'             <th><xsl:value-of select="results/languages/total/@factor"/></th>
               <th><xsl:value-of select="results/languages/total/@scaled"/></th>
-            </tr>
+' if $opt_3;
+        $XSL .=
+'           </tr>
           </tbody>
         </table>
+';
+# 2}}}
+    }
+
+    $XSL.= <<'EO_XSL'; # {{{2
       </body>
     </html>
   </xsl:template>
 </xsl:stylesheet>
 
- 	  	 
-EOCommon
+EO_XSL
 # 2}}}
-    print $OUT $XSL;
+
+    my $XSL_DIFF = <<'EO_DIFF_XSL'; # {{{2
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- XLS file by Blazej Kroll, November 2010 -->
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="html"/>
+  <xsl:template match="/">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+      <head>
+        <title>CLOC Results</title>
+      </head>
+      <style type="text/css">
+        table {
+          table-layout: auto;
+          border-collapse: collapse;
+          empty-cells: show;
+		  margin: 1em;
+        }
+        td, th {
+          padding: 4px;
+        }
+        th {
+          background-color: #CCCCCC;
+        }
+        td {
+          text-align: center;
+        }
+        table, td, tr, th {
+          border: thin solid #999999;
+        }
+      </style>
+      <body>
+        <h3><xsl:value-of select="results/header"/></h3>
+EO_DIFF_XSL
+# 2}}}
+
+    if ($opt_by_file) {
+        $XSL_DIFF.= <<'EO_DIFF_XSL'; # {{{2
+		<table>
+          <thead>
+		  <tr><th colspan="4">Same</th>
+		  </tr>
+            <tr>
+              <th>File</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/same/file">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+		
+		<table>
+          <thead>
+		  <tr><th colspan="4">Modified</th>
+		  </tr>
+            <tr>
+              <th>File</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/modified/file">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+		
+		<table>
+          <thead>
+		  <tr><th colspan="4">Added</th>
+		  </tr>
+            <tr>
+              <th>File</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/added/file">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+		
+		<table>
+          <thead>
+		  <tr><th colspan="4">Removed</th>
+		  </tr>
+            <tr>
+              <th>File</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/removed/file">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+EO_DIFF_XSL
+# 2}}}
+    }
+
+    if (!$opt_by_file or $opt_by_file_by_lang) {
+        $XSL_DIFF.= <<'EO_DIFF_XSL'; # {{{2
+		<table>
+          <thead>
+		  <tr><th colspan="5">Same</th>
+		  </tr>
+            <tr>
+              <th>Language</th>
+              <th>Files</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/same/language">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@files_count"/></td>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+		
+		<table>
+          <thead>
+		  <tr><th colspan="5">Modified</th>
+		  </tr>
+            <tr>
+              <th>Language</th>
+              <th>Files</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/modified/language">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@files_count"/></td>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+		
+		<table>
+          <thead>
+		  <tr><th colspan="5">Added</th>
+		  </tr>
+            <tr>
+              <th>Language</th>
+              <th>Files</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/added/language">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@files_count"/></td>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+		
+		<table>
+          <thead>
+		  <tr><th colspan="5">Removed</th>
+		  </tr>
+            <tr>
+              <th>Language</th>
+              <th>Files</th>
+              <th>Blank</th>
+              <th>Comment</th>
+              <th>Code</th>              
+            </tr>
+          </thead>
+          <tbody>
+          <xsl:for-each select="diff_results/removed/language">
+            <tr>
+              <th><xsl:value-of select="@name"/></th>
+              <td><xsl:value-of select="@files_count"/></td>
+              <td><xsl:value-of select="@blank"/></td>
+              <td><xsl:value-of select="@comment"/></td>
+              <td><xsl:value-of select="@code"/></td>              
+            </tr>
+          </xsl:for-each>            
+          </tbody>
+        </table>
+EO_DIFF_XSL
+# 2}}}
+
+    }
+    
+    $XSL_DIFF.= <<'EO_DIFF_XSL'; # {{{2
+      </body>
+    </html>
+  </xsl:template>
+</xsl:stylesheet>
+EO_DIFF_XSL
+# 2}}}
+    if ($opt_diff) {
+        print $OUT $XSL_DIFF;
+    } else {
+        print $OUT $XSL;
+    }
     $OUT->close();
 } # 1}}}
 sub normalize_file_names {                   # {{{1 
@@ -6744,10 +8154,87 @@ sub normalize_file_names {                   # {{{1
     }
     return %normalized;
 } # 1}}}
+sub combine_diffs {                          # {{{1
+    # subroutine by Andy (awalshe@sf.net)
+    # https://sourceforge.net/tracker/?func=detail&aid=3261017&group_id=174787&atid=870625
+    my ($ra_files) = @_;
+
+    my $res   = "$URL v $VERSION\n";
+    my $dl    = '-';
+    my $width = 79;
+    # columns are in this order
+    my @cols  = ('files', 'blank', 'comment', 'code');
+    my %HoH   = ();
+  
+    foreach my $file (@{$ra_files}) {
+        my $IN = new IO::File $file, "r";
+        if (!defined $IN) {
+            warn "Unable to read $file; ignoring.\n";
+            next;
+        }
+
+        my $sec;
+        while (<$IN>) {
+            next if /^(http|Language|-----)/;
+            if (/^[A-Z][a-z]*/) {        # section title
+                $sec = $_;
+                chomp($sec);
+                $HoH{$sec} = () if ! exists $HoH{$sec};
+                next;
+            }
+  
+            if (/^\s(same|modified|added|removed)/) {  # calculated totals row
+                my @ar = grep { $_ ne '' } split(/ /, $_);
+                chomp(@ar);
+                my $ttl = shift @ar;
+                my $i = 0;
+                foreach(@ar) {
+                    my $t = "$ttl$dl$cols[$i]";
+                    $HoH{$sec}{$t} = 0 if ! exists $HoH{$sec}{$t};
+                    $HoH{$sec}{$t} += $_;
+                    $i++;
+                }
+            }
+        }
+        $IN->close;
+    }
+  
+    # rows are in this order
+    my @rows = ('same', 'modified', 'added', 'removed');
+  
+    $res .= sprintf("%s\n", "-" x $width);
+    $res .= sprintf("%-19s %14s %14s %14s %14s\n", 'Language', 
+                    $cols[0], $cols[1], $cols[2], $cols[3]);
+    $res .= sprintf("%s\n", "-" x $width);
+  
+    for my $sec ( keys %HoH ) {
+        next if $sec =~ /SUM:/;
+        $res .= "$sec\n";
+        foreach (@rows) {
+            $res .= sprintf(" %-18s %14s %14s %14s %14s\n", 
+                            $_, $HoH{$sec}{"$_$dl$cols[0]"},
+                                $HoH{$sec}{"$_$dl$cols[1]"},
+                                $HoH{$sec}{"$_$dl$cols[2]"},
+                                $HoH{$sec}{"$_$dl$cols[3]"});
+        }
+    }
+    $res .= sprintf("%s\n", "-" x $width);
+    my $sec = 'SUM:';
+    $res .= "$sec\n";
+    foreach (@rows) {
+        $res .= sprintf(" %-18s %14s %14s %14s %14s\n", 
+                        $_, $HoH{$sec}{"$_$dl$cols[0]"},
+                            $HoH{$sec}{"$_$dl$cols[1]"},
+                            $HoH{$sec}{"$_$dl$cols[2]"},
+                            $HoH{$sec}{"$_$dl$cols[3]"});
+    }
+    $res .= sprintf("%s\n", "-" x $width);
+  
+    return $res;
+} # 1}}}
 # subroutines copied from SLOCCount
 my %lex_files    = ();  # really_is_lex()
 my %expect_files = ();  # really_is_expect()
-my %pascal_files = ();  # really_is_pascal(), really_is_incpascal()
 my %php_files    = ();  # really_is_php()
 sub really_is_lex {                          # {{{1
 # Given filename, returns TRUE if its contents really is lex.
@@ -6901,9 +8388,6 @@ sub really_is_pascal {                       # {{{1
  my $found_terminating_end = 0;
  my $has_begin = 0;
 
- # Return cached result, if available:
- if ($pascal_files{$filename}) { return pascal_files{$filename};}
-
  open(PASCAL_FILE, "<$filename") ||
       die "Can't open $filename to determine if it's pascal.\n";
  while(<PASCAL_FILE>) {
@@ -6938,8 +8422,6 @@ sub really_is_pascal {                       # {{{1
       ( $has_program && $has_begin && $found_terminating_end ) )
           {$is_pascal = 1;}
 
- $pascal_files{$filename} = $is_pascal; # Store result in cache.
-
  return $is_pascal;
 } # 1}}}
 sub really_is_incpascal {                    # {{{1
@@ -6954,8 +8436,7 @@ sub really_is_incpascal {                    # {{{1
 # 2. Any usual reserverd word is found (program, unit, const, begin...)
 
  # If the general routine for Pascal files works, we have it
- if (&really_is_pascal ($filename)) { 
-   $pascal_files{$filename} = 1;
+ if (really_is_pascal($filename)) { 
    return 1;
  }
 
@@ -6983,7 +8464,6 @@ sub really_is_incpascal {                    # {{{1
  }
 
  close(PASCAL_FILE);
- $pascal_files{$filename} = $is_pascal; # Store result in cache.
  return $is_pascal;
 } # 1}}}
 sub really_is_php {                          # {{{1

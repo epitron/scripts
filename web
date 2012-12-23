@@ -19,7 +19,7 @@ BROWSERS = %w[
 ]
 
 BROWSER_OVERRIDES = {
-  proc { host["youtube.com"] } => %w[chrome chromium firefox],
+  proc { host[/(youtube\.com|youtu\.be)/"] } => %w[chrome chromium firefox],
 }
 
 ##############################################################

@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 ##############################################################################
 
-require 'coderay'
-
 ##############################################################################
 
 def lesspipe(*args)
@@ -43,9 +41,9 @@ def render(arg)
     CodeRay.scan($stdin).term
   elsif File.exists? arg
     if %w[.md .markdown].include? File.extname(arg)
-      render_markdown(File.read arg)
+      render_markdown(arg)
     else
-      CodeRay.scan_file(arg).term
+      render_coderay(arg)
     end
   else
     "\e[31m\e[1mFile not found.\e[0m"
@@ -54,12 +52,17 @@ end
 
 ##############################################################################
 
-def render_markdown(data)
+def render_coderay(filename)
+  require 'coderay'
+  CodeRay.scan_file(filename).term
+end
+
+def render_markdown(filename)
   # Lazily load markdown renderer
   eval DATA.read
 
   carpet = Redcarpet::Markdown.new(BlackCarpet, :fenced_code_blocks=>true)
-  carpet.render(data)
+  carpet.render(File.read filename)
 end
 
 
@@ -119,7 +122,7 @@ class BlackCarpet < Redcarpet::Render::Base
   
   def link(link, title, content)
     unless content[/^Back /]
-      content
+      "<15>#{content}</15> <8>(</8><9>#{link}</9><8>)</8>".colorize
     end
   end
   

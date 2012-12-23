@@ -1,1 +1,0 @@
-Run "sudo desktop-file-install utorrent.desktop" to install to /usr/share/applications and setup mime associations.
