@@ -1,0 +1,26 @@
+#!/bin/bash
+BASE="$HOME/.local/share/wineprefixes"
+
+if [ "$1" == "" ]; then
+  find "$BASE" -maxdepth 1
+  exit
+fi
+
+PREFIX="$BASE/$1"
+shift
+
+echo "Prefix: $PREFIX"
+
+if [ -d $PREFIX ]; then
+
+  export WINEPREFIX="$PREFIX"
+
+  if [ "$1" == "winecfg" ]; then
+    winecfg
+  else
+    wine $@
+  fi
+
+else
+  echo "Prefix not found: $1"
+fi
