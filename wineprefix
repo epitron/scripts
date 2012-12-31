@@ -11,16 +11,15 @@ shift
 
 echo "Prefix: $PREFIX"
 
-if [ -d $PREFIX ]; then
+if [ ! -d $PREFIX ]; then
+  echo "Creating new prefix..."
+  mkdir "$PREFIX"
+fi
 
-  export WINEPREFIX="$PREFIX"
+export WINEPREFIX="$PREFIX"
 
-  if [ "$1" == "winecfg" ]; then
-    winecfg
-  else
-    wine $@
-  fi
-
+if [ "$1" == "winecfg" ]; then
+  winecfg
 else
-  echo "Prefix not found: $1"
+  wine $@
 fi
