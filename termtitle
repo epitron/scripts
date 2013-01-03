@@ -1,2 +1,6 @@
 #!/bin/bash
-echo -ne "\033]30;$*\007"
+# 0 = icon name and window title
+# 1 = icon name
+# 2 = window title
+
+echo -ne "\033]0;$*\007"
