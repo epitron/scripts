@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+if ARGV.size < 1
+  puts "------------------------------------------------------------"
+  puts "  aur-deps"
+  puts "------------------------------------------------------------"
+  puts "  List all the pacman packages that a binary needs."
+  puts
+  puts "Usage:"
+  puts "  aur-deps <binary>"
+  exit
+end
+
+for arg in ARGV
+  puts "Package dependencies for #{arg}:"
+
+  `ldd #{arg}`.lines.each do |line|
+
+    line.strip!
+
+    if line =~ /(\S+) => not found/
+
+      puts "<14>#{$1} <12>not found".colorize
+
+    elsif line =~ /(\S+) => (\S+)/
+
+      libname, lib = $1, $2
+
+      owner = `pacman -Qo "#{lib}" 2>&1`
+
+      if owner =~ /is owned by (\S+) (\S+)/
+        package, version = $1, $2
+        puts "<10>#{package} <2>#{version} <8>(<9>#{libname}<8>)".colorize
+      else
+        puts "<14>#{libname} <12>not in pacman database".colorize
+      end
+
+    end
+
+  end
+end
