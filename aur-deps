@@ -14,10 +14,19 @@ if ARGV.size < 1
 end
 
 for arg in ARGV
-  puts "Package dependencies for #{arg}:"
+  puts "-----------------------------------------------"
+  puts "  Package dependencies for <11>#{arg}</11>:".colorize
+  puts "-----------------------------------------------"
 
-  `ldd #{arg}`.lines.each do |line|
+  ldd = `ldd #{arg}`
 
+  if ldd[/not a dynamic executable/]
+    puts "  Not a dynamic executable.".light_red
+    puts
+    next
+  end
+
+  for line in ldd.nice_lines
     line.strip!
 
     if line =~ /(\S+) => not found/
@@ -38,6 +47,7 @@ for arg in ARGV
       end
 
     end
-
   end
+
+  puts
 end
