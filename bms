@@ -56,25 +56,23 @@ def formatdate(dt, width=11)
   ]
 end
 
-def highlight(str, query, color="black_on_yellow")
+def highlight(str, query, color="black_on_blue")
   str.highlight(query) { |m| "<#{color}>#{m}</#{color}>"}
 end
 
 def display_result(trail, result, query, output)
   ## TODO: Columns!
 
-  indent = " " * 11
+  indent    = " " * 11
+  
+  name      = result["name"]
+  url       = result["url"]
+  timestamp = (result["date_added"].to_i / 1.million) - 11644473600
 
-  name = result["name"]
-  url  = result["url"]
-  dt   = result["date_added"]
-  dt.insert(-8,".")
-  dt   = Time.at dt.to_f
-
-  date, time = formatdate(dt)
+  date, time = formatdate Time.at(timestamp)
 
   output.puts "<14>#{date}<15>#{highlight name, query}".colorize
-  output.puts "<13>#{time}<9>#{highlight url, query}".colorize
+  output.puts "<7>#{time}<9>#{highlight url, query}".colorize
   output.puts "#{indent}<3>(<11>#{trail.reverse.join(" <3><-</3> ")}</11><3>)".colorize
   output.puts
 end
@@ -87,7 +85,7 @@ bookmarks_files = %w[
 for file in bookmarks_files
   marks = file.read.from_json
 
-  p marks.keys
+  #p marks.keys
 
   if opts.include? "-c"
     query = Regexp.new(args.join)
