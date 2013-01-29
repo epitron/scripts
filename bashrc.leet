@@ -11,6 +11,10 @@ if [ -d ~/bin ]; then
   export PATH=$PATH:~/bin
 fi
 
+if [ -d ~/.gem/bin ]; then
+  export PATH=$PATH:~/.gem/bin
+fi
+
 ## Ruby 1.8
 #if ruby -rubygems -e 1 > /dev/null 2>&1; then
 #  export RUBYOPT="rubygems"
