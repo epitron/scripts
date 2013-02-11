@@ -1,5 +1,5 @@
 #!/bin/bash
-gtk-redshift -t 6500:4400 -l 42.8142432:-73.9395687
+gtk-redshift -t 6500:4000 -l 42.8142432:-73.9395687
 # -t DAY:NIGHT	Color temperature to set at daytime/night
 #
 # The neutral temperature is 6500K. Using this value will not
