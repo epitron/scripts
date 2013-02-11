@@ -7,6 +7,6 @@ SERVER=ca.pool.ntp.org
 echo Synching clock ...
 sudoifnotroot ntpdate $SERVER
 echo Setting hardware clock...
-sudoifnotroot hwclock --systohc
+sudoifnotroot hwclock --systohc --localtime
 #/etc/rc0.d/K25hwclock.sh reload
 
