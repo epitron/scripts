@@ -65,6 +65,7 @@ alias ll='ls -l'
 alias l='ls -al'
 alias la='ls -la'
 alias ll='ls -l'
+alias lts='lt -s'
 
 alias +='pushd .'
 alias -- -='popd'
@@ -136,6 +137,7 @@ alias dmenu="dmenu -l 50"
 #alias mount="sudoifnotroot mount"
 alias ufw="sudoifnotroot ufw"
 alias fdisk='sudoifnotroot fdisk'
+alias lsblk='lsblk -a -f'
 
 alias bhogs="sudoifnotroot nethogs"
 alias bmon="sudoifnotroot bwm-ng"
