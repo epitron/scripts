@@ -9,9 +9,9 @@ def iwconfig
   #output = `iwconfig 2>&1|grep Quality`
   output = `iwconfig 2>&1`
   
-        devices = output.lines.split_before(/^\w/)
+        devices = output.lines.split_before(/^\w/).select{|a| a.any?} # split before non-indented lines
         
-        wifi_devs = devices.select {|array| array.any? and array.first[/^(wlan|ath)/] }
+        wifi_devs = devices.select {|dev| dev.first[/^(wlan0|ath)/] }
         
         wifi_devs = Hash[ wifi_devs.map do |lines|
           name = lines.first.scan(/^\S+/).first

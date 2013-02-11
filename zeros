@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+Path.pwd.ls_r.select { |s| s.size == 0 }.each { |path| puts path }
