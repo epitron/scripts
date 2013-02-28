@@ -2,6 +2,7 @@
 package FlashVideo::URLFinder;
 
 use strict;
+use Module::Find;
 use FlashVideo::Mechanize;
 use FlashVideo::Generic;
 use FlashVideo::Site;
@@ -15,7 +16,7 @@ use URI;
 
 # In some cases there isn't an obvious URL to find, so the following will be loaded and their 'can_handle'
 # method called.
-my @extra_can_handle = qw(Brightcove Mtvnservices Gawker Ooyala Gorillavid);
+my @extra_can_handle = findsubmod FlashVideo::Site;
 
 sub find_package {
   my($class, $url, $browser) = @_;
@@ -38,7 +39,9 @@ sub find_package {
 
   if(!defined $package) {
     for(@extra_can_handle) {
+      s/FlashVideo::Site:://;
       my $possible_package = _load($_);
+      next unless $possible_package->can("can_handle");
 
       $browser->get($url);
 
@@ -85,7 +88,9 @@ sub _find_package_url {
 
 sub _found {
   my($package, $url) = @_;
-  info "Using method '" . lc((split /::/, $package)[-1]) . "' for $url";
+  my $pv = eval "\$".$package."::VERSION";
+  $pv = ' plugin version ' . $pv if $pv;
+  info "Using method '" . lc((split /::/, $package)[-1]) . "'$pv for $url";
   return $package, $url;
 }
 
