@@ -1,0 +1,90 @@
+#!/usr/bin/env ruby
+require 'coolline'
+require 'epitools'
+
+def run(*args)
+  IO.popen [ *args, :err=>[:child, :out] ] do |io|
+    io.read
+  end
+end
+
+
+def metadata_for(arg)
+  data = run "ebook-meta", arg
+
+  fields = data.lines.map do |line|
+    if line =~ /^(\w+)[\(\)\w]*\s+: (.+)$/
+      [$1.downcase.to_sym, $2]
+    end
+  end.compact
+
+  Hash[fields]
+end
+
+
+def edit_metadata(arg)
+
+  path = Path[arg]
+  unless path.exists?
+    puts "* Couldn't find #{path}, skipping"
+    return
+  end
+
+  puts "=[ Reading #{path.filename.inspect} ]="
+  data = metadata_for(path)
+  puts
+  puts "Author: #{data[:author]}"
+  puts " Title: #{data[:title]}"
+  puts
+
+  guess = nil
+  cool = Coolline.new do |c|
+    c.handlers.unshift Coolline::Handler.new("\eg") { c.replace_line(guess) }
+  end
+
+  author_guess, title_guess = path.basename.split(" - ")
+
+  puts '#### Author #############################################'
+  puts "(guess: #{author_guess.inspect}, press Alt-G)"
+  puts
+  guess  = author_guess
+  author = cool.readline(">> ", data[:author] || author_guess)
+  puts
+
+  puts '#### Title #############################################'
+  puts "(guess: #{title_guess.inspect}, press Alt-G)"
+  puts
+  guess  = title_guess
+  title  = cool.readline(">> ", data[:title] || title_guess)
+  puts
+
+  if author == data[:author] and title == data[:title]
+    puts "* Nothing changed!"
+    puts
+    puts
+    return
+  end
+
+  cmd = ["ebook-meta", path.path, "-a", author, "-t", title]
+  #puts "Executing: #{cmd}"
+
+  if prompt("Update this book?") == "y"
+    system(*cmd)
+    puts
+    puts "* Updated!"
+  else
+    puts "* Nothing changed!"
+  end
+
+  puts
+  puts
+end
+
+
+
+args = ARGV
+
+args.each do |arg|
+  #pp metadata_for(arg)
+  edit_metadata(arg)
+end
