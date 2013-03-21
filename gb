@@ -126,7 +126,7 @@ elsif args.first.downcase == "-d"
     puts "<grey>* <light_cyan>Deleting <light_yellow>#{branch}".colorize
     system("git branch -D #{branch}")
   elsif branches.remote? branch
-    if prompt("You sure you wanna delete a remote branch???".light_red) == "y"
+    if prompt("You sure you wanna delete a remote branch???".light_red, 'yN') == "y"
       puts
       puts "Okay!"
       puts
