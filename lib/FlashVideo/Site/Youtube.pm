@@ -8,6 +8,9 @@ use FlashVideo::Utils;
 use FlashVideo::JSON;
 use URI::Escape;
 
+our $VERSION = '0.01';
+sub Version { $VERSION; }
+
 my @formats = (
   { id => 38, resolution => [4096, 2304] },
   { id => 37, resolution => [1920, 1080] },
@@ -68,7 +71,7 @@ sub find_video {
   my $video_id;
   if ($browser->content =~ /(?:var pageVideoId =|(?:CFG_)?VIDEO_ID'?\s*:)\s*'(.+?)'/
       || $browser->content =~ /[&?]video_id=([^&"]+)/
-      || $embed_url =~ /v=([^&]+)/
+      || $embed_url =~ /v=([^&#]+)/
       || $browser->content =~ /&amp;video_id=([^&]+)&amp;/) {
     $video_id = $1;
   } else {

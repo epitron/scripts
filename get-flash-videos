@@ -41,6 +41,7 @@ use FlashVideo::URLFinder;
 use FlashVideo::Mechanize;
 use FlashVideo::Downloader;
 use FlashVideo::RTMPDownloader;
+use FlashVideo::FFmpegDownloader;
 use FlashVideo::Search;
 use FlashVideo::Utils;
 use FlashVideo::VideoPreferences;
@@ -309,6 +310,11 @@ sub download {
 
   info "Downloading $url";
   $browser->get($url);
+  # Handle short url which redirect...
+  if ($browser->response->is_redirect and ($url ne $possible_url)) {
+    info "Downloading redirected $possible_url";
+    $browser->get($possible_url);
+  }
 
   # (Redirect check is for Youtube which sometimes redirects to login page
   # for "mature" videos.)
@@ -340,7 +346,7 @@ sub download {
   }
 
   my $suggested_filename = $suggested_fnames[-1];
-  if (ref($actual_url) eq 'ARRAY') {
+  if (ref($actual_url) eq 'HASH') {
       $suggested_filename ||= $actual_url->{flv};
   }
 
@@ -402,9 +408,14 @@ sub download {
     my $file = $save_as;
 
     if(ref $data eq 'HASH') {
-      # RTMP data
-      $downloader = FlashVideo::RTMPDownloader->new;
-      $file ||= $data->{flv};
+      if (defined($data->{downloader}) && $data->{downloader} eq "ffmpeg") {
+        $downloader = FlashVideo::FFmpegDownloader->new;
+        $file ||= $data->{file};
+      } else {
+        # RTMP data
+        $downloader = FlashVideo::RTMPDownloader->new;
+        $file ||= $data->{flv};
+      }
     } else {
       # HTTP
       $downloader = FlashVideo::Downloader->new;
