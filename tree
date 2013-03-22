@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/bin/tree -C "$@" | less -SR
