@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+require 'io/console'
+
+STDIN.raw do |io|
+  loop do
+    c = io.read 1
+    if (28..127).include? c.ord
+      print c
+    else
+      print c.inspect.gsub(/(^"|"$)/, '')
+    end
+    
+    exit if c == ?\C-c
+  end
+end
