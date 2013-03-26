@@ -1,2 +1,2 @@
 #!/bin/bash
-/usr/bin/tree -C "$@" | less -SR
+/usr/bin/tree -C "$@" | less -SRXFi
