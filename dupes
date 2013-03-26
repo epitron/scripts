@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+pp ARGV.map(&:to_Path).
+      group_by(&:md5).
+      select {|k, v| v.size > 1}.
+      map_values{|v| v.map(&:path) }
