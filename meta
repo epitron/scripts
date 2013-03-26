@@ -48,14 +48,14 @@ def edit_metadata(arg)
   puts "(guess: #{author_guess.inspect}, press Alt-G)"
   puts
   guess  = author_guess
-  author = cool.readline(">> ", data[:author] || author_guess)
+  author = cool.readline ">> ", data[:author] || author_guess
   puts
 
   puts '#### Title #############################################'
   puts "(guess: #{title_guess.inspect}, press Alt-G)"
   puts
   guess  = title_guess
-  title  = cool.readline(">> ", data[:title] || title_guess)
+  title  = cool.readline ">> ", data[:title] || title_guess
   puts
 
   if author == data[:author] and title == data[:title]
