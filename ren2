@@ -1,0 +1,43 @@
+#!/usr/bin/env python2
+import readline, sys, os
+
+def underscores_to_spaces(s):
+    return s.replace("_", " ")
+
+if len(sys.argv) < 2:
+  print "Usage: ren <filename>"
+  sys.exit(1)
+else:
+  srcs = sys.argv[1:]
+
+
+if len(srcs) > 1:
+    print
+    print "%d thing(s) to rename..." % len(srcs)
+    print
+
+for src in srcs:
+    
+    if not os.path.exists(src):
+      print repr(src), "not found."
+      sys.exit(2)
+
+    # key bindings
+    readline.parse_and_bind('Control-k: kill-whole-line')
+    readline.parse_and_bind('Control-r: "%s"' % underscores_to_spaces(src))
+    readline.parse_and_bind('Control-u: "\C-k\C-r"')
+
+    readline.set_startup_hook( lambda: readline.insert_text(src) )
+    
+    print            "Rename:", src
+    dest = raw_input("    to: ")
+    print
+    
+    if src == dest:
+      print "Skipping..."
+    else:
+      print "Renaming", repr(src), "to", repr(dest)
+    
+    os.rename(src, dest)
+
+    print

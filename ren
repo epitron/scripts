@@ -1,43 +1,71 @@
-#!/usr/bin/env python2
-import readline, sys, os
+#!/usr/bin/env ruby
+require 'coolline'
+require 'fileutils'
 
-def underscores_to_spaces(s):
-    return s.replace("_", " ")
+def split_ext(filename)
+  filename.split /(\.[^\.]+)$/
+end
 
-if len(sys.argv) < 2:
-  print "Usage: ren <filename>"
-  sys.exit(1)
-else:
-  srcs = sys.argv[1:]
+def restore_spaces(s)
+  s.gsub(/\b(_|\.)\b/, ' ')
+end
+
+def edit_filename(prompt, filename)
+
+  Coolline.new do |c|
+    # ^u removes underscores and stuff
+    c.bind "\x15" do |inst|
+      base, ext = split_ext inst.line
+      pos = inst.pos
+
+      inst.line = restore_spaces(base) + ext
+      inst.pos = pos
+    end
+
+    # ^d deletes to the extension
+    c.bind "\x04" do |inst|
+      start  = inst.pos
+      finish = inst.line.rindex(".")
+
+      inst.line[start...finish] = "" if start < finish
+    end
+  end.readline(prompt, filename)
+
+end
 
 
-if len(srcs) > 1:
-    print
-    print "%d thing(s) to rename..." % len(srcs)
-    print
+if __FILE__ == $0
 
-for src in srcs:
-    
-    if not os.path.exists(src):
-      print repr(src), "not found."
-      sys.exit(2)
+  puts
+  puts "#{ARGV.size} thing(s) to rename..."
+  puts
 
-    # key bindings
-    readline.parse_and_bind('Control-k: kill-whole-line')
-    readline.parse_and_bind('Control-r: "%s"' % underscores_to_spaces(src))
-    readline.parse_and_bind('Control-u: "\C-k\C-r"')
+  for arg in ARGV
+    puts "Rename: #{arg}"
 
-    readline.set_startup_hook( lambda: readline.insert_text(src) )
-    
-    print            "Rename:", src
-    dest = raw_input("    to: ")
-    print
-    
-    if src == dest:
-      print "Skipping..."
-    else:
-      print "Renaming", repr(src), "to", repr(dest)
-    
-    os.rename(src, dest)
+    new_filename = edit_filename("    to: ", arg)
 
-    print
+    puts
+
+    if arg == new_filename
+      puts "Skipping..."
+      next
+    end
+
+    if File.exists? new_filename
+      print "#{new_filename} exists. Overwrite? (y/N) "
+      case gets
+      when /^n$/i, "\n"
+        puts "Skipping..."
+        next
+      else
+        puts "Clobbering..."
+      end
+    end
+
+    puts "Renaming #{arg.inspect} to #{new_filename.inspect}"
+    FileUtils.mv(arg, new_filename)
+    puts
+  end
+
+end
