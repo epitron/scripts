@@ -1,41 +1,33 @@
 #!/usr/bin/env ruby
+require 'fileutils'
 
-def error(message, errorcode=1)
-  puts "Error: #{message}"
-  exit errorcode
+args = ARGV
+
+if args.empty?
+  puts "Usage: swap <filename> <other_filename>"
+  puts "       (swaps the names of two files)"
+  exit 1
+elsif args.size != 2
+  puts "Error: You must supply exactly 2 files to swap."
+  exit 1
 end
 
-args = ARGV.map(&:to_P)
-
-## Check parameters
-
-unless args.size == 2
-  error("you need to supply exactly 2 arguments.")
+args.each do |arg|
+  unless File.exists? arg
+    puts "Error: #{arg.inspect} doesn't exist."
+    exit 1
+  end
 end
-
-args.each do |path|
-  error("#{path} does not exist") unless path.exists?
-end
-
-## Swap
 
 a, b = args
 
-swap = a.path += ".swapping"
+#include FileUtils::Verbose
+include FileUtils
 
-if swap.exists?
-  error("#{swap} already exists! this program either failed before, or another instance is currently running. you must fix this problem to continue! quitting.")
-end
+puts "Swapping #{a.inspect} and #{b.inspect}..."
 
-a.mv(swap) # move a to swap
-b.mv(a)    # move b to a
+tmp = a + ".swapping"
 
-if swap.symlink? and not a.symlink? # check if only one file is a symlink
-  b.ln_s(a)   # symlink b to a
-  swap.rm     # remove swap (the symlink)
-else
-  swap.mv(b)  # rename swap to b
-end
-
-
-
+mv a,   tmp
+mv b,   a
+mv tmp, b
