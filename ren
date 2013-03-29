@@ -7,7 +7,7 @@ def split_ext(filename)
 end
 
 def restore_spaces(s)
-  s.gsub(/\b(_|\.)\b/, ' ')
+  s.gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
 end
 
 def edit_filename(prompt, filename)
