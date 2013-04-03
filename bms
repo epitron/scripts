@@ -6,7 +6,7 @@ args = ARGV
 opts, args = args.partition { |arg| arg[/^-./] }
 
 def help
-  puts "Usage: gbm [options] <query>"
+  puts "Usage: bms [options] <query>"
   puts
   puts "Purpose: Search google chrome's bookmarks."
   puts
