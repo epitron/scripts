@@ -41,6 +41,11 @@ if __FILE__ == $0
   puts
 
   for arg in ARGV
+    unless File.exists? arg
+      puts "Error: #{arg.inspect} not found..."
+      next
+    end
+
     puts "Rename: #{arg}"
 
     new_filename = edit_filename("    to: ", arg)
@@ -49,6 +54,7 @@ if __FILE__ == $0
 
     if arg == new_filename
       puts "Skipping..."
+      puts
       next
     end
 
