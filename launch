@@ -1,3 +1,24 @@
-#!/bin/bash
-dmenu_run -l 20 -i -b -p "Launch:"
+#!/usr/bin/env ruby
+cachedir = File.expand_path ENV["XDG_CACHE_HOME"] || "~/.cache"
 
+if File.exists? cachedir
+  cachefile="#{cachedir}/dmenu_run"
+else
+  # if no xdg dir, fall back to dotfile in ~
+  cachefile=File.expand_path "~/.dmenu_cache"
+end
+
+splitpath = ENV["PATH"].split(":")
+dmenu_options = '-l 20 -i -b -p "Launch:"'
+
+if system("stest", "-dqr", "-n", cachefile, *splitpath)
+  result = `stest -flx #{splitpath.join ' '} | sort -u | tee #{cachefile} | dmenu #{dmenu_options}`
+else
+  result = `cat "#{cachefile}" | dmenu #{dmenu_options}`
+end
+
+if result[0] == "."
+  exec("term #{result[1..-1]}")
+else
+  exec(result)
+end

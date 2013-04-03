@@ -1,0 +1,7 @@
+#!/bin/bash
+CMD="terminal --geometry=90x43"
+if [ "$1" == "" ]; then
+  $CMD
+else
+  $CMD --command="$@"
+fi
