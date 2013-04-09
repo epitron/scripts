@@ -101,6 +101,7 @@ alias a2="audacious"
 alias ssh='ssh -2'
 alias scpfast='scp -c arcfour128'
 alias sshfast='ssh -c arcfour128'
+alias mosh='msh'
 
 #alias ack='ack-grep'
 
@@ -195,7 +196,7 @@ alias sus='ssu'
 alias dpkg="sudoifnotroot dpkg"
 
 ## Arch linux
-alias pacman='sudo pacman-color'
+alias pacman='sudo pacman'
 alias pac='pacman -S'     # install package
 alias pacs='pacman -Ss'   # search for package
 alias pacg='pacman -Qg'   # show groups
