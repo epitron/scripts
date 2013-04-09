@@ -39,7 +39,7 @@ def edit_metadata(arg)
 
   guess = nil
   cool = Coolline.new do |c|
-    c.handlers.unshift Coolline::Handler.new("\eg") { c.replace_line(guess) }
+    c.handlers.unshift Coolline::Handler.new("\eg") { c.line = guess }
   end
 
   author_guess, title_guess = path.basename.split(" - ")
