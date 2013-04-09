@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+ARGV.each do |arg|
+  cs = arg.chars
+  puts "#{cs.first}#{cs.size-2}#{cs.last}"
+end
