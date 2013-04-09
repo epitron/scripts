@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+class Package < TypedStruct["name ver rev arch path size mtime"]
+  def initialize(path)
+    raise path if path.nil?
+
+    # cuda-5.0.35-4-x86_64.pkg.tar.xz
+    if path.filename =~ %r{^(.+)-([^-]+)-(\d+)-([\w_]+)\.pkg\.tar\.xz$}
+      super($1, $2, $3, $4, path, path.size, path.mtime)
+    else
+      raise "Can't parse: #{path}"
+    end
+  end
+
+  def version
+    "#{ver}-#{rev}"
+  end
+end
+
+
+keep = (ARGV.first || "1").to_i
+
+Path.cd("/var/cache/pacman/pkg") do
+  pkgs = Path["*.xz"].map {|path| Package.new(path) }
+  grouped = pkgs.group_by(&:name)
+
+  all_removals = []
+
+  grouped.sort.each do |name, pkgs|
+    versions = pkgs.sort_by { |pkg| pkg.mtime }.reverse
+    to_remove = versions[keep..-1]
+
+    print "+ <11>#{name}: <10>#{versions.first.version}".colorize
+
+    if to_remove.any?
+      all_removals += to_remove
+
+      oldvers = to_remove.map(&:version).join("<8>, <12>")
+      print "<8>, <12>#{oldvers}".colorize
+    end
+
+    puts
+  end
+
+  puts
+  puts "Keeping #{keep} cop(y/ies) of each package..."
+  puts
+
+
+  total_size = all_removals.map(&:size).sum
+  if prompt("Remove #{all_removals.size} old packages (#{total_size.commatize} bytes)?", "yN") == "y"
+    puts "Deleting..."
+    all_removals.each {|pkg| pkg.path.rm }
+  else
+    puts "Terminating..."
+  end
+
+end
