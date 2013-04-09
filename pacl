@@ -1,8 +1,11 @@
 #!/bin/bash
+lesscmd="less -RXFi"
+paccmd="pacman --color=always"
+
 if [[ "$1" == "" ]]; then
-  pacman-color -Q
+  $paccmd -Q | $lesscmd
 else
-  if pacman-color -Ql "$*"
+  if $paccmd -Ql "$*" | $lesscmd
   then
     # yay it worked
     echo
@@ -10,8 +13,8 @@ else
     echo
     echo "* Searching for '$*'..."
     echo
-    
-    pacman-color -Q | grep --color "$*"
+
+    $paccmd -Q | grep --color "$*" | $lesscmd
   fi
 fi
 
