@@ -3,5 +3,9 @@ CMD="terminal --geometry=90x43"
 if [ "$1" == "" ]; then
   $CMD
 else
-  $CMD --command="$@"
+  if [ "$1" == "-H" ]; then
+    shift
+    CMD="$CMD -H"
+  fi
+  $CMD --command="$*"
 fi

@@ -18,7 +18,7 @@ else
 end
 
 if result[0] == "."
-  exec("term #{result[1..-1]}")
+  exec("term -H #{result[1..-1]}")
 else
   exec(result)
 end
