@@ -128,6 +128,7 @@ class BlackCarpet < Redcarpet::Render::Base
   
   def block_code(code, language)
     language ||= :ruby
+    require 'coderay'
     "#{indent CodeRay.scan(code, language).term}\n"
   end
   
