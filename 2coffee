@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+require 'epitools/path'
+
+ARGV.each do |arg|
+  src = Path[arg]
+  dest = src.dup
+  dest.ext = "coffee"
+
+  cmd = "js2coffee '#{src}' > '#{dest}'"
+  p cmd
+  system(cmd)
+end

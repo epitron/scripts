@@ -1,3 +1,3 @@
 #!/bin/bash
 termtitle "[$1]"
-MOSH_TITLE_NOPREFIX=1 mosh $@
+MOSH_TITLE_NOPREFIX=1 mosh "$@"

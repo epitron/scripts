@@ -92,7 +92,8 @@ alias c-x='chmod -x'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
-alias a2="audacious"
+alias a="audacious"
+alias a2="a"
 
 #if [ "$TERM" == "xterm" ]
 #then
@@ -190,7 +191,6 @@ shopt -s histverify
 #fi
 
 alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
-alias a='sudoifnotroot aptitude'
 alias sus='ssu'
 
 alias dpkg="sudoifnotroot dpkg"
