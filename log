@@ -1,16 +1,2 @@
 #!/bin/bash
-#if [ "$1" == "apache" ]
-
-if [ -f $* ]
-then
-  FILENAME=$*
-else
-  FILENAME=/var/log/$*
-fi
-
-if echo $1 | grep -E "^.*gz$"
-then
-    zcat $FILENAME | colorize | less -R +\>
-else
-    cat $FILENAME | colorize | less -R +\>
-fi
+sudoifnotroot journalctl -f
