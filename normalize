@@ -1,0 +1,2 @@
+#!/bin/bash
+wine ~/scripts/win32/two-pass-normalizer/Compressor.Console.exe "$@"
