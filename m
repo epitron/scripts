@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'pp'
-require 'slop'
 
 def cropdetect(file)
   captures = []
@@ -44,13 +43,8 @@ def filtered_mplayer(cmd, verbose: false)
   puts
 end
 
-
-def mplayer(files, flags=[], autocrop: false)
-end
-
-
-if $0 == __FILE__
-
+def parse_options
+  require 'slop'
   opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: m [options] <videos...>'
 
@@ -59,16 +53,30 @@ if $0 == __FILE__
     on 'c', 'crop', 'Auto-crop'
     on 'v', 'verbose', 'Show all mplayer output spam'
   end
+end
+
+
+if $0 == __FILE__
+
+  if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
+    opts = parse_options
+  else
+    class FakeOptions
+      def method_missing(*args)
+        nil
+      end
+    end
+    opts = FakeOptions.new
+  end
 
   files = ARGV
 
   unless files.any?
-    puts "Error: Must supply at least one video."
+    puts "Error: Must supply at least one video file."
     puts
-    puts opts
+    puts parse_options
     exit 1
   end
-
 
   cmd   = ["mplayer"]
   cmd << "-nosound" if opts.nosound?
@@ -78,7 +86,7 @@ if $0 == __FILE__
   end
 
   if files.size == 1
-    title = files.first
+    title = File.basename files.first
   else
     title = "mplayer (#{files.size} files)"
   end
