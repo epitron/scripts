@@ -1,5 +1,17 @@
 #!/usr/bin/env ruby
+
+# TODO:
+#   - extract-keyframes
+#   - extract-audio
+#   - normalize audio
+#   - mplayer-info
+
 require 'pp'
+
+class FakeOptions
+  def method_missing(*args); nil; end
+end
+
 
 def cropdetect(file)
   captures = []
@@ -33,9 +45,9 @@ def filtered_mplayer(cmd, verbose: false)
       when /^Playing (.+)\./
         puts
         puts $1
-      when /DEMUX.+?(VIDEO: .+)/, /DECAUDIO.+?(AUDIO:.+)/
+      when /DE(?:CVIDEO|MUX).+?(VIDEO: .+)/, /DECAUDIO.+?(AUDIO:.+)/
         puts " * #{$1}"
-      when /DEC(VIDEO|AUDIO).+Selected (.+)/
+      when /DEC(VIDEO|AUDIO).+?Selected (.+)/
         puts "   |_ #{$2}"
       end
     end
@@ -49,6 +61,7 @@ def parse_options
     banner 'Usage: m [options] <videos...>'
 
     on 's=', 'seek', 'Seek to offset (HH:MM:SS or SS format)'
+    on 'f', 'fullscreen', 'Fullscreen mode'
     on 'n', 'nosound', 'No sound'
     on 'c', 'crop', 'Auto-crop'
     on 'v', 'verbose', 'Show all mplayer output spam'
@@ -61,11 +74,6 @@ if $0 == __FILE__
   if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
     opts = parse_options
   else
-    class FakeOptions
-      def method_missing(*args)
-        nil
-      end
-    end
     opts = FakeOptions.new
   end
 
@@ -78,12 +86,17 @@ if $0 == __FILE__
     exit 1
   end
 
+  ## OPTIONS
+
   cmd   = ["mplayer"]
   cmd << "-nosound" if opts.nosound?
+  cmd << "-fs"      if opts.fullscreen?
 
   if seek = opts[:seek]
     cmd += ["-ss", seek]
   end
+
+  # TITLE
 
   if files.size == 1
     title = File.basename files.first
@@ -92,6 +105,8 @@ if $0 == __FILE__
   end
 
   cmd += ["-title", title]
+
+  ## MAKE IT SO
 
   if opts.crop?
     files.each do |file|
