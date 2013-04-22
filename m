@@ -5,6 +5,7 @@
 #   - extract-audio
 #   - normalize audio
 #   - mplayer-info
+#   - commands (for operation-sensitive arguments)
 
 require 'pp'
 
@@ -66,20 +67,41 @@ def change_ext(path, new_ext)
   path.gsub(/\.[^\.]+$/, new_ext)
 end  
 
+
+def report_on(file)
+  require 'epitools'
+
+  Thread.new do |th|
+    sleep 1
+    puts
+    loop do
+      if File.exists? file
+        print "\e[1G* Out file: #{File.size(file).commatize} bytes\e[J"
+      end
+      sleep 1
+    end
+  end
+end
+
+
+# OPTION PARSER
+
 def parse_options
-  require 'slop'
+  require 'slop' # lazy loaded
   opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: m [options] <videos...>'
 
-    on 's=', 'seek', 'Seek to offset (HH:MM:SS or SS format)'
-    on 'f', 'fullscreen', 'Fullscreen mode'
-    on 'n', 'nosound', 'No sound'
-    on 'c', 'crop', 'Auto-crop'
-    on 'a=', 'audiofile', 'Play the audio track from a file'
-    on 'w', 'wav', 'Dump audio to WAV file (same name as video, with .wav at the end)'
-    on 'm', 'mp3', 'Dump audio to MP3 file (same name as video, with .mp3 at the end)'
-    on 'o', 'output', 'Output file (for MP3 and WAV commands)'
-    on 'v', 'verbose', 'Show all mplayer output spam'
+    on 'f',  'fullscreen',  'Fullscreen mode'
+    on 'n',  'nosound',     'No sound'
+    on 'c',  'crop',        'Auto-crop'
+    on 's=', 'start',       'Start playing at this offset (HH:MM:SS or SS format)'
+    on 'e=', 'end',         'Stop playing at this offset'
+    on 'l=', 'length',      'Stop playing after this many seconds'
+    on 'a=', 'audiofile',   'Play the audio track from a file'
+    on 'w',  'wav',         'Dump audio to WAV file (same name as video, with .wav at the end)'
+    on 'm',  'mp3',         'Dump audio to MP3 file (same name as video, with .mp3 at the end)'
+    on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
+    on 'v',  'verbose',     'Show all mplayer output spam'
   end
 end
 
@@ -109,7 +131,7 @@ if $0 == __FILE__
   cmd << "-nosound" if opts.nosound?
   cmd << "-fs"      if opts.fullscreen?
 
-  if seek = opts[:seek]
+  if seek = opts[:start]
     cmd += ["-ss", seek]
   end
 
@@ -169,10 +191,17 @@ if $0 == __FILE__
       puts "* Extracting audio from: #{file}"
       puts "                     to: #{outfile}"
 
+      extras = []
+      extras += ["-endpos", opts[:length]] if opts[:length]
+
+      report_thread = report_on(outfile)
+
       filtered_mplayer(
-        %w[mplayer -vo null -ao] + ["pcm:fast:file=%#{outfile.size}%#{outfile}", file],
+        %w[mplayer -vo null -af format=s16ne] + ["-ao", "pcm:fast:file=%#{outfile.size}%#{outfile}", file] + extras,
         verbose: false
       )
+
+      report_thread.kill
     end
 
   elsif opts.crop?
