@@ -130,6 +130,7 @@ alias cu="pull"
 
 alias r="rails"
 alias pad="padrino"
+alias z='zeus'
 
 alias dmenu="dmenu -l 50"
 
@@ -207,4 +208,6 @@ alias pacf='pacman -Ql|grep'   # which package contains this file?
 alias pacq='pacman -Q|grep'
 alias y='yaourt'
 alias yu='y -Syua'
-alias z='zeus'
+
+alias systemctl="sudoifnotroot systemctl"
+alias sys=systemctl
