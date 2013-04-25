@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 
+# sudoifnotroot, ruby style.
+unless Process.uid == 0
+  system("sudo", __FILE__, *ARGV)
+  exit
+end
+
 require 'epitools'
 
 class Package < TypedStruct["name ver rev arch path size mtime"]
@@ -20,7 +26,7 @@ class Package < TypedStruct["name ver rev arch path size mtime"]
 end
 
 
-keep = (ARGV.first || "1").to_i
+keep = (ARGV.first || "2").to_i
 
 Path.cd("/var/cache/pacman/pkg") do
   pkgs = Path["*.xz"].map {|path| Package.new(path) }
@@ -34,7 +40,7 @@ Path.cd("/var/cache/pacman/pkg") do
 
     print "+ <11>#{name}: <10>#{versions.first.version}".colorize
 
-    if to_remove.any?
+    if to_remove and to_remove.any?
       all_removals += to_remove
 
       oldvers = to_remove.map(&:version).join("<8>, <12>")
