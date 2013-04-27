@@ -149,8 +149,9 @@ alias listening="sudoifnotroot listening"
 alias iptables="sudoifnotroot iptables"
 alias ifconfig='sudoifnotroot ifconfig'
 alias route='sudoifnotroot route'
-alias netcfg='sudoifnotroot netcfg'
+alias netctl='sudoifnotroot netctl'
 alias dhcpcd='sudoifnotroot dhcpcd'
+alias ip='sudoifnotroot ip'
 
 alias off='sudoifnotroot shutdown -h now'
 alias reboot='sudoifnotroot shutdown -r now'
