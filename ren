@@ -10,16 +10,33 @@ def restore_spaces(s)
   s.gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
 end
 
+def titlecase(str)
+  str.downcase.gsub(/\b\w/) { |m| m.upcase }
+end
+
 def edit_filename(prompt, filename)
 
   Coolline.new do |c|
+
+    c.word_boundaries = [" ", "\t", ".", ",", ";", '"', "'", "`", "<", ">",
+                         "=", ";", "|", "{", "}", "(", ")", "-"]
+
+    # Alt-u capitalizes everything
+    c.bind "\eu" do |inst|
+      base, ext = split_ext inst.line
+      pos       = inst.pos
+      
+      inst.line = titlecase(base) + ext
+      inst.pos  = pos
+    end
+
     # ^u removes underscores and stuff
     c.bind "\x15" do |inst|
       base, ext = split_ext inst.line
-      pos = inst.pos
-
+      pos       = inst.pos
+      
       inst.line = restore_spaces(base) + ext
-      inst.pos = pos
+      inst.pos  = pos
     end
 
     # ^d deletes to the extension
