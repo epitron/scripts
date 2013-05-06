@@ -194,7 +194,7 @@ shopt -s histverify
 alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
 alias sus='ssu'
 
-alias dpkg="sudoifnotroot dpkg"
+alias dpkg='sudoifnotroot dpkg'
 
 ## Arch linux
 alias pacman='sudo pacman'
@@ -205,10 +205,13 @@ alias pacu='pacman -Syu'  # update packages
 alias pacd='pacman -Syuw' # only download updates (no install)
 alias paci='pacman -Si'   # show package info
 alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
+alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacf='pacman -Ql|grep'   # which package contains this file?
 alias pacq='pacman -Q|grep'
 alias y='yaourt'
 alias yu='y -Syua'
 
-alias systemctl="sudoifnotroot systemctl"
-alias sys=systemctl
+alias systemctl='sudoifnotroot systemctl'
+alias sys='systemctl'
+
+alias flash='crutziplayer'
