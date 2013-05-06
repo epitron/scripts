@@ -32,6 +32,8 @@ def pull(path)
       cmd = "git pull"
     elsif path.in_tree?(".hg")
       cmd = "hg pull -u"
+    elsif path.in_tree?(".bzr")
+      cmd = "bzr pull"
     elsif (path/".svn").dir?
       cmd = "svn update"
     elsif (path/"CVS").dir?
