@@ -87,7 +87,7 @@ if __FILE__ == $0
     end
 
     puts "Renaming #{arg.inspect} to #{new_filename.inspect}"
-    FileUtils.mv(arg, new_filename)
+    FileUtils.mv arg, File.expand_path(new_filename)
     puts
   end
 
