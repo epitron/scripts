@@ -4,7 +4,7 @@ then
   echo "Installing Python script (setup.py install)..."
   instmon -c "python setup.py install" $*
 
-elif [ -f Makefile ]
+elif [ -f Makefile -o -f makefile ]
 then
   echo "Installing something with a Makefile (make install)..."
   instmon -c "make install" $*
