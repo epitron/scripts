@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 ##############################################################################
 
+require 'coderay'
+
 ##############################################################################
 
 def lesspipe(*args)
@@ -36,8 +38,8 @@ end
 
 ##############################################################################
 
-def render(arg)
-  if arg == $stdin
+def render(arg=nil)
+  if arg.nil?
     CodeRay.scan($stdin).term
   elsif File.exists? arg
     if %w[.md .markdown].include? File.extname(arg)
@@ -52,9 +54,19 @@ end
 
 ##############################################################################
 
+EXTRA_LANGS = {
+  ".qml" => :php,
+  ".pro" => :sql
+}
+
 def render_coderay(filename)
-  require 'coderay'
-  CodeRay.scan_file(filename).term
+  ext = filename[/\..+$/]
+
+  if lang = EXTRA_LANGS[ext]
+    CodeRay.scan_file(filename, lang).term
+  else
+    CodeRay.scan_file(filename).term 
+  end
 end
 
 def render_markdown(filename)
@@ -73,7 +85,7 @@ args = ARGV
 lesspipe(:wrap=>true) do |less|
   case args.size
   when 0
-    less.puts render($stdin)
+    less.puts render
   when 1
     less.puts render(args.first)
   else # 2 or more args
