@@ -93,6 +93,7 @@ alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
 alias a="audacious"
+alias ae="a -e"
 alias a2="a"
 
 #if [ "$TERM" == "xterm" ]
@@ -212,6 +213,7 @@ alias y='yaourt'
 alias yu='y -Syua'
 
 alias systemctl='sudoifnotroot systemctl'
+alias pkgfile='sudoifnotroot pkgfile'
 alias sys='systemctl'
 
 alias flash='crutziplayer'
