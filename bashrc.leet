@@ -209,6 +209,7 @@ alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacf='pacman -Ql|grep'   # which package contains this file?
 alias pacq='pacman -Q|grep'
+alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias y='yaourt'
 alias yu='y -Syua'
 
