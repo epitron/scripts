@@ -1,1 +1,13 @@
-gource --stop-at-end -s .25 --user-image-dir .git/avatar -o - | ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i - -vcodec libvpx -b 10000K gource.webm
+#!/bin/bash
+
+#################################################################
+## webm
+
+# gource --stop-at-end -s .25 --user-image-dir ~/.cache/gravatars -o - | ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i - -vcodec libvpx -b 10000K gource.webm
+
+# gource -1280x720 --stop-at-end -s .25 --user-image-dir ~/.cache/gravatars -o - | ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i - -vcodec libvpx -b 10000K gource.webm
+
+#################################################################
+## x264
+
+gource -1280x720 --stop-at-end -s .25 --user-image-dir ~/.cache/gravatars -o - | ffmpeg -y -r 60 -f image2pipe -vcodec ppm -i - -vcodec libx264 -preset ultrafast -pix_fmt yuv420p -crf 1 -threads 0 -bf 0 gource.mp4

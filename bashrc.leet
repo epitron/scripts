@@ -218,3 +218,5 @@ alias pkgfile='sudoifnotroot pkgfile'
 alias sys='systemctl'
 
 alias flash='crutziplayer'
+
+alias gource='gource --user-image-dir ~/.cache/gravatars'

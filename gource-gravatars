@@ -37,7 +37,7 @@ while(<GITLOG>) {
 
     my $grav_url = "http://www.gravatar.com/avatar/".md5_hex(lc $email)."?d=404&size=".$size; 
 
-    print "* '$author' $email\n\turl: ($grav_url)\n\toutput: $author_image_file\n";
+    print "* '$author' $email\n\turl: $grav_url\n\toutput: $author_image_file\n";
 
     my $rc = getstore($grav_url, $author_image_file);
 
