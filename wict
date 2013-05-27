@@ -1,0 +1,53 @@
+#!/usr/bin/env ruby
+
+#require 'epitools'
+require "tokyocabinet"
+include TokyoCabinet
+
+# http://toolserver.org/~enwikt/definitions/?sortby=7
+dict  = "enwikt-defs-latest-en.tsv"
+index = "enwikt-defs-latest-en.idx"
+
+
+def bdb_open(filename, opts=nil)
+  bdb = BDB::new  # B-Tree database; keys may have multiple values
+
+  if !bdb.open(filename, opts)
+    raise "open error: #{bdb.errmsg(bdb.ecode)}"
+  end
+
+  bdb
+end
+
+
+if ARGV == ["-r"]
+  raise "Couldn't find wiktionary database" unless File.exists? dict
+
+  bdb = bdb_open(index, BDB::OWRITER | BDB::OTRUNC)
+
+  open(dict).each.with_index do |line, n|
+    lang, word, type, definition = line.strip.split("\t")
+    #puts "<8>[<2>#{endpos}<8>] <11>#{word} <8>(<7>#{type}<8>)<2>: <9>#{definition}".colorize
+
+    bdb.putdup(word, definition)
+
+    print "\b"*20 + n.to_s if n % 37 == 0
+  end
+
+  bdb.close
+
+else
+  bdb = bdb_open(index)
+
+  ARGV.each do |arg| 
+    words = bdb.fwmkeys(arg)
+    words.each do |word|
+      defs = bdb.getlist(word)
+      if defs.any?
+        puts "#{word}"
+        defs.each { |defn| puts "   #{defn}" }
+        puts
+      end
+    end
+  end
+end  

@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+#require 'shellwords'
+
+#things = STDIN.read.lines.map(&:strip)
+
+things = Dir["#{ENV["HOME"]}/mp3*/*"]
+#p things.size
+
+amount = (ARGV.first || "10").to_i
+
+cmd = %w[audacious -e] + things.sample(amount)
+
+system(*cmd)
