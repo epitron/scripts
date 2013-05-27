@@ -1,0 +1,4 @@
+#!/bin/bash
+cd ~/scripts
+wget http://winetricks.org/winetricks -O winetricks
+chmod +x winetricks
