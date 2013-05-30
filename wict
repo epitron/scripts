@@ -1,43 +1,96 @@
 #!/usr/bin/env ruby
 
 #require 'epitools'
+require 'slop'
 require "tokyocabinet"
 include TokyoCabinet
 
 # http://toolserver.org/~enwikt/definitions/?sortby=7
-dict  = "enwikt-defs-latest-en.tsv"
-index = "enwikt-defs-latest-en.idx"
+ENGLISH   = "http://toolserver.org/~enwikt/definitions/enwikt-defs-latest-en.tsv.gz"
+ALL       = "http://toolserver.org/~enwikt/definitions/enwikt-defs-latest-all.tsv.gz"
 
+CACHE_DIR = File.expand_path("~/.cache/wict")
+INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
+
+
+def options
+  require 'slop' # lazy loaded
+  @opts ||= Slop.parse(help: true, strict: true) do
+    banner 'Usage: wict [options] <word...>'
+
+    on 'u',  'update',  'Update the database'
+    on 'a',  'all',     'All langauges!'
+  end
+end
 
 def bdb_open(filename, opts=nil)
   bdb = BDB::new  # B-Tree database; keys may have multiple values
 
   if !bdb.open(filename, opts)
-    raise "open error: #{bdb.errmsg(bdb.ecode)}"
+    raise "open error: #{bdb.errmsg(bdb.ecode)} (filename: #{filename.inspect})"
   end
 
   bdb
 end
 
+def backup(src)
+  if File.exists? src
+    counter = 1
+    dest = "#{src}.bak"
 
-if ARGV == ["-r"]
-  raise "Couldn't find wiktionary database" unless File.exists? dict
+    while File.exists? dest
+      counter += 1
+      dest = "#{src}.bak#{counter}"
+    end
 
-  bdb = bdb_open(index, BDB::OWRITER | BDB::OTRUNC)
+    puts "Backing up #{src.inspect} to #{dest.inspect}"
 
-  open(dict).each.with_index do |line, n|
-    lang, word, type, definition = line.strip.split("\t")
-    #puts "<8>[<2>#{endpos}<8>] <11>#{word} <8>(<7>#{type}<8>)<2>: <9>#{definition}".colorize
+    File.rename(src, dest)
+  end
+end
 
-    bdb.putdup(word, definition)
+def update
+  backup(INDEX)
 
-    print "\b"*20 + n.to_s if n % 37 == 0
+  url = options.all? ? ALL : ENGLISH
+
+  IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
+
+    bdb = bdb_open(INDEX, BDB::OWRITER | BDB::OTRUNC | BDB::OCREAT)
+
+    tsv.each.with_index do |line, n|
+      lang, word, type, definition = line.strip.split("\t")
+      #puts "<8>[<2>#{endpos}<8>] <11>#{word} <8>(<7>#{type}<8>)<2>: <9>#{definition}".colorize
+
+      bdb.putdup(word, definition)
+
+      print "\b"*20 + n.to_s if n % 37 == 0
+    end
+
+    puts
+
+    bdb.close
   end
 
-  bdb.close
+end  
+
+
+Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+
+if options.update?
+
+  puts "Updating database..."
+  update
+  puts
 
 else
-  bdb = bdb_open(index)
+
+  if not File.exists? INDEX
+    puts "You must first download a database. Run 'wict -u'."
+    exit 1
+  end
+
+  bdb = bdb_open(INDEX)
 
   ARGV.each do |arg| 
     words = bdb.fwmkeys(arg)
@@ -50,4 +103,5 @@ else
       end
     end
   end
+
 end  
