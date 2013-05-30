@@ -19,7 +19,7 @@ INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
 def options
   require 'slop' # lazy loaded
   @opts ||= Slop.parse(help: true, strict: true) do
-    banner 'Usage: wict [options] <word...>'
+    banner 'Usage: wict [options] <word(s)...>'
 
     on 'u',  'update',  'Update the database'
     on 'a',  'all',     'All langauges!'
@@ -88,9 +88,7 @@ def lookup(args)
   bdb = bdb_open(INDEX)
 
   args.each do |arg|
-    p arg
     words = bdb.fwmkeys(arg)
-    p words
     words.each do |word|
       defs = bdb.getlist(word)
       if defs.any?
@@ -100,6 +98,11 @@ def lookup(args)
       end
     end
   end
+end
+
+def wordcount
+  bdb = bdb_open(INDEX)
+  bdb.size
 end
 
 ###################################################################
@@ -116,8 +119,8 @@ else
     puts "You must first download a database. Run 'wict -u'."
     exit 1
   elsif ARGV.empty?
-    ARGV << "--help"
-    options
+    puts "Pass the word(s) you want to look up as (an) argument(s)."
+    puts "(#{wordcount} words in dictionary)"
   else
     lookup(ARGV)
   end
