@@ -18,6 +18,7 @@ INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
 
 def options
   require 'slop' # lazy loaded
+
   @opts ||= Slop.parse(help: true, strict: true) do
     banner 'Usage: wict [options] <word(s)...>'
 
@@ -33,7 +34,13 @@ def bdb_open(filename, opts=nil)
     raise "open error: #{bdb.errmsg(bdb.ecode)} (filename: #{filename.inspect})"
   end
 
-  bdb
+  if block_given?
+    result = yield bdb
+    bdb.close
+    result
+  else
+    bdb
+  end
 end
 
 def backup(src)
@@ -64,20 +71,20 @@ def update
 
   IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
 
-    bdb = bdb_open(INDEX, BDB::OWRITER | BDB::OCREAT)
+    bdb_open(INDEX, BDB::OWRITER | BDB::OCREAT) do |bdb|
 
-    tsv.each.with_index do |line, n|
-      lang, word, type, definition = line.strip.split("\t")
-      #p [:lang, lang, :word, word, :type, type, :definition, definition]
+      tsv.each.with_index do |line, n|
+        lang, word, type, definition = line.strip.split("\t")
+        #p [:lang, lang, :word, word, :type, type, :definition, definition]
 
-      bdb.putdup(word, definition)
+        bdb.putdup(word, definition)
 
-      print "\b"*20 + n.to_s if n % 37 == 0
+        print "\b"*20 + n.to_s if n % 37 == 0
+      end
+
+      puts
+
     end
-
-    puts
-
-    bdb.close
   end
 
 end  
@@ -85,44 +92,50 @@ end
 ###################################################################
 
 def lookup(args)
-  bdb = bdb_open(INDEX)
+  bdb_open(INDEX) do |bdb|
 
-  args.each do |arg|
-    words = bdb.fwmkeys(arg)
-    words.each do |word|
-      defs = bdb.getlist(word)
-      if defs.any?
-        puts "#{word}"
-        defs.each { |defn| puts "   #{defn}" }
-        puts
+    args.each do |arg|
+      words = bdb.fwmkeys(arg)
+      words.each do |word|
+        defs = bdb.getlist(word)
+        if defs.any?
+          puts "#{word}"
+          defs.each { |defn| puts "   #{defn}" }
+          puts
+        end
       end
     end
+
   end
 end
 
 def wordcount
-  bdb = bdb_open(INDEX)
-  bdb.size
+  bdb_open(INDEX) { |bdb| bdb.size }
 end
 
 ###################################################################
 
-Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
 
-if options.u?
-
-  update
-
-else
-
-  if not File.exists? INDEX
-    puts "You must first download a database. Run 'wict -u'."
-    exit 1
-  elsif ARGV.empty?
-    puts "Pass the word(s) you want to look up as (an) argument(s)."
-    puts "(#{wordcount} words in dictionary)"
-  else
-    lookup(ARGV)
-  end
+if $0 == __FILE__
   
+  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+
+  if options.u?
+
+    update
+
+  else
+
+    if not File.exists? INDEX
+      puts "You must first download a database. Run 'wict -u'."
+      exit 1
+    elsif ARGV.empty?
+      puts "Pass the word(s) you want to look up as (an) argument(s)."
+      puts "(#{wordcount} words in dictionary)"
+    else
+      lookup(ARGV)
+    end
+    
+  end
+
 end
