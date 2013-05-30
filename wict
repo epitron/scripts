@@ -1,9 +1,11 @@
 #!/usr/bin/env ruby
 
-#require 'epitools'
 require 'slop'
 require "tokyocabinet"
+
 include TokyoCabinet
+
+###################################################################
 
 # http://toolserver.org/~enwikt/definitions/?sortby=7
 ENGLISH   = "http://toolserver.org/~enwikt/definitions/enwikt-defs-latest-en.tsv.gz"
@@ -12,6 +14,7 @@ ALL       = "http://toolserver.org/~enwikt/definitions/enwikt-defs-latest-all.ts
 CACHE_DIR = File.expand_path("~/.cache/wict")
 INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
 
+###################################################################
 
 def options
   require 'slop' # lazy loaded
@@ -49,6 +52,8 @@ def backup(src)
   end
 end
 
+###################################################################
+
 def update
   backup(INDEX)
 
@@ -56,7 +61,7 @@ def update
 
   IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
 
-    bdb = bdb_open(INDEX, BDB::OWRITER | BDB::OTRUNC | BDB::OCREAT)
+    bdb = bdb_open(INDEX, BDB::OWRITER | BDB::OCREAT)
 
     tsv.each.with_index do |line, n|
       lang, word, type, definition = line.strip.split("\t")
@@ -74,6 +79,25 @@ def update
 
 end  
 
+###################################################################
+
+def lookup(args)
+  bdb = bdb_open(INDEX)
+
+  args.each do |arg| 
+    words = bdb.fwmkeys(arg)
+    words.each do |word|
+      defs = bdb.getlist(word)
+      if defs.any?
+        puts "#{word}"
+        defs.each { |defn| puts "   #{defn}" }
+        puts
+      end
+    end
+  end
+end
+
+###################################################################
 
 Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
 
@@ -90,18 +114,6 @@ else
     exit 1
   end
 
-  bdb = bdb_open(INDEX)
-
-  ARGV.each do |arg| 
-    words = bdb.fwmkeys(arg)
-    words.each do |word|
-      defs = bdb.getlist(word)
-      if defs.any?
-        puts "#{word}"
-        defs.each { |defn| puts "   #{defn}" }
-        puts
-      end
-    end
-  end
+  lookup(ARGV)
 
 end  
