@@ -55,9 +55,12 @@ end
 ###################################################################
 
 def update
+
   backup(INDEX)
 
-  url = options.all? ? ALL : ENGLISH
+  url = options.a? ? ALL : ENGLISH
+
+  puts "Importing database from #{url.inspect}..."
 
   IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
 
@@ -65,7 +68,7 @@ def update
 
     tsv.each.with_index do |line, n|
       lang, word, type, definition = line.strip.split("\t")
-      #puts "<8>[<2>#{endpos}<8>] <11>#{word} <8>(<7>#{type}<8>)<2>: <9>#{definition}".colorize
+      #p [:lang, lang, :word, word, :type, type, :definition, definition]
 
       bdb.putdup(word, definition)
 
@@ -84,8 +87,10 @@ end
 def lookup(args)
   bdb = bdb_open(INDEX)
 
-  args.each do |arg| 
+  args.each do |arg|
+    p arg
     words = bdb.fwmkeys(arg)
+    p words
     words.each do |word|
       defs = bdb.getlist(word)
       if defs.any?
@@ -101,19 +106,20 @@ end
 
 Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
 
-if options.update?
+if options.u?
 
-  puts "Updating database..."
   update
-  puts
 
 else
 
   if not File.exists? INDEX
     puts "You must first download a database. Run 'wict -u'."
     exit 1
+  elsif ARGV.empty?
+    ARGV << "--help"
+    options
+  else
+    lookup(ARGV)
   end
-
-  lookup(ARGV)
-
-end  
+  
+end
