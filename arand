@@ -6,8 +6,11 @@
 things = Dir["#{ENV["HOME"]}/mp3*/*"]
 #p things.size
 
+ignore = ["[Talks, Audiobooks]"]
+things.reject! { |thing| ignore.any? { |ign| thing[ign] } }
+
 amount = (ARGV.first || "10").to_i
 
-cmd = %w[audacious -e] + things.sample(amount)
+cmd = %w[audacious -e] + (things - ignore).sample(amount)
 
 system(*cmd)
