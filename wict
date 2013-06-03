@@ -54,7 +54,7 @@ def backup(src)
       dest = "#{src}.bak#{counter}"
     end
 
-    puts "Backing up #{src.inspect} to #{dest.inspect}"
+    puts "  |_ database backed up to: #{dest.inspect}"
 
     File.rename(src, dest)
   end
@@ -64,11 +64,12 @@ end
 
 def update
 
-  backup(INDEX)
-
   url = options.a? ? ALL : ENGLISH
 
-  puts "Importing database from #{url.inspect}..."
+  puts "* Re-importing database..."
+  puts "  |_ source: #{url.inspect}"
+
+  backup(INDEX)
 
   IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
 
@@ -78,12 +79,14 @@ def update
         lang, word, type, definition = line.strip.split("\t")
         #p [:lang, lang, :word, word, :type, type, :definition, definition]
 
-        bdb.putdup(word, definition)
+	# TODO: figure out how to do case-insensitive searches without downcasing the actual key
+        bdb.putdup(word.downcase, definition)
 
-        print "\b"*20 + n.to_s if n % 37 == 0
+	print "\e[1G  |_ words imported: #{n.commatize}\e[J" if n % 137 == 0
       end
 
       puts
+      puts "* Done!"
 
     end
   end
@@ -93,11 +96,14 @@ end
 ###################################################################
 
 def lookup(args)
+
   bdb_open(INDEX) do |bdb|
     lesspipe do |less|
 
-      args.each do |arg|
+      args.map(&:downcase).each do |arg|
+
         words = bdb.fwmkeys(arg)
+        
         words.each do |word|
           defs = bdb.getlist(word)
           if defs.any?
@@ -106,10 +112,12 @@ def lookup(args)
             less.puts
           end
         end
+
       end
 
     end
   end
+
 end
 
 def wordcount
