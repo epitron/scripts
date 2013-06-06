@@ -7,12 +7,23 @@
 #   - mplayer-info
 #   - commands (for operation-sensitive arguments)
 
+#####################################################################################
+
 require 'pp'
+
+#####################################################################################
 
 class FakeOptions
   def method_missing(*args); nil; end
 end
 
+#####################################################################################
+
+def change_ext(path, new_ext)
+  path.gsub(/\.[^\.]+$/, new_ext)
+end  
+
+#####################################################################################
 
 def cropdetect(file)
   captures = []
@@ -32,6 +43,8 @@ def cropdetect(file)
   pp grouped
   best = grouped.last.last
 end
+
+#####################################################################################
 
 def filtered_mplayer(cmd, verbose: false, &block)
   if verbose
@@ -63,10 +76,7 @@ def filtered_mplayer(cmd, verbose: false, &block)
   puts
 end
 
-def change_ext(path, new_ext)
-  path.gsub(/\.[^\.]+$/, new_ext)
-end  
-
+#####################################################################################
 
 def report_on(file)
   require 'epitools'
@@ -83,12 +93,53 @@ def report_on(file)
   end
 end
 
+#####################################################################################
 
+def extract_audio(file, outfile=nil, extras: [])
+  
+  outfile = change_ext(file, ".wav") unless outfile
+
+  puts "* Extracting audio from: #{file}"
+  puts "                     to: #{outfile}"
+
+  report_thread = report_on(outfile)
+
+  filtered_mplayer(
+    %w[mplayer -vo null -af resample=44100:0:1,format=s16ne] + ["-ao", "pcm:fast:file=%#{outfile.size}%#{outfile}", file] + extras,
+    verbose: @opts[:verbose]
+  )
+
+  report_thread.kill
+
+  outfile
+
+end
+
+#####################################################################################
+
+def normalize(infile, outfile=nil)
+  outfile = outfile || change_ext(infile, ".norm.wav")
+
+  File.unlink outfile if File.exists? outfile
+
+  cmd = %w[normalize --attack-exponent 1.1 -r 0.8 -o] + [outfile, infile]
+  system(*cmd)
+  outfile
+end
+
+def lame(infile, outfile=nil)
+  outfile = outfile || change_ext(infile, ".mp3")
+  cmd = %w[lame -V0] + [infile, outfile]
+  system(*cmd)
+  outfile
+end
+
+#####################################################################################
 # OPTION PARSER
 
 def parse_options
   require 'slop' # lazy loaded
-  opts = Slop.parse(help: true, strict: true) do
+  @opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: m [options] <videos...>'
 
     on 'f',  'fullscreen',  'Fullscreen mode'
@@ -102,9 +153,11 @@ def parse_options
     on 'm',  'mp3',         'Dump audio to MP3 file (same name as video, with .mp3 at the end)'
     on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
     on 'v',  'verbose',     'Show all mplayer output spam'
+    on 'N',  'normalize',   'Normalize the audio in this video (saved to a magic filename that will be automatically played)'
   end
 end
 
+#####################################################################################
 
 if $0 == __FILE__
 
@@ -128,16 +181,35 @@ if $0 == __FILE__
   # MPLAYER ARGS
 
   cmd   = %w[mplayer]
+  extras = []
+
   cmd << "-nosound" if opts.nosound?
   cmd << "-fs"      if opts.fullscreen?
 
-  if seek = opts[:start]
-    cmd += ["-ss", seek]
+  seek = opts[:start]
+
+  if stop_at = opts[:end]
+    require 'epitools'
+
+    start_sec = (seek.from_hms || 0) 
+    end_sec = stop_at.from_hms
+
+    length = (end_sec - start_sec).to_hms
+  else
+    length = opts[:length]
   end
 
-  if audiofile = opts[:audiofile]
-    cmd += ["-audiofile", audiofile]
+  extras += ["-ss", seek] if seek
+  extras += ["-endpos", length] if length
+  
+
+  # AUDIOFILE / NORMED AUDIO
+  audiofile = opts[:audiofile]
+  unless audiofile
+    normed_audio = change_ext(files.first, ".norm.mp3")
+    audiofile = normed_audio if File.exists? normed_audio
   end
+  cmd += ["-audiofile", audiofile] if audiofile
 
   # TITLE
 
@@ -165,7 +237,37 @@ if $0 == __FILE__
 
   # MAKE IT SO
 
-  if opts.mp3?
+  if false
+    # to make everything "elsifs" ;)
+
+  elsif opts.normalize?
+
+    files.each do |file|
+      puts "=== Normalizing #{file} ==================="
+      puts
+      wav = extract_audio(file, extras: extras)
+
+      puts
+      puts "#"*70
+      puts
+      normwav = normalize(wav)
+      #File.unlink wav
+
+      puts
+      puts "#"*70
+      puts
+      normmp3 = lame(normwav, change_ext(file, ".norm.mp3"))
+      #File.unlink normwav
+
+      puts
+      puts
+      puts "=== Normalization complete! ====================="
+      puts
+      puts "Result is stored in #{normmp3.inspect}, and will be played automatically."
+      puts
+    end
+
+  elsif opts.mp3?
 
     files.each do |file|
       outfile = opts[:outfile] || change_ext(file, ".mp3")
@@ -186,22 +288,7 @@ if $0 == __FILE__
   elsif opts.wav?
 
     files.each do |file|
-      outfile = opts[:outfile] || change_ext(file, ".wav")
-
-      puts "* Extracting audio from: #{file}"
-      puts "                     to: #{outfile}"
-
-      extras = []
-      extras += ["-endpos", opts[:length]] if opts[:length]
-
-      report_thread = report_on(outfile)
-
-      filtered_mplayer(
-        %w[mplayer -vo null -af format=s16ne] + ["-ao", "pcm:fast:file=%#{outfile.size}%#{outfile}", file] + extras,
-        verbose: false
-      )
-
-      report_thread.kill
+      extract_audio(file, opts[:outfile])
     end
 
   elsif opts.crop?
@@ -210,15 +297,17 @@ if $0 == __FILE__
       croptions = cropdetect(file)
 
       filtered_mplayer(
-        cmd + croptions + [file],
+        cmd + extras + croptions + [file],
         verbose: opts.verbose?
       )      
     end
 
   else
 
-    filtered_mplayer cmd + files, verbose: opts.verbose?
+    filtered_mplayer cmd + extras + files, verbose: opts.verbose?
 
   end
 
 end
+
+#####################################################################################
