@@ -2,6 +2,7 @@
 require 'coolline'
 require 'fileutils'
 
+
 def split_ext(filename)
   filename.split /(\.[^\.]+)$/
 end
@@ -50,6 +51,12 @@ def edit_filename(prompt, filename)
 
 end
 
+class << STDIN
+  def purge
+    loop { read_nonblock(4096) } rescue
+  end
+end
+
 
 if __FILE__ == $0
 
@@ -76,6 +83,7 @@ if __FILE__ == $0
     end
 
     if File.exists? new_filename
+      STDIN.purge
       print "#{new_filename} exists. Overwrite? (y/N) "
       case gets
       when /^n$/i, "\n"
