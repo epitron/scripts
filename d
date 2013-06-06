@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 require 'epitools'
-gem 'slop', "2.4.4"; require 'slop'
+require 'slop'
 #require 'find'
 
 class DirLister
@@ -95,7 +95,7 @@ class DirLister
   def self.list(*args)
     args.flatten!
 
-    opts = Slop.new(args, :help => true) do
+    opts = Slop.parse(help: true, strict: true) do
       banner "Usage: d"
 
       on :v, :verbose,  'Enable verbose mode'
