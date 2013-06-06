@@ -105,7 +105,7 @@ def extract_audio(file, outfile=nil, extras: [])
   report_thread = report_on(outfile)
 
   filtered_mplayer(
-    %w[mplayer -vo null -af resample=44100:0:1,format=s16ne] + ["-ao", "pcm:fast:file=%#{outfile.size}%#{outfile}", file] + extras,
+    %w[mplayer -vo null -af-clr -af resample=44100:0:1,format=s16ne] + ["-ao", "pcm:fast:file=%#{outfile.size}%#{outfile}", file] + extras,
     verbose: @opts[:verbose]
   )
 
