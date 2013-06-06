@@ -51,10 +51,8 @@ def edit_filename(prompt, filename)
 
 end
 
-class << STDIN
-  def purge
-    loop { read_nonblock(4096) } rescue
-  end
+def STDIN.purge
+  loop { read_nonblock(4096) } rescue nil
 end
 
 
