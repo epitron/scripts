@@ -1,0 +1,9 @@
+#!/bin/bash
+DEST=/etc/pacman.d/mirrorlist-ranked
+echo "Benchmarking top 200 pacman mirrors, and writing to $DEST..."
+if touch $DEST; then
+  reflector --verbose -l 200 -p http --sort rate --save 
+else
+  echo "Error: can't write to file."
+fi
+
