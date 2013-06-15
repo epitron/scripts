@@ -145,6 +145,7 @@ def parse_options
     on 'f',  'fullscreen',  'Fullscreen mode'
     on 'n',  'nosound',     'No sound'
     on 'c',  'crop',        'Auto-crop'
+    on 'r=', 'aspect',      'Aspect ratio'
     on 's=', 'start',       'Start playing at this offset (HH:MM:SS or SS format)'
     on 'e=', 'end',         'Stop playing at this offset'
     on 'l=', 'length',      'Stop playing after this many seconds'
@@ -185,6 +186,7 @@ if $0 == __FILE__
 
   cmd << "-nosound" if opts.nosound?
   cmd << "-fs"      if opts.fullscreen?
+  cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
 
   seek = opts[:start]
 
@@ -210,6 +212,7 @@ if $0 == __FILE__
     audiofile = normed_audio if File.exists? normed_audio
   end
   cmd += ["-audiofile", audiofile] if audiofile
+
 
   # TITLE
 

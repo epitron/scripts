@@ -107,11 +107,128 @@ class State
   end
 end
 
+class Screen
+
+  attr_accessor :screen, :fore, :back, :attrs
+
+  COLORS = [:black, :red, :green, :yellow, :blue, :magenta, :cyan, :white]
+  
+  ATTRS = {
+    0 => :reset,
+    1 => :bright,
+    2 => :dim,
+    4 => :underscore,
+    5 => :blink,
+    7 => :reverse,
+    8 => :hidden,
+  }
+
+  FORES = { 
+    30 => :black,
+    31 => :red,
+    32 => :green,
+    33 => :yellow,
+    34 => :blue,
+    35 => :magenta,
+    36 => :cyan,
+    37 => :white,
+  }
+
+  BACKS = {
+    40 => :black,
+    41 => :red,
+    42 => :green,
+    43 => :yellow,
+    44 => :blue,
+    45 => :magenta,
+    46 => :cyan,
+    47 => :white,
+  }
+
+  PALETTE = [
+    "#000000",
+    "#CC0000",
+    "#4E9A06",
+    "#C4A000",
+    "#3465A4",
+    "#75507B",
+    "#06989A",
+    "#D3D7CF",
+    "#555753",
+    "#EF2929",
+    "#8AE234",
+    "#FCE94F",
+    "#729FCF",
+    "#AD7FA8",
+    "#34E2E2",
+    "#EEEEEC"
+  ]
+
+
+  def initialize
+    reset
+  end
+  
+  def reset
+    @screen = []
+    @x = 1
+    @y = 1
+
+    @fore = :white
+    @back = :black
+    
+    @attrs ||= Set.new
+    @attrs.clear
+  end
+  
+  def update_color(code)
+    case
+    when attr = ATTRS[code]
+      if attr == :reset
+        reset
+      else
+        attrs << attr
+      end
+    when fore = FORES[code]
+      @fore = fore
+    when back = BACKS[code]
+      @back = back
+    end
+  end 
+
+  def update_position(direction, amount)
+
+  end
+  
+  def html_color(sym, bright=false)
+    n = COLORS.index(sym)
+    n += 8 if bright
+    PALETTE[n]
+  end
+  
+  def html_for(text)
+    bright = @attrs.include?(:bright)
+    style = "color:#{html_color @fore, bright }; background-color:#{ html_color @back };"
+    result = "<span style='#{style}'>"
+    if bright
+      result << "<b>#{text}</b>"
+    else
+      result << text
+    end
+    result << "</span>"
+    result
+  end
+
+  def print(text)
+
+  end
+end
+
 def entities(text)
   text.gsub("<", "&lt;").gsub(">", "&gt;")
 end
 
-def ansi2html(ansi)
+def ansi2html_old(ansi)
   # problem:
   #   * minimize the number of tags
   #
@@ -137,7 +254,54 @@ def ansi2html(ansi)
   state = State.new   # the state of the terminal (current color and attributes)
   
   tokens.each do |token|
-    if token =~ /^\e\[(.+)m/
+    if token =~ /^\e\[(.+)m$/
+      codes = $1.scan(/(\d+);?/).flatten.map(&:to_i) # grab all the code numbers
+      
+      codes.each do |code|
+        state.update(code)
+      end
+    else # it's a blob of text.
+      output << state.html_for(entities(token))
+    end
+  end
+  puts
+  
+  output.join("")#.gsub("\n", "<br/>\n")
+end
+
+
+def ansi2html(ansi)
+  # problem:
+  #   * minimize the number of tags
+  #
+  # complex algorithm:
+  #   * parse the ansi into a structure with color/runlength for each extent of text
+  #   * an extent of color A, bracketed by extents of color B, should be turned into a nested tag
+  #   [ INPUT = flat, OUTPUT = tree ]
+  # questions:
+  #   * what scenario(s) will cause this scheme to produce more tags than a naive approach?
+  #
+  # simpler algorithm:
+  #   * split on color codes
+  #   * delete redundant codes
+  #   * create <span>s
+  
+  # debugging info
+  tokens = ansi.split(/(\e\[\d{1,4}(?:;\d{1,4})*[mhclnRABCDfsugJKi])/)
+  
+  # remove non-color terminal codes
+  tokens = tokens.select{|s| not ( s.blank? or s =~ /^\e\[([\d;]+)?[hclnRfsugJKi]$/ ) } 
+  
+  output = []         # will contain series of html tags
+  state = State.new   # the state of the terminal (current color and attributes)
+  
+  tokens.each do |token|
+    if token =~ /^\e\[(\d+)?(A|B|C|D)$/
+      # A = up, B = down, C = right, D = left
+      direction = $2
+      amount = ($1 || "1").to_i
+
+    elsif token =~ /^\e\[(.+)m$/
       codes = $1.scan(/(\d+);?/).flatten.map(&:to_i) # grab all the code numbers
       
       codes.each do |code|

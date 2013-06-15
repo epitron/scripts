@@ -36,7 +36,7 @@ def edit_filename(prompt, filename)
       base, ext = split_ext inst.line
       pos       = inst.pos
       
-      inst.line = restore_spaces(base) + ext
+      inst.line = restore_spaces(base) + (ext || "")
       inst.pos  = pos
     end
 
