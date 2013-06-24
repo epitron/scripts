@@ -1,6 +1,16 @@
 #!/usr/bin/env ruby
-require 'epitools/numwords'
-require 'epitools/core_ext/numbers'
-require 'bigdecimal'
+require 'epitools'
+
+# ---------------
+# TODOs:
+# ---------------
+#
+# Parser:
+#
+# => lazy blocks: 1..100.map \this * 5\
+# => Non-globbing operators: x / + - %
+# => end-"bracket": |
+# => division casts to float, unless // is used
+#
 
 p eval ARGV.join(' ')
