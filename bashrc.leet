@@ -20,6 +20,19 @@ fi
 #  export RUBYOPT="rubygems"
 #fi
 
+## `noglob` alias disables globbing
+noglob_helper() {
+    "$@"
+    case "$shopts" in
+        *noglob*) ;;
+        *braceexpand*) ;;
+        *) set +f ;;
+    esac
+    unset shopts
+}
+
+alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
+
 ## colors
 export CLICOLOR=1
 #export TERM=xterm-color
@@ -37,6 +50,7 @@ man() {
 		LESS_TERMCAP_us=$(printf "\e[1;38m") \
 			man "$@"
 }
+
 
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
@@ -115,6 +129,8 @@ alias screen='screen -U'
 alias dict='dictless'
 alias chrome='google-chrome'
 
+alias math='noglob math'
+
 ## Git aliases
 alias git="hub"
 alias gs="git status"
@@ -140,7 +156,7 @@ alias dmenu="dmenu -l 50"
 #alias mount="sudoifnotroot mount"
 alias ufw="sudoifnotroot ufw"
 alias fdisk='sudoifnotroot fdisk'
-alias lsblk='lsblk -a -f'
+#alias lsblk='lsblk -a -f'
 alias fatrace='sudoifnotroot fatrace'
 
 alias bhogs="sudoifnotroot nethogs"
