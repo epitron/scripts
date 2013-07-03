@@ -1,0 +1,7 @@
+#!/bin/bash
+for PROCESS in /proc/*/; do
+  swapused=$(awk 'BEGIN { total = 0 } /^Swap:[[:blank:]]*[1-9]/ { total = total + $2 } END { print total }' ${PROCESS}/smaps 2>/dev/null || echo 0)
+  if [ $swapused -gt 0 ]; then
+    /bin/echo -e "${swapused}k\t$(cat ${PROCESS}/cmdline)"
+  fi
+done
