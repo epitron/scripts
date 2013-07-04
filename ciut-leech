@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+class Leecher
+
+  SHOWS = %{
+    stolen-moments  R&B, Soul, and so much more.
+    no-mans-land    Indo Arabic Dub to Afro Gypsy Electronica (mixing primitive rhythms with progressive beats)
+    vinyl-from-the-crypt  Guests select music from the "Crypt" (the vinyl library)
+  }.lines.map(&:strip).reject(&:blank?).map {|line| line.split(/\s+/, 2) }
+
+  ROOT = "/home/epi/mp3/[CIUT.fm]"
+
+  def browser
+    @browser ||= Browser.new
+  end
+
+  def modified_date(url)
+    h = browser.head(url)
+    date = Date.parse h.header["last-modified"]
+
+    date.iso8601
+  end
+
+  def url_for_show(show)
+
+    unless show =~ /^http:/
+      if show =~ /^\d+$/
+        name = SHOWS[show.to_i].first
+      else
+        name = show
+      end
+
+      show = "http://www.ciut.fm/shows/music-shows/#{name}/"
+    end
+
+    show
+  end
+
+
+  def get(show)
+
+    show = url_for_show(show)
+
+    puts "<8>#{"-"*60}".colorize
+    puts "<11>Show: <9>#{show}".colorize
+    puts "<8>#{"-"*60}".colorize
+    puts
+
+    page = browser.get(show)
+
+    tag = page.search("script").find{|tag| tag.text["MP3J_PLAYLISTS ="] }
+
+    if tag and tag.text =~ /\bmp3:\s*"([^"]+)"/
+      url = $1.from_base64
+    else
+      raise "Couldn't find MP3 in HTML"
+    end
+
+
+    path = Path[url]
+    outfile = File.join ROOT, "#{path.basename}-#{modified_date(url)}.#{path.ext}"
+
+    puts
+    puts "* wget..."
+    puts "  |_ in:  #{url}"
+    puts "  |_ out: #{outfile}"
+
+    puts
+
+    #cmd = ["wget", "-c", url, "-O", outfile]
+    cmd = %w[curl -C - -o] + [outfile, url]
+    system(*cmd)
+
+  end
+
+  def show_shows
+    SHOWS.each.with_index do |(name, desc), i|
+      puts "<9>#{i}<8>. <11>#{name}\n\t<14>#{desc}".colorize
+    end
+  end
+
+end
+
+
+if $0 == __FILE__
+
+  args    = ARGV
+  leecher = Leecher.new
+
+  if args.any?
+
+    args.each { |arg| leecher.get(arg) }
+
+  else
+
+    leecher.show_shows
+
+  end
+
+end
