@@ -145,6 +145,7 @@ def parse_options
     on 'f',  'fullscreen',  'Fullscreen mode'
     on 'n',  'nosound',     'No sound'
     on 'c',  'crop',        'Auto-crop'
+    on 'd',  'deinterlace', 'Deinterlace (using yadif)'
     on 'r=', 'aspect',      'Aspect ratio'
     on 's=', 'start',       'Start playing at this offset (HH:MM:SS or SS format)'
     on 'e=', 'end',         'Stop playing at this offset'
@@ -184,8 +185,9 @@ if $0 == __FILE__
   cmd   = %w[mplayer]
   extras = []
 
-  cmd << "-nosound" if opts.nosound?
-  cmd << "-fs"      if opts.fullscreen?
+  cmd << "-nosound"         if opts.nosound?
+  cmd << "-fs"              if opts.fullscreen?
+  cmd += ["-vf", "yadif"]   if opts.deinterlace?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
 
   seek = opts[:start]
