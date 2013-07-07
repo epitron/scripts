@@ -10,6 +10,8 @@
   set 
   ostruct
 
+  shellwords
+
   optparse
   optparse/time
 ].each { |r| require r }
@@ -86,6 +88,7 @@ class Folder
     puts "<light_yellow>* Scanning <light_white>#{root}</light_white>...</light_yellow>".colorize
     
     puts "  <white>|_ <light_blue>checking for available disk space...".colorize
+    root = Shellwords.escape(root)
     @paths = Dir[ File.join(root, "**/*") ].select {|path| not File.directory? path }
 
     @size_to_path = {}
