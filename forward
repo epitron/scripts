@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "Forwards a port to this machine using UPNP (both TCP and UDP)"
+  echo "(requires the miniupnp package)"
+  echo
+  echo "usage: forward <port>"
+  echo
+else
+  upnpc -r $1 TCP $1 UDP
+fi
+
