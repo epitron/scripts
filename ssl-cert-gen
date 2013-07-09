@@ -1,3 +1,10 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: ssl-cert-gen <file basename> <bits>"
+  exit 1
+fi
+
 [ "$UID" = "0" ] || exec sudo $0 $@
 
 ID="$1"

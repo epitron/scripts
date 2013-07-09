@@ -1,0 +1,3 @@
+#!/bin/bash
+mkdir -p .pki/nssdb
+certutil -N -d sql:.pki/nssdb
