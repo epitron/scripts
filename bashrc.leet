@@ -170,6 +170,8 @@ alias netctl='sudoifnotroot netctl'
 alias dhcpcd='sudoifnotroot dhcpcd'
 alias ip='sudoifnotroot ip'
 
+alias xmem='xrestop'
+
 alias off='sudoifnotroot shutdown -h now'
 alias reboot='sudoifnotroot shutdown -r now'
 
