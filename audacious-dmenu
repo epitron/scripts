@@ -2,9 +2,9 @@
 
 # Array of [ [dirname, path], ... ]
 paths = Dir["#{ENV["HOME"]}/mp3*/*"].
-          reject { |e| e =~ /\.\w{1,4}$/ }.
+          reject { |e| e =~ /\.\w{1,4}$/ unless e =~ /\.(xspf|m3u8?)$/ }.
           map {|path| [path.split("/").last, path] }.
-          sort_by(&:first)
+          sort_by {|path| path.first.downcase }
 
 # Prepend some random albums
 paths = paths.sample(10) + [["-"*50,nil]] + paths
