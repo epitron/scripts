@@ -172,7 +172,7 @@ alias ip='sudoifnotroot ip'
 
 alias xmem='xrestop'
 
-alias off='sudoifnotroot shutdown -h now'
+alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
 alias reboot='sudoifnotroot shutdown -r now'
 
 alias resett="tput reset"
@@ -222,7 +222,6 @@ alias pacs='pacman -Ss'   # search for package
 alias pacg='pacman -Qg'   # show groups
 alias pacu='pacman -Syu'  # update packages
 alias pacd='pacman -Syuw' # only download updates (no install)
-alias paci='pacman -Si'   # show package info
 alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacf='pacman -Ql|grep'   # which package contains this file?
