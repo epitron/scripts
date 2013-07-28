@@ -3,11 +3,17 @@ require 'set'
 
 dir = ARGV.first
 
-unless dir and File.exists? dir
+unless dir
   puts "usage: #{__FILE__} <directory>"
+  exit
 end
 
-dir = File.absolute_path dir  
+unless File.exists? dir
+  puts "Error: #{dir} not found"
+  exit 1
+end
+
+dir = File.absolute_path dir
 
 class String
   def startswith(thing)
