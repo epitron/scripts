@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+require 'set'
+
+dir = ARGV.first
+
+unless dir and File.exists? dir
+  puts "usage: #{__FILE__} <directory>"
+end
+
+dir = File.absolute_path dir  
+
+class String
+  def startswith(thing)
+    self[0...thing.size] == thing
+  end
+
+  def cleanup
+    split(" ", 2).last.chomp.chomp("/")
+  end
+end
+
+localfiles = Set.new Dir["#{dir}/**/*"]
+
+$stderr.puts "in #{dir}: #{localfiles.size} files"
+# p [:localfiles, localfiles.size]
+
+pkgfiles = IO.popen("pacman -Ql") do |inp|
+  Set.new inp.map(&:cleanup).select {|path| path.startswith dir }
+  # Set.new inp.map(&:strip)
+end
+
+$stderr.puts "in packages: #{pkgfiles.size} files"
+
+orphans = localfiles - pkgfiles
+# p [:local_orphans, local_orphans.size]
+
+$stderr.puts "orphans:"
+orphans.each { |o| puts o }
