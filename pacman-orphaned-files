@@ -1,6 +1,37 @@
 #!/usr/bin/env ruby
 require 'set'
 
+#############################################################################
+## Convenience methods
+
+class String
+  def startswith(thing)
+    self[0...thing.size] == thing
+  end
+
+  def cleanup
+    split(" ", 2).last.chomp.chomp("/")
+  end
+
+  def type
+    if File.directory? self
+      "dir"
+    elsif File.symlink? self
+      "symlink"
+    elsif File.file? self
+      "file"
+    end
+  end
+
+  def with_slash
+    File.directory?(self) ? "#{self}/" : self
+  end
+
+end
+
+#############################################################################
+## Sanity check the arguments
+
 dir = ARGV.first
 
 unless dir
@@ -13,32 +44,25 @@ unless File.exists? dir
   exit 1
 end
 
+#############################################################################
+## Find the orphans...
+
 dir = File.absolute_path dir
-
-class String
-  def startswith(thing)
-    self[0...thing.size] == thing
-  end
-
-  def cleanup
-    split(" ", 2).last.chomp.chomp("/")
-  end
-end
 
 localfiles = Set.new Dir["#{dir}/**/*"]
 
 $stderr.puts "in #{dir}: #{localfiles.size} files"
-# p [:localfiles, localfiles.size]
+
+$stderr.print "in packages: "
 
 pkgfiles = IO.popen("pacman -Ql") do |inp|
-  Set.new inp.map(&:cleanup).select {|path| path.startswith dir }
-  # Set.new inp.map(&:strip)
+  Set.new inp.map(&:cleanup).select { |path| path.startswith dir }
 end
 
-$stderr.puts "in packages: #{pkgfiles.size} files"
-
-orphans = localfiles - pkgfiles
-# p [:local_orphans, local_orphans.size]
+$stderr.puts "#{pkgfiles.size} files"
 
 $stderr.puts "orphans:"
-orphans.each { |o| puts o }
+
+orphans = localfiles - pkgfiles
+orphans.each { |o| puts o.with_slash }
+# orphans.each { |o| print o; $stderr.print " (#{o.type})"; puts }
