@@ -1,0 +1,98 @@
+// $XKeyboardConfig$
+// from: https://raw.github.com/breuleux/old_quaint/master/goodies/keyboard/usq
+
+partial default alphanumeric_keys
+xkb_symbols "basic" {
+    
+    name[Group1]= "usq";
+
+    // Alphanumeric section
+
+    key <TLDE> {[grave, asciitilde, dead_grave, dead_tilde]};
+
+    key <AE01> {[1, exclam,      logicaland,      0x10022BC]}; // nand
+    key <AE02> {[2, at,          logicalor,       0x10022BD]}; // nor
+    key <AE03> {[3, numbersign,  notsign,         0x10022BB]}; // xor
+    key <AE04> {[4, dollar,      elementof,       notelementof]};
+    key <AE05> {[5, percent,     union,           intersection]};
+    key <AE06> {[6, asciicircum, dead_circumflex, 0x10025CC]}; // dotted circle (hole)
+    key <AE07> {[7, ampersand,   0x1002200,       0x1002203]}; // forall, exists
+    key <AE08> {[8, asterisk,    infinity,        emptyset]};
+    key <AE09> {[9, parenleft,   includedin,      0x1002286]};
+    key <AE10> {[0, parenright,  includes,        0x1002287]};
+    key <AE11> {[minus,	underscore, diamond, club]};
+    key <AE12> {[equal,	plus,       heart,   0x1002660]};
+    key <AD01> {[q, Q, Greek_theta,   Greek_THETA]};
+    key <AD02> {[w, W, Greek_omega,   Greek_OMEGA]};
+    key <AD03> {[e, E, Greek_epsilon, Greek_EPSILON]};
+    key <AD04> {[r, R, Greek_rho,     Greek_RHO]};
+    key <AD05> {[t, T, Greek_tau,     Greek_TAU]};
+    key <AD06> {[y, Y, Greek_upsilon, Greek_UPSILON]};
+    key <AD07> {[u, U, doubbaselinedot, plusminus]};
+    key <AD08> {[i, I, Greek_iota,    Greek_IOTA]};
+    key <AD09> {[o, O, Greek_omicron, Greek_OMICRON]};
+    key <AD10> {[p, P, Greek_pi,      Greek_PI]};
+    key <AD11> {[bracketleft,  braceleft,  leftarrow, 0x10021D0]};
+    key <AD12> {[bracketright, braceright, rightarrow, implies]};
+    key <AC01> {[a, A, Greek_alpha,   Greek_ALPHA]};
+    key <AC02> {[s, S, Greek_sigma,   Greek_SIGMA]};
+    key <AC03> {[d, D, Greek_delta,   Greek_DELTA]};
+    key <AC04> {[f, F, Greek_phi,     Greek_PHI]};
+    key <AC05> {[g, G, Greek_gamma,   Greek_GAMMA]};
+    key <AC06> {[h, H, Greek_eta,     Greek_ETA]};
+    key <AC07> {[j, J, dagger,        doubledagger]};
+    key <AC08> {[k, K, Greek_kappa,   Greek_KAPPA]};
+    key <AC09> {[l, L, Greek_lambda,  Greek_LAMBDA]};
+    key <AC10> {[semicolon,  colon,    uparrow,    downarrow]};
+    key <AC11> {[apostrophe, quotedbl, dead_acute, dead_diaeresis]};
+    key <AB01> {[z, Z, Greek_zeta,    Greek_ZETA]};
+    key <AB02> {[x, X, Greek_xi,      Greek_XI]};
+    key <AB03> {[c, C, Greek_chi,     Greek_CHI]};
+    key <AB04> {[v, V, jot,           degree]};
+    key <AB05> {[b, B, Greek_beta,    Greek_BETA]};
+    key <AB06> {[n, N, Greek_nu,      Greek_NU]};
+    key <AB07> {[m, M, Greek_mu,      Greek_MU]};
+    key <AB08> {[comma,	 less,    guillemotleft,  lessthanequal]};
+    key <AB09> {[period, greater, guillemotright, greaterthanequal]};
+    key <AB10> {[slash,	question, notequal, questiondown]};
+
+    key <BKSL> {[backslash, bar, 0x10021D1, 0x10021D3]};
+
+    // key <BKSL> {[backslash, bar, 0x10021BB, 0x10021BA]};
+
+    key <ESC> {type[Group1] = "FOUR_LEVEL",
+               symbols[Group1] = [Escape, Escape, 0x10023CF, 0x10023CF]};
+    key <TAB> {type[Group1] = "FOUR_LEVEL",
+               symbols[Group1] = [Tab, ISO_Left_Tab, 0x10021B9, 0x10021B9]};
+    key <RTRN> {type[Group1] = "FOUR_LEVEL",
+                symbols[Group1] = [Return, Return, 0x10021B2, 0x10021B2]};
+
+    include "level3(ralt_switch)"
+
+    // End alphanumeric section
+};
+
+
+// Copied from the french layout file, adjusted for this layout
+// ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┲━━━━━━━━━━┓
+// │ ~   │ ! ⊼ │ @ ⊽ │ # ⊻ │ $ ∉ │ % ∩ │ ^ ◌ │ & ∃ │ * ∅ │ ( ⊆ │ ) ⊇ │ _ ♣ │ + ♠ ┃          ┃
+// │ `   │ 1 ∧ │ 2 ∨ │ 3 ¬ │ 4 ∈ │ 5 ∪ │ 6   │ 7 ∀ │ 8 ∞ │ 9 ⊂ │ 0 ⊃ │ - ♦ │ = ♥ ┃ ⌫        ┃
+// ┢━━━━━┷━━┱──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┺━━┳━━━━━━━┫
+// ┃        ┃ Q Θ │ W Ω │ E Ε │ R Ρ │ T Τ │ Y Υ │ U ± │ I Ι │ O Ο │ P Π │ { ⇐ │ } ⇒ ┃       ┃
+// ┃ ↹      ┃ q θ │ w ω │ e ε │ r ρ │ t τ │ y υ │ u ‥ │ i ι │ o ο │ p π │ [ ← │ ] → ┃       ┃
+// ┣━━━━━━━━┻┱────┴┬────┴┬────┴┬────┴┬────┴┬────┴┬────┴┬────┴┬────┴┬────┴┬────┴┬────┺┓  ⏎   ┃
+// ┃         ┃ A Α │ S Σ │ D Δ │ F Φ │ G Γ │ H Η │ J ‡ │ K Κ │ L Λ │ : ↓ │ "   │ | ⇑ ┃      ┃
+// ┃ ⇬       ┃ a α │ s σ │ d δ │ f φ │ g γ │ h η │ j † │ k κ │ l λ │ ; ↑ │ '   │ \ ⇓ ┃      ┃
+// ┣━━━━━━┳━━┹──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┲━━┷━━━━━┻━━━━━━┫
+// ┃      ┃     │ Z Ζ │ X Ξ │ C Χ │ V ° │ B Β │ N Ν │ M Μ │ < ≤ │ > ≥ │ ? ¿ ┃               ┃
+// ┃ ⇧    ┃     │ z ζ │ x ξ │ c χ │ v ∘ │ b β │ n ν │ m μ │ , « │ . » │ / ≠ ┃ ⇧             ┃
+// ┣━━━━━━┻┳━━━━┷━━┳━━┷━━━━┱┴─────┴─────┴─────┴─────┴─────┴─┲━━━┷━━━┳━┷━━━━━╋━━━━━━━┳━━━━━━━┫
+// ┃       ┃       ┃       ┃ ␣                            ⍽ ┃       ┃       ┃       ┃       ┃
+// ┃ ctrl  ┃ super ┃ alt   ┃ ␣ Space                      ⍽ ┃ altgr ┃ super ┃ menu  ┃ ctrl  ┃
+// ┗━━━━━━━┻━━━━━━━┻━━━━━━━┹────────────────────────────────┺━━━━━━━┻━━━━━━━┻━━━━━━━┻━━━━━━━┛
+
+// Notes
+// On my Ubuntu machine:
+// /usr/include/X11/keysymdef.h contains character names
+// /usr/share/X11/xkb/symbols/  contains the layout files
+// to set the custom layout: setxkbmap -layout usq
