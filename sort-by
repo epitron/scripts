@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+
+# TODOs:
+# - '-r' reverses the sort
+# - '-d' specifies delimiter
+# - Field ranges (5-6)
+
+args = ARGV
+
+unless args.any? and args.all? { |arg| arg =~ /^\d+$/ }
+  puts "Usage:"
+  puts "\t#{__FILE__} <field(s)...>"
+  puts
+  puts "Purpose:"
+  puts "\tSort STDIN by the specified field numbers"
+  puts "\t(where fields are separated by whitespace)."
+  puts
+  puts "Notes:"
+  puts "\tField numbering starts at 1."
+  # puts "\tA range (eg: '5-6') will join the fields together."
+  puts
+  exit 1
+end
+
+fields = args.map(&:to_i)
+
+rows = STDIN.map { |line| line.chomp.split }
+
+sorted = rows.sort_by do |row| 
+  fields.map do |fieldnum| 
+    val = row[fieldnum-1]
+    val = val.to_i if val =~ /^\d+$/
+    val
+  end.compact 
+end
+
+sorted.each do |row|
+  puts row.join(" ")
+end
