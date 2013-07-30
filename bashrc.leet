@@ -158,6 +158,7 @@ alias dmenu="dmenu -l 50"
 #alias mount="sudoifnotroot mount"
 alias ufw="sudoifnotroot ufw"
 alias fdisk='sudoifnotroot fdisk'
+alias blkid='sudoifnotroot blkid'
 #alias lsblk='lsblk -a -f'
 alias fatrace='sudoifnotroot fatrace'
 
