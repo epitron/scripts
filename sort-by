@@ -29,7 +29,7 @@ rows = STDIN.map { |line| line.chomp.split }
 sorted = rows.sort_by do |row| 
   fields.map do |fieldnum| 
     val = row[fieldnum-1]
-    val = val.to_i if val =~ /^\d+$/
+    val = val.to_i if val =~ /^\d+(k|m|mb|\/s)?$/i
     val
   end.compact 
 end
