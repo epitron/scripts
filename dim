@@ -1,2 +1,1 @@
-#redshift -o -l 42.8142432:-73.9395687
 redshift -O 3800
