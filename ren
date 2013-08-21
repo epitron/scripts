@@ -83,12 +83,12 @@ if __FILE__ == $0
     if File.exists? new_filename
       STDIN.purge
       print "#{new_filename} exists. Overwrite? (y/N) "
-      case gets
-      when /^n$/i, "\n"
+      case gets.strip.downcase
+      when "y"
+        puts "Clobbering..."
+      else
         puts "Skipping..."
         next
-      else
-        puts "Clobbering..."
       end
     end
 

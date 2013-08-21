@@ -1,10 +1,10 @@
 #!/bin/bash
 while [ -n "$1" ]; do
   IN="$1"
-  OUT="${IN%.*}.wav"
+  OUT="${IN%.*}.stream"
   echo "Converting: $IN"
   echo "        to: $OUT"
-  mplayer -really-quiet -vc null -vo null -ao pcm:fast:file="$OUT" "$IN"
+  mplayer "$IIN" -dumpaudio -dumpfile "$OUT"
   echo
   shift
 done

@@ -1,2 +1,7 @@
 #!/bin/bash
+
 Xephyr -screen 1400x900 :1
+
+if [ "$1" != "" ]; then
+  DISPLAY=:1 $@
+fi

@@ -31,7 +31,7 @@ sorted = rows.sort_by do |row|
     val = row[fieldnum-1]
     val = val.to_i if val =~ /^\d+(k|m|mb|\/s)?$/i
     val
-  end.compact 
+  end #.compact 
 end
 
 sorted.each do |row|
