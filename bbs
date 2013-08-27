@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+bbses = %{
+bbs.thebrokenbubble.com
+bbs.electronicchicken.com
+bbs.pharcyde.org
+bbs.diskshop.ca
+}
+
+options = bbses.nice_lines
+
+options.each.with_index do |option, i|
+  puts "<15>#{i+1}<8>. <#{i+9}>#{option}".colorize
+end
+  
+puts
+
+choice = nil
+
+loop do
+  print "<15>pick<12>> ".colorize
+  choice = gets.strip.to_i - 1
+  break if choice < options.size
+end
+      
+host = options[choice]
+puts
+puts "Connecting to #{host}..."    
+
+exec("cp437", "telnet", host)
