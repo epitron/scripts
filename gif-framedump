@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  echo
+  echo "usage: gifdump file.gif"
+  echo
+  echo "outputs: many frame-###.gif files"
+  echo  
+else
+  convert -verbose "$1" -coalesce frame-%03d.gif
+fi
