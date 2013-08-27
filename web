@@ -18,8 +18,16 @@ BROWSERS = %w[
   jumanji
 ]
 
+VIDEO_SITES = %w[
+  youtube.com
+  youtu.be
+  liveleak.com
+  justin.tv
+  vimeo.com
+]
+
 BROWSER_OVERRIDES = {
-  proc { host[/(youtube\.com|youtu\.be|liveleak\.com)/] } => %w[chrome chromium firefox],
+  proc { host[/(#{VIDEO_SITES.map{|s| Regexp.escape(s)}.join("|")})/] } => %w[chrome chromium firefox],
 }
 
 ##############################################################
