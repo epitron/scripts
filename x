@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
-
-
+#####################################################################################
+#
+# This script displays and edits xattrs (extended attributes, or metadata) on files.
+#
 #####################################################################################
 
 require 'epitools'
@@ -26,7 +28,7 @@ def edit(path)
   tmp       = Path.tmp
   old_attrs = path.attrs
 
-  tmp << old_attrs.to_yaml
+  tmp.write old_attrs.to_yaml
 
   system(ENV["EDITOR"] || "nano", tmp)
 
