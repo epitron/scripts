@@ -233,6 +233,9 @@ alias y='yaourt'
 alias yu='y -Syua'
 
 alias systemctl='sudoifnotroot systemctl'
+alias journalctl='sudoifnotroot journalctl'
+alias jc='journalctl'
+alias jt='journalctl -f'
 alias pkgfile='sudoifnotroot pkgfile'
 alias sys='systemctl'
 
