@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+
+def spec(name)
+  specs = if Gem::Specification.respond_to?(:each)
+            Gem::Specification.find_all_by_name(name)
+          else
+            Gem.source_index.find_name(name)
+          end
+
+  first_spec = specs.sort_by{ |spec| Gem::Version.new(spec.version) }.first
+
+  first_spec or raise CommandError, "Gem `#{name}` not found"
+end
+
+raise "Error: must specify a gem" unless ARGV.size == 1
+
+gem = spec(ARGV.first)
+puts gem.full_gem_path

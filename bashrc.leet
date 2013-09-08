@@ -242,3 +242,5 @@ alias sys='systemctl'
 alias flash='crutziplayer'
 
 alias gource='gource --user-image-dir ~/.cache/gravatars'
+
+gem-cd() { cd `gem-dir $@` ;}
