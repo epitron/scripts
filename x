@@ -4,6 +4,13 @@
 # This script displays and edits xattrs (extended attributes, or metadata) on files.
 #
 #####################################################################################
+#
+# TODO:
+#
+# * Batch edit
+# * Batch getfattr
+#
+#####################################################################################
 
 require 'epitools'
 
@@ -49,11 +56,16 @@ end
 #####################################################################################
 
 def show(path)
-  puts "<15>#{path.filename}".colorize
-  path.attrs.each do |k,v|
-    puts "  <9>#{k} <8>=> <11>#{v}".colorize
+
+  if (attrs = path.attrs).any?
+    puts "<15>#{path.filename}".colorize
+    attrs.each do |k,v|
+      puts "  <9>#{k} <8>=> <11>#{v}".colorize
+    end
+    puts
+  else
+    puts "<7>#{path.filename}".colorize
   end
-  puts
 end
 
 #####################################################################################
@@ -78,23 +90,26 @@ if $0 == __FILE__
     opts = FakeOptions.new
   end
 
-  unless ARGV.any?
-    puts "Error: Must supply at least one file."
-    puts
-    puts parse_options
-    exit 1
-  end
-
   paths = ARGV.map(&:to_Path)
 
-  paths.each do |path|
-    if opts.edit?
-      edit(path)
+  paths << Path.pwd if paths.empty?
+
+  while paths.any?
+    path = paths.shift
+
+    if path.dir?
+
+      puts "* Scanning #{path}..."
+      paths += path.ls
+
+    else      
+
+      edit(path) if opts.edit?
       show(path)
-    else
-      show(path)
+
     end
   end
+
 end
 
 #####################################################################################
