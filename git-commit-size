@@ -1,17 +1,77 @@
-#!/usr/bin/perl
+#!/usr/bin/env ruby
+require 'epitools'
 
-foreach my $rev (`git rev-list --all --pretty=oneline`) {
-  my $tot = 0;
-  ($sha = $rev) =~ s/\s.*$//;
-  foreach my $blob (`git diff-tree -r -c -M -C --no-commit-id $sha`) {
-    $blob = (split /\s/, $blob)[3];
-    next if $blob == "0000000000000000000000000000000000000000"; # Deleted
-    my $size = `echo $blob | git cat-file --batch-check`;
-    $size = (split /\s/, $size)[2];
-    $tot += int($size);
-  }
-  my $revn = substr($rev, 0, 40);
-  if ($tot > 100) {
-    print "$tot $revn " . `git show --pretty="format:" --name-only $revn | wc -l`  ;
-  }
+COLOR_MAP = {
+  0 => 10, # bytes
+  1 => 14, # kilobytes
+  2 => 12, # megabytes
+  3 => 11, # gigabytes
 }
+
+
+class Commit < TypedStruct["ref author date msg"]
+
+  def self.from_revlist(line)
+    c = new
+    c.ref, c.msg = line.strip.split(/\s+/, 2)
+    c
+  end
+
+  def self.from_log(chunk)
+    c = new
+    c.ref = chunk[0].split.last
+    c.author = chunk[1].split(/^Author:\s+/,2).last
+    c.date = chunk[2].split(/^Date:\s+/,2).last
+    c.msg = chunk[4..-2].map {|line| line[4..-1]}.join("\n")
+    c.size = commit_size(ref)
+    c
+  end
+
+  def size
+    @size ||= `git ls-tree -rl #{ref}`.each_line.map do |line|
+      line.split[3].to_i
+    end.reduce(:+)
+  end
+
+end
+
+def commits
+  return enum_for(:commits) unless block_given?
+
+  # git rev-list --reverse --all --pretty=oneline
+  #`git log --reverse`.each_line.map(&:chomp).split_before(/^commit /).each do |chunk|
+  `git rev-list --all --reverse --oneline`.each_line do |line|
+    yield Commit.from_revlist(line)
+  end
+end
+
+
+def display_commit(c, commit_size)
+  if commit_size < 0
+    display_size = "<8>#{commit_size.commatize.rjust(10)}"
+  else
+    magnitude = (commit_size.to_s.size - 1) / 3
+
+    display_size = "<#{COLOR_MAP[magnitude]}>#{commit_size.commatize.rjust(10)}"
+  end
+
+  puts "<9>#{c.ref} #{display_size} <7>#{c.msg}".colorize
+end
+
+
+if $0 == __FILE__
+  first = true
+
+  commits.each_cons(2) do |a,b|
+
+    if first
+      display_commit(a, a.size)
+      first = false
+    end
+
+    commit_size = b.size - a.size
+
+    display_commit(b, commit_size)
+
+  end
+end
