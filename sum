@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+if ARGV.any?
+  require 'slop'
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: sum [options]\n\nPurpose: Sum the values piped into STDIN and return their total\n"
+
+    on 'f=',  'field',     'Field number (starting at 1)', default: 1
+    on 'd=',  'delimiter', 'Delimiter between fields (defaults to whitespace)'
+  end
+else
+  class FakeOptions; def method_missing(*args); nil; end; end
+  opts = FakeOptions.new
+end
+
+field = opts[:field].to_i - 1
+delim = opts[:delimiter] || /\s+/
+
+total = STDIN.each_line.map do |line|
+  line.split(delim)[field].to_i
+end.reduce(:+)
+
+puts total
