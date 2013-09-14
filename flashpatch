@@ -1,0 +1,12 @@
+#!/bin/bash
+SOFILE=/usr/lib/PepperFlash/libpepflashplayer.so
+
+cd ~
+cp $SOFILE FlashPlayer.so
+
+wine ~/scripts/win32/Flash\ Fullscreen\ Patcher.exe
+
+sudo mv FlashPlayer.so $SOFILE
+sudo chown root:root $SOFILE
+
+ls -l $SOFILE
