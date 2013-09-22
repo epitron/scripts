@@ -24,6 +24,7 @@ VIDEO_SITES = %w[
   liveleak.com
   justin.tv
   vimeo.com
+  infoq.com
 ]
 
 BROWSER_OVERRIDES = {
