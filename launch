@@ -2,6 +2,7 @@
 CACHE_DIR     = File.expand_path (ENV["XDG_CACHE_HOME"] || "~/.cache") + "/launch"
 BINARIES_FILE = File.join CACHE_DIR, "binaries.cached"
 FREQ_FILE     = File.join CACHE_DIR, "frequencies.marshal"
+FREQ_BACKUP   = FREQ_FILE + ".bak"
 
 unless File.exists? CACHE_DIR
   require 'fileutils'
@@ -11,15 +12,27 @@ end
 ###############################################################################
 
 def freqs
-  @freqs ||= if File.exists? FREQ_FILE
-    open(FREQ_FILE, "rb") { |f| Marshal.load f.read }
-  else
-    {}
+  if not @freqs
+
+    if File.exists? FREQ_FILE
+      begin
+        @freqs = open(FREQ_FILE, "rb") { |f| Marshal.load f.read }
+      rescue
+        if File.exists? FREQ_BACKUP
+          @freqs = open(FREQ_BACKUP, "rb") { |f| Marshal.load f.read } rescue {}
+        end
+      end
+    else
+      @freqs = {}
+    end
+    
   end
+
+  @freqs
 end
 
 def write_freqs
-  File.rename(FREQ_FILE, FREQ_FILE+".bak") if File.exists? FREQ_FILE
+  File.rename(FREQ_FILE, FREQ_BACKUP) if File.exists? FREQ_FILE
   open(FREQ_FILE, "wb") { |f| f.write Marshal.dump(freqs) }
 end
 
