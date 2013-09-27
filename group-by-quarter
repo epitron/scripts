@@ -3,7 +3,7 @@ require 'fileutils'
 
 # TODO: Fix Path#/: If glob chars, but a file exists by that name, assume it's the file.
 
-QUARTER_LABEL_REGEXP = /^(20|19)\d\d-Q\d$/
+QUARTER_LABEL_REGEXP = /^((?:20|19)\d\d)-Q(\d)$/
 
 # fns = Dir["*"].select do |fn| 
 #   not fn =~ /^(20\d\d-Q\d|group_by_date)$/
@@ -17,23 +17,28 @@ class Time
   def quarter
     (month / 3.0).ceil
   end
+
+  def quarter_date
+    Time.new(year, quarter * 3)
+  end
 end
 
-current_quarter = Time.now.quarter_label
+current_quarter = Time.now.quarter_date
+files           = Dir["*"].reject { |fn| File.directory?(fn) and fn =~ QUARTER_LABEL_REGEXP }
+grouped         = files.group_by { |fn| File.mtime(fn).quarter_date }
 
-files   = Dir["*"].reject { |fn| File.directory?(fn) and fn =~ QUARTER_LABEL_REGEXP }
+# Move all the files to the appropriate directories
+grouped.sort.each do |date, files|
+  next if date == current_quarter # skip files in this quarter
 
-grouped = files.group_by { |fn| File.mtime(fn).quarter_label }
+  dir = date.quarter_label
 
-grouped.sort.each do |quarter, files|
-  next if quarter == current_quarter
+  Dir.mkdir(dir) unless File.directory? dir
 
-  puts "#{quarter}"
-
-  Dir.mkdir(quarter) unless File.directory? quarter
+  puts "#{dir}"
 
   files.each do |src|
-    dest = File.join(quarter, src)
+    dest = File.join(dir, src)
     # puts "#{src} => #{dest}"
     puts "  #{src}"
     # FileUtils.mv src, dest
@@ -43,3 +48,14 @@ grouped.sort.each do |quarter, files|
   puts
 end
 
+# Fix the modification times on the quarter directories
+Dir["*"].each do |fn|
+  if File.directory?(fn) and fn =~ QUARTER_LABEL_REGEXP
+    qdate = Time.new($1.to_i, $2.to_i * 3)
+
+    unless File.mtime(fn) == qdate
+      puts "* Changing mtime on #{fn} => #{qdate}"
+      File.utime(File.atime(fn), qdate, fn)
+    end
+  end
+end
