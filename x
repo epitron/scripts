@@ -76,11 +76,19 @@ def parse_options
   @opts = Slop.parse(help: true, strict: true) do
     banner "xattr editor\n\nUsage: x [options] <files...>"
 
-    on 'e',  'edit',  'Edit xattrs'
+    on 'e',  'edit',      'Edit xattrs (with $EDITOR)'
+    on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
+    on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
+
   end
 end
 
 #####################################################################################
+
+def assert(expr, error_message)
+  raise error_message unless expr
+end
+
 
 if $0 == __FILE__
 
@@ -92,22 +100,43 @@ if $0 == __FILE__
 
   paths = ARGV.map(&:to_Path)
 
-  paths << Path.pwd if paths.empty?
+  # TODO: constraints on arguments (eg: must supply exactly one file, mutually exclusive commands)
+  # TODO: bult setting of url/referrer (create a YAML file with all the urls blank)
 
-  while paths.any?
-    path = paths.shift
+  if opts.url? or opts.referrer?
 
-    if path.dir?
+    assert paths.size == 1, "Must supply exactly one filename."
 
-      puts "* Scanning #{path}..."
-      paths += path.ls
+    path = paths.first
 
-    else      
-
-      edit(path) if opts.edit?
-      show(path)
-
+    if opts.url?
+      path["user.xdg.origin.url"] = opts[:url]
+    elsif opts.referrer?
+      path["user.xdg.referrer.url"] = opts[:referrer]
     end
+
+    show path
+
+  else
+
+    paths << Path.pwd if paths.empty?
+
+    while paths.any?
+      path = paths.shift
+
+      if path.dir?
+
+        puts "* Scanning #{path}..."
+        paths += path.ls
+
+      else      
+
+        edit(path) if opts.edit?
+        show(path)
+
+      end
+    end
+
   end
 
 end
