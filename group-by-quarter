@@ -1,13 +1,7 @@
 #!/usr/bin/env ruby
 require 'fileutils'
 
-# TODO: Fix Path#/: If glob chars, but a file exists by that name, assume it's the file.
-
 QUARTER_LABEL_REGEXP = /^((?:20|19)\d\d)-Q(\d)$/
-
-# fns = Dir["*"].select do |fn| 
-#   not fn =~ /^(20\d\d-Q\d|group_by_date)$/
-# end
 
 class Time
   def quarter_label
