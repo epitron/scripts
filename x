@@ -56,11 +56,24 @@ end
 #####################################################################################
 
 def show(path)
-
   if (attrs = path.attrs).any?
+    grouped = attrs.
+              map_keys { |key| key.split(".") }.
+              sort.
+              group_by { |k,v| k.first == "user" ? k[0..1] : nil }
+
     puts "<15>#{path.filename}".colorize
-    attrs.each do |k,v|
-      puts "  <9>#{k} <8>=> <11>#{v}".colorize
+
+    grouped.each do |group, group_attrs|
+      if group.nil?
+        group_attrs.each do
+        end
+      else
+        puts "  <3>[<11>#{group.join('.')}<3>]".colorize
+        group_attrs.each do |attr, value|
+          puts "    <9>#{attr[2..-1].join('.')} <8>=> <11>#{value}".colorize
+        end
+      end
     end
     puts
   else
@@ -120,6 +133,8 @@ if $0 == __FILE__
   else
 
     paths << Path.pwd if paths.empty?
+
+    puts
 
     while paths.any?
       path = paths.shift
