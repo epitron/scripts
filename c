@@ -38,17 +38,32 @@ end
 
 ##############################################################################
 
+def which(bin)
+  ENV["PATH"].split(":").find do |path|
+    result = File.join(path, bin)
+    return result if File.exists? result
+  end
+  nil
+end
+
+##############################################################################
+
 def render(arg=nil)
   if arg.nil?
+    # STDIN
     CodeRay.scan($stdin).term
-  elsif File.exists? arg
-    if %w[.md .markdown].include? File.extname(arg)
-      render_markdown(arg)
-    else
-      render_coderay(arg)
-    end
   else
-    "\e[31m\e[1mFile not found.\e[0m"
+    arg = which(arg) unless File.exists? arg
+
+    if arg
+      if %w[.md .markdown].include? File.extname(arg)
+        render_markdown(arg)
+      else
+        render_coderay(arg)
+      end
+    else
+      "\e[31m\e[1mFile not found.\e[0m"
+    end
   end
 end
 
