@@ -1,0 +1,3 @@
+#!/bin/bash
+URL="`youtube-dl -g "$@"`"
+totem "$URL" |& > /dev/null
