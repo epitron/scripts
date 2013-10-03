@@ -8,7 +8,7 @@ elif [ -d ~/scripts ]; then
 fi
 
 if [ -d ~/bin ]; then
-  export PATH=$PATH:~/bin
+  export PATH=~/bin:$PATH
 fi
 
 if [ -d ~/.gem/bin ]; then
