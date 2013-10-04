@@ -1,11 +1,14 @@
-#!/bin/bash
-CMD="terminal --geometry=90x43"
-if [ "$1" == "" ]; then
-  $CMD
-else
-  if [ "$1" == "-H" ]; then
-    shift
-    CMD="$CMD -H"
-  fi
-  $CMD --command="$*"
-fi
+#!/usr/bin/env ruby
+cmd = %w[terminal --geometry=90x43]
+
+# Hold terminal after command is finished
+cmd << ARGV.shift if ARGV.first == "-H" 
+
+if ARGV.any? 
+  # Run a command
+  require 'shellwords'
+  cmd << "--command=#{Shellwords.shelljoin ARGV}" 
+end
+
+# Launch the terminal
+exec *cmd

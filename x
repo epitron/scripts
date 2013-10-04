@@ -71,7 +71,7 @@ def show(path)
       else
         puts "  <3>[<11>#{group.join('.')}<3>]".colorize
         group_attrs.each do |attr, value|
-          puts "    <9>#{attr[2..-1].join('.')} <8>=> <11>#{value}".colorize
+          puts "    <9>#{attr[2..-1].join('.')}<8>: <7>#{value}".colorize
         end
       end
     end
