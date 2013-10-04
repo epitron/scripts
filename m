@@ -23,6 +23,64 @@ def change_ext(path, new_ext)
   path.gsub(/\.[^\.]+$/, new_ext)
 end  
 
+def self.getfattr(path)
+  # # file: Scissor_Sisters_-_Invisible_Light.flv
+  # user.m.options="-c"
+
+  cmd = ["getfattr", "-d", "-e", "hex", path]
+
+  attrs = {}
+
+  IO.popen(cmd, "rb", :err=>[:child, :out]) do |io|
+    io.each_line do |line|
+      if line =~ /^([^=]+)=0x(.+)/
+        key   = $1
+        value = [$2].pack("H*") # unpack hex string
+
+        attrs[key] = value
+      end
+    end
+  end
+
+  attrs
+end
+
+def self.setfattr(path, key, value)
+  cmd = %w[setfattr]
+
+  if value == nil
+    # delete
+    cmd += ["-x", key]
+  else
+    # set
+    cmd += ["-n", key, "-v", value]
+  end
+
+  cmd << path
+
+  IO.popen(cmd, "rb", :err=>[:child, :out]) do |io|
+    result = io.each_line.to_a
+    error = {cmd: cmd, result: result.to_s}.inspect
+    raise error if result.any?
+  end
+end
+
+def trap(*args, &block)
+  options = if args.last.is_a?(Hash) then args.pop else Hash.new end
+  args = [args].flatten
+  signals = if args.any? then args else Signal.list.keys end
+
+  ignore = %w[ VTALRM CHLD CLD EXIT ILL FPE BUS SEGV ] unless ignore = options[:ignore]
+  ignore = [ignore] unless ignore.is_a? Array
+
+  signals = signals - ignore
+
+  signals.each do |signal|
+    p [:sig, signal]
+    Signal.trap(signal) { yield signal }
+  end
+end
+
 #####################################################################################
 
 def cropdetect(file)
@@ -54,6 +112,11 @@ def filtered_mplayer(cmd, verbose: false, &block)
     return
   end
 
+  # trap do
+  #   # keep running in the background!
+  #   system("notify-send", "my terminal disappeared! FUCK YOU TERMINAL!")
+  # end
+
   if block_given?
     filter = block
   else
@@ -70,11 +133,91 @@ def filtered_mplayer(cmd, verbose: false, &block)
     end
   end
 
-  IO.popen(cmd, :err=>[:child, :out]) do |io|
+  # cmd.unshift("nohup")
+
+  IO.popen(cmd, "rb", :err=>[:child, :out]) do |io|
     io.each_line(&filter)
   end
+  
   puts
 end
+
+### BETA CODE #######################################################################
+
+def filtered_mplayer_killable(cmd, verbose: false, &block)
+  if verbose
+    # Unfiltered!
+    p cmd
+    system(*cmd)
+    return
+  end
+
+  # trap do
+  #   # keep running in the background!
+  #   system("notify-send", "my terminal disappeared! FUCK YOU TERMINAL!")
+  # end
+
+
+  # cmd.unshift("nohup")
+
+  pid = fork do
+
+    if block_given?
+      filter = block
+    else
+      filter = proc do |line|
+        p line
+        case line
+        when /^Playing (.+)\./
+          STDOUT.puts
+          STDOUT.puts $1
+        when /DE(?:CVIDEO|MUX).+?(VIDEO: .+)/, /DECAUDIO.+?(AUDIO:.+)/
+          STDOUT.puts " * #{$1}"
+        when /DEC(VIDEO|AUDIO).+?Selected (.+)/
+          STDOUT.puts "   |_ #{$2}"
+        end
+      end
+    end
+
+    Process.setsid # get immune to our parent's TTY signals
+    Signal.trap("CLD") { exit } # mplayer died
+
+    r, w = IO.pipe
+
+    IO.popen(cmd, :err => [:child, :out]) do |io|
+      begin
+        Thread.new { IO.copy_stream(io, w) }
+        r.each_line(&filter)
+        # io.each_line(&filter)
+        # loop do
+        #   begin
+        #     IO.copy_stream(io, STDOUT)
+        #   rescue Errno::EIO # STDOUT is gone, but we still need to pump the input
+        #   end
+        # end
+      rescue EOFError # mplayer died
+        exit
+      rescue Interrupt # parent wants us to go away
+        exit # this kills mplayer with us with a SIGPIPE
+      end
+    end
+  end
+   
+  loop do
+    begin
+      Process.wait(pid)
+    rescue Interrupt
+      Process.kill('INT', pid)
+      # we still need to wait for mplayer to die
+      # otherwise, the shell prints its prompt before mplayer has died
+    rescue Errno::ECHILD
+      exit
+    end
+  end
+  
+  puts
+end
+
 
 #####################################################################################
 
@@ -139,13 +282,16 @@ end
 
 def parse_options
   require 'slop' # lazy loaded
+
+  #@opts ||= Slop.new
   @opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: m [options] <videos...>'
 
     on 'f',  'fullscreen',  'Fullscreen mode'
     on 'n',  'nosound',     'No sound'
     on 'c',  'crop',        'Auto-crop'
-    on 'd',  'deinterlace', 'Deinterlace (using yadif)'
+    on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
+    on 'b',  'bob',         'Bob deinterlace (using yadif)'
     on 'r=', 'aspect',      'Aspect ratio'
     on 's=', 'start',       'Start playing at this offset (HH:MM:SS or SS format)'
     on 'e=', 'end',         'Stop playing at this offset'
@@ -164,6 +310,8 @@ end
 if $0 == __FILE__
 
   # PARSE OPTIONS
+  # require 'pry'
+  # binding.pry
 
   if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
     opts = parse_options
@@ -188,6 +336,7 @@ if $0 == __FILE__
   cmd << "-nosound"         if opts.nosound?
   cmd << "-fs"              if opts.fullscreen?
   cmd += ["-vf", "yadif"]   if opts.deinterlace?
+  cmd += ["-vf", "yadif=1"]   if opts.bob?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
 
   seek = opts[:start]
@@ -256,13 +405,13 @@ if $0 == __FILE__
       puts "#"*70
       puts
       normwav = normalize(wav)
-      #File.unlink wav
+      File.unlink wav
 
       puts
       puts "#"*70
       puts
       normmp3 = lame(normwav, change_ext(file, ".norm.mp3"))
-      #File.unlink normwav
+      File.unlink normwav
 
       puts
       puts
