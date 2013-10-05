@@ -130,8 +130,8 @@ alias dict='dictless'
 alias chrome='google-chrome'
 
 ## Things with literal arguments
-alias math='noglob math'
-alias gfv='noglob gfv'
+#alias math='noglob math'
+#alias gfv='noglob gfv'
 
 ## Git aliases
 alias git="hub"
