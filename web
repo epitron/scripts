@@ -1,129 +1,213 @@
 #!/usr/bin/env ruby
+######################################################################################
+# This is where the browser routing rules go!
+#
+# 
+#
+# Match examples:
+#   match "site.com"
+#   match /site\.com/
+#   match host: /(site1|site2)\.com/
+#   match "site1.com", "site2.com", "site3.com"
+#   match host: "site.com"
+#   match ->(|uri|) { uri.host["site.com"] and Time.now.year == 2012 }
+######################################################################################
 
-##############################################################
+routes do
 
-require 'epitools/sys'
-require 'epitools/wm'
-require 'epitools/path'
-require 'epitools/rash'
-
-##############################################################
-
-BROWSERS = %w[
-  opera
-  chrome
-  chromium
-  midori
-  firefox
-  jumanji
-]
-
-VIDEO_SITES = %w[
-  youtube.com
-  youtu.be
-  liveleak.com
-  justin.tv
-  vimeo.com
-  infoq.com
-]
-
-BROWSER_OVERRIDES = {
-  proc { host[/(#{VIDEO_SITES.map{|s| Regexp.escape(s)}.join("|")})/] } => %w[chrome chromium firefox],
-}
-
-##############################################################
-## Check for required binaries (in the path)
-missing = false
-{"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
-  unless Path.which(bin)
-    puts "* '#{bin}' not found in path; please install the '#{package}' package."
-    missing = true
-  end
-end
-exit 1 if missing
-
-##############################################################
-
-def select_parents(query, &block)
-  process = Sys.ps($$).first.parent
-
-  parents = []
-  while process
-    parents << process
-    process = process.parent
+  match host: %w[youtube.com youtu.be] do |uri|
+    # Play the youtube directly in "mplayer" via "youtube-dl"
+    system("play", uri)
   end
 
-  block ||= proc { |process| process.command[query] }
-
-  parents.select &block
-end
-
-def opened_by?(program)
-  find_in_parents(program)
-end
-
-def browsers_for(url)
-  uri = URI.parse(url)
-  _, override = BROWSER_OVERRIDES.find { |tester, _| uri.instance_eval(&tester) }
-
-  if override
-    override | BROWSERS
-  else
-    BROWSERS
+  match host: %w[youtube.com youtu.be liveleak.com justin.tv vimeo.com infoq.com] do |uri|
+    # Load video sites in browsers that are good at playing videos.
+    open_in_best_browser uri, %w[chrome chromium firefox]
   end
+
+  default do |uri|
+    open_in_best_browser uri, %w[opera chrome chromium midori firefox jumanji]
+  end
+
 end
 
-def find_browsers(windows, browsers)
-  browsers.map do |browser_name|
-    browser_window = windows.select do |w|
-      next if w.command.nil?
-      bin = w.command.split.first
-      bin[browser_name]
-    end.first
-    [ browser_name, browser_window ] if browser_window
-  end.compact
-end
+######################################################################################
+# Here's the actual program. (This gets executed before the "routes" command above.)
 
-def best_browser_for(url)
+BEGIN {
 
-  browsers = browsers_for(url)
+  require 'epitools/sys'
+  require 'epitools/wm'
+  require 'epitools/path'
+  require 'epitools/rash'
 
-  # Group by browsers
-  browsers_on_current_desktop = find_browsers(WM.current_desktop.windows, browsers)
+  ####################################################################################
 
-  if browsers_on_current_desktop.any?
-    browser_name, win = browsers_on_current_desktop.first
-    # p [:activating_browser_on_current_desktop, win]
-  elsif 
-    browsers_on_all_desktops = find_browsers(WM.windows)
-    if browsers_on_all_desktops.any?
-      browser_name, win  = browsers_on_all_desktops.first
-      # p [:activating_browser_on_other_desktop, win]
+  module URI
+    # URIs are strings, goddamnit!
+    def to_str
+      to_s
     end
   end
-
-  [browser_name, win]
-end
-
-def to_clipboard(string)
-  IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
-end
-
-def route(url)
-  name, browser = best_browser_for(url)
-
-  puts "* Opening #{url.inspect} in #{name} on #{browser.desktop.name}"
-
-  to_clipboard(url)
-
-  browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
-  sleep 0.2
-  browser.send_keys("<Ctrl-L><Return>")
   
-  browser.activate!
-end
+  ####################################################################################
+  # Router DSL lets you do arbitrary things for certain websites.
 
-##############################################################
+  class Router
+    attr_accessor :url
+
+    #
+    # Magically load rules from DATA (everything in __END__)
+    #
+    def initialize(&block)
+      @matchers = []
+      @default  = nil
+
+      instance_eval &block
+    end
+
+    def match(*args, &block)
+      @matchers << [args, block]
+    end
+
+    def default(&block)
+      @default = block
+    end
+
+    def route!(url)
+      # Make sure the default is set...
+      @default ||= proc.new { open_in_best_browser url }
+
+      uri = URI.parse url
+
+      # Try each of the matchers...
+      @matchers.each do |args, block|
+
+        matched = args.any? do |arg|
+          case arg
+
+          when Hash
+            arg.all? do |key, val|
+              case val
+              when Array
+                val.any? { |v| uri.send(key)[v] }
+              when String, Regexp
+                uri.send(key)[val]
+              else
+                raise "Unknown match value: #{val.inspect}"
+              end
+            end
+
+          when Regexp, String
+            uri.to_s[arg]
+
+          when Proc
+            arg.call(uri)
+
+          else
+            raise "Unknown match thing: #{arg.inspect}"
+          end
+
+        end
+
+        return block.call(uri) if matched
+
+      end
+
+      # Otherwise, do the default action.
+      @default.call(url)
+    end
+
+  end
+
+  def routes(&block)
+    $router = Router.new(&block)
+  end
+
+  ##############################################################
+
+  def select_parents(query, &block)
+    process = Sys.ps($$).first.parent
+
+    parents = []
+    while process
+      parents << process
+      process = process.parent
+    end
+
+    block ||= proc { |process| process.command[query] }
+
+    parents.select &block
+  end
+
+  def opened_by?(program)
+    find_in_parents(program)
+  end
+
+  # def browsers_for(url)
+  #   uri = URI.parse(url)
+  #   _, override = BROWSER_OVERRIDES.find { |tester, _| uri.instance_eval(&tester) }
+
+  #   if override
+  #     override | BROWSERS
+  #   else
+  #     BROWSERS
+  #   end
+  # end
+
+  def find_browsers(windows, browsers)
+    browsers.map do |browser_name|
+      browser_window = windows.select do |w|
+        next if w.command.nil?
+        bin = w.command.split.first
+        bin[browser_name]
+      end.first
+      [ browser_name, browser_window ] if browser_window
+    end.compact
+  end
+
+  def best_browser_for(url, browsers)
+    # browsers = browsers_for(url)
+
+    # Group by browsers
+    browsers_on_current_desktop = find_browsers(WM.current_desktop.windows, browsers)
+
+    if browsers_on_current_desktop.any?
+      browser_name, win = browsers_on_current_desktop.first
+      # p [:activating_browser_on_current_desktop, win]
+    elsif 
+      browsers_on_all_desktops = find_browsers(WM.windows, browsers)
+      if browsers_on_all_desktops.any?
+        browser_name, win  = browsers_on_all_desktops.first
+        # p [:activating_browser_on_other_desktop, win]
+      end
+    end
+
+    [browser_name, win]
+  end
+
+  def to_clipboard(string)
+    IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
+  end
+
+  def open_in_best_browser(url, browsers)
+    name, browser = best_browser_for(url, browsers)
+
+    puts "* Opening #{url.inspect} in #{name} on #{browser.desktop.name}"
+
+    to_clipboard(url)
+
+    browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
+    sleep 0.2
+    browser.send_keys("<Ctrl-L><Return>")
+    
+    browser.activate!
+  end
+
+  ##############################################################
+
+} 
+
 
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }
@@ -141,9 +225,22 @@ if $0 == __FILE__
     exit
   end
 
+  ######################################################################################
+  ## Check for required binaries (in the path)
+  missing = false
+  {"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
+    unless Path.which(bin)
+      puts "* '#{bin}' not found in path; please install the '#{package}' package."
+      missing = true
+    end
+  end
+  exit 1 if missing
+
+
   if url = ARGV.first
-    route url
+    # The $router variable is assigned when "router()" is called.
+    $router.route! url
   else
-    puts "usage: browser-router <url>"
+    puts "usage: web <url>"
   end
 end
