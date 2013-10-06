@@ -1,2 +1,2 @@
 #!/bin/bash
-cat > /dev/null
+exec cat > /dev/null
