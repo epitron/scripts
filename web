@@ -1,32 +1,65 @@
 #!/usr/bin/env ruby
 ######################################################################################
-# This is where the browser routing rules go!
+# "web" by Chris Gahan (chris@ill-logic.com)
+######################################################################################
+# This script intelligently opens URLs in the best browser on the current desktop,
+# or on another desktop.
 #
+# Now you can have as many browsers open on as many desktops as you want, and you'll
+# never have to worry when clicking on a link that it'll go to the wrong one.
+######################################################################################
+
+######################################################################################
+# ROUTING RULES
+######################################################################################
 # 
+# The behaviour of this script can be easily customized by editing the "routes" below.
 #
-# Match examples:
+# Each match is tried in order, and the first matching one will be executed.
+# You can do whatever you like in the match's block.
+#
+# (Calling "open_in_best_browser(url, BROWSERS)"" is the default behaviour.)
+#
+# Match rule examples:
 #   match "site.com"
 #   match /site\.com/
 #   match host: /(site1|site2)\.com/
+#   match host: %w[site1.com site2.com], scheme: "https"
 #   match "site1.com", "site2.com", "site3.com"
 #   match host: "site.com"
 #   match ->(|uri|) { uri.host["site.com"] and Time.now.year == 2012 }
+#
+# The 'uri' object:
+#   Each rule matches against Ruby's URI object, and when a match succeds, the block
+#   is passed the URI object.
+#
+#   For example, if your url is "https://site.com/path?query=yes", the URI object's
+#   attributes are:
+#     scheme = "https",
+#     host   = "site.com",
+#     port   = 443,
+#     path   = "/path",
+#     query  = "query=yes"
 ######################################################################################
+
+# A list of browsers, which will be tried in order.
+BROWSERS         = %w[opera chrome chromium midori firefox jumanji]
+VIDEO_BROWSERS   = %w[chrome chromium firefox]
 
 routes do
 
+  default do |uri|
+    open_in_best_browser uri, BROWSERS
+  end
+
   match host: %w[youtube.com youtu.be] do |uri|
-    # Play the youtube directly in "mplayer" via "youtube-dl"
+    puts "* Playing #{uri.inspect} in mplayer..."
     system("play", uri)
   end
 
   match host: %w[youtube.com youtu.be liveleak.com justin.tv vimeo.com infoq.com] do |uri|
     # Load video sites in browsers that are good at playing videos.
-    open_in_best_browser uri, %w[chrome chromium firefox]
-  end
-
-  default do |uri|
-    open_in_best_browser uri, %w[opera chrome chromium midori firefox jumanji]
+    open_in_best_browser uri, VIDEO_BROWSERS
   end
 
 end
@@ -124,7 +157,7 @@ BEGIN {
     $router = Router.new(&block)
   end
 
-  ##############################################################
+  ######################################################################################
 
   def select_parents(query, &block)
     process = Sys.ps($$).first.parent
@@ -144,17 +177,6 @@ BEGIN {
     find_in_parents(program)
   end
 
-  # def browsers_for(url)
-  #   uri = URI.parse(url)
-  #   _, override = BROWSER_OVERRIDES.find { |tester, _| uri.instance_eval(&tester) }
-
-  #   if override
-  #     override | BROWSERS
-  #   else
-  #     BROWSERS
-  #   end
-  # end
-
   def find_browsers(windows, browsers)
     browsers.map do |browser_name|
       browser_window = windows.select do |w|
@@ -167,8 +189,6 @@ BEGIN {
   end
 
   def best_browser_for(url, browsers)
-    # browsers = browsers_for(url)
-
     # Group by browsers
     browsers_on_current_desktop = find_browsers(WM.current_desktop.windows, browsers)
 
@@ -204,7 +224,21 @@ BEGIN {
     browser.activate!
   end
 
-  ##############################################################
+  #
+  # If the required binaries aren't in the path, tell the user, then terminate.
+  #
+  def ensure_required_binaries_are_in_the_path
+    missing = false
+
+    {"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
+      unless Path.which(bin)
+        puts "* '#{bin}' not found in path; please install the '#{package}' package."
+        missing = true
+      end
+    end
+
+    exit 1 if missing
+  end
 
 } 
 
@@ -222,22 +256,15 @@ if $0 == __FILE__
     puts "== These are the browsers it will try to use (in order): =="
     puts " #{BROWSERS.join(", ")}"
     puts
+
     exit
   end
 
-  ######################################################################################
-  ## Check for required binaries (in the path)
-  missing = false
-  {"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
-    unless Path.which(bin)
-      puts "* '#{bin}' not found in path; please install the '#{package}' package."
-      missing = true
-    end
-  end
-  exit 1 if missing
-
+  ensure_required_binaries_are_in_the_path
 
   if url = ARGV.first
+    url = "http://#{url}" unless url[%r{^https?://}i] # slap an http:// on the argument if necessary
+
     # The $router variable is assigned when "router()" is called.
     $router.route! url
   else
