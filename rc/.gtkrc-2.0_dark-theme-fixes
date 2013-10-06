@@ -1,6 +1,7 @@
-# File created by KDE Gtk Config
-# Configs for GTK2 programs 
+# So important.
+gtk-can-change-accels=1
 
+# Some KDE things
 include "/usr/share/themes/Clearlooks Brave Dark/gtk-2.0/gtkrc"
 include "/etc/gtk-2.0/gtkrc"
 style "user-font" 
@@ -16,6 +17,7 @@ gtk-toolbar-style=GTK_TOOLBAR_ICONS
 gtk-menu-images=0
 gtk-button-images=0
 
+# Dark Meld 
 style "meld-color-scheme-user"
 {
     # inserted line(s), also edge color block for added file in dir diff
