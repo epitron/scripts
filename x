@@ -34,10 +34,13 @@ end
 def edit(path)
   tmp       = Path.tmp
   old_attrs = path.attrs
-
+  
   tmp.write old_attrs.to_yaml
 
-  system(ENV["EDITOR"] || "nano", tmp)
+  cmd = (ENV["EDITOR"] || "nano").split
+  cmd << tmp
+
+  system *cmd
 
   new_attrs = tmp.read_yaml
   diff      = hash_diff(old_attrs, new_attrs)
