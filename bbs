@@ -6,6 +6,10 @@ BBSES = %{
   bbs.thebrokenbubble.com
   bbs.pharcyde.org
   bbs.diskshop.ca
+  1984.ws
+  hysteriabbs.com
+  bloodisland.ph4.se
+  bbs.godta.com
 }.nice_lines.map(&:strip)
 
 
