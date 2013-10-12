@@ -1,2 +1,2 @@
 #!/bin/bash
-xdg-open `xclip -o`
+web "`xclip -o`"
