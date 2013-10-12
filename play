@@ -1,3 +1,8 @@
 #!/bin/bash
+mplayer ~/scripts/sounds/click.mp3 |& null
+
 URL="`youtube-dl -g "$@"`"
-totem "$URL" |& > /dev/null
+
+#mplayer "$URL" |& null
+mplayer -quiet -cache 2500 "$URL"
+#totem "$URL" > /dev/null
