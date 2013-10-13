@@ -71,15 +71,24 @@ BEGIN {
 
   require 'epitools/sys'
   require 'epitools/wm'
-  require 'epitools/path'
-  require 'epitools/rash'
+  require 'epitools/core_ext/misc'
+  require 'epitools/core_ext/hash'
 
   ####################################################################################
 
   module URI
-    # URIs are strings, goddamnit!
+    # URIs are strings, dammit!
     def to_str
       to_s
+    end
+
+    # Remove redirects (eg: google's)
+    def without_redirects
+      if host[/google.\w{2,3}$/] and path == "/url" and url = query.to_params["url"]
+        URI.parse(url)
+      else
+        self
+      end
     end
   end
   
@@ -111,7 +120,7 @@ BEGIN {
       # Make sure the default is set...
       @default ||= proc.new { open_in_best_browser url }
 
-      uri = URI.parse url
+      uri = URI.parse(url).without_redirects
 
       # Try each of the matchers...
       @matchers.each do |args, block|
@@ -224,6 +233,13 @@ BEGIN {
     browser.activate!
   end
 
+  def which(bin)
+    ENV["PATH"].split(":").each do |dir|
+      path = File.join(dir, bin)
+      return path if File.exists? path
+    end
+  end
+
   #
   # If the required binaries aren't in the path, tell the user, then terminate.
   #
@@ -231,7 +247,7 @@ BEGIN {
     missing = false
 
     {"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
-      unless Path.which(bin)
+      unless which(bin)
         puts "* '#{bin}' not found in path; please install the '#{package}' package."
         missing = true
       end
