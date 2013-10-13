@@ -1,13 +1,6 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-args = ARGV
-
-unless args.any?
-  puts "usage: unmount <directory> [ <directory> [ ... ] ]"
-  exit 1
-end
-
 # /dev/sda2 on / type ext4 (rw,errors=remount-ro,commit=0)
 
 class Mount < Struct.new(:dev, :path, :type, :options)
@@ -29,42 +22,80 @@ fuser_types = {
  "m"=>"mmap'ed file or shared library"
 }  
 
-def processes(mointpoint)
-  procs = Sys.ps
+def processes_holding(mountpoint)
+  # procs = Sys.ps
   # /maverick:            1865 10335c 14155c 14156c 14157c 14165c 14178c
-  if `fuser -M -m #{mountpoint}` =~ /#{mointpoint}:\s+(.+)/
-    pids, types = $1.scan(/(\d+)(.*)/).transpose
-    Sys.ps.zip types
-    
-  end
+  # if `fuser -M -m #{mountpoint}` =~ /#{mointpoint}:\s+(.+)/
+  #   pids, types = $1.scan(/(\d+)(.*)/).transpose
+  #   Sys.ps.zip types
+  # end
+
+  system("fuser", "-v", "-m", mountpoint)
 end
 
-mounts = `mount`.lines.map{|line| Mount.from_line(line) }.compact
+def kill_processes_holding(mountpoint)
+  system("fuser", "-k", mountpoint)
+end
 
-for arg in args
-  
+def mounts
+  `mount`.lines.map{|line| Mount.from_line(line) }.compact
+end
+
+def unmount(arg)
+
   print "unmount #{arg.inspect}: "
   
   unless File.directory? arg
     puts "FAIL! (not a directory)"
-    next
+    return false
   end
   
   realpath = File.realpath(arg)
 
-  match = mounts.select{|mount| realpath[/^#{Regexp.escape mount.path}/] }.sort_by{|m| m.path.size}.last
+  mount = mounts.
+            select { |mount| realpath[/^#{Regexp.escape mount.path}/] }.
+            sort_by { |m| m.path.size }.
+            last
   
-  unless match
+  unless mount
     puts "FAIL! (not mounted)"
-    next
+    return false
   end
   
-  success = if match.type[/^fuse/]
-              system("fusermount -u #{match.path}")
+  # Do the unmount
+  success = if mount.type[/^fuse/]
+              system("fusermount", "-u", mount.path)
             else
-              system("sudoifnotroot umount #{match.path}")
+              system("sudoifnotroot", "umount", mount.path)
             end
     
-  puts( success ? "SUCCESS!" : "FAIL!" )
-      
+  if success
+    puts "SUCCESS!"
+  else
+    puts "FAIL!"
+
+    puts
+    puts "Processes holding the filesystem open:"
+    processes_holding(mount.path)
+    puts
+
+    if prompt("Kill these processes?") == "y"
+      kill_processes_holding(mount.path)
+      unmount(arg)
+    else
+      puts "Skipping..."
+      puts
+    end
+  end
+end
+
+args = ARGV
+
+unless args.any?
+  puts "usage: unmount <directory> [ <directory> [ ... ] ]"
+  exit 1
+end
+
+for arg in args
+  unmount(arg)
 end
