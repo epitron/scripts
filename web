@@ -52,7 +52,7 @@ routes do
     open_in_best_browser uri, BROWSERS
   end
 
-  match host: %w[youtube.com youtu.be] do |uri|
+  match host: %w[youtube.com youtu.be wimp.com] do |uri|
     puts "* Playing #{uri.inspect} in mplayer..."
     system("play", uri)
   end
@@ -77,27 +77,33 @@ BEGIN {
   ####################################################################################
 
   module URI
+
+    #
     # URIs are strings, dammit!
+    #
     def to_str
       to_s
     end
 
-    # Remove redirects (eg: google's)
-    def without_redirects
-      if host[/google.\w{2,3}$/] and path == "/url" and url = query.to_params["url"]
+    #
+    # Remove click trackers (eg: google's search results and facebook's posts)
+    #
+    def without_click_trackers
+      if host[/google.\w{2,3}$/] and path == "/url" and url = params["url"]
+        URI.parse(url)
+      elsif host[/facebook\.com$/] and path == "/l.php" and url = params["u"]
         URI.parse(url)
       else
         self
       end
     end
+
   end
   
   ####################################################################################
   # Router DSL lets you do arbitrary things for certain websites.
 
   class Router
-    attr_accessor :url
-
     #
     # Magically load rules from DATA (everything in __END__)
     #
@@ -117,10 +123,10 @@ BEGIN {
     end
 
     def route!(url)
-      # Make sure the default is set...
-      @default ||= proc.new { open_in_best_browser url }
+      uri = URI.parse(url).without_click_trackers
 
-      uri = URI.parse(url).without_redirects
+      # Make sure the default is set...
+      @default ||= proc.new { open_in_best_browser uri }
 
       # Try each of the matchers...
       @matchers.each do |args, block|
@@ -157,7 +163,7 @@ BEGIN {
       end
 
       # Otherwise, do the default action.
-      @default.call(url)
+      @default.call(uri)
     end
 
   end
@@ -197,7 +203,7 @@ BEGIN {
     end.compact
   end
 
-  def best_browser_for(url, browsers)
+  def best_browser_for(uri, browsers)
     # Group by browsers
     browsers_on_current_desktop = find_browsers(WM.current_desktop.windows, browsers)
 
@@ -219,12 +225,12 @@ BEGIN {
     IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
   end
 
-  def open_in_best_browser(url, browsers)
-    name, browser = best_browser_for(url, browsers)
+  def open_in_best_browser(uri, browsers)
+    name, browser = best_browser_for(uri, browsers)
 
-    puts "* Opening #{url.inspect} in #{name} on #{browser.desktop.name}"
+    puts "* Opening #{uri.inspect} in #{name} on #{browser.desktop.name}"
 
-    to_clipboard(url)
+    to_clipboard(uri)
 
     browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
     sleep 0.2
