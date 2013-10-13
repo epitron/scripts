@@ -1,28 +1,41 @@
 [default]
 # Write your default config options here!
 
-#vo=xv
-#vo=gl
+# Video output driver (eg: xv, gl, vdpau, etc.)
 vo=gl:swapinterval=1
 
+# Audio output driver (eg: pulse, alsa, oss, etc.)
 ao=pulse
-#ao=alsa
-#ao=oss
 
+# Network things
+http-header-fields="User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0.1) Gecko/20100101 Firefox/5.0.1"
+
+# Audio filters
+af-add=volnorm=1:0.25
+af-add=scaletempo
+#af-add=volnorm=1:0.25
+#af-add=volnorm=2:5
+#af-add=volnorm=2:0.25
+#af-add=volnorm=2:1
+
+# Multithreading!
+lavdopts=threads=2
+
+# Gamma correction
+#vf=eq2=1.15,gradfun
+#vf=eq2=1.2,gradfun
+#vf=eq2=1.1,gradfun
+
+# Default window size
+xy=1024
+
+# Fonts
+subfont-text-scale=3
+subfont=~/.mplayer/subfont.ttf
+
+# Misc things
+alang=eng
 msgcolor=1
 msgmodule=1
-
-#cache=8000
-
-af=volnorm,scaletempo
-#af=volnorm=1:0.25,scaletempo # default
-#af=volnorm=2:1,scaletempo
-
-#vf=pp
-#vf=eq2=1.1,gradfun
-vf=eq2=1.1
-#vf=eq2=1.15
 #vsync=true
 
-# reduce subfont size
-subfont-text-scale=3

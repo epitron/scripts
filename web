@@ -44,7 +44,7 @@
 
 # A list of browsers, which will be tried in order.
 BROWSERS         = %w[opera chrome chromium midori firefox jumanji]
-VIDEO_BROWSERS   = %w[chrome chromium firefox]
+VIDEO_BROWSERS   = %w[chrome chromium firefox opera]
 
 routes do
 
@@ -219,6 +219,11 @@ BEGIN {
 
   def open_in_best_browser(uri, browsers)
     name, browser = best_browser_for(uri, browsers)
+
+    unless browser
+      puts "No suitable browser found on any desktop."
+      exit 1
+    end
 
     puts "* Opening #{uri.inspect} in #{name} on #{browser.desktop.name}"
 

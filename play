@@ -4,5 +4,5 @@ mplayer ~/scripts/sounds/click.mp3 |& null
 URL="`youtube-dl -g "$@"`"
 
 #mplayer "$URL" |& null
-mplayer -quiet -cache 2500 "$URL"
+mplayer -quiet -cache 10000 -cache-min 5 "$URL"
 #totem "$URL" > /dev/null
