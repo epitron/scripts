@@ -53,7 +53,7 @@ routes do
   end
 
   # Remove click trackers
-  match(host: /google.\w{2,3}$/, path: "/url")   { |uri| route uri.params["q"] }
+  match(host: /google.\w{2,3}$/, path: "/url")   { |uri| route uri.params["q"] || uri.params["url"] }
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Open videos in mplayer
