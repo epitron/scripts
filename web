@@ -86,8 +86,10 @@ BEGIN {
     #
     # No blank values!
     #
+    alias_method :old_params, :params
+    
     def params
-      super.delete_if { |k,v| v.blank? }
+      old_params.delete_if { |k,v| v.blank? }
     end
 
   end
