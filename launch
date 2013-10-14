@@ -79,10 +79,15 @@ end
 
 exit if result.empty?
 
-increment(result)
 
 if result[0] == "."
   exec("term -H #{result[1..-1]}")
 else
+  if bins.include? result
+    increment(result) 
+  else
+    puts "Error: binary #{result.inspect} not in path."
+  end
+  
   exec(result)
 end
