@@ -6,6 +6,7 @@ BBSES = %{
   bbs.thebrokenbubble.com
   bbs.pharcyde.org
   bbs.diskshop.ca
+  d1st.org
   1984.ws
   hysteriabbs.com
   bloodisland.ph4.se
@@ -47,7 +48,7 @@ end
 
 
 BBSES.each.with_index do |option, i|
-  puts "<15>#{i+1}<8>. <#{i+9}>#{option}".colorize
+  puts "<15>#{i+1}<8>. <#{(i%6)+10}>#{option}".colorize
 end
   
 puts
