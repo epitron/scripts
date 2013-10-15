@@ -1,0 +1,12 @@
+dumplog for quassel
+
+Licensed under GPL
+
+run python dumplog.py --help for more info
+
+the most generic usecase would be
+    python dumplog.py -u username -n Freenode -c "#quassel" -o quassel.log
+
+
+if you find bugs or have any suggestions, contact Gentle on irc.freenode.net #quassel or tier@schokokeks.org
+

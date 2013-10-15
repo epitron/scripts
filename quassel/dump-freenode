@@ -1,0 +1,2 @@
+#!/bin/bash
+python dumplog-0.0.1/dumplog.py -u epitron -n Freenode -c $1 -o $1.log
