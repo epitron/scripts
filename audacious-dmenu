@@ -12,12 +12,12 @@ paths = paths.sample(10) + [["-"*50,nil]] + paths
 
 names = Hash[ paths ]
 
-IO.popen(%w[dmenu -l 40 -i -b -p Album:], "r+") do |f|
+path = IO.popen(%w[dmenu -l 40 -i -b -p Album:], "r+") do |f|
   f.puts names.keys.join("\n")
   f.close_write
 
   picked = f.gets.strip
-  path   = names[picked]
-  
-  system("audacious", path)
+  names[picked]
 end
+  
+exec("audacious", path)
