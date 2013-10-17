@@ -57,13 +57,13 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Open videos in mplayer
-  match host: %w[youtube.com youtu.be wimp.com] do |uri|
+  match host: %w[youtube.com youtu.be wimp.com vimeo.com] do |uri|
     puts "* Playing #{uri} in mplayer..."
     system("play", uri)
   end
 
   # Oter videos open in browsers that are good at playing videos
-  match host: %w[liveleak.com justin.tv vimeo.com infoq.com] do |uri|
+  match host: %w[liveleak.com justin.tv infoq.com] do |uri|
     open_in_best_browser uri, VIDEO_BROWSERS
   end
 
