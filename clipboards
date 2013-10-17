@@ -1,0 +1,6 @@
+#!/bin/bash
+for board in primary secondary clipboard; do
+  echo -n "$board: "
+  xclip -o -selection $board
+  echo
+done
