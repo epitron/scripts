@@ -1,7 +1,7 @@
 #!/bin/bash
 mplayer ~/scripts/sounds/click.mp3 |& null
 
-URL="`youtube-dl -g "$@"`"
+URL="`youtube-dl --no-playlist -g "$@"`"
 
 #mplayer "$URL" |& null
 mplayer -quiet -cache 10000 -cache-min 5 "$URL"
