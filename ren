@@ -20,7 +20,7 @@ def edit_filename(prompt, filename)
   Coolline.new do |c|
 
     c.word_boundaries = [" ", "\t", ".", ",", ";", '"', "'", "`", "<", ">",
-                         "=", ";", "|", "{", "}", "(", ")", "-"]
+                         "=", ";", "|", "{", "}", "(", ")", "-", "/"]
 
     # Alt-u capitalizes everything
     c.bind "\eu" do |inst|
