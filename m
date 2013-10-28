@@ -260,6 +260,13 @@ end
 
 #####################################################################################
 
+def youtube_dl(url)
+  # youtube-dl --get-url --get-filename -o '%(title)s.%(ext)s [%(extractor)s]' <url>
+  # output: url \n title
+end
+
+#####################################################################################
+
 def normalize(infile, outfile=nil)
   outfile = outfile || change_ext(infile, ".norm.wav")
 

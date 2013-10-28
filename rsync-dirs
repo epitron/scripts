@@ -23,6 +23,7 @@ if args.any?
   params << "--dry-run"         if opts.delete "-n"  # simulated sync (no changes are made)
   params << "--xattrs"          if opts.delete "-x"  # simulated sync (no changes are made)
   params << "--remove-source-files" if opts.delete "-m" # move files (delete source files)
+  params += ["-e", "ssh -c blowfish"] if opts.delete "-f" # fast cipher
   
   if opts.delete "-b" # binary mode
     params += ["--checksum", "--copy-links"]
@@ -48,15 +49,16 @@ else
   puts "    -q    Quiet mode"
   puts "    -b    Binary rsync (and dereference symlinks)"
   puts "    -o    Preserve ownership (user/group/permissions)"
+  puts "    -x    Preserve xattrs"
   puts "    -a    Append to smaller remote files"
   puts "          (if their overlap has the same checksum)"
   puts "    -k    Keep larger remote files"
   puts "    -d    Delete destination files that aren't in the source"
   puts "    -m    Move files"
   puts "    -p    Keep partially-transferred files"
-  puts "    -x    Preserve xattrs"
   puts "    -n    Dry run (simulated, don't make any changes)"
   puts "    -l    Limit bandwidth to 40k/sec"
+  puts "    -f    Fast crypto cipher (arcfour)"
   puts
   
 end
