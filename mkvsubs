@@ -1,0 +1,8 @@
+# "mkvmerge" -o "/home/epi/yew/e/tv/Breaking Bad/Breaking Bad - 3x02 - Caballo Sin Nombre (1).mkv"  "--default-track" "0:yes" "--forced-track" "0:no" "--display-dimensions" "0:1280x720" "--default-track" "1:yes" "--forced-track" "1:no" "-a" "1" "-d" "0" "-S" "-T" "--no-global-tags" "--no-chapters" "(" "/home/epi/yew/e/tv/Breaking Bad/Breaking Bad - 3x02 - Caballo Sin Nombre.mkv" ")" "--language" "0:eng" "--forced-track" "0:no" "-s" "0" "-D" "-A" "-T" "--no-global-tags" "--no-chapters" "(" "/home/epi/yew/e/tv/Breaking Bad/Breaking Bad - 3x02 - Caballo Sin Nombre.srt" ")" "--track-order" "0:0,0:1,1:0"
+
+# input: movie.mp4, movie.srt, movie
+# output: movie.mkv
+# ask user to delete original files
+# batch mode (move old files to backup dir)
+
+

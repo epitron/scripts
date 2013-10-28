@@ -1,0 +1,1 @@
+tmpfile=$(mktemp) && trap 'rm -f "$tmpfile"' EXIT; curl url > "$tmpfile"; feh "$tmpfile"
