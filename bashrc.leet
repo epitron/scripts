@@ -148,6 +148,7 @@ alias g+="git add"
 alias cu="pull"
 
 alias r="rails"
+alias be="bundle exec"
 alias pad="padrino"
 alias z='zeus'
 
