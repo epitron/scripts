@@ -16,8 +16,7 @@ if args.any?
   end
 
   params << "--bwlimit=40"      if opts.delete "-l"  # limit bandwidth
-  params << "--append"          if opts.delete "-a"  # append to smaller remote files
-  params << "--append-verify"   if opts.delete "-k"  # keep larger remote files
+  params << "--append-verify"   if opts.delete "-a"  # append to smaller destination files if they match
   params << "--partial"         if opts.delete "-p"  # partials
   params << "--delete-after"    if opts.delete "-d"  # delete destination files
   params << "--dry-run"         if opts.delete "-n"  # simulated sync (no changes are made)
@@ -50,9 +49,8 @@ else
   puts "    -b    Binary rsync (and dereference symlinks)"
   puts "    -o    Preserve ownership (user/group/permissions)"
   puts "    -x    Preserve xattrs"
-  puts "    -a    Append to smaller remote files"
+  puts "    -a    Append to smaller destination files"
   puts "          (if their overlap has the same checksum)"
-  puts "    -k    Keep larger remote files"
   puts "    -d    Delete destination files that aren't in the source"
   puts "    -m    Move files"
   puts "    -p    Keep partially-transferred files"
