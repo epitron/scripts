@@ -86,7 +86,7 @@ end
 def cropdetect(file)
   captures = []
 
-  cmd = %w[mplayer -ao null -ss 60 -frames 10 -vf cropdetect -vo null] + [file]
+  cmd = %w[mplayer -quiet -ao null -ss 60 -frames 10 -vf cropdetect -vo null] + [file]
 
   IO.popen(cmd) do |io|
     io.each_line do |line|
@@ -337,7 +337,7 @@ if $0 == __FILE__
 
   # MPLAYER ARGS
 
-  cmd   = %w[mplayer]
+  cmd   = %w[mplayer -quiet]
   extras = []
 
   cmd << "-nosound"         if opts.nosound?
