@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+
+# "mkvmerge" -o "/home/epi/yew/e/tv/Breaking Bad/Breaking Bad - 3x02 - Caballo Sin Nombre (1).mkv"  "--default-track" "0:yes" "--forced-track" "0:no" "--display-dimensions" "0:1280x720" "--default-track" "1:yes" "--forced-track" "1:no" "-a" "1" "-d" "0" "-S" "-T" "--no-global-tags" "--no-chapters" "(" "/home/epi/yew/e/tv/Breaking Bad/Breaking Bad - 3x02 - Caballo Sin Nombre.mkv" ")" "--language" "0:eng" "--forced-track" "0:no" "-s" "0" "-D" "-A" "-T" "--no-global-tags" "--no-chapters" "(" "/home/epi/yew/e/tv/Breaking Bad/Breaking Bad - 3x02 - Caballo Sin Nombre.srt" ")" "--track-order" "0:0,0:1,1:0"
+
+# input: movie.mp4, movie.srt, movie
+# output: movie.mkv
+# ask user to delete original files
+# batch mode (move old files to backup dir)
+
+require 'epitools'
+
+#####################################################################################
+
+def parse_options
+  require 'slop' # lazy loaded
+
+  #@opts ||= Slop.new
+  @opts = Slop.parse(help: true, strict: true) do
+    banner "\nUsage:\n\tsrtmerge [options] <sub file/video file...>\n\n(Note: .srt and video file (.mkv or .mp4) must both exist.)\n\nOptions:"
+
+    on 'd=',  'dest',  'Destination directory'
+    # on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
+    on 'v',  'verbose',     'Show all mplayer output spam'
+  end
+end
+
+#####################################################################################
+#
+# Find a backup filename that doesn't exist by appending (1) or (2) or (n) to the filename.
+#
+def backup_filename(f)
+  raise "Error: #{f} doesn't exist" if not f.exists?
+
+  n = 1
+  loop do
+    j = f.with(basename: "#{f.basename} (#{n})")
+    return j if not j.exists?
+  end
+end
+
+#####################################################################################
+
+VID_EXTS = ["mkv", "mp4"]
+
+def merge(f, destdir=nil)
+
+  f    = Path[f]
+
+  if destdir
+    destdir = Path[destdir] 
+    raise "Error: destination dir #{destdir} doesn't exist" unless destdir.exists?
+    raise "Error: destination dir #{destdir} isn't a dir" unless destdir.dir?
+  end
+
+  if f.ext == "srt"
+    srt = f
+    vids = VID_EXTS.map { |ext| vid = srt.with(ext: ext); vid if vid.exists? }.compact
+
+    raise "Couldn't find a video file for #{srt}" if vids.empty?
+    raise "Too many videos: #{vids.inspect}" if vids.size > 1
+
+    vid = vids.first
+
+  elsif f.ext.in? VID_EXTS
+    vid = f
+    srt = vid.with(ext: "srt")
+
+    raise "Couldn't find .srt file for #{vid}"
+  end
+
+  outfile = vid.with(ext: "mkv")
+  outfile = outfile.with(dir: destdir) if destdir
+
+  if outfile.exists?
+    backup = backup_filename outfile
+    puts " => WARNING: #{outfile} exists, moving to #{backup}"
+    outfile.mv backup # TODO: this should change destdir.
+    vid = backup # source video is now the backed up file
+  end
+  
+  cmd = ["mkvmerge", "-o", outfile, vid, "--language", "0:eng", srt]
+
+  puts
+  puts "     Input video: #{vid}"
+  puts " Input subtitles: #{srt}"
+  puts "----------------+----------------------------------------------------"
+  puts "    Output video: #{outfile}"
+  puts "         Command: #{cmd.join(" ")}"
+  puts
+  system *cmd
+
+end
+
+#####################################################################################
+
+if $0 == __FILE__
+
+  opts = parse_options
+
+  files = ARGV
+
+  unless files.any?
+    puts "Error: Must supply at least one video file."
+    puts
+    puts parse_options
+    exit 1
+  end
+
+  for arg in ARGV
+    # begin
+      merge(arg, opts[:dest])
+    # rescue => e
+      # p e
+    # end
+  end
+
+end
