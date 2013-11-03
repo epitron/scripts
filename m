@@ -361,7 +361,7 @@ if $0 == __FILE__
 
   extras += ["-ss", seek] if seek
   extras += ["-endpos", length] if length
-  
+
 
   # AUDIOFILE / NORMED AUDIO
   audiofile = opts[:audiofile]
@@ -464,6 +464,8 @@ if $0 == __FILE__
     end
 
   else
+
+    cmd += %w[-cache 20000 -cache-min 0.0128] # 20 megs cache, start playing once 256k is cached
 
     filtered_mplayer cmd + extras + files, verbose: opts.verbose?
 
