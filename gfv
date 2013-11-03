@@ -1,1 +1,2 @@
-youtube-dl
+#!/bin/bash
+youtube-dl --no-mtime "$@"
