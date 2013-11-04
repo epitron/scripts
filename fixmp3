@@ -1,2 +1,6 @@
 #!/bin/bash
-wine ~/scripts/win32/mp3val.exe "$@" -f
+if which mp3val; then
+  mp3val -f "$@"
+else
+  wine ~/scripts/win32/mp3val.exe "$@" -f
+fi
