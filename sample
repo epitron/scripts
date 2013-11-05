@@ -9,6 +9,11 @@ opts = Slop.parse(help: true, strict: true) do
   on 'c',  'csv',    'Treat files as CSVs (enabled automatically if filename ends in .csv)'
 end
 
+if ARGV.empty?
+  puts opts
+  exit 1
+end
+
 lines = []
 
 if opts.csv? or ARGV.first[/\.csv$/]
