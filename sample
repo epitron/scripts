@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+require 'slop'
+
+opts = Slop.parse(help: true, strict: true) do
+  banner 'Usage: sample [options] <file(s)...>'
+
+  on 'n=', 'amount', 'Number of random lines to print (default: 10)', as: Integer, default: 10
+  on 'c',  'csv',    'Treat files as CSVs (enabled automatically if filename ends in .csv)'
+end
+
+lines = []
+
+if opts.csv? or ARGV.first[/\.csv$/]
+  require 'csv'
+
+  ARGV.each { |arg| lines += CSV.read(arg) }
+
+  CSV($stdout) do |csv|
+    csv << lines.shift
+    lines.sample(opts[:amount]).each { |row| csv << row }
+  end
+else
+  ARGV.each { |arg| lines += File.read(arg).lines }
+  lines.sample(opts[:amount]).each { |line| puts line }
+end
+
+
+
