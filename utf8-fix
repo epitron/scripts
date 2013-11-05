@@ -13,7 +13,8 @@ for arg in ARGV
   if contents == fixed
     puts "  |_ no UTF8 problems..."
   else
-    File.rename(arg, "#{arg}.bak")
+    backup = "#{arg}.bak"
+    File.rename(arg, backup)
     open(arg, "w") { |f| f.write fixed }
     puts "  |_ UTF8 problems fixed! (orignial file saved to: #{backup})"
   end
