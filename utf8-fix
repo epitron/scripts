@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+unless ARGV.any?
+  puts "usage: utf8-fix [filename(s)...]"
+  exit 1
+end
+
+for arg in ARGV
+  puts "* Fixing #{arg.inspect}..."
+
+  contents = open(arg, "rb") { |f| f.read }
+  fixed    = contents.encode("UTF-8", :invalid => :replace, :undef => :replace, :replace => "?")
+
+  if contents == fixed
+    puts "  |_ no UTF8 problems..."
+  else
+    File.rename(arg, "#{arg}.bak")
+    open(arg, "w") { |f| f.write fixed }
+    puts "  |_ UTF8 problems fixed! (orignial file saved to: #{backup})"
+  end
+end
