@@ -8,17 +8,14 @@ end
 # click
 system("mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3")
 
-arg = ARGV.first
+url = ARGV.first
+media_url, title = `youtube-dl -o "%(title)s (%(id)s)" --no-playlist -g --get-filename "#{url}"`.lines.take(2).map(&:strip)
 
-media_url, title = `youtube-dl --no-playlist -g --get-filename "#{arg}"`.lines.take(2).map(&:strip)
-
-
-cmd = %w[mplayer -really-quiet -cache 20000 -cache-min 0.0128]
-cmd << media_url
-cmd += ["-title", title]
+cmd = %w[mplayer -title] + 
+        [title] + 
+        %w[-really-quiet -cache 20000 -cache-min 0.0128] + 
+        [media_url]
 
 p title: title, cmd: cmd
 
-#mplayer "$MEDIA_URL" |& null
-#totem "$MEDIA_URL" > /dev/null
 system(*cmd)
