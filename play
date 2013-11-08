@@ -1,8 +1,24 @@
-#!/bin/bash
-mplayer ~/scripts/sounds/click.mp3 |& null
+#!/usr/bin/env ruby
 
-URL="`youtube-dl --no-playlist -g "$@"`"
+if ARGV.empty?
+  puts "usage: play <video url>"
+  return 1
+end
 
-#mplayer "$URL" |& null
-mplayer -quiet -cache 10000 -cache-min 5 "$URL"
-#totem "$URL" > /dev/null
+# click
+system("mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3")
+
+arg = ARGV.first
+
+media_url, title = `youtube-dl --no-playlist -g --get-filename "#{arg}"`.lines.take(2).map(&:strip)
+
+
+cmd = %w[mplayer -really-quiet -cache 20000 -cache-min 0.0128]
+cmd << media_url
+cmd += ["-title", title]
+
+p title: title, cmd: cmd
+
+#mplayer "$MEDIA_URL" |& null
+#totem "$MEDIA_URL" > /dev/null
+system(*cmd)

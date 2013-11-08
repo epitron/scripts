@@ -1,0 +1,9 @@
+#!/bin/bash
+mplayer ~/scripts/sounds/click.mp3 |& null
+
+URL="$@"
+MEDIA_URL="`youtube-dl --no-playlist -g --get-filename "$MEDIA_URL"`"
+
+#mplayer "$MEDIA_URL" |& null
+mplayer -quiet -cache 10000 -cache-min 5 "$MEDIA_URL" -title "$URL"
+#totem "$MEDIA_URL" > /dev/null
