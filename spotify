@@ -12,14 +12,15 @@ if proxy_already_running
   puts "+ Proxy already running!"
 else
   puts "* Launching Proxy..."
-  fork { system("autossh", "-D9999", "-vv", "epi@a") }
+  fork { system("ssh", "-D9999", "-Nvv", "epi@a") }
 end
 
 puts
 
 ### Launch
 
-command = ["wine", "#{ENV['HOME']}/.wine/drive_c/Program Files/Spotify/Spotify.exe"] 
+#command = ["wine", "#{ENV['HOME']}/.wine/drive_c/Program Files/Spotify/Spotify.exe"] 
+command = ["/usr/bin/spotify"]
 puts "* Launching: #{command.inspect}"
 
 if ARGV.any?
