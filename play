@@ -9,13 +9,19 @@ end
 system("mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3")
 
 url = ARGV.first
-media_url, title = `youtube-dl -o "%(title)s (%(id)s)" --no-playlist -g --get-filename "#{url}"`.lines.take(2).map(&:strip)
+media_url, title = `youtube-dl -o "%(title)s" --no-playlist -g --get-filename "#{url}"`.lines.take(2).map(&:strip)
 
 cmd = %w[mplayer -title] + 
         [title] + 
         %w[-really-quiet -cache 20000 -cache-min 0.0128] + 
         [media_url]
 
-p title: title, cmd: cmd
+# p title: title, cmd: cmd
+
+# Log video plays
+open(File.expand_path("~/youtube-plays.txt"), "a") do |f|
+  timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+  f.puts "#{timestamp} | #{title} | #{url}"
+end
 
 system(*cmd)
