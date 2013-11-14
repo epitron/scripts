@@ -1,27 +1,89 @@
 #!/usr/bin/env ruby
 
-if ARGV.empty?
-  puts "usage: play <video url>"
-  return 1
+###########################################################
+
+LOGFILE = File.expand_path("~/youtube-plays.txt")
+
+###########################################################
+
+def help!
+  puts
+  puts "Usage:"
+  puts "  play <video url> => streams a youtube/vimeo/etc. in mplayer"
+  puts "  play -l          => log of 10 most recent videos"
+  puts "  play -l<n>       => log of <n> most recent videos"
+  puts
+  exit 1
 end
 
-# click
-system("mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3")
+def write_to_log(url, title)
+  open(LOGFILE, "a") do |f|
+    timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+    f.puts "#{timestamp} | #{url} | #{title}"
+  end
+end
 
-url = ARGV.first
+def tail_log(n=10)
+  require 'epitools/colored'
+  puts "----------------------------------".grey
+  puts " #{n} most recent plays:".light_white
+  puts "----------------------------------".grey
+  puts
+  open(LOGFILE) do |log|
+    log.reverse_each.take(n).reverse.each do |line|
+      line.strip!
+
+      timestamp, url, title = line.split(" | ", 3)
+      date, time = timestamp.split
+
+      indent = " " * (date.size - time.size)
+      puts "<12>#{date} <14>| <11>#{title}".colorize
+      puts "<4>#{indent}#{time} <6>| <9>#{url}".colorize
+      puts
+    end
+  end
+end
+
+def play_click_sound
+  system("mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3")
+end
+
+###########################################################
+
+args = ARGV
+opts, args = args.partition { |arg| arg[/^--?\w/] }
+
+if opts.any?
+  opts.each do |opt|
+    case opt 
+    when "-h", "--help"
+      help!
+    when "-l"
+      tail_log
+      exit
+    when /^-l(\d+)$/
+      tail_log($1.to_i)
+      exit
+    else
+      puts "Unrecognized option: #{opt}"
+    end
+  end
+end
+
+help! if args.empty?
+
+###########################################################
+
+play_click_sound
+
+url = args.first
 media_url, title = `youtube-dl -o "%(title)s" --no-playlist -g --get-filename "#{url}"`.lines.take(2).map(&:strip)
+
+write_to_log(url, title)
 
 cmd = %w[mplayer -title] + 
         [title] + 
-        %w[-really-quiet -cache 20000 -cache-min 0.0128] + 
+      %w[-really-quiet -cache 20000 -cache-min 0.0128] + 
         [media_url]
-
-# p title: title, cmd: cmd
-
-# Log video plays
-open(File.expand_path("~/youtube-plays.txt"), "a") do |f|
-  timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
-  f.puts "#{timestamp} | #{title} | #{url}"
-end
 
 system(*cmd)
