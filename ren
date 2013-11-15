@@ -11,8 +11,18 @@ def restore_spaces(s)
   s.gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
 end
 
+LOW_WORDS = %w[of the and an a at for from]
 def titlecase(str)
-  str.downcase.gsub(/\b\w/) { |m| m.upcase }
+  first = true
+  words = str.downcase.split(/\b/)
+
+  words.map.with_index do |word,i|
+    if LOW_WORDS.include?(word) and i > 0 # leave LOW_WORDS lowercase, unless it's the first word.
+      word
+    else
+      word.gsub(/\b\w/) { |c| c.upcase } # capitalize first letter
+    end
+  end.join('')
 end
 
 def edit_filename(prompt, filename)
@@ -27,8 +37,9 @@ def edit_filename(prompt, filename)
       base, ext = split_ext inst.line
       pos       = inst.pos
       
-      inst.line = titlecase(base) + ext
+      inst.line = titlecase(base) + (ext||'')
       inst.pos  = pos
+      inst.menu.string = "(Capitalized)"
     end
 
     # ^u removes underscores and stuff
@@ -38,6 +49,7 @@ def edit_filename(prompt, filename)
       
       inst.line = restore_spaces(base) + (ext || "")
       inst.pos  = pos
+      inst.menu.string = "(Underscores removed)"
     end
 
     # ^d deletes to the extension
@@ -46,6 +58,7 @@ def edit_filename(prompt, filename)
       finish = inst.line.rindex(".")
 
       inst.line[start...finish] = "" if start < finish
+      inst.menu.string = "(Deleted to end)"
     end
   end.readline(prompt, filename)
 
