@@ -37,8 +37,8 @@ def tail_log(n=10)
       date, time = timestamp.split
 
       indent = " " * (date.size - time.size)
-      puts "<12>#{date} <14>| <11>#{title}".colorize
-      puts "<4>#{indent}#{time} <6>| <9>#{url}".colorize
+      puts "<10>#{date} <12>| <11>#{title}".colorize
+      puts "<2>#{indent}#{time} <4>| <9>#{url}".colorize
       puts
     end
   end
