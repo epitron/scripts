@@ -2,7 +2,7 @@
 
 ###########################################################
 
-LOGFILE = File.expand_path("~/youtube-plays.txt")
+LOGFILE = File.expand_path("~/play.log")
 
 ###########################################################
 
@@ -16,6 +16,32 @@ def help!
   exit 1
 end
 
+def error_notification(title, body)
+  puts "#{title}"
+  puts "  #{body}"
+  system("notify-send", "-i", "error", title, body)
+end
+
+def run(*cmd)
+  require 'open3'
+  # stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])  
+  out, err, status = Open3.capture3(*cmd)
+  [out.strip, err.strip, status]
+end
+
+def youtube_dl(url)
+  out, err, status = run("youtube-dl", "-o", "%(title)s", "--no-playlist", "-g", "--get-filename", url)
+
+  unless status.success?
+    error_notification("youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
+    exit 1
+  end
+
+  media_url, title = out.lines.take(2).map(&:strip)
+
+  [media_url, title]
+end
+
 def write_to_log(url, title)
   open(LOGFILE, "a") do |f|
     timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
@@ -23,11 +49,31 @@ def write_to_log(url, title)
   end
 end
 
+# def tail_log(n=10)
+#   require 'epitools/colored'
+#   puts "----------------------------------".grey
+#   puts " #{n} most recent plays:".light_white
+#   puts "----------------------------------".grey
+#   puts
+#   open(LOGFILE) do |log|
+#     log.reverse_each.take(n).reverse.each do |line|
+#       line.strip!
+
+#       timestamp, url, title = line.split(" | ", 3)
+#       date, time = timestamp.split
+
+#       indent = " " * (date.size - time.size)
+#       puts "<10>#{date} <12>| <11>#{title}".colorize
+#       puts "<2>#{indent}#{time} <4>| <9>#{url}".colorize
+#       puts
+#     end
+#   end
+# end
+
 def tail_log(n=10)
-  require 'epitools/colored'
-  puts "----------------------------------".grey
-  puts " #{n} most recent plays:".light_white
-  puts "----------------------------------".grey
+  puts "\e[30m\e[1m----------------------------------\e[0m"
+  puts "\e[37m\e[1m #{n} most recent plays:\e[0m"
+  puts "\e[30m\e[1m----------------------------------\e[0m"
   puts
   open(LOGFILE) do |log|
     log.reverse_each.take(n).reverse.each do |line|
@@ -37,15 +83,15 @@ def tail_log(n=10)
       date, time = timestamp.split
 
       indent = " " * (date.size - time.size)
-      puts "<10>#{date} <12>| <11>#{title}".colorize
-      puts "<2>#{indent}#{time} <4>| <9>#{url}".colorize
+      puts "\e[32m\e[1m#{date} \e[0m\e[31m\e[1m| \e[0m\e[36m\e[1m#{title}\e[0m"
+      puts "\e[1;32m#{indent}#{time} \e[0m\e[1;31m| \e[0m\e[34m\e[1m#{url}\e[0m"
       puts
     end
   end
 end
 
 def play_click_sound
-  system("mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3")
+  run "mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3"
 end
 
 ###########################################################
@@ -76,8 +122,8 @@ help! if args.empty?
 
 play_click_sound
 
-url = args.first
-media_url, title = `youtube-dl -o "%(title)s" --no-playlist -g --get-filename "#{url}"`.lines.take(2).map(&:strip)
+url              = args.first
+media_url, title = youtube_dl(url)
 
 write_to_log(url, title)
 
