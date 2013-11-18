@@ -84,7 +84,7 @@ def tail_log(n=10)
 
       indent = " " * (date.size - time.size)
       puts "\e[32m\e[1m#{date} \e[0m\e[31m\e[1m| \e[0m\e[36m\e[1m#{title}\e[0m"
-      puts "\e[1;32m#{indent}#{time} \e[0m\e[1;31m| \e[0m\e[34m\e[1m#{url}\e[0m"
+      puts "\e[0;32m#{indent}#{time} \e[0m\e[0;31m| \e[0m\e[34m\e[1m#{url}\e[0m"
       puts
     end
   end
