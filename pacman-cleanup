@@ -12,9 +12,11 @@ class Package < TypedStruct["name ver rev arch path size mtime"]
   def initialize(path)
     raise path if path.nil?
     
-    # error: xdg-utils-1.1.0-2.20120520-any.pkg.tar.xz
-    # cuda-5.0.35-4-x86_64.pkg.tar.xz
-    if path.filename =~ %r{^(.+)-([^-]+)-(\d+)-([\w_]+)\.pkg\.tar\.xz$}
+    # Package filename examples:
+    #   xdg-utils-1.1.0-2.20120520-any.pkg.tar.xz
+    #   cuda-5.0.35-4-x86_64.pkg.tar.xz
+    #   lib32-fontconfig-2.10.95-1.1-x86_64.pkg.tar.xz
+    if path.filename =~ %r{^(.+)-([^-]+)-([\d\.]+)-([\w_]+)\.pkg\.tar\.xz$}
       super($1, $2, $3, $4, path, path.size, path.mtime)
     else
       raise "Can't parse: #{path}"
