@@ -13,4 +13,11 @@ require 'epitools'
 # => division casts to float, unless // is used
 #
 
-p eval ARGV.join(' ')
+result = eval ARGV.join(' ')
+
+case result
+when Numeric
+  puts "<13>#{result.commatize}\n<8>(<7>#{result.to_words}<8>)".colorize
+else
+  p result
+end

@@ -83,7 +83,9 @@ if $0 == __FILE__
 
   
   puts "- Splitting... ------------------------------------------------------------"  
-  system("mpgtx", "-s", "-b", "mp3chunk", filename, timestring)
+  cmd = ["mpgtx", "-s", "-b", "mp3chunk", filename, timestring]
+  p cmd
+  system(*cmd)
   
   basename = File.basename(filename, ".mp3")
   outdir = "#{basename}-chunked"
