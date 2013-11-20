@@ -4,7 +4,16 @@ SOFILE=/usr/lib/PepperFlash/libpepflashplayer.so
 cd ~
 cp $SOFILE FlashPlayer.so
 
-wine ~/scripts/win32/Flash\ Fullscreen\ Patcher.exe
+echo
+echo "Instructions:"
+echo "------------------------------------------------"
+echo "Click 'Other', then pick 'FlashPlayer.so' from your"
+echo "home directory."
+echo
+echo "Once you quit the Flash Patcher, FlashPlayer.so"
+echo "will be copied back to its original location."
+
+wine ~/scripts/win32/Flash\ Fullscreen\ Patcher.exe |&> /dev/null
 
 sudo mv FlashPlayer.so $SOFILE
 sudo chown root:root $SOFILE
