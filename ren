@@ -11,6 +11,10 @@ def restore_spaces(s)
   s.gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
 end
 
+def bracket_years(s)
+  s.gsub(/(?:19|20)\d\d/, "(\\0)")
+end
+
 LOW_WORDS = %w[of the and an a at for from]
 def titlecase(str)
   first = true
@@ -47,7 +51,7 @@ def edit_filename(prompt, filename)
       base, ext = split_ext inst.line
       pos       = inst.pos
       
-      inst.line = restore_spaces(base) + (ext || "")
+      inst.line = bracket_years(restore_spaces(base)) + (ext || "")
       inst.pos  = pos
       inst.menu.string = "(Underscores removed)"
     end
