@@ -16,10 +16,19 @@ def help!
   exit 1
 end
 
-def error_notification(title, body)
+def notify(type, title, body, time: 5)
   puts "#{title}"
   puts "  #{body}"
-  system("notify-send", "-i", "error", title, body)
+
+  time_in_ms = time * 1000
+
+  cmd = ["notify-send"]
+  cmd << "--expire-time=#{time_in_ms}"
+  cmd << "--app-name=play"
+  cmd << "--icon=#{type}"
+  cmd += [title, body]
+
+  system *cmd
 end
 
 def run(*cmd)
@@ -32,8 +41,8 @@ end
 def youtube_dl(url)
   out, err, status = run("youtube-dl", "-o", "%(title)s", "--no-playlist", "-g", "--get-filename", url)
 
-  unless status.success?
-    error_notification("youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
+  if not status.success? or out.empty?
+    notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
     exit 1
   end
 
@@ -91,7 +100,7 @@ def tail_log(n=10)
 end
 
 def play_click_sound
-  run "mplayer", "-really-quiet", "#{ENV["HOME"]}/scripts/sounds/click.mp3"
+  run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
 end
 
 ###########################################################
@@ -120,12 +129,15 @@ help! if args.empty?
 
 ###########################################################
 
-play_click_sound
+url = args.first
 
-url              = args.first
+notify(:info, "Processing:", url, time: 3); play_click_sound
+
 media_url, title = youtube_dl(url)
 
 write_to_log(url, title)
+
+notify(:video, "Playing:", title, time: 4)
 
 cmd = %w[mplayer -title] + 
         [title] + 
