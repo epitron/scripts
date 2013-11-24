@@ -1,2 +1,2 @@
 #!/bin/bash
-youtube-dl --no-mtime "$@"
+youtube-dl --no-mtime -o "%(title)s.%(ext)s" "$@"

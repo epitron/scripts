@@ -12,6 +12,7 @@ def help!
   puts "  play <video url> => streams a youtube/vimeo/etc. in mplayer"
   puts "  play -l          => log of 10 most recent videos"
   puts "  play -l<n>       => log of <n> most recent videos"
+  puts "  play -s<time>    => seek to time"
   puts
   exit 1
 end
@@ -39,7 +40,7 @@ def run(*cmd)
 end
 
 def youtube_dl(url)
-  out, err, status = run("youtube-dl", "-o", "%(title)s", "--no-playlist", "-g", "--get-filename", url)
+  out, err, status = run("youtube-dl", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url)
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
@@ -108,6 +109,8 @@ end
 args = ARGV
 opts, args = args.partition { |arg| arg[/^--?\w/] }
 
+seek = nil
+
 if opts.any?
   opts.each do |opt|
     case opt 
@@ -119,6 +122,8 @@ if opts.any?
     when /^-l(\d+)$/
       tail_log($1.to_i)
       exit
+    when /^-s([\d:]+)$/
+      seek = $1
     else
       puts "Unrecognized option: #{opt}"
     end
@@ -143,5 +148,7 @@ cmd = %w[mplayer -title] +
         [title] + 
       %w[-really-quiet -cache 20000 -cache-min 0.0128] + 
         [media_url]
+
+cmd += ["-ss", seek] if seek
 
 system(*cmd)
