@@ -1,0 +1,17 @@
+#!/bin/bash
+TORSOCKS_LIB="/usr/lib/torsocks/libtorsocks.so"
+
+if [ ! -f "$TORSOCKS_LIB" ]; then
+  echo "Note: You must install torsocks"
+  exit 1
+fi
+
+export LD_PRELOAD="$TORSOCKS_LIB"
+export DYLD_FORCE_FLAT_NAMESPACE=1
+. green
+
+echo "If the prompt is green, the onion's clean!"
+echo
+echo "LD_PRELOAD=$LD_PRELOAD"
+
+# bash --noprofile --norc
