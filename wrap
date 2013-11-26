@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+
+#####################################################################################
+
+def help
+  puts "Usage:"
+  puts "  wrap [options] <filename>"
+  puts
+  puts "Options:"
+  puts "  -w<n>    => set maximum line width to <n>"
+  puts "  -a       => auto-set line width (using terminal size)"
+  puts
+end
+
+#####################################################################################
+
+class String
+  #
+  # Wrap the lines in the string so they're at most "width" wide.
+  # (If no width is specified, defaults to the width of the terminal.)
+  #
+  def wrap(width=nil)
+    return self if size <= width
+
+    strings = []
+
+    start_pos = 0
+    end_pos   = width
+
+    loop do
+      split_pos = rindex(/\s/, end_pos)
+
+      strings << self[start_pos...split_pos]
+
+      start_pos = index(/\S/, split_pos)
+      break if start_pos == nil
+      end_pos   = start_pos + width
+
+      if end_pos > size
+        strings << self[start_pos..-1]
+        break
+      end
+    end
+
+    strings.join("\n")
+
+  end
+end
+
+#####################################################################################
+
+opts, args = ARGV.partition {|arg| arg =~ /^--?[\w\d+]+$/ }
+
+width = 80
+
+for opt in opts
+  case opt
+  when /^-w(\d+)$/
+    width = $1.to_i
+  when "-a"
+    require 'io/console'
+    _, width = STDIN.winsize
+    width -= 1
+  when "-h", "--help"
+    help
+    exit
+  else
+    raise "Unrecognized option: #{opt}"
+  end
+end
+
+if args.empty?
+  f = $stdin
+else
+  f = open(args.first)
+end
+
+#####################################################################################
+
+require 'pp'
+
+f.each_line do |line|
+  # line.strip!; pp line: line, wrapped: line.wrap(width)
+  puts line.wrap(width)
+end
