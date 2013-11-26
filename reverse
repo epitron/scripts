@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+require 'epitools/core_ext/file'
+
+if ARGV.empty?
+  f = $stdin
+else
+  f = open(ARGV.first)
+end
+
+f.reverse_each { |line| puts line }
