@@ -1,0 +1,260 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+# require 'awesome_print'
+
+def root_exec(command)
+  if Process.uid == 0
+    `#{command}`
+  else
+    `sudo #{command}`
+  end
+end
+
+#unless
+#  system("sudo", __FILE__, *ARGV)
+#  exit
+#end
+
+
+# Naming scheme:
+#   drivename = sda
+#   partname = sda1
+#   dev = /dev/sda1
+
+#############################################################################
+# Drive
+
+class Drive < TypedStruct["drivename model family serial firmware size healthy sata sector_size:int"]
+
+  @@cache = {}
+
+  def self.parse_info(data)
+    opts = {}
+
+    data.nice_lines.split_before(/^=== START OF .+ SECTION ===$/).each do |section|
+
+      case section.first
+        when /SMART DATA SECTION/
+          if section[1] =~ /result: (.+)/
+            opts[:healthy] = ($1 == "PASSED")
+          end
+
+        when /INFORMATION SECTION/
+          fields = Hash[ section[1..-1].map { |line| line.split(/:\s+/) } ]
+
+          if fields["User Capacity"] =~ /([\d,]+) bytes/
+            size = $1.gsub(",", '').to_i
+          else
+            size = nil #fields["User Capacity"]
+          end
+
+          opts.update(
+            family: fields["Model Family"],
+            model: fields["Device Model"],
+            serial: fields["Serial Number"],
+            firmware: fields["Firmware Version"],
+            size: size,
+            sata: fields["SATA Version is"],
+            sector_size: fields["Sector Size"]
+          )
+      end
+    end
+
+    opts
+  end
+
+  def self.from_drivename(drivename)
+    # [01:46 AM] epi@yew :: /sys/block/sda $ sudo smartctl -i -H /dev/sda
+    # smartctl 6.0 2012-10-10 r3643 [x86_64-linux-3.6.6-1-ARCH] (local build)
+    # Copyright (C) 2002-12, Bruce Allen, Christian Franke, www.smartmontools.org
+
+    # === START OF INFORMATION SECTION ===
+    # Model Family:     Western Digital Caviar Black
+    # Device Model:     WDC WD1002FAEX-00Z3A0
+    # Serial Number:    WD-WCATR4453272
+    # LU WWN Device Id: 5 0014ee 205366c27
+    # Firmware Version: 05.01D05
+    # User Capacity:    1,000,204,886,016 bytes [1.00 TB]
+    # Sector Size:      512 bytes logical/physical
+    # Device is:        In smartctl database [for details use: -P show]
+    # ATA Version is:   ATA8-ACS (minor revision not indicated)
+    # SATA Version is:  SATA 2.6, 6.0 Gb/s
+    # Local Time is:    Sat Nov 10 01:46:44 2012 EST
+    # SMART support is: Available - device has SMART capability.
+    # SMART support is: Enabled
+
+    # === START OF READ SMART DATA SECTION ===
+    # SMART overall-health self-assessment test result: PASSED
+
+    @@cache[drivename] ||= begin 
+      opts = {drivename: drivename}
+
+      if not removable?(drivename)
+        # data = (@@smartctl_cache[drivename] ||= `smartctl -i -H /dev/#{drivename}`)
+        data = root_exec "smartctl -i -H /dev/#{drivename}"
+        raise "Permission denied" if data[/Permission denied/]
+
+        opts.update parse_info(data) 
+      end
+
+      opts[:sector_size] ||= 512
+      opts[:size] = sectors(drivename) * opts[:sector_size] unless opts[:size]
+
+      Drive.new opts
+    end
+  end
+
+
+  def self.removable?(drivename)
+    File.read("/sys/block/#{drivename}/removable").to_i == 1
+  end
+
+  def self.sectors(drivename, part=nil)
+    if part.nil?
+      path = "/sys/block/#{drivename}/size"
+    else
+      path = "/sys/block/#{drivename}/#{drivename}#{part}/size"
+    end
+
+    if File.exists? path
+      File.read(path).to_i
+    else
+      0
+    end
+  end
+
+  def removable?
+    Drive.removable?(drivename)
+  end
+
+  def dev
+    "/dev/#{drivename}"
+  end
+
+  def color
+    return 11 if removable?
+    
+    case drivename
+    when /^(sd|hd)/
+      14
+    when /^loop/
+      9
+    else
+      7
+    end
+  end
+
+end
+
+
+#############################################################################
+# Partition
+
+class Partition < TypedStruct["label uuid type dev drivename part:int size:int drive"]
+
+  def self.all
+    root_exec("blkid").nice_lines.
+      map     { |line| Partition.from_line line }.
+      sort_by { |part| 
+        priority = case part.drivename
+          when /^(sd|hd)/
+            0
+          when /^loop/
+            1
+          else
+            255
+          end
+        
+        [priority, part.drivename, part.part]
+      }
+  end
+  
+  def self.from_line(line)
+    # /dev/sdb3: LABEL="Euler" UUID="4C6447B672AB78A3" TYPE="ntfs"
+
+    if line =~ %r{^/dev/(\w+)(\d+): (.+)$}
+      drivename = $1
+      part      = $2.to_i
+      params    = Hash[ $3.scan(/(\w+)="([^"]+)"/) ]
+
+      if part == 0
+        drivename = "#{drivename}#{part}"
+        part = nil
+      end
+
+      Partition.new(
+        drivename:  drivename,
+        part:       part,
+        label:      params["LABEL"],
+        uuid:       params["UUID"],
+        type:       params["TYPE"],
+      )
+    end
+  end
+
+  def partname
+    "#{drivename}#{part}"
+  end
+
+  def sectors
+    @sectors ||= Drive.sectors(drivename, part)
+  end
+
+  def size
+    @size ||= sectors * drive.sector_size
+  end
+
+  def dev
+    "/dev/#{partname}"
+  end
+
+  # def drivename=(drivename)
+  #   self[:drivename] = drivename
+  #   self[:drive]     = Drive.from_drivename drivename
+  # end
+
+  def removable?
+    @removable ||= Drive.removable?(drivename)
+  end
+
+  def drive
+    @drive ||= Drive.from_drivename drivename
+  end
+
+end
+
+#---------------------------------------------------------------------------
+
+if $0 == __FILE__
+
+  # Drive     => drivename model family serial firmware size healthy:bool sata
+  # Partition => label uuid type dev drivename part:int size:int drive
+
+  Partition.all.group_by(&:drivename).each do |drivename, partitions|
+    drive = Drive.from_drivename(drivename)
+
+    if drive.family
+      extra = " <7>=> <11>#{drive.family} <3>(<9>#{drive.model}<3>)"
+    end
+
+    puts "<8>== <#{drive.color}>#{drive.dev} <7>(<11>#{drive.size.human_bytes}<7>)#{extra} <8>==".colorize
+
+    puts "  <4>**** <12>SMART error! <4>****" if drive.healthy == false
+    puts
+
+    rows = []
+
+    partitions.each do |part|
+      #rows << ["##{part.part}:", part.type, (part.label || "").inspect, "(#{part.size.human_size})", "UUID: #{part.uuid}"]
+      puts "##{part.part}: #{part.type} #{(part.label || "").inspect} (#{part.size.human_size}) UUID: #{part.uuid}"
+    end
+
+    #puts Term::Table.new(rows).by_rows
+
+    puts
+
+  end
+
+end
+
