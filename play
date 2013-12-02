@@ -18,6 +18,8 @@ def help!
 end
 
 def notify(type, title, body, time: 5)
+  require 'cgi'
+
   puts "#{title}"
   puts "  #{body}"
 
@@ -27,7 +29,9 @@ def notify(type, title, body, time: 5)
   cmd << "--expire-time=#{time_in_ms}"
   cmd << "--app-name=play"
   cmd << "--icon=#{type}"
-  cmd += [title, body]
+  cmd += [title, body].map {|s| CGI.escapeHTML s }
+
+  p cmd
 
   system *cmd
 end
