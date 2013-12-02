@@ -245,3 +245,11 @@ alias flash='crutziplayer'
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 
 gem-cd() { cd `gem-dir $@` ;}
+
+# mkdir and cd, all in one!
+mkcd () {
+  if [ ! -d "$@" ]; then
+    mkdir "$@"
+  fi
+  cd "$@"
+}
