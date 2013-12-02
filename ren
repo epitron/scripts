@@ -15,7 +15,7 @@ def bracket_years(s)
   s.gsub(/(?:19|20)\d\d/, "(\\0)")
 end
 
-LOW_WORDS = %w[of the and an a at for from]
+LOW_WORDS = %w[of or the and an a at for from]
 def titlecase(str)
   first = true
   words = str.downcase.split(/\b/)
