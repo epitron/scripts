@@ -1,0 +1,11 @@
+To turn off ads and offers, open Options > Preferences > Advanced.
+
+Set the following to "false":
+
+offers.left_rail_offer_enabled/left_rail_offer 
+gui.show_plus_upsell
+offers.sponsored_torrent_offer_enabled/sponsored_torrent_offer_enabled
+bt.enable_pulse
+gui.show_notorrents_node
+offers.content_offer_autoexec
+
