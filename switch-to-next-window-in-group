@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# (C) 2013 David A, no rights reserved
+#
+# Find windows with the same class name(s) as the one currently in focus.
+#  and move focus to one of them (selected at random if more than one).
+# This script is assumed to be bound to a keyboard sequence.
+# It won't work as expected if "Focus follow mouse" is set in wm settings.
+
+read dummy id < <(xprop -root ' $0\n' _NET_ACTIVE_WINDOW)
+
+if [ -z "$id" ]; then echo "Found no focused windows">&2; exit 1; fi
+
+read dummy classes < <(xprop -id "$id" ' $0 $1\n' WM_CLASS)
+
+if [ -z "$classes" ]; then echo "Found no windows of matching class, not even itself">&2; exit 1; fi
+
+otherids=$(
+    xwininfo -root -tree | 
+      grep --fixed-strings " ($classes) " |
+        awk -v id="$id" '$1 != id {print $1}')
+
+if [ -z "$otherids" ]; then echo "Found no other windows of same class">&2; exit 1; fi
+
+newid=$(shuf -n 1 <<<"$otherids")
+
+if [ -z "$newid" ]; then echo "Uh?">&2; exit 1; fi
+
+wmctrl -i -a "$newid"

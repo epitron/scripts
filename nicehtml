@@ -1,2 +1,4 @@
-#!/bin/bash
-html2haml $* | haml
+#!/usr/bin/env ruby
+require 'nokogiri'
+
+puts Nokogiri::XML(ARGF, &:noblanks).to_xhtml(indent: 2)

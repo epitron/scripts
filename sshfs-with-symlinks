@@ -1,0 +1,3 @@
+sshfs -o follow_symlinks -o ssh_command='ssh -c arcfour' yew-lan:/home/epi ~/yew2
+
+
