@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# /usr/bin/fortune -c -e wisdom education science art work politics definitions law startrek
+/usr/bin/fortune ~/scripts/fortunes/
