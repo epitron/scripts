@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+
+def help
+  puts DATA.read
+  exit
+end
+
+delim = /\s+/
+field = 0..-1
+args  = ARGV
+
+while args.any?
+
+  arg = args.shift
+
+  case arg
+  when "--help"
+    help
+
+  when /^(\d+)$/
+    field = $1.to_i - 1
+
+  when /^(\d+)(?:\.\.|-)(\d+)$/ # match "m..n" or "m-n"
+    field = ($1.to_i - 1)..($2.to_i - 1)
+
+  when /^(\d+,)+(\d+)$/
+    field = arg.split(",").map {|f| f.to_i - 1 }
+
+  when "-d"
+    delim = args.shift
+
+  else
+    input = open(arg)
+  end
+
+end
+
+help unless field
+
+$stdin.each_line do |line|
+  case field
+  when Array
+    pieces = line.split(delim)
+    result = field.map { |f| pieces[f] }
+  else
+    result = line.split(delim)[field]
+  end
+
+  puts result.is_a?(Array) ? result.join(" ") : result
+end
+
+
+__END__
+purpose:
+  Extract field number <n> from the input stream.
+
+usage:
+  field [-d <delimiter>] <n>
+
+examples:
+  echo $PATH | field -d : 1
+  field -d : < /etc/passwd
+  field 1-5 < file.txt
+  field 1,3,7 < file.txt
+  field 2..3 < file.txt
