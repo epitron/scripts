@@ -25,20 +25,6 @@ def parse_options
 end
 
 #####################################################################################
-#
-# Find a backup filename that doesn't exist by appending (1) or (2) or (n) to the filename.
-#
-def backup_filename(f)
-  raise "Error: #{f} doesn't exist" if not f.exists?
-
-  n = 1
-  loop do
-    j = f.with(basename: "#{f.basename} (#{n})")
-    return j if not j.exists?
-  end
-end
-
-#####################################################################################
 
 VID_EXTS = ["mkv", "mp4"]
 
@@ -72,7 +58,7 @@ def merge(f, destdir=nil)
   outfile = outfile.with(dir: destdir) if destdir
 
   if outfile.exists?
-    backup = backup_filename outfile
+    backup = outfile.numbered_backup_file
     puts " => WARNING: #{outfile} exists, moving to #{backup}"
     outfile.mv backup # TODO: this should change destdir.
     vid = backup # source video is now the backed up file
