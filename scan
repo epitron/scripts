@@ -26,9 +26,6 @@ end
 
 input = $stdin unless input
 
-
-p input: input, pattern: pattern
-
 input.each_line do |line|
   line.scan(pattern).each { |match| puts match }
 end
