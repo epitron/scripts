@@ -146,6 +146,7 @@ alias g[[="git stash"
 alias g]]="git stash pop"
 alias g[]="git stash list; git stash show"
 alias g+="git add"
+alias gr="git remote -v"
 alias cu="pull"
 
 alias r="rails"
@@ -214,7 +215,6 @@ shopt -s histverify
 #    . /etc/bash_completion
 #fi
 
-alias pushpath='echo "Pushing $PWD onto path..."; export PATH=$PATH:$PWD'
 alias sus='ssu'
 
 alias dpkg='sudoifnotroot dpkg'
@@ -249,9 +249,20 @@ alias gource='gource --user-image-dir ~/.cache/gravatars'
 gem-cd() { cd `gem-dir $@` ;}
 
 # mkdir and cd, all in one!
-mkcd () {
+mkcd() {
   if [ ! -d "$@" ]; then
     mkdir "$@"
   fi
   cd "$@"
+}
+
+pushpath() {
+  if [ "$1" == "" ]; then
+    dir="$PWD"
+  else
+    dir="`readlink -m "$1"`"
+  fi
+
+  export PATH=$PATH:"$dir"
+  echo "'$dir' added to path."
 }
