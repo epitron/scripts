@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+
+pattern = nil
+args = ARGV
+
+while args.any?
+
+  arg = args.shift
+
+  case arg
+  when "--help"
+    puts DATA.read
+    exit 0
+
+  when "-p"
+    pattern = args.shift
+
+  when %r{^/([^/]+)/$}
+    pattern = Regexp.new $1
+
+  else
+    input = open(arg)
+  end
+
+end
+
+input = $stdin unless input
+
+
+p input: input, pattern: pattern
+
+input.each_line do |line|
+  line.scan(pattern).each { |match| puts match }
+end
+
+
+__END__
+purpose:
+  Scan a file for a regular exprssion pattern, and print each match.
+  If no file is specified, STDIN is used.
+
+usage:
+  scan -p <pattern> [file]
+  scan /pattern/ [file]
+  scan [file] /pattern/
+  cat file | scan /pattern/
+
