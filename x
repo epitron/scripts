@@ -35,7 +35,24 @@ def edit(path)
   tmp       = Path.tmp
   old_attrs = path.attrs
   
-  tmp.write old_attrs.to_yaml
+  tmp.io("w") do |f|
+    if old_attrs.any?
+      f.puts old_attrs.to_yaml
+    end
+
+    f.puts
+    f.puts "#"
+    f.puts "# Editing xattrs for #{path}"
+    f.puts "# -----------------------------------------"
+    f.puts "# Type in xattrs in this format (YAML):"
+    f.puts "#    user.group.attr: This is the value of the attribute."
+    f.puts "#    user.xdg.referrer: http://site.com/path/"
+    f.puts "#"
+    f.puts "# (Note: custom attributes must always begin with 'user.')"
+    f.puts "#"
+    f.puts "# Enter your attributes at the top of the file."
+    f.puts "#"
+  end
 
   cmd = (ENV["EDITOR"] || "nano").split
   cmd << tmp
@@ -46,7 +63,7 @@ def edit(path)
   diff      = hash_diff(old_attrs, new_attrs)
   
   diff[:updated].each do |key|
-    path[key] = new_attrs[key]
+    path[key] = new_attrs[key].to_s
   end
 
   diff[:deleted].each do |key|
