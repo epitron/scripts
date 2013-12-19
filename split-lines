@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+delim = " "
+args = ARGV
+
+while args.any?
+
+  arg = args.shift
+
+  case arg
+  when "--help"
+    puts DATA.read
+    exit 0
+
+  when "-d"
+    delim = args.shift
+
+  else
+    input = open(arg)
+  end
+
+end
+
+input = $stdin unless input
+
+input.each_line do |line|
+  line.split(delim).each { |piece| puts piece }
+end
+
+
+__END__
+purpose:
+  Splits each line into tokens, and prints one token per line.
+  If no file is specified, STDIN is used.
+
+usage:
+  split-lines -d <delimiter> [file]
