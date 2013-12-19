@@ -27,7 +27,7 @@ end
 
 def snip(infile, outfile, startpos, endpos)
   length = timediff(startpos, endpos)
-  args = %w[ mencoder -oac mp3lame -ovc copy -ss ] + 
+  args = %w[ mencoder -oac mp3lame -ovc copy -af volnorm=1:0.25 -ss ] + 
          [startpos] + 
          %w[ -endpos ] + 
          [length] +
