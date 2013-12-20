@@ -1,3 +1,6 @@
+Should array indices start at 0 or 1? My compromise of 0.5 was rejected without, I thought, proper consideration.
+		-- Stan Kelly-Bootle
+%
 The most unsatisfactory men are those who pride themselves on their virility and regard sex as if it were some form of athletics at which you win cups. It is a woman's spirit and mood which a man has to stimulate in order to make sex interesting. The real lover is the man who can thrill you by just touching your head or smiling into your eyes -- or just by staring into space.
 		-- Marilyn Monroe 
 %
@@ -901,8 +904,8 @@ To suppose universal laws of nature capable of being apprehended by the mind and
 Law is par excellence the thing that wants a reason. Now the only possible way of accounting for the laws of nature, and for uniformity in general, is to suppose them results of evolution.
              -- Charles Sanders Peirce, 1891
 %
-Choose a job you love, and you'll never have to work a day in your life.[[BR]]
-Get someone else to do a job you hate, and you'll never have to work a day in your life either.
+Choose a job you love, and you'll never have to work a day in your life.
+Convince others to do a job you loathe, and you'll never have to work a day in your life.
 %
 Nature is commonly viewed as harmonious and human markets as full of
 strife, yet the above comparison suggests the opposite.  The psychological
@@ -1497,7 +1500,7 @@ Biology is really chemistry, chemistry is really physics, physics is really math
 Don't ask whether it is right or wrong. Instead try to find out what is going on.
              -- Marshall McLuhan
 %
-An individual best achieves optimal stupidity on those rare occasions when they're both given substantial powers, and insulated from the results of their actions.
+Individuals achieve optimal stupidity when they're given substantial powers while being insulated from the results of their actions.
              -- Jaron Lanier
 %
 When we stop opposing reality, action becomes simple, fluid, kind, and fearless.
