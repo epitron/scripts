@@ -4,7 +4,7 @@ while [ -n "$1" ]; do
   OUT="${IN%.*}.stream"
   echo "Converting: $IN"
   echo "        to: $OUT"
-  mplayer "$IIN" -dumpaudio -dumpfile "$OUT"
+  mplayer "$IN" -dumpaudio -dumpfile "$OUT"
   echo
   shift
 done

@@ -1,2 +1,10 @@
 #!/bin/bash
-youtube-dl --no-mtime -o "%(title)s.%(ext)s" "$@"
+OPTS="--no-mtime --xattrs"
+
+if [ "$1" == "-a" ]; then
+  shift
+  echo "Extracting audio..."
+  OPTS="$OPTS --extract-audio"
+fi
+
+youtube-dl $OPTS -o "%(title)s.%(ext)s" "$@"
