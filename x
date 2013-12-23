@@ -77,7 +77,9 @@ end
 #####################################################################################
 
 def show(path)
-  if (attrs = path.attrs).any?
+  if not path.exists?
+    puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
+  elsif (attrs = path.attrs).any?
     grouped = attrs.
               map_keys { |key| key.split(".") }.
               sort.
