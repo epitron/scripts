@@ -12,6 +12,7 @@
 #
 #####################################################################################
 
+gem 'epitools', '>= 0.5.44'
 require 'epitools'
 
 #####################################################################################
@@ -110,6 +111,8 @@ def parse_options
     banner "xattr editor\n\nUsage: x [options] <files...>"
 
     on 'e',  'edit',      'Edit xattrs (with $EDITOR)'
+    on 'c',  'copy',      'Copy xattrs from one file to another (ERASING the original xattrs)'
+    on 'm',  'merge',     'Overlay xattrs from one file onto another (overwriting only the pre-existing attrs)'
     on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
     on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
 
@@ -136,7 +139,23 @@ if $0 == __FILE__
   # TODO: constraints on arguments (eg: must supply exactly one file, mutually exclusive commands)
   # TODO: bult setting of url/referrer (create a YAML file with all the urls blank)
 
-  if opts.url? or opts.referrer?
+  # Copy attrs from one file to another
+  if opts.copy? or opts.merge?
+
+    assert paths.size == 2, "Must supply exactly two filenames: a source, and a destination."
+
+    src, dest = paths
+
+    if opts.merge?
+      dest.attrs = dest.attrs.update(src.attrs)
+    else
+      dest.attrs = src.attrs
+    end
+
+    show(dest)
+
+  # Set the URL or REFERRER attrs
+  elsif opts.url? or opts.referrer?
 
     assert paths.size == 1, "Must supply exactly one filename."
 
@@ -150,6 +169,7 @@ if $0 == __FILE__
 
     show path
 
+  # EDIT or SHOW attrs
   else
 
     paths << Path.pwd if paths.empty?
