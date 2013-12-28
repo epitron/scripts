@@ -11,6 +11,7 @@ def help!
   puts "Usage:"
   puts "  play <video url> => streams a youtube/vimeo/etc. in mplayer"
   puts "  play -l          => log of 10 most recent videos"
+  puts "  play -l <query>  => search log for <query>"
   puts "  play -l<n>       => log of <n> most recent videos"
   puts "  play -s<time>    => seek to time"
   puts
@@ -63,42 +64,57 @@ def write_to_log(url, title)
   end
 end
 
-# def tail_log(n=10)
-#   require 'epitools/colored'
-#   puts "----------------------------------".grey
-#   puts " #{n} most recent plays:".light_white
-#   puts "----------------------------------".grey
-#   puts
-#   open(LOGFILE) do |log|
-#     log.reverse_each.take(n).reverse.each do |line|
-#       line.strip!
+class LogEntry < Struct.new(:date, :time, :url, :title)
+  def initialize(line)
+    timestamp, url, title = line.strip.split(" | ", 3)
+    date, time            = timestamp.split
 
-#       timestamp, url, title = line.split(" | ", 3)
-#       date, time = timestamp.split
+    super(date, time, url, title)
+  end
+end
 
-#       indent = " " * (date.size - time.size)
-#       puts "<10>#{date} <12>| <11>#{title}".colorize
-#       puts "<2>#{indent}#{time} <4>| <9>#{url}".colorize
-#       puts
-#     end
-#   end
-# end
+def tail_log(query=nil, n=10)
+  require 'epitools/colored'
 
-def tail_log(n=10)
-  puts "\e[30m\e[1m----------------------------------\e[0m"
-  puts "\e[37m\e[1m #{n} most recent plays:\e[0m"
-  puts "\e[30m\e[1m----------------------------------\e[0m"
+  if query
+    if query.is_a? Array
+      if query.any?
+        query = query.join(" ") 
+      else
+        query = nil
+      end
+    end
+  end
+
+  regexp = /#{query}/i if query
+
+  ## Header
+  
+  puts "----------------------------------".grey
+  if query
+    puts " <15>Searching for: <14>#{query.inspect}".colorize
+  else
+    puts " #{n} most recent plays:".light_white
+  end
+  puts "----------------------------------".grey
   puts
+
+  ## Results
+
   open(LOGFILE) do |log|
-    log.reverse_each.take(n).reverse.each do |line|
-      line.strip!
+    entries = log.reverse_each.lazy.map {|l| LogEntry.new(l) }
+    entries = entries.select { |entry| entry.title =~ regexp } if query
 
-      timestamp, url, title = line.split(" | ", 3)
-      date, time = timestamp.split
+    results = entries.take(n).to_a.reverse
 
-      indent = " " * (date.size - time.size)
-      puts "\e[32m\e[1m#{date} \e[0m\e[31m\e[1m| \e[0m\e[36m\e[1m#{title}\e[0m"
-      puts "\e[0;32m#{indent}#{time} \e[0m\e[0;31m| \e[0m\e[34m\e[1m#{url}\e[0m"
+    results.each do |result|
+      indent = " " * (result.date.size - result.time.size)
+
+      title = result.title
+      title = title.gsub(regexp) { |m| "<14>#{m}</14>" } if query
+
+      puts "<10>#{result.date} <12>| <11>#{title}".colorize
+      puts "<2>#{indent}#{result.time} <4>| <9>#{result.url}".colorize
       puts
     end
   end
@@ -121,10 +137,10 @@ if opts.any?
     when "-h", "--help"
       help!
     when "-l"
-      tail_log
+      tail_log(args)
       exit
     when /^-l(\d+)$/
-      tail_log($1.to_i)
+      tail_log(args, $1.to_i)
       exit
     when /^-s([\d:]+)$/
       seek = $1

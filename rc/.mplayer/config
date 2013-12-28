@@ -32,6 +32,7 @@ xy=1024
 # Fonts
 subfont-text-scale=3
 subfont=~/.mplayer/subfont.ttf
+utf8=true
 
 # Misc things
 alang=eng

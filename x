@@ -7,7 +7,7 @@
 #
 # TODO:
 #
-# * Batch edit
+# * Instead of printing "Scanning...", just print paths relative to PWD
 # * Batch getfattr
 #
 #####################################################################################
@@ -23,24 +23,11 @@ end
 
 #####################################################################################
 
-def hash_diff(h1, h2)
-  {
-    updated:   ((h1.to_a ^ h2.to_a) - h1.to_a).map(&:first),
-    deleted: h1.keys - h2.keys
-  }
-end
-
-#####################################################################################
-
 def edit(path)
-  tmp       = Path.tmp
-  old_attrs = path.attrs
+  tmp = Path.tmp
   
   tmp.io("w") do |f|
-    if old_attrs.any?
-      f.puts old_attrs.to_yaml
-    end
-
+    f.puts(path.attrs.to_yaml) if path.attrs.any?
     f.puts
     f.puts "#"
     f.puts "# Editing xattrs for #{path}"
@@ -60,16 +47,7 @@ def edit(path)
 
   system *cmd
 
-  new_attrs = tmp.read_yaml
-  diff      = hash_diff(old_attrs, new_attrs)
-  
-  diff[:updated].each do |key|
-    path[key] = new_attrs[key].to_s
-  end
-
-  diff[:deleted].each do |key|
-    path[key] = nil
-  end
+  path.attrs = tmp.read_yaml
 
   path
 end
