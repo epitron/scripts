@@ -1,9 +1,15 @@
+// Hello, sinewaves!
+// by Chris Gahan
+//
+// To compile, run:
+//     gcc hello-sinewaves.c -o hello-sinewaves -lm -lGL -lglut
+
 #include <GL/glut.h>
 #include <math.h>
 #include <stdio.h>
 
 #ifndef M_PI
-# define M_PI		3.14159265358979323846	/* pi */
+  #define M_PI 3.14159265358979323846 /* pi! */
 #endif
 
 #define WIDTH 640.0
@@ -12,6 +18,7 @@
 
 GLfloat time = 0.0;
 GLfloat timestep = 0.5;
+
 
 void wave(GLfloat amplitude, GLfloat width, GLfloat offset, GLfloat funk) {
 
@@ -33,8 +40,8 @@ void wave(GLfloat amplitude, GLfloat width, GLfloat offset, GLfloat funk) {
     }
     glEnd();
 
-
 }
+
 
 void RenderScene(void)
 {
@@ -56,17 +63,15 @@ void RenderScene(void)
 // Setup the Rendering Context
 void SetupRC(void) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-//    glViewport(0, 0, 640, 200);
+    // glViewport(0, 0, 640, 200);
 }
-
 
 
 // Called by GLUT library when the window has chanaged size
 void ChangeSize(GLsizei w, GLsizei h)
 {
     // Prevent a divide by zero
-    if(h == 0)
-       h = 1;
+    if(h == 0) h = 1;
 
     // Set Viewport to window dimensions
     glViewport(0, 0, w, h);
@@ -78,35 +83,29 @@ void ChangeSize(GLsizei w, GLsizei h)
 
     // Establish clipping volume (left, right, bottom, top, near, far)
     glOrtho (0.0, WIDTH, HEIGHT, 0.0, 1.0, -1.0);
-/*
-    if (w <= h) 
-        glOrtho (0.0, WIDTH, HEIGHT*h/w, 0.0, 1.0, -1.0);
-    else 
-        glOrtho (0.0, WIDTH*w/h, HEIGHT, 0.0, 1.0, -1.0);
-*/
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
 
 
-
 void TimerFunction(int value) {
 
-	time += timestep;
-	glutPostRedisplay();
+    time += timestep;
+    glutPostRedisplay();
     glutTimerFunc(DELAY, TimerFunction, 1);
-    
+
 }
+
 
 int main(int argc, char* argv)
 {
-
     printf("Version: %s\nExtensions: %s\n", glGetString(GL_VERSION), glGetString(GL_EXTENSIONS));
     printf("Delay: %d\n", DELAY);
 
     glutInit(&argc, &argv);
 
-	glutInitWindowSize(640, 200);
+    glutInitWindowSize(1280, 400);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutCreateWindow("Hello Sine-Waves!");
 
@@ -118,4 +117,3 @@ int main(int argc, char* argv)
 
     glutMainLoop();
 }
-
