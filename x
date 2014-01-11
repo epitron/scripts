@@ -12,7 +12,7 @@
 #
 #####################################################################################
 
-gem 'epitools', '>= 0.5.44'
+gem 'epitools', '>= 0.5.46'
 require 'epitools'
 
 #####################################################################################
@@ -20,6 +20,28 @@ require 'epitools'
 class FakeOptions
   def method_missing(*args); nil; end
 end
+
+#####################################################################################
+
+COMMON_KEYS = %w[
+  user.dublincore.title 
+  user.dublincore.creator
+  user.dublincore.subject 
+  user.dublincore.description 
+  user.dublincore.publisher 
+  user.dublincore.contributor 
+  user.dublincore.date 
+  user.dublincore.type 
+  user.dublincore.format 
+  user.dublincore.identifier 
+  user.dublincore.source 
+  user.dublincore.language
+  user.dublincore.relation 
+  user.dublincore.coverage 
+  user.dublincore.rights
+  user.xdg.referrer.url
+  user.xdg.origin.url
+]
 
 #####################################################################################
 
@@ -33,12 +55,16 @@ def edit(path)
     f.puts "# Editing xattrs for #{path}"
     f.puts "# -----------------------------------------"
     f.puts "# Type in xattrs in this format (YAML):"
-    f.puts "#    user.group.attr: This is the value of the attribute."
-    f.puts "#    user.xdg.referrer: http://site.com/path/"
+    f.puts "#    user.custom.attr: This is a custom attribute."
+    f.puts "#    user.xdg.referrer.url: http://site.com/path/"
     f.puts "#"
-    f.puts "# (Note: custom attributes must always begin with 'user.')"
+    f.puts "# (Note: custom attributes must begin with 'user.')"
     f.puts "#"
     f.puts "# Enter your attributes at the top of the file."
+    f.puts "#"
+    f.puts "# Examples:"
+    f.puts "#"
+    COMMON_KEYS.each { |key| f.puts "##{key}: "}
     f.puts "#"
   end
 
