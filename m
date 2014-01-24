@@ -23,7 +23,7 @@ def change_ext(path, new_ext)
   path.gsub(/\.[^\.]+$/, new_ext)
 end  
 
-def self.getfattr(path)
+def getfattr(path)
   # # file: Scissor_Sisters_-_Invisible_Light.flv
   # user.m.options="-c"
 
@@ -45,7 +45,7 @@ def self.getfattr(path)
   attrs
 end
 
-def self.setfattr(path, key, value)
+def setfattr(path, key, value)
   cmd = %w[setfattr]
 
   if value == nil
@@ -62,6 +62,31 @@ def self.setfattr(path, key, value)
     result = io.each_line.to_a
     error = {cmd: cmd, result: result.to_s}.inspect
     raise error if result.any?
+  end
+end
+
+def show_xattrs(path)
+  attrs = getfattr(path)
+  return if attrs.empty?
+
+  valid_key   = /user\.(xdg|dublincore)/
+  invalid_key = /description/
+  grouped     = {}
+
+  attrs.each do |key, val|
+    next if not key[valid_key] or key[invalid_key]
+    _, group, name = key.split(".", 3)
+    grouped[group] ||= []
+    grouped[group] << [name, val]
+  end
+
+  grouped.sort.each do |group, attrs|
+    puts "[#{group}]"
+
+    attrs.sort!
+    attrs.each do |name, val|
+      puts "  #{name} => #{val}"
+    end
   end
 end
 
@@ -83,10 +108,14 @@ end
 
 #####################################################################################
 
-def cropdetect(file)
+def cropdetect(file, verbose: false, seek: nil)
   captures = []
 
-  cmd = %w[mplayer -quiet -ao null -ss 60 -frames 10 -vf cropdetect -vo null] + [file]
+  cmd = %w[mplayer -quiet -ao null -frames 10 -vf cropdetect -vo null]
+  cmd += ["-ss", seek || "60"]
+  cmd += [file]
+
+  p cmd if verbose
 
   IO.popen(cmd) do |io|
     io.each_line do |line|
@@ -455,7 +484,7 @@ if $0 == __FILE__
   elsif opts.crop?
 
     files.each do |file|
-      croptions = cropdetect(file)
+      croptions = cropdetect(file, verbose: opts.verbose?, seek: opts[:start])
 
       filtered_mplayer(
         cmd + extras + croptions + [file],
@@ -466,6 +495,10 @@ if $0 == __FILE__
   else
 
     cmd += %w[-cache 20000 -cache-min 0.0128] # 20 megs cache, start playing once 256k is cached
+
+    files.each do |path|
+      show_xattrs(path)
+    end
 
     filtered_mplayer cmd + extras + files, verbose: opts.verbose?
 
