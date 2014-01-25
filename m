@@ -108,6 +108,66 @@ end
 
 #####################################################################################
 
+def info(filename)
+
+  output     = `mplayer -vo null -ao null -frames 0 -identify "#{filename}" 2>/dev/null|grep IDENTIFY`
+  clip_info  = {}
+  video_info = {}
+  audio_info = {}
+  info       = {}
+
+  output.lines.each do |line|
+
+    if line =~ /ID_([\dA-Z_]+)=(.+)$/
+      name, val = $1, $2
+
+      case name
+      when /CLIP_INFO_(NAME|VALUE)(\d)+/
+        clip_info[$2] ||= {}
+        clip_info[$2][$1.downcase] = val
+      when "EXIT", "DEMUXER", "CLIP_INFO_N", "FILENAME", "SEEKABLE"
+        # skip it
+      when /VIDEO_(.+)/
+        video_info[$1.downcase] = val
+      when /AUDIO_(.+)/
+        audio_info[$1.downcase] = val
+      else
+        info[name.downcase] = val
+      end
+
+    end
+
+  end
+
+  keyvals = clip_info.map do |k, v|
+    [v["name"], v["value"]]
+  end
+
+  clip_info_unsorted = Hash[ *keyvals.flatten ]
+
+  clip_info_keys = [
+   "title",
+   "artist",
+   "date",
+   "creation_time",
+   "album",
+   "genre",
+  ]
+
+  clip_info = Hash[ *clip_info_keys.map { |key| [key, clip_info_unsorted.delete(key)] if clip_info_unsorted[key] }.compact.flatten ]
+  clip_info.merge!(clip_info_unsorted)
+
+  {
+    "metadata" => clip_info,
+    "video" => video_info,
+    "audio" => audio_info,
+    "info" => info,
+  }
+
+end
+
+#####################################################################################
+
 def cropdetect(file, verbose: false, seek: nil)
   captures = []
 
@@ -326,6 +386,8 @@ def parse_options
     on 'f',  'fullscreen',  'Fullscreen mode'
     on 'n',  'nosound',     'No sound'
     on 'c',  'crop',        'Auto-crop'
+    on 'i',  'info',        'Information about video (resolution, codecs)'
+    on 'H',  'headers',     'Show all information in video file\'s headers'
     on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
     on 'b',  'bob',         'Bob deinterlace (using yadif)'
     on 'r=', 'aspect',      'Aspect ratio'
@@ -425,11 +487,31 @@ if $0 == __FILE__
     puts "   #{mutually_exclusive_args.map{|x| "--" + x }.join(", ")}"
   end
 
+  cmd += %w[-vo null -ao null -endpos 0] if opts.info?
+
   # MAKE IT SO
 
-  if false
-    # to make everything "elsifs" ;)
+  if false # ...so that everything is an "elsif"
 
+  # elsif opts.info?
+
+  #   cmd += %w[-vo null -ao null -endpos 0]
+  #   filtered_mplayer cmd + files, verbose: opts.verbose?
+    
+  elsif opts.headers?
+
+    require 'awesome_print'
+    require 'epitools'
+
+    lesspipe do |less|
+      files.each do |file|
+        less.puts "<8>### <14>#{file} <8>#{"#"*30}".colorize
+        less.puts
+        less.puts info(file).ai
+        less.puts
+      end
+    end
+    
   elsif opts.normalize?
 
     files.each do |file|
@@ -493,7 +575,6 @@ if $0 == __FILE__
     end
 
   else
-
     cmd += %w[-cache 20000 -cache-min 0.0128] # 20 megs cache, start playing once 256k is cached
 
     files.each do |path|
@@ -501,7 +582,6 @@ if $0 == __FILE__
     end
 
     filtered_mplayer cmd + extras + files, verbose: opts.verbose?
-
   end
 
 end
