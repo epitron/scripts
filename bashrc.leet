@@ -140,7 +140,6 @@ alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
 #alias gl="git log"
-alias gc="git clone"
 alias gch="git checkout"
 alias g[[="git stash"
 alias g]]="git stash pop"
@@ -148,6 +147,12 @@ alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
 alias cu="pull"
+
+# alias gc="git clone"
+gc() {
+  # Cloning into 'reponame'...
+  git clone "$@"
+}
 
 alias r="rails"
 alias be="bundle exec"
@@ -243,6 +248,7 @@ alias pkgfile='sudoifnotroot pkgfile'
 alias sys='systemctl'
 
 alias flash='crutziplayer'
+alias rdp='xfreerdp'
 
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 
@@ -266,3 +272,4 @@ pushpath() {
   export PATH=$PATH:"$dir"
   echo "'$dir' added to path."
 }
+

@@ -9,9 +9,11 @@ require 'epitools'
 #
 # => lazy blocks: 1..100.map \this * 5\
 # => Non-globbing operators: x / + - %
-# => end-"bracket": |
+# => | or |> to compute the prior expression and return the result, which can then be operated on more
 # => division casts to float, unless // is used
 #
+
+
 
 result = eval ARGV.join(' ')
 

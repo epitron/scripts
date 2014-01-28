@@ -18,4 +18,7 @@ wine ~/scripts/win32/Flash\ Fullscreen\ Patcher.exe |&> /dev/null
 sudo mv FlashPlayer.so $SOFILE
 sudo chown root:root $SOFILE
 
+echo
+echo Patch complete!
+echo
 ls -l $SOFILE
