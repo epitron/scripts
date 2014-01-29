@@ -1,0 +1,144 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+VIDEO_EXTS = %[mp4 mkv avi mov mpg mpeg m4v]
+AUDIO_EXTS = %[mp3 aac]
+
+def parse_options
+  require 'slop' # lazy loaded
+
+  #@opts ||= Slop.new
+  @opts = Slop.parse(help: true, strict: true) do
+    banner 'Usage: clip [options] <videos...>'
+
+    on 'o=', 'output',   'The file to write the clip to.'
+    on 'a=', 'acodec',   'Output audio codec (default: mp3)', default: "mp3"
+    on 'v=', 'vcodec',   'Output video codec (default: copy)', default: "copy"
+    on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)'
+    on 'e=', 'end',      'End of clip'
+    on 'l=', 'length',   'Length of clip'
+    on 'u=', 'use',      'Tool to use (ffmpeg, mencoder, etc. default: mencoder)', default: "mencoder"
+  end
+end
+
+## Time diffing
+
+COEFFS = [24*60*60, 60*60, 60, 1]
+
+def to_sec(t)
+  bits = t.split(":").map{|x| x.to_i}
+  bits.reverse.zip(COEFFS.reverse).map{|c,n| c*n}.sum
+end  
+
+def to_time(s)
+  result = COEFFS.map do |c| 
+    num, s = s.divmod(c)
+    num
+  end
+  
+  result.shift      while result.first == 0
+  result.unshift 0  while result.size < 2
+
+  result.map{|n| "%0.2d" % n}.join(":")  
+end
+
+def timediff(a,b)
+  to_time(to_sec(b) - to_sec(a))
+end
+
+
+#############################################################################
+
+
+if $0 == __FILE__
+
+  opts = parse_options
+  files = ARGV
+
+
+  ## Files
+
+  if files.size != 1
+    if files.any?
+      puts "ERROR: More than one input file specified."
+    else
+      puts "ERROR: No input file specified."
+    end
+    exit 1
+  end
+
+  infile  = Path[files.first]
+  outfile = Path[opts[:output]]
+
+  if not infile.exists?
+    puts "ERROR: Input file not found: #{infile}"
+    exit 1
+  end
+
+  # if outfile.exists?
+  #   if prompt("Overwrite #{outfile}?", "yN") == "n"
+  #     puts "Aborting..."
+  #     exit
+  #   end
+  # end
+
+  
+
+  ## Compute length
+
+  start = opts[:start]
+
+  unless length = opts[:length]
+    length = timediff(start, opts[:end])
+  end
+
+
+  ## Create commandline
+
+  if infile.ext.in? VIDEO_EXTS
+
+    case opts[:use]
+    when "ffmpeg"
+      cmd = ["ffmpeg", "-i", infile]
+      cmd += ["-codec:v", opts[:vcodec]]
+      cmd += ["-codec:a", opts[:acodec]]
+      cmd += ["-ss", start, "-t", length]
+
+      cmd << outfile
+
+    when "mencoder"
+      cmd = [
+        "mencoder", infile, 
+        "-o", outfile, 
+        "-ss", start, 
+        "-endpos", length,
+        "-of", "lavf", "-lavfopts", "format=#{outfile.ext}"
+      ]
+
+      cmd += ["-ovc", opts[:vcodec]]
+
+      case opts[:acodec]
+      when "mp3"
+        # -oac mp3lame -lameopts vbr=2:q=0:aq=0 or preset=standard (170-210kbps)
+        cmd += ["-oac", "mp3lame"]
+      else
+        cmd += ["-oac", opts[:acodec]]
+      end
+
+    else
+      raise "Unknown tool: #{opts[:use]}"
+    end
+
+  elsif infile.ext.in? AUDIO_EXISTS
+    raise "stub"
+    # mpgtx
+  else
+    raise "Unknown file type"
+  end
+
+
+  ## Rip it!
+
+  system(*cmd)
+
+end
