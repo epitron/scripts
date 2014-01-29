@@ -1,4 +1,11 @@
 #!/bin/bash
+CMD="/usr/bin/fortune"
 
-# /usr/bin/fortune -c -e wisdom education science art work politics definitions law startrek
-/usr/bin/fortune ~/scripts/fortunes/
+#FORTUNES="-e wisdom education science art work politics definitions law startrek"
+FORTUNES=~/scripts/fortunes/
+
+if [[ "$1" == "" ]]; then
+  $CMD $FORTUNES
+else
+  $CMD $FORTUNES -i -m "$@"
+fi
