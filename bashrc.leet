@@ -107,6 +107,7 @@ alias c-x='chmod -x'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
+alias ag='ag --pager "less -RSFXi"'
 alias a="audacious"
 alias ae="a -e"
 alias a2="a"
