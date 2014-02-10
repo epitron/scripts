@@ -381,7 +381,7 @@ def parse_options
 
   #@opts ||= Slop.new
   @opts = Slop.parse(help: true, strict: true) do
-    banner 'Usage: m [options] <videos...>'
+    banner 'Usage: m [options] <videos, or dirs...>'
 
     on 'f',  'fullscreen',  'Fullscreen mode'
     on 'n',  'nosound',     'No sound'
@@ -575,13 +575,31 @@ if $0 == __FILE__
     end
 
   else
+    videos = []
     cmd += %w[-cache 20000 -cache-min 0.0128] # 20 megs cache, start playing once 256k is cached
 
+    # Populate the `videos` array
     files.each do |path|
-      show_xattrs(path)
+
+      if File.directory? path
+        # dirs
+        if File.exists? File.join(path, "VIDEO_TS") or path[%r{(^|/)VIDEO_TS/?$}]
+          # DVD
+          videos << "dvd:///./#{path}"
+        else
+          # Directory full of videos
+          require 'shellwords'
+          videos += Dir[File.join(Shellwords.escape(path), "*.{avi,mkv,mp4,ogg,mov,mpg,mpeg}")]
+        end
+      else
+        # Plain old file
+        show_xattrs(path)
+        videos << path
+      end
+
     end
 
-    filtered_mplayer cmd + extras + files, verbose: opts.verbose?
+    filtered_mplayer cmd + extras + videos, verbose: opts.verbose?
   end
 
 end
