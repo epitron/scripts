@@ -400,6 +400,7 @@ def parse_options
     on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
     on 'v',  'verbose',     'Show all mplayer output spam'
     on 'N',  'normalize',   'Normalize the audio in this video (saved to a magic filename that will be automatically played)'
+    on 's',  'shuffle',     'Randomize the order of the videos'
   end
 end
 
@@ -589,7 +590,7 @@ if $0 == __FILE__
         else
           # Directory full of videos
           require 'shellwords'
-          videos += Dir[File.join(Shellwords.escape(path), "*.{avi,mkv,mp4,ogg,mov,mpg,mpeg}")]
+          videos += Dir[File.join(Shellwords.escape(path), "**/*.{avi,mkv,mp4,ogg,mov,mpg,mpeg}")]
         end
       else
         # Plain old file
@@ -598,6 +599,8 @@ if $0 == __FILE__
       end
 
     end
+
+    videos = videos.sort_by { rand } if opts.shuffle?
 
     filtered_mplayer cmd + extras + videos, verbose: opts.verbose?
   end
