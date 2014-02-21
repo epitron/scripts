@@ -52,9 +52,12 @@ routes do
     open_in_best_browser uri, BROWSERS
   end
 
-  # Remove click trackers
+  # Strip click trackers
   match(host: /google.\w{2,3}$/, path: "/url")   { |uri| route uri.params["url"] || uri.params["q"] }
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
+
+  # Resolve redirects
+  match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirects }
 
   # Open videos in mplayer
   match host: %w[youtube.com youtu.be wimp.com vimeo.com blip.tv] do |uri|
@@ -84,13 +87,34 @@ BEGIN {
   module URI
 
     #
-    # No blank values!
+    # Strip out params with blank values.
     #
     alias_method :old_params, :params
     
     def params
       old_params.delete_if { |k,v| v.blank? }
     end
+
+    #
+    # Follow an URI's redirects and return the new URI (or the same URI,
+    # if there were no redirects to follow.)
+    # NOTE: Requires curl
+    #
+    def follow_redirects(all: true)
+      output   = IO.popen(["curl", "-sLI", to_s]) { |io| io.read }
+      uri      = self
+
+      output.each_line do |line|
+        if line.strip =~ /^location: (.+)$/i
+          # p line: line, match: $1
+          uri = uri + $1
+          break unless all
+        end
+      end
+
+      uri
+    end
+    alias_method :follow_redirect, :follow_redirects
 
   end
 
@@ -190,8 +214,12 @@ BEGIN {
     browsers.map do |browser_name|
       browser_window = windows.select do |w|
         next if w.command.nil?
-        bin = w.command.split.first
-        bin[browser_name]
+
+        # Hack for Chrome's "Tabs Outliner" plugin
+        next if browser_name.in?(["chrome", "chromium"]) and w.title == "Tabs Outliner"
+
+        binary = w.command.split.first
+        binary[browser_name]
       end.first
       [ browser_name, browser_window ] if browser_window
     end.compact

@@ -1,0 +1,63 @@
+require 'epitools'
+cue = Path("01_va-hexstatic_presents-pick_n_mix.cue")
+
+def chunk_cue(mp3, cue)
+  mp3 = Path(mp3)
+  cue = Path(cue)
+  [mp3, cue].each { |path| raise "#{path} not found" unless path.exists? }
+
+  tracks = cue.lines.split_before(/^  TRACK /).drop(1).map do |t|
+    data = {}
+    t.each do |field|
+      case field
+      when /TRACK (\d+)/
+        data[:track] = $1
+      when /TITLE \"(.+)\"/
+        data[:title] = $1
+      when /PERFORMER \"(.+)\"/
+        data[:artist] = $1
+      when /INDEX \d\d (.+)/
+        timestamp = $1.gsub(/:(\d\d)$/, ".\\1")
+        data[:starts_at] ||= timestamp
+      else
+        puts "Unhandled field: #{field}"
+      end
+    end
+
+    data
+  end
+
+  # tracks.each_cons(2) do |a,b|
+  #   a[:range] = [a[:starts_at], b[:starts_at]]
+  # end
+
+  prefix = cue.basename
+  cmd = ["mpgtx", "-s",  "-b", prefix, mp3.to_s]
+  
+  timestamps = tracks.map { |t| t[:starts_at] }
+  timestamps.shift
+  cmd << "{#{timestamps.join("-")}}"
+
+  p cmd
+  raise "oops" unless system(*cmd)
+
+  tracks.each do |t|
+    src  = "#{prefix}-#{t[:track]}.mp3"
+    dest = "#{t[:track]}. #{t[:artist]} - #{t[:title]}.mp3"
+    p src: src, dest: dest
+    File.rename src, dest
+    cmd = ["id3v2", "-a", t[:artist], "-t", t[:title], "-T", t[:track], dest]
+    p cmd
+    system(*cmd)
+  end
+
+  # pp tracks
+end
+
+if $0 == __FILE__
+  if ARGV.size == 2
+    chunk_cue(*ARGV)
+  else
+    puts "Usage: mp3chunk-by-cue file.mp3 file.cue"
+  end
+end

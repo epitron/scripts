@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #if [ -f /etc/profile ]; then . /etc/profile; fi
 #PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 
@@ -250,6 +252,8 @@ alias sys='systemctl'
 
 alias flash='crutziplayer'
 alias rdp='xfreerdp'
+
+alias swapped='swapused | sort-by 1'
 
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 

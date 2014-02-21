@@ -1,0 +1,19 @@
+Core commands:
+---------------------------------------
+
+web, web-clipboard, play, m
+x
+f
+meta
+ren
+trsh
+
+
+
+Core aliases:
+---------------------------------------
+
+gc, gb, gl, push, pull
+mkcd
+rm (trsh)
+r, be

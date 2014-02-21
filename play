@@ -159,7 +159,7 @@ url = args.first
 notify(:info, "Processing:", url, time: 3); play_click_sound
 
 media_url, title = youtube_dl(url)
-media_url.gsub!(/^https:/, "http:")
+media_url.gsub!(/^https:/, "http:") # mplayer doesn't support https://
 
 write_to_log(url, title)
 
