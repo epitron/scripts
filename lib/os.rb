@@ -46,4 +46,26 @@ module OS
     not windows?
   end
 
+  def distro
+    str = `lsb_release -i`.strip
+    # $ lsb_release -i
+
+    case str
+    # Distributor ID: Fedora
+    when /fedora/,i
+      :fedora
+    # Distributor ID: Arch
+    when /arch/,i
+      :arch
+    # Distributor ID: Debian
+    when /debian/,i
+      :debian
+    # Distributor ID: Ubuntu
+    when /ubuntu/,i
+      :ubuntu
+    else
+      raise "Unknown distro: #{str}"
+    end
+  end
+
 end

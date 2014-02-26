@@ -69,9 +69,9 @@ end
 if ARGV.any?
 
   ARGV.each do |pageurl|
-    puts "### Page URL: #{pageurl}"
+    $stdout.puts "### Page URL: #{pageurl}"
     for category, links in get_links(pageurl)
-      puts "# #{category}"
+      $stdout.puts "# #{category}"
       links.each { |link| puts link }
       puts
     end

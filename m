@@ -389,6 +389,7 @@ def parse_options
     on 'i',  'info',        'Information about video (resolution, codecs)'
     on 'H',  'headers',     'Show all information in video file\'s headers'
     on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
+    on 'p',  'pp',          'Postprocessing'
     on 'b',  'bob',         'Bob deinterlace (using yadif)'
     on 'r=', 'aspect',      'Aspect ratio'
     on 's=', 'start',       'Start playing at this offset (HH:MM:SS or SS format)'
@@ -400,7 +401,7 @@ def parse_options
     on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
     on 'v',  'verbose',     'Show all mplayer output spam'
     on 'N',  'normalize',   'Normalize the audio in this video (saved to a magic filename that will be automatically played)'
-    on 's',  'shuffle',     'Randomize the order of the videos'
+    on 'S',  'shuffle',     'Randomize the order of the videos'
   end
 end
 
@@ -434,8 +435,9 @@ if $0 == __FILE__
 
   cmd << "-nosound"         if opts.nosound?
   cmd << "-fs"              if opts.fullscreen?
-  cmd += ["-vf", "yadif"]   if opts.deinterlace?
-  cmd += ["-vf", "yadif=1"]   if opts.bob?
+  cmd += ["-vf-add", "yadif"]   if opts.deinterlace?
+  cmd += ["-vf-add", "yadif=1"] if opts.bob?
+  cmd += ["-vf-add", "scale=1280,pp7"]     if opts.pp?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
 
   seek = opts[:start]

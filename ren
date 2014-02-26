@@ -59,7 +59,7 @@ def edit_filename(prompt, filename)
     # ^d deletes to the extension
     c.bind "\x04" do |inst|
       start  = inst.pos
-      finish = inst.line.rindex(".")
+      finish = inst.line.rindex(".") || inst.line.size
 
       inst.line[start...finish] = "" if start < finish
       inst.menu.string = "(Deleted to end)"
