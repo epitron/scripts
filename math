@@ -99,15 +99,19 @@ class MathOTron
       puts "=> #{translated_expr}".grey 
     end
 
-    result = helpers.instance_eval translated_expr
+    begin
+      result = helpers.instance_eval translated_expr
 
-    case result
-    when Numeric
-      puts result.commatize.bright_purple
-      result_in_words = result.to_words
-      puts "<8>(<7>#{result_in_words}<8>)".colorize if not result_in_words.blank?
-    else
-      p result
+      case result
+      when Numeric
+        puts result.commatize.bright_purple
+        result_in_words = result.to_words
+        puts "<8>(<7>#{result_in_words}<8>)".colorize if not result_in_words.blank?
+      else
+        p result
+      end
+    rescue Exception => e
+      puts e.to_s.bright_red
     end
   end
 
@@ -129,11 +133,7 @@ class MathOTron
       break if !expr or expr.blank?
 
       # do the math
-      begin
-        calculate expr
-      rescue => e
-        puts e
-      end
+      calculate expr
 
       # separator between expressions
       puts
@@ -158,28 +158,37 @@ __END__
  Math-o-tron lets you quickly compute things!
 ----------------------------------------------
 
-Examples:
-  > 5 + 3 + 234 + 4.2922                                                                   
+Basic math:
+  > 5 + 3 + 234 + 4.2922
   246.2922
   (two-hundred and fourty-six)
 
-  > 42.sqrt                                                                                
+  > 42.sqrt
   6.48074069840786
   (six)
 
-You can also run it from the commandline (with bash-friendly operators):
+The colon operator lets you group things without using brackets:
+  > (5 + 10) / 5                                                                                        
+  3
+  (three)
 
+  > 5 + 10: / 5                                                                                         
+  => (5 + 10) / 5
+  3
+  (three)
+
+You can also run it from the commandline (with bash-friendly operators):
   $ math 2 x 5
   => 2 * 5
   10
   (ten)
 
-  $ math 2^512
-  => 2**512
-  13,407,807,929,942,597,099,574,024,998,205,846,127,479,365,820,592,393,377,723,561,443,721,764,030,073,546,976,801,874,298,166,903,427,690,031,858,186,486,050,853,753,882,811,946,569,946,433,649,006,084,096
-  (more than a googol! (155 digits))
+  $ math 2^42
+  => 2**42
+  4,398,046,511,104
+  (four trillion, three-hundred and ninety-eight billion, ...)
+
 
 It's also a Ruby interpreter!
-  > (1..100).select &:prime?                                                               
-  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
-
+  > (1..42).select &:prime?
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
