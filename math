@@ -1,55 +1,185 @@
 #!/usr/bin/env ruby
-require 'epitools'
 
+#############################################################################
 # ---------------
 # TODOs:
 # ---------------
 #
 # Parser:
 #
+# => proper parser
+# => Pry's prettyprinter
 # => lazy blocks: 1..100.map \this * 5\
 # => Non-globbing operators: x / + - %
 # => | or |> to compute the prior expression and return the result, which can then be operated on more
 # => division casts to float, unless // is used
 #
+#############################################################################
 
-REWRITE_RULES = {
-  # turns "5 x 3" into "5 * 3"
-  /([\d\)]+\s*)x(\s*[\d\(]+)/ => "\\1*\\2",
+require 'epitools'
 
-  # turns "5^2" into "5**2"
-  /([\d\)]+)\^([\d\(]+)/ => "\\1**\\2",
+#############################################################################
 
-  # turns "5 - 3: / 6" into "(5 - 3) / 6"
-  /(.+?): (.+)/               => "(\\1) \\2",
+class MathOTron
 
-  # "a \ b" becomes "b / a"
-  # /([\d\)]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
-}
+  class Helpers
+    def help
+      puts DATA.read
+    end
 
-def translate(expr)
-  REWRITE_RULES.each do |regexp, replacement|
-    # p expr
-    loop do
-      last_expr = expr
-      expr      = expr.gsub(regexp, replacement)
-      # p expr
-      break if expr == last_expr
+    def now
+      Time.now
     end
   end
 
-  expr
+  def helpers
+    @helpers ||= Helpers.new
+  end
+
+  def initialize(args)
+    if ARGV.size == 0
+      interactive_mode
+    else
+      calculate ARGV.join(' ')
+    end
+  end
+
+  def braggadocio
+    puts "==============================================="
+    puts " Math-o-tron 9000(tm)!"
+    puts " (c) 2014 by Chris Gahan (chris@ill-logic.com)"
+    puts "-----------------------------------------------"
+    puts "Type 'help' for help."
+  end
+
+  #############################################################################
+
+  REWRITE_RULES = {
+    ## NICE MATH
+
+    # x: turns "5 x 3" into "5 * 3"
+    /([\d\)]+\s*)x(\s*[\d\(]+)/ => "\\1*\\2",
+
+    # ^: turns "5^2" into "5**2"
+    /([\d\)]+\s*)\^(\s*[\d\(]+)/ => "\\1**\\2",
+
+    # backwards division: "a \ b" becomes "b / a"
+    # /([\d\)]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
+
+
+    ## COLON OPERATOR
+    # turns "1..10: function" into "(1..10).function"
+    /(.+?): (\w+)/               => "(\\1).\\2",
+
+    # turns "5 - 3: / 6" into "(5 - 3) / 6"
+    /(.+?): (\W+)/               => "(\\1) \\2",
+
+  }
+
+  #############################################################################
+
+  def translate(expr)
+    REWRITE_RULES.each do |regexp, replacement|
+      # p expr
+      loop do
+        last_expr = expr
+        expr      = expr.gsub(regexp, replacement)
+        # p expr
+        break if expr == last_expr
+      end
+    end
+
+    expr
+  end
+
+  def calculate(expr)
+    translated_expr = translate expr
+
+    if expr != translated_expr
+      puts "=> #{translated_expr}".grey 
+    end
+
+    result = helpers.instance_eval translated_expr
+
+    case result
+    when Numeric
+      puts result.commatize.bright_purple
+      result_in_words = result.to_words
+      puts "<8>(<7>#{result_in_words}<8>)".colorize if not result_in_words.blank?
+    else
+      p result
+    end
+  end
+
+  #############################################################################
+
+  def interactive_mode
+    # Interactive mode!
+
+    # require 'readline'
+    require 'coolline'
+
+    braggadocio
+
+    loop do
+      # get input
+      expr = Coolline.readline("> ")
+
+      # quit if the user didn't give us any input
+      break if !expr or expr.blank?
+
+      # do the math
+      begin
+        calculate expr
+      rescue => e
+        puts e
+      end
+
+      # separator between expressions
+      puts
+    end
+
+    # done!
+    puts
+  end
+
 end
 
+#############################################################################
 
-expr = translate ARGV.join(' ')
-puts "> #{expr}"
-
-result = eval expr
-
-case result
-when Numeric
-  puts "<13>#{result.commatize}\n<8>(<7>#{result.to_words}<8>)".colorize
-else
-  p result
+if $0 == __FILE__
+  MathOTron.new(ARGV)
 end
+
+#############################################################################
+
+__END__
+----------------------------------------------
+ Math-o-tron lets you quickly compute things!
+----------------------------------------------
+
+Examples:
+  > 5 + 3 + 234 + 4.2922                                                                   
+  246.2922
+  (two-hundred and fourty-six)
+
+  > 42.sqrt                                                                                
+  6.48074069840786
+  (six)
+
+You can also run it from the commandline (with bash-friendly operators):
+
+  $ math 2 x 5
+  => 2 * 5
+  10
+  (ten)
+
+  $ math 2^512
+  => 2**512
+  13,407,807,929,942,597,099,574,024,998,205,846,127,479,365,820,592,393,377,723,561,443,721,764,030,073,546,976,801,874,298,166,903,427,690,031,858,186,486,050,853,753,882,811,946,569,946,433,649,006,084,096
+  (more than a googol! (155 digits))
+
+It's also a Ruby interpreter!
+  > (1..100).select &:prime?                                                               
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
+
