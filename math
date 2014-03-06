@@ -13,9 +13,39 @@ require 'epitools'
 # => division casts to float, unless // is used
 #
 
+REWRITE_RULES = {
+  # turns "5 x 3" into "5 * 3"
+  /([\d\)]+\s*)x(\s*[\d\(]+)/ => "\\1*\\2",
+
+  # turns "5^2" into "5**2"
+  /([\d\)]+)\^([\d\(]+)/ => "\\1**\\2",
+
+  # turns "5 - 3: / 6" into "(5 - 3) / 6"
+  /(.+?): (.+)/               => "(\\1) \\2",
+
+  # "a \ b" becomes "b / a"
+  # /([\d\)]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
+}
+
+def translate(expr)
+  REWRITE_RULES.each do |regexp, replacement|
+    # p expr
+    loop do
+      last_expr = expr
+      expr      = expr.gsub(regexp, replacement)
+      # p expr
+      break if expr == last_expr
+    end
+  end
+
+  expr
+end
 
 
-result = eval ARGV.join(' ')
+expr = translate ARGV.join(' ')
+puts "> #{expr}"
+
+result = eval expr
 
 case result
 when Numeric
