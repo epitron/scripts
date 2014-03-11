@@ -7,12 +7,14 @@
 #
 # Parser:
 #
+# => unit conversions (lbs -> kg, C -> F, etc.)
+# => / does floating point division, // does integer division
+# => Bignum.sqrt should work (convert all numbers to BigDecimal?)
 # => proper parser
 # => Pry's prettyprinter
 # => lazy blocks: 1..100.map \this * 5\
 # => Non-globbing operators: x / + - %
 # => | or |> to compute the prior expression and return the result, which can then be operated on more
-# => division casts to float, unless // is used
 #
 #############################################################################
 
@@ -58,10 +60,10 @@ class MathOTron
     ## NICE MATH
 
     # x: turns "5 x 3" into "5 * 3"
-    /([\d\)]+\s*)x(\s*[\d\(]+)/ => "\\1*\\2",
+    /([\d\):]+\s*)x(\s*[\d\(]+)/ => "\\1*\\2",
 
     # ^: turns "5^2" into "5**2"
-    /([\d\)]+\s*)\^(\s*[\d\(]+)/ => "\\1**\\2",
+    /([\d\):]+\s*)\^(\s*[\d\(]+)/ => "\\1**\\2",
 
     # backwards division: "a \ b" becomes "b / a"
     # /([\d\)]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
@@ -76,8 +78,6 @@ class MathOTron
 
   }
 
-  #############################################################################
-
   def translate(expr)
     REWRITE_RULES.each do |regexp, replacement|
       # p expr
@@ -91,6 +91,8 @@ class MathOTron
 
     expr
   end
+
+  #############################################################################
 
   def calculate(expr)
     translated_expr = translate expr

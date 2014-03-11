@@ -33,29 +33,82 @@ class Initd
     run(service, "restart")
   end
 
+  def search(query)
+    require 'epitools'
+
+    puts "Services (filtered by /#{$1}/):"
+    puts "================================================="
+
+    
+    highlighted = sys.services.map { |s| s.highlight(query) if query =~ s }.compact
+
+    puts Term::Table.new(highlighted, :ansi=>true).by_columns
+  end
+
+  def default
+    require 'epitools'
+
+    puts "Services:"
+    puts "============================="
+
+    puts Term::Table.new(services).by_columns
+  end
+
+  def default_command(service)
+    restart(service)
+  end
+
 end
 
 class Systemd
 
+  def systemctl(*args)
+    cmd = ["systemctl"] + args
+    cmd.unshift "sudoifnotroot" if %w[enable disable].include? args.first
+    puts "=> #{cmd.join(" ")}"
+    puts
+    system *cmd
+  end
+
   def services
-    lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
-    lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
+    # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
+    # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
+    systemctl
   end
 
-  def run(service, command)
-    system("sudoifnotroot systemctl")
+
+  %w[start stop restart disable enable].each do |command|
+    define_method command do |service|
+      systemctl command, service
+    end
   end
 
-  def start(service)
-    run(service, "start")
+  # def start(service)
+  #   systemctl "start", service
+  # end
+
+  # def stop(service)
+  #   systemctl "stop", service
+  # end
+
+  # def restart(service)
+  #   systemctl "restart", service
+  # end
+
+  def status(service)
+    systemctl "status", "-l", service
   end
 
-  def stop(service)
-    run(service, "stop")
+  def default
+    services
   end
 
-  def restart(service)
-    run(service, "restart")
+  def search(query)
+    raise "Search not implemented for systemd."
+  end
+
+  def default_command(service)
+    status(service)
   end
 
 end
@@ -69,24 +122,12 @@ end
 
 if args.empty? # No args
 
-  require 'epitools'
-
-  puts "Services:"
-  puts "============================="
-
-  puts Term::Table.new(sys.services).by_columns
+  sys.default
 
 elsif args.first =~ %r{/(.+?)/}
 
-  require 'epitools'
-
-  puts "Services (filtered by /#{$1}/):"
-  puts "================================================="
-
-  query       = Regexp.new($1)
-  highlighted = sys.services.map { |s| s.highlight(query) if query =~ s }.compact
-
-  puts Term::Table.new(highlighted, :ansi=>true).by_columns
+  query = Regexp.new($1)
+  sys.search(query)
 
 else
 
@@ -94,7 +135,7 @@ else
   when 2
     service, command = args
   when 1
-    service, command = args.first, "restart"
+    service, command = args.first, "default_command"
   end
 
   sys.send(command, service)

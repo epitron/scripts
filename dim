@@ -1,1 +1,1 @@
-redshift -O 3800
+redshift -O 3800 -g 1.3

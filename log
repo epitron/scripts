@@ -1,2 +1,12 @@
 #!/bin/bash
-sudoifnotroot journalctl -f
+# --dmesg
+# --user
+# --system
+
+if [ "$1" == "" ]; then
+  journalctl --since=today "$@"
+else
+  ARG="$1"
+  shift
+  journalctl --since=today -u "*$ARG*" "$@"
+fi

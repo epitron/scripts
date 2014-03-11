@@ -257,6 +257,8 @@ alias swapped='swapused | sort-by 1'
 
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 
+alias j='journalctl'
+
 gem-cd() { cd `gem-dir $@` ;}
 
 # mkdir and cd, all in one!

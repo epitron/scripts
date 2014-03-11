@@ -20,9 +20,10 @@ if args.any?
   params << "--partial"         if opts.delete "-p"  # partials
   params << "--delete-after"    if opts.delete "-d"  # delete destination files
   params << "--dry-run"         if opts.delete "-n"  # simulated sync (no changes are made)
-  params << "--xattrs"          if opts.delete "-x"  # simulated sync (no changes are made)
-  params << "--remove-source-files" if opts.delete "-m" # move files (delete source files)
+  params << "--xattrs"          if opts.delete "-x"  # sync extended attributes
+  params << "--remove-source-files"   if opts.delete "-m" # move files (delete source files)
   params += ["-e", "ssh -c blowfish"] if opts.delete "-f" # fast cipher
+  params += %w[--specials --devices]  if opts.delete "-s" # sync special files (sockets, fifos) and devices
   
   if opts.delete "-b" # binary mode
     params += ["--checksum", "--copy-links"]
@@ -48,6 +49,7 @@ else
   puts "    -q    Quiet mode"
   puts "    -b    Binary rsync (and dereference symlinks)"
   puts "    -o    Preserve ownership (user/group/permissions)"
+  puts "    -s    Sync special files (sockets, fifos, devices)"
   puts "    -x    Preserve xattrs"
   puts "    -a    Append to smaller destination files"
   puts "          (if their overlap has the same checksum)"

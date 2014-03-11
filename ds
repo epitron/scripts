@@ -17,7 +17,7 @@ def dpkg_search(pattern)
   
   lesspipe do |less|
     IO.popen("dpkg -l", "r") do |dpkg|
-      enum = Enumerator.new dpkg, :each
+      enum = dpkg.to_enum(:each)
     
       for line in enum
         header << line
