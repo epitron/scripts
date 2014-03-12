@@ -6,15 +6,18 @@ require 'io/console'
 
 class Words
 
+  PUNCTUATION = /[\.\?,!:]/
+
   attr_accessor :longest_word
 
   def initialize(filename)
-    text = File.read(filename)
-    
-    # @words = text.scan(/[\w\.\?\!\,]+/)
-    @words = text.split
-    @longest_word = @words.map(&:size).max
-    @pos = 0
+    @pos    = 0
+
+    text    = File.read(filename)
+    @words  = text.split.select { |w| w =~ /[a-z]+/i }
+    @longest_word = @words.max_by(&:size).size
+
+    # p @words.max_by(&:size) # show longest word
   end
 
   def next
@@ -33,16 +36,14 @@ class Words
   end
 
   def current
-    if @pos < 0
-      @pos = 0
-      nil
-    elsif @pos >= @words.size
-      @pos = @words.size - 1
-      nil
-    else
-      @words[@pos]
-    end
+    @pos = [[0,@pos].max, @words.size-1].min # clamp to range
+    @words[@pos]
   end
+
+  def current_punctuated?
+    current =~ /#{PUNCTUATION}$/
+  end
+
 end
 
 
@@ -60,66 +61,33 @@ class Display
     @help   = false
     @current_word = ""
 
-    puts "========================================"
-    puts "  TURBOREADER PRO! Get ready to READ!"
-    puts "==========(press ? for help)============"
-    puts
-    puts "-" * (@width+2)
-    puts
-    puts "-" * (@width+2)
+    print_main_template
 
     rewind
   end
 
-  def print_current_word
-    status  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
-    word    = (@current_word || "")
-    padding = @width - word.size
+  #----------------------------------------------------------
 
-    if word.size >= 2
-      word = word[0] +
-             "\e[31;1m" + 
-             word[1] +
-             "\e[0m" +
-             word[2..-1]
-    end
-
-    print "\e[2F" # up 2 lines
-    print "  #{word}#{" "*padding}  #{status}"
-    print "\e[K" # clear to EOL
-    print "\e[2E" # down 2 lines
-  end
-
-  def change_wpm(wpm)
-    @wpm = wpm
+  def set_wpm(wpm)
+    @wpm = [[wpm, 100].max, 4000].min # ensure wpm is between 100 and 4000
     print_current_word
   end
 
   def increase_wpm(amount)
-    # maximum: 4000wpm
-    change_wpm [@wpm + amount, 4000].min
-  end
-
-  def show_message(message)
-    print "\e[0G\e[K "
-    print message
-    print "\e[0G"
-  end
-
-  def toggle_help!
-    @help = !@help
-
-    if @help
-      show_message "Q/^C = Quit, SPACE = Pause, Up/Down = Change wpm, Left/Right = Skip word, HOME = Rewind"
-    else
-      show_message ""
-    end
+    set_wpm @wpm + amount
   end
 
   def decrease_wpm(amount)
-    # minimum: 100wpm
-    change_wpm [@wpm - amount, 100].max
+    set_wpm @wpm - amount
   end
+
+  def wpm_delay
+    delay = 60.0/@wpm
+    delay *= 2 if @words.current_punctuated?
+    delay
+  end
+
+  #----------------------------------------------------------
 
   def display_word(word)
     @current_word = word
@@ -138,8 +106,58 @@ class Display
     display_word @words.first
   end
 
-  def wpm_delay
-    60.0/@wpm
+  #----------------------------------------------------------
+
+  # TODO: Read the x,y positions from the status and
+  #       word lines from the terminal, so we don't have
+  #       to do all this gross relative positioning.
+
+  def print_main_template
+    puts "========================================"
+    puts "  TurboReader PRO! Get ready to READ!"
+    puts "==========(press ? for help)============"
+    puts
+    puts "-" * (@width+2)
+    puts
+    puts "-" * (@width+2)
+    puts
+  end
+
+  def print_current_word
+    status  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
+    word    = (@current_word || "")
+    padding = @width - word.size
+
+    # Colorize the 2nd character
+    if word.size >= 2
+      word = word[0] +
+             "\e[31;1m" + 
+             word[1] +
+             "\e[0m" +
+             word[2..-1]
+    end
+
+    print "\e[3F" # move up 3 lines
+    print "  #{word}#{" "*padding}  #{status}"
+    print "\e[K"  # clear to end-of-line
+    print "\e[3E" # move down 3 lines
+  end
+
+  def show_message(message)
+    print "\e[0G\e[K\e[F\e[K\e[E" # clear the status area
+    print message
+    print "\e[0G"
+  end
+
+  def toggle_help!
+    @help = !@help
+
+    if @help
+      show_message "\e[F Q/^C = Quit | SPACE = Pause | Left/Right = Skip word | HOME = Rewind\e[E" +
+                   " Up/Down = Increase/decrease wpm by 50 | 1-9 = Set wpm to <n> * 100\e[0G"
+    else
+      show_message "\e[E"
+    end
   end
 
   def paused?
@@ -153,15 +171,93 @@ class Display
 
   def quit!
     # quit
-    puts "\e[4EThank you for reading!\e[E"
+    show_message "Thank you for reading!\e[2S"
     exit
   end
 end
 
 #######################################################################################################
+# A little DSL for defining keyboard commands
+
+class KeyMap
+
+  attr_accessor :config
+
+  #-----------------------------------------------------------------
+
+  class Config
+    attr_accessor :trie_root
+
+    def initialize(&block)
+      @trie_root = {}
+
+      instance_eval(&block)
+
+      # Make sure ^C is defined
+      @trie_root["\C-c"] ||= { handler: proc { exit } }
+    end
+
+    #
+    # Add a command to the trie of input sequences
+    #
+    def key(*seqs, &block)
+      seqs.each do |seq|
+        level = @trie_root
+
+        seq.each_char do |c|
+          level = (level[c] ||= {})
+        end
+        
+        level[:handler] = block
+      end
+    end
+
+    #
+    # This block will be run if the key isn't defined.
+    #
+    def default(&block)
+      if block_given?
+        @default = block
+      else
+        @default
+      end
+    end
+  end
+
+  #-----------------------------------------------------------------
+
+  def initialize(&block)
+    @config = Config.new(&block)
+  end
+
+  def process(input)
+    level = config.trie_root
+
+    # Read one character at a time from the input, and incrementally
+    # walk through levels of the trie until a :handler is found, or
+    # we hit a dead-end in the trie.
+    loop do
+      c = input.getc
+
+      if found = level[c]
+        level = found
+
+        if handler = level[:handler]
+          handler.call(c)
+          level = config.trie_root
+        end
+      else
+        config.default.call(c) if config.default
+        level = config.trie_root
+      end
+    end
+  end
+
+end
+
+#######################################################################################################
 
 if $0 == __FILE__
-
   if ARGV.empty?
     puts "Usage: turboread <filename.txt>"
     exit 1
@@ -176,58 +272,28 @@ if $0 == __FILE__
 
   display = Display.new filename
 
+  keymap = KeyMap.new do
+    key(" ")      { display.pause! }
+    key("?", "h") { display.toggle_help! }
+    key("\e[A")   { display.increase_wpm(50) } # UP
+    key("\e[B")   { display.decrease_wpm(50) } # DOWN
+    key("\e[C")   { display.next_word }        # RIGHT
+    key("\e[D")   { display.prev_word }        # LEFT
+    key("\e[OH")  { display.rewind }           # HOME
+
+    key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
+    key( "0" ) { display.set_wpm 1000 }
+
+    key("q", "Q", "\C-c") { display.quit! }
+
+    default { |c| display.show_message " Unknown command: #{c}" }
+  end
+
   #------------------------------------------------------
   # thread1: handle keyboard events
   keyboard_thread = Thread.new do
     STDIN.raw do |input|
-      loop do
-
-        case c = input.getc
-
-        when "q", "Q", "\u0003"
-          display.quit!
-
-        when " "
-          # pause
-          display.pause!
-
-        when "?"
-          # show help
-          display.toggle_help!
-
-        when /[0-9]/
-          # 0-9: Set speed to <n>00 wpm
-
-        when "\e"
-          # Escape sequence...
-          case c = input.getc
-          when "["
-            case c = input.getc
-            when "A" # up
-              display.increase_wpm(50)
-              
-            when "B" # down
-              display.decrease_wpm(50)
-              
-            when "C" # right
-              display.next_word
-
-            when "D" # left
-              display.prev_word
-            end
-
-          when "O"
-            case c = input.getc
-            when "H" # home
-              display.rewind
-            end
-          end
-              
-        else
-          display.show_message "Unknown command: #{c}"
-        end
-
-      end
+      keymap.process(input)
     end
   end
 
@@ -242,7 +308,6 @@ if $0 == __FILE__
   end
 
   #------------------------------------------------------
-  # Yield control to the keyboard thread.
+  # Yield control of the program to the keyboard thread.
   keyboard_thread.join 
-
 end
