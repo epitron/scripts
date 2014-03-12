@@ -1,0 +1,248 @@
+#!/usr/bin/env ruby
+
+require 'io/console'
+
+#######################################################################################################
+
+class Words
+
+  attr_accessor :longest_word
+
+  def initialize(filename)
+    text = File.read(filename)
+    
+    # @words = text.scan(/[\w\.\?\!\,]+/)
+    @words = text.split
+    @longest_word = @words.map(&:size).max
+    @pos = 0
+  end
+
+  def next
+    @pos += 1
+    current
+  end
+
+  def prev
+    @pos -= 1
+    current
+  end
+
+  def first
+    @pos = 0
+    current
+  end
+
+  def current
+    if @pos < 0
+      @pos = 0
+      nil
+    elsif @pos >= @words.size
+      @pos = @words.size - 1
+      nil
+    else
+      @words[@pos]
+    end
+  end
+end
+
+
+#######################################################################################################
+# ANSI codes:
+#   http://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes
+
+class Display
+
+  def initialize(filename)
+    @wpm    = 400
+    @words  = Words.new(filename)
+    @width  = @words.longest_word
+    @paused = true
+    @help   = false
+    @current_word = ""
+
+    puts "========================================"
+    puts "  TURBOREADER PRO! Get ready to READ!"
+    puts "==========(press ? for help)============"
+    puts
+    puts "-" * (@width+2)
+    puts
+    puts "-" * (@width+2)
+
+    rewind
+  end
+
+  def print_current_word
+    status  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
+    word    = (@current_word || "")
+    padding = @width - word.size
+
+    if word.size >= 2
+      word = word[0] +
+             "\e[31;1m" + 
+             word[1] +
+             "\e[0m" +
+             word[2..-1]
+    end
+
+    print "\e[2F" # up 2 lines
+    print "  #{word}#{" "*padding}  #{status}"
+    print "\e[K" # clear to EOL
+    print "\e[2E" # down 2 lines
+  end
+
+  def change_wpm(wpm)
+    @wpm = wpm
+    print_current_word
+  end
+
+  def increase_wpm(amount)
+    # maximum: 4000wpm
+    change_wpm [@wpm + amount, 4000].min
+  end
+
+  def show_message(message)
+    print "\e[0G\e[K "
+    print message
+    print "\e[0G"
+  end
+
+  def toggle_help!
+    @help = !@help
+
+    if @help
+      show_message "Q/^C = Quit, SPACE = Pause, Up/Down = Change wpm, Left/Right = Skip word, HOME = Rewind"
+    else
+      show_message ""
+    end
+  end
+
+  def decrease_wpm(amount)
+    # minimum: 100wpm
+    change_wpm [@wpm - amount, 100].max
+  end
+
+  def display_word(word)
+    @current_word = word
+    print_current_word
+  end
+
+  def next_word
+    display_word @words.next
+  end
+
+  def prev_word
+    display_word @words.prev
+  end
+
+  def rewind
+    display_word @words.first
+  end
+
+  def wpm_delay
+    60.0/@wpm
+  end
+
+  def paused?
+    @paused
+  end
+
+  def pause!
+    @paused = !@paused
+    print_current_word
+  end
+
+  def quit!
+    # quit
+    puts "\e[4EThank you for reading!\e[E"
+    exit
+  end
+end
+
+#######################################################################################################
+
+if $0 == __FILE__
+
+  if ARGV.empty?
+    puts "Usage: turboread <filename.txt>"
+    exit 1
+  end
+
+  filename = ARGV.first
+
+  unless File.exists? filename
+    puts "Error: #{filename.inspect} not found."
+    exit 2
+  end
+
+  display = Display.new filename
+
+  #------------------------------------------------------
+  # thread1: handle keyboard events
+  keyboard_thread = Thread.new do
+    STDIN.raw do |input|
+      loop do
+
+        case c = input.getc
+
+        when "q", "Q", "\u0003"
+          display.quit!
+
+        when " "
+          # pause
+          display.pause!
+
+        when "?"
+          # show help
+          display.toggle_help!
+
+        when /[0-9]/
+          # 0-9: Set speed to <n>00 wpm
+
+        when "\e"
+          # Escape sequence...
+          case c = input.getc
+          when "["
+            case c = input.getc
+            when "A" # up
+              display.increase_wpm(50)
+              
+            when "B" # down
+              display.decrease_wpm(50)
+              
+            when "C" # right
+              display.next_word
+
+            when "D" # left
+              display.prev_word
+            end
+
+          when "O"
+            case c = input.getc
+            when "H" # home
+              display.rewind
+            end
+          end
+              
+        else
+          display.show_message "Unknown command: #{c}"
+        end
+
+      end
+    end
+  end
+
+  #------------------------------------------------------
+  # thread2: read the text
+  reading_thread = Thread.new do
+    loop do
+      display.next_word unless display.paused?
+      sleep display.wpm_delay
+    end
+    display.quit!
+  end
+
+  #------------------------------------------------------
+  # Yield control to the keyboard thread.
+  keyboard_thread.join 
+
+end
