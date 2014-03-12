@@ -43,7 +43,7 @@ A ton of people is literally 12 to 15 people.
 There is nothing more practical than a good theory.
 		-- Kurt Lewin
 %
-Oh, you're in television! That's interesting. No, I mean, the ''word'' television is interesting. It's a hybrid, you see: ''tele-'' comes from the greek, and ''-vision'' comes from the latin. It should have been either "telerama", or "procolvision".
+Oh, you're in television! That's interesting. No, I mean, the word television is interesting. It's a hybrid, you see: tele- comes from the greek, and -vision comes from the latin. It should have been either "telerama", or "procolvision".
 		-- Graham Chapman
 %
 I used to be indecisive. Now I'm not so sure.
@@ -142,7 +142,7 @@ Most people are other people. Their thoughts are someone else's opinions, their 
 Distrust all those who love you extremely upon a very slight acquaintance and without any visible reason.
 		-- Lord Chesterfield
 %
-'''Proverbs for Paranoids #3:''' If they can get you asking the wrong questions, they don't have to worry about the answers.
+Proverbs for Paranoids #3: If they can get you asking the wrong questions, they don't have to worry about the answers.
 		-- Thomas Pynchon (Gravity's Rainbow)
 %
 The sunlights differ, but there is only one darkness.
@@ -157,7 +157,7 @@ Every war results from the struggle for markets and spheres of influence, and ev
 Most of our ancestors were not perfect ladies and gentlemen. The majority of them weren't even mammals.
 		-- Robert Anton Wilson (Cosmic Trigger I, 1977)
 %
-Obviously, the faster we process information, the more rich and complex our models or glosses -- our reality-tunnels -- will become. Resistance to new information, however, has a strong neurological foundation in all animals, as indicated by studies of imprinting and conditioning. '''Most animals, including most domesticated primates (humans) show a truly staggering ability to "ignore" certain kinds of information -- that which does not "fit" their imprinted/conditioned reality-tunnel. We generally call this "conservatism" or "stupidity", but it appears in all parts of the political spectrum, and in learned societies as well as in the Ku Klux Klan.'''
+Obviously, the faster we process information, the more rich and complex our models or glosses -- our reality-tunnels -- will become. Resistance to new information, however, has a strong neurological foundation in all animals, as indicated by studies of imprinting and conditioning. Most animals, including most domesticated primates (humans) show a truly staggering ability to "ignore" certain kinds of information -- that which does not "fit" their imprinted/conditioned reality-tunnel. We generally call this "conservatism" or "stupidity", but it appears in all parts of the political spectrum, and in learned societies as well as in the Ku Klux Klan.
 		-- Robert Anton Wilson (Quantum Psychology)
 %
 Every national border in Europe marks the place where two gangs of bandits got too exhausted to kill each other anymore and signed a treaty. Patriotism is the delusion that one of these gangs of bandits is better than all the others.
@@ -454,8 +454,8 @@ I was a sorry witness of such doings, knowing that a little theory and calculati
 %
 100 fools are louder than 100,000 wise men.
 %
-''Radford Neal:'' I don't necessarily think that the Bayesian method is the best thing to do in all cases...
-''Geoff Hinton:'' Sorry Radford, my prior probability for you saying this is zero, so I couldn't hear what you said.
+Radford Neal: I don't necessarily think that the Bayesian method is the best thing to do in all cases...
+Geoff Hinton: Sorry Radford, my prior probability for you saying this is zero, so I couldn't hear what you said.
 %
 Mathematics may be defined as the subject in which we never know what we are talking about, nor whether what we are saying is true.
                 -- Bertrand Russell
@@ -503,10 +503,10 @@ The history of mankind for the last four centuries is rather like that of an imp
 Beans, beans, the magic legumes -- the more you ingest, the more you consume.
                 -- Al Yankovic
 %
-Wodehouse better than Milton? Shakespeare? Keats? Well, of course it's an absurd comparison. How can I possibly mention the author of ''Pearls, Girls and Monty Bodkin'' and ''Pigs Have Wings'' in the same breath as these men? He's just not serious!
+Wodehouse better than Milton? Shakespeare? Keats? Well, of course it's an absurd comparison. How can I possibly mention the author of Pearls, Girls and Monty Bodkin and Pigs Have Wings in the same breath as these men? He's just not serious!
 
 He doesn't need to be serious. He's better than that. He's up in the stratosphere of what the human mind can do, above tragedy and strenuous thought, where you will find Bach, Mozart, Einstein, Feynman, and Louis Armstrong, in the realms of pure, creative playfulness.
-                -- Douglas Adams (from the Introduction to P.G. Wodehouse's ''Sunset at Blandings'')
+                -- Douglas Adams (from the Introduction to P.G. Wodehouse's Sunset at Blandings)
 %
 That which can be destroyed by the truth should be.
                 -- P.C. Hodgell
@@ -619,7 +619,7 @@ You never change things by fighting the existing reality. To change something, b
 %
 It's not that people are completely stupid, but if there's a big idea and you have deadlines and you have expedience and you have competitors, very likely what you'll do is take a low-pass filter on that idea and implement one part of it and miss what has to be done next. This happens over and over again. If you're using early-binding languages as most people do, rather than late-binding languages, then you really start getting locked in to stuff that you've already done. You can't reformulate things that easily.
 
-The adoption of programming languages has very often been somewhat accidental, and the emphasis has very often been on how easy it is to implement the programming language rather than on its actual merits and features. For instance, Basic should never have surfaced because there was always a language better than Basic for that purpose. That language was Joss, which predated Basic and was beautiful. But Basic happened to be on a GE timesharing system that was done by Dartmouth, and when GE decided to franchise that, '''it started spreading Basic around just because it was there, not because it had any intrinsic merits whatsoever.'''
+The adoption of programming languages has very often been somewhat accidental, and the emphasis has very often been on how easy it is to implement the programming language rather than on its actual merits and features. For instance, Basic should never have surfaced because there was always a language better than Basic for that purpose. That language was Joss, which predated Basic and was beautiful. But Basic happened to be on a GE timesharing system that was done by Dartmouth, and when GE decided to franchise that, it started spreading Basic around just because it was there, not because it had any intrinsic merits whatsoever.
 
 This happens over and over again. The languages of Niklaus Wirth have spread wildly and widely because he has been one of the most conscientious documenters of languages and one of the earlier ones to do algorithmic languages using p-codes (pseudocodes) -- the same kinds of things that we use. The idea of using those things has a common origin in the hardware of a machine called the Burroughs B5000 from the early 1960s, which the establishment hated.
 		-- Alan Kay
@@ -898,9 +898,9 @@ The best book on programming for the layman is "Alice in Wonderland"; but that's
 Eliminating the middleman is never as simple as it sounds. 'Bout 50% of the human race is middlemen, and they don't take kindly to being eliminated.
              -- Malcolm Reynolds (Firefly)
 %
-Imagine life as a game in which you are juggling some five balls in the air. They are '''work''', '''family''', '''health''', '''friends''' and '''spirit''', and you're keeping all of these in the air.
+Imagine life as a game in which you are juggling some five balls in the air. They are work, family, health, friends and spirit, and you're keeping all of these in the air.
 
-You will soon understand that '''work''' is a rubber ball. If you drop it, it will bounce back. But the other four balls -- '''family''', '''health''', '''friends''' and '''spirit''' -- are made of glass. If you drop these, they will be irrevocably scuffed, marked, nicked, damaged, or even shattered. They will never be the same. You must understand that and strive for it.
+You will soon understand that work is a rubber ball. If you drop it, it will bounce back. But the other four balls -- family, health, friends and spirit -- are made of glass. If you drop these, they will be irrevocably scuffed, marked, nicked, damaged, or even shattered. They will never be the same. You must understand that and strive for it.
              -- Bryan Dyson (former CEO of Coca-Cola)
 %
 Anyone who believes in indefinite growth on a physically finite planet is either mad, or an economist.
@@ -951,7 +951,7 @@ Money can't buy you happiness but it does bring you a more pleasant form of mise
 I believe what really happens in history is this: the old man is always wrong; and the young people are always wrong about what is wrong with him. The practical form it takes is this: that, while the old man may stand by some stupid custom, the young man always attacks it with some theory that turns out to be equally stupid.
              -- G. K. Chesterton
 %
-The truth is that Tolstoy, with his immense genius, with his colossal faith, with his vast fearlessness and vast knowledge of life, is deficient in one faculty and one faculty alone. He is not a mystic; and therefore he has a tendency to go mad. Men talk of the extravagances and frenzies that have been produced by mysticism; they are a mere drop in the bucket. '''In the main, and from the beginning of time, mysticism has kept men sane. The thing that has driven them mad was logic.''' The only thing that has kept the race of men from the mad extremes of the convent and the pirate-galley, the night-club and the lethal chamber, has been mysticism -- the belief that logic is misleading, and that things are not what they seem.
+The truth is that Tolstoy, with his immense genius, with his colossal faith, with his vast fearlessness and vast knowledge of life, is deficient in one faculty and one faculty alone. He is not a mystic; and therefore he has a tendency to go mad. Men talk of the extravagances and frenzies that have been produced by mysticism; they are a mere drop in the bucket. In the main, and from the beginning of time, mysticism has kept men sane. The thing that has driven them mad was logic. The only thing that has kept the race of men from the mad extremes of the convent and the pirate-galley, the night-club and the lethal chamber, has been mysticism -- the belief that logic is misleading, and that things are not what they seem.
              -- G. K. Chesterton
 %
 Briefly, you can only find truth with logic if you have already found truth without it.
@@ -1312,10 +1312,10 @@ The intuitive mind is a sacred gift and the rational mind a faithful servant. We
 The price of apathy towards public affairs is to be ruled by evil men.
              -- Plato
 %
-''The communist creed:''
+The communist creed:
   From each according to his ability, to each according to his need.
 
-''The capitalist creed:''
+The capitalist creed:
   From each according to his gullibility, to each according to his greed.
 %
 Nearly all men can stand adversity, but if you want to test a man's character, give him power.
@@ -1606,7 +1606,7 @@ While the individual man is an insoluble puzzle, in the aggregate he becomes a m
 It is a capital mistake to theorize before one has data.
              -- Sir Arthur Conan Doyle
 %
-''John Swinton, a preeminent New York journalist, was the guest of honour at a banquet given him by the leaders of his craft. A person who didn't know much about the press or Swinton offered a toast to the independent press. Swinton outraged his colleagues by replying:''
+John Swinton, a preeminent New York journalist, was the guest of honour at a banquet given him by the leaders of his craft. A person who didn't know much about the press or Swinton offered a toast to the independent press. Swinton outraged his colleagues by replying:
 
 There is no such thing, at this date of the world's history, in America, as an independent press. You know it and I know it.
 

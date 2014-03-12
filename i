@@ -60,11 +60,12 @@ class Initd
 
 end
 
+#######################################################################
+
 class Systemd
 
   def systemctl(*args)
-    cmd = ["systemctl"] + args
-    cmd.unshift "sudoifnotroot" if %w[enable disable].include? args.first
+    cmd = %w[sudoifnotroot systemctl] + args
     puts "=> #{cmd.join(" ")}"
     puts
     system *cmd
