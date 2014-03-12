@@ -43,6 +43,11 @@ class Words
     current
   end
 
+  def last
+    @pos = @words.size-1
+    current
+  end
+
   def current
     @pos = [[0,@pos].max, @words.size-1].min # clamp to range
     @words[@pos]
@@ -71,7 +76,7 @@ class Display
 
     print_main_template
 
-    rewind
+    first_word
   end
 
   #----------------------------------------------------------
@@ -110,8 +115,12 @@ class Display
     display_word @words.prev
   end
 
-  def rewind
+  def first_word
     display_word @words.first
+  end
+
+  def last_word
+    display_word @words.last
   end
 
   #----------------------------------------------------------
@@ -161,7 +170,7 @@ class Display
     @help = !@help
 
     if @help
-      show_message "\e[F Q/^C = Quit | SPACE = Pause | Left/Right = Skip word | HOME = Rewind\e[E" +
+      show_message "\e[F Q/^C = Quit | SPACE = Pause | Left/Right = Skip word | HOME/END = Start/End\e[E" +
                    " Up/Down = Increase/decrease wpm by 50 | 1-9 = Set wpm to <n> * 100\e[0G"
     else
       show_message "\e[E"
@@ -308,7 +317,8 @@ if $0 == __FILE__
 
     key(:left)    { display.next_word }
     key(:right)   { display.prev_word }
-    key(:home)    { display.rewind }
+    key(:home)    { display.first_word }
+    key(:end)     { display.last_word }
 
     key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
     key( "0" ) { display.set_wpm 1000 }
