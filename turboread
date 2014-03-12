@@ -1,4 +1,12 @@
 #!/usr/bin/env ruby
+#######################################################################################################
+# --------------------------------------------------------------
+# TurboReader Pro! (c) 2014 by Chris Gahan (chris@ill-logic.com)
+# --------------------------------------------------------------
+# Speed-read your favourite text files!
+#
+# (Based on principles outlined here: http://www.spritzinc.com)
+#######################################################################################################
 
 require 'io/console'
 
@@ -186,6 +194,18 @@ class KeyMap
   #-----------------------------------------------------------------
 
   class Config
+
+    NAMED_KEYS = {
+      :up     => "\e[A",
+      :down   => "\e[B",
+      :left   => "\e[C",
+      :right  => "\e[D",
+      :home   => "\eOH",
+      :end    => "\eOF",
+      :pgup   => "\e[5~",
+      :pgdown => "\e[6~",
+    }
+
     attr_accessor :trie_root
 
     def initialize(&block)
@@ -202,6 +222,10 @@ class KeyMap
     #
     def key(*seqs, &block)
       seqs.each do |seq|
+        if keycode = NAMED_KEYS[seq]
+          seq = keycode
+        end
+
         level = @trie_root
 
         seq.each_char do |c|
@@ -275,11 +299,16 @@ if $0 == __FILE__
   keymap = KeyMap.new do
     key(" ")      { display.pause! }
     key("?", "h") { display.toggle_help! }
-    key("\e[A")   { display.increase_wpm(50) } # UP
-    key("\e[B")   { display.decrease_wpm(50) } # DOWN
-    key("\e[C")   { display.next_word }        # RIGHT
-    key("\e[D")   { display.prev_word }        # LEFT
-    key("\e[OH")  { display.rewind }           # HOME
+
+    key(:up)      { display.increase_wpm(50) }
+    key(:down)    { display.decrease_wpm(50) }
+
+    key(:pgup)    { display.increase_wpm(200) }
+    key(:pgdown)  { display.decrease_wpm(200) }
+
+    key(:left)    { display.next_word }
+    key(:right)   { display.prev_word }
+    key(:home)    { display.rewind }
 
     key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
     key( "0" ) { display.set_wpm 1000 }
