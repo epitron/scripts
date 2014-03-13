@@ -18,6 +18,10 @@ class Words
   PUNCTUATION = /[\.\?,!:]/
   MAX_WORD_SIZE = 20
 
+  # The point at which to center the word (in percent).
+  # See: http://www.microsoft.com/typography/ctfonts/wordrecognition.aspx
+  OPTIMAL_RECOGNITION_POINT = 0.30 
+
   attr_accessor :longest_word
 
   def initialize(filename)
@@ -40,13 +44,19 @@ class Words
     # p @words.max_by(&:size) # show longest word
   end
 
+  def make_pos_legal!
+    @pos = [[0,@pos].max, @words.size-1].min # clamp to range
+  end
+
   def next
     @pos += 1
+    make_pos_legal!
     current
   end
 
   def prev
     @pos -= 1
+    make_pos_legal!
     current
   end
 
@@ -61,12 +71,15 @@ class Words
   end
 
   def current
-    @pos = [[0,@pos].max, @words.size-1].min # clamp to range
     @words[@pos]
   end
 
   def current_punctuated?
     current =~ /#{PUNCTUATION}$/
+  end
+
+  def current_orp
+    (current.size * OPTIMAL_RECOGNITION_POINT).round
   end
 
 end
@@ -78,10 +91,9 @@ end
 
 class Display
 
-  DEFAULTWPM       = 600
-  MAXWPM           = 4000
-  MINWPM           = 100
-  OPTIMAL_RECOGNITION_POINT = 0.30 # where the "center" of the word is
+  DEFAULTWPM = 600
+  MAXWPM     = 4000
+  MINWPM     = 100
 
   def initialize(filename)
     @wpm          = DEFAULTWPM
@@ -166,12 +178,11 @@ class Display
   end
 
   def print_current_word
-    wpm_indicator  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
-    word    = (@current_word || "")
-    red_char_pos = (word.size * OPTIMAL_RECOGNITION_POINT).round
-
-    indent  = @template_center - red_char_pos
-    padding = @width - word.size
+    wpm_indicator = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
+    word          = (@current_word || "")
+    padding       = @width - word.size
+    red_char_pos  = @words.current_orp
+    indent        = @template_center - red_char_pos
 
     # Colorize the center character
     if word.size >= 2
