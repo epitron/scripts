@@ -346,8 +346,6 @@ if $0 == __FILE__
 
   keymap = KeyMap.new do
     key(" ")      { display.pause! }
-    key("?", "h") { display.toggle_help! }
-
     key(:up)      { display.increase_wpm(50) }
     key(:down)    { display.decrease_wpm(50) }
 
@@ -362,6 +360,7 @@ if $0 == __FILE__
     key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
     key( "0" ) { display.set_wpm 1000 }
 
+    key("?", "/", "h")    { display.toggle_help! }
     key("q", "Q", "\C-c") { display.quit! }
 
     default { |c| display.show_message " Unknown command: #{c}" }
