@@ -6,6 +6,13 @@
 # Speed-read your favourite text files!
 #
 # (Based on principles outlined here: http://www.spritzinc.com)
+#
+#
+# TODO:
+#   => if a word is longer than 50 chars, chop it into
+#      50-char pieces and put "..." around the pieces.
+#   => red letter highlight should be based on word length
+#   => move everything to the right a bit
 #######################################################################################################
 
 require 'io/console'
@@ -15,6 +22,7 @@ require 'io/console'
 class Words
 
   PUNCTUATION = /[\.\?,!:]/
+  MAX_WORD_SIZE = 20
 
   attr_accessor :longest_word
 
@@ -22,7 +30,17 @@ class Words
     @pos    = 0
 
     text    = File.read(filename)
-    @words  = text.split.select { |w| w =~ /[a-z]+/i }
+    @words  = text.split.select { |w| w =~ /[a-z]+/i }.map do |w|
+      # break up very long words into: pi… …ece… …sof… …thew… …ord…
+      if w.size > MAX_WORD_SIZE
+        pieces     = w.each_char.each_slice(MAX_WORD_SIZE).map { |piece| "…#{piece.join}…" }
+        pieces[0]  = pieces[0][1..-1]  # remove … from beginning of first piece
+        pieces[-1] = pieces[-1][0..-2] # remove … from end       of last  piece
+        pieces
+      else
+        w
+      end
+    end.flatten
     @longest_word = @words.max_by(&:size).size
 
     # p @words.max_by(&:size) # show longest word
@@ -66,12 +84,17 @@ end
 
 class Display
 
+  DEFAULTWPM       = 600
+  MAXWPM           = 4000
+  MINWPM           = 100
+  RED_CHAR_PERCENT = 0.17  # how far along the word should the red char appear
+
   def initialize(filename)
-    @wpm    = 400
-    @words  = Words.new(filename)
-    @width  = @words.longest_word
-    @paused = true
-    @help   = false
+    @wpm          = DEFAULTWPM
+    @words        = Words.new(filename)
+    @width        = @words.longest_word
+    @paused       = true
+    @help         = false
     @current_word = ""
 
     print_main_template
@@ -82,7 +105,7 @@ class Display
   #----------------------------------------------------------
 
   def set_wpm(wpm)
-    @wpm = [[wpm, 100].max, 4000].min # ensure wpm is between 100 and 4000
+    @wpm = [[wpm, MINWPM].max, MAXWPM].min # ensure wpm is between 100 and 4000
     print_current_word
   end
 
@@ -130,34 +153,46 @@ class Display
   #       to do all this gross relative positioning.
 
   def print_main_template
+    extender = "─"*(@width-2)
+    top_line = "───────┬─#{extender}"
+    @center  = 8
+    @word_area_size = top_line.size
+
     puts "========================================"
     puts "  TurboReader PRO! Get ready to READ!"
     puts "==========(press ? for help)============"
     puts
-    puts "-" * (@width+2)
+
+
+    puts top_line
     puts
-    puts "-" * (@width+2)
+    puts "───────┴─#{extender}"
     puts
+
   end
 
   def print_current_word
-    status  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
+    wpm_indicator  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
     word    = (@current_word || "")
+    red_char_pos = (word.size * RED_CHAR_PERCENT).round
+
+    indent  = @center - red_char_pos
     padding = @width - word.size
 
     # Colorize the 2nd character
     if word.size >= 2
-      word = word[0] +
+      word = word[0...red_char_pos] +
              "\e[31;1m" + 
-             word[1] +
+             word[red_char_pos] +
              "\e[0m" +
-             word[2..-1]
+             word[red_char_pos+1..-1]
     end
 
-    print "\e[3F" # move up 3 lines
-    print "  #{word}#{" "*padding}  #{status}"
-    print "\e[K"  # clear to end-of-line
-    print "\e[3E" # move down 3 lines
+    print "\e[3F\e[K" # move to start of word area (3 lines up) and clear line
+    print "\e[#{indent}G" # move to position of word
+    print word
+    print "\e[#{@word_area_size}G#{wpm_indicator}"
+    print "\e[3E" # move down to status area
   end
 
   def show_message(message)
@@ -173,7 +208,8 @@ class Display
       show_message "\e[F Q/^C = Quit | SPACE = Pause | Left/Right = Skip word | HOME/END = Start/End\e[E" +
                    " Up/Down = Increase/decrease wpm by 50 | 1-9 = Set wpm to <n> * 100\e[0G"
     else
-      show_message "\e[E"
+      # show_message "\e[E"
+      show_message ""
     end
   end
 
