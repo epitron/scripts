@@ -7,12 +7,6 @@
 #
 # (Based on principles outlined here: http://www.spritzinc.com)
 #
-#
-# TODO:
-#   => if a word is longer than 50 chars, chop it into
-#      50-char pieces and put "..." around the pieces.
-#   => red letter highlight should be based on word length
-#   => move everything to the right a bit
 #######################################################################################################
 
 require 'io/console'
