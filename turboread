@@ -5,7 +5,7 @@
 # --------------------------------------------------------------
 # Speed-read your favourite text files!
 #
-# (Based on principles outlined here: http://www.spritzinc.com)
+# (Based on principles outlined here: http://www.spritzinc.com/the-science/)
 #
 #######################################################################################################
 
@@ -81,7 +81,7 @@ class Display
   DEFAULTWPM       = 600
   MAXWPM           = 4000
   MINWPM           = 100
-  RED_CHAR_PERCENT = 0.17  # how far along the word should the red char appear
+  OPTIMAL_RECOGNITION_POINT = 0.30 # where the "center" of the word is
 
   def initialize(filename)
     @wpm          = DEFAULTWPM
@@ -147,10 +147,10 @@ class Display
   #       to do all this gross relative positioning.
 
   def print_main_template
-    extender = "─"*(@width-2)
-    top_line = "───────┬─#{extender}"
-    @center  = 8
-    @word_area_size = top_line.size
+    extender         = "─"*(@width-2)
+    top_line         = "───────┬─#{extender}"
+    @template_center = 8
+    @word_area_size  = top_line.size
 
     puts "========================================"
     puts "  TurboReader PRO! Get ready to READ!"
@@ -168,12 +168,12 @@ class Display
   def print_current_word
     wpm_indicator  = paused? ? "(PAUSED!)" : "(#{@wpm} wpm)"
     word    = (@current_word || "")
-    red_char_pos = (word.size * RED_CHAR_PERCENT).round
+    red_char_pos = (word.size * OPTIMAL_RECOGNITION_POINT).round
 
-    indent  = @center - red_char_pos
+    indent  = @template_center - red_char_pos
     padding = @width - word.size
 
-    # Colorize the 2nd character
+    # Colorize the center character
     if word.size >= 2
       word = word[0...red_char_pos] +
              "\e[31;1m" + 
@@ -185,7 +185,7 @@ class Display
     print "\e[3F\e[K" # move to start of word area (3 lines up) and clear line
     print "\e[#{indent}G" # move to position of word
     print word
-    print "\e[#{@word_area_size}G#{wpm_indicator}"
+    print "\e[#{@word_area_size+2}G#{wpm_indicator}"
     print "\e[3E" # move down to status area
   end
 
