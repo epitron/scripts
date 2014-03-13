@@ -161,6 +161,7 @@ class Display
   def print_main_template
     extender         = "─"*(@width-2)
     top_line         = "───────┬─#{extender}"
+    bottom_line      = "───────┴─#{extender}"
     @template_center = 8
     @word_area_size  = top_line.size
 
@@ -168,13 +169,10 @@ class Display
     puts "  TurboReader PRO! Get ready to READ!"
     puts "==========(press ? for help)============"
     puts
-
-
     puts top_line
     puts
-    puts "───────┴─#{extender}"
+    puts bottom_line
     puts
-
   end
 
   def print_current_word
