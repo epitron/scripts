@@ -7,6 +7,7 @@
 #
 # TODO:
 #
+# * Accepted nested YAML as input (eg: user.dublincore: attr: <value>)
 # * Instead of printing "Scanning...", just print paths relative to PWD
 # * Batch getfattr
 #
@@ -80,29 +81,36 @@ end
 
 #####################################################################################
 
-def show(path)
+def show(path, format=:text)
   if not path.exists?
     puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
   elsif (attrs = path.attrs).any?
-    grouped = attrs.
-              map_keys { |key| key.split(".") }.
-              sort.
-              group_by { |k,v| k.first == "user" ? k[0..1] : nil }
-
     puts "<15>#{path.filename}".colorize
 
-    grouped.each do |group, group_attrs|
-      if group.nil?
-        group_attrs.each do
-        end
-      else
-        puts "  <3>[<11>#{group.join('.')}<3>]".colorize
-        group_attrs.each do |attr, value|
-          puts "    <9>#{attr[2..-1].join('.')}<8>: <7>#{value}".colorize
+    case format
+    when :text
+      grouped = attrs.
+                map_keys { |key| key.split(".") }.
+                sort.
+                group_by { |k,v| k.first == "user" ? k[0..1] : nil }
+
+      grouped.each do |group, group_attrs|
+        if group.nil?
+          group_attrs.each do
+          end
+        else
+          puts "  <3>[<11>#{group.join('.')}<3>]".colorize
+          group_attrs.each do |attr, value|
+            puts "    <9>#{attr[2..-1].join('.')}<8>: <7>#{value}".colorize
+          end
         end
       end
+      puts
+    when :yaml
+      puts attrs.to_yaml
+    when :json
+      puts attrs.to_json
     end
-    puts
   else
     puts "<7>#{path.filename}".colorize
   end
@@ -119,6 +127,8 @@ def parse_options
     on 'e',  'edit',      'Edit xattrs (with $EDITOR)'
     on 'c',  'copy',      'Copy xattrs from one file to another (ERASING the original xattrs)'
     on 'm',  'merge',     'Overlay xattrs from one file onto another (overwriting only the pre-existing attrs)'
+    on 'y',  'yaml',      'Print xattrs as YAML'
+    on 'j',  'json',      'Print xattrs as JSON'
     on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
     on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
 
@@ -190,11 +200,19 @@ if $0 == __FILE__
         puts "* Scanning #{path}..."
         paths += path.ls
 
-      else      
+      else
 
         edit(path) if opts.edit?
-        show(path)
 
+        if opts.yaml?
+          format = :yaml
+        elsif opts.json?
+          format = :json
+        else
+          format = :text
+        end
+
+        show(path, format)
       end
     end
 

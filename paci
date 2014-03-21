@@ -1,2 +1,2 @@
 #!/bin/bash
-pacman -Si $1 || pacman -Qi $1
+pacman -Qi $1 || pacman -Si $1
