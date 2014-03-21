@@ -60,12 +60,11 @@ routes do
   match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirects }
 
   # Open videos in mplayer
-  match host: %w[youtube.com youtu.be wimp.com vimeo.com blip.tv] do |uri|
-    puts "* Playing #{uri} in mplayer..."
-    system("play", uri)
-  end
+  play_video = proc { |uri| exec("play", uri) }
+  match host: %w[youtube.com youtu.be wimp.com vimeo.com blip.tv], &play_video
+  match host: "ted.com", path: "/talks/", &play_video
 
-  # Oter videos open in browsers that are good at playing videos
+  # Other videos open in browsers that are good at playing videos
   match host: %w[liveleak.com justin.tv infoq.com] do |uri|
     open_in_best_browser uri, VIDEO_BROWSERS
   end
@@ -141,6 +140,8 @@ BEGIN {
     end
 
     def route!(url)
+      # TODO: Avoid infinite routing loops
+
       uri = URI.parse(url)
 
       # Make sure the default is set...
@@ -149,6 +150,8 @@ BEGIN {
       # Try each of the matchers...
       @matchers.each do |args, block|
 
+
+
         matched = args.any? do |arg|
           case arg
 
@@ -156,7 +159,12 @@ BEGIN {
             arg.all? do |key, val|
               case val
               when Array
-                val.any? { |v| uri.send(key)[v] }
+                if key == :host
+                  # match the end of the domain
+                  val.any? { |v| uri.host[/(^|\.)#{v}$/] }
+                else
+                  val.any? { |v| uri.send(key)[v] }
+                end
               when String, Regexp
                 uri.send(key)[val]
               else
