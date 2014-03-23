@@ -1,2 +1,2 @@
 #!/bin/bash
-web "`xclip -o`"
+exec web "`xclip -o`"
