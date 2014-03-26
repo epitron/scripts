@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+def audio_format(filename)
+  output = run_with_stderr("ffmpeg", "-i", filename).each_line do |line|
+    p line
+    if line =~ /Stream .+ Audio: (\w+)/
+      return $1
+    end
+  end
+  nil
+end
+
+args = ARGV
+
+unless args.size == 1
+  puts "usage: ffmpeg-dump-audio <video-filename>"
+  exit
+end
+
+infile = Path[args.first]
+
+unless infile.exists?
+  puts "Error: #{infile} not found."
+  exit 1
+end
+
+format = audio_format(infile)
+
+case format
+when "aac"
+  ext = "m4a"
+when "mp3"
+  ext = "mp3"
+else
+  puts "Unknown input audio format: #{format}"
+  exit 2
+end
+
+outfile = Path[infile].with(ext: ext)
+
+puts "--------------------------------------------------------------------------"
+puts "Extracting audio:"
+puts "    in: #{infile}"
+puts "   out: #{outfile}"
+puts "--------------------------------------------------------------------------"
+puts
+
+system("ffmpeg", "-i", infile, "-vn", "-acodec", "copy", outfile)
