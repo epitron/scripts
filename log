@@ -4,9 +4,9 @@
 # --system
 
 if [ "$1" == "" ]; then
-  journalctl --since=today "$@"
+  journalctl --since=yesterday "$@"
 else
   ARG="$1"
   shift
-  journalctl --since=today -u "*$ARG*" "$@"
+  journalctl --since=yesterday -u "*$ARG*" "$@"
 fi
