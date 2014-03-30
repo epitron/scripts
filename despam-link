@@ -2,14 +2,21 @@
 require 'epitools'
 
 class String
-  def is_link?
+  def url?
     !!(self =~ %r{^https?://.+/.+})
   end
 end
 
 def despam(link)
-  uri = URI.parse(link)
-  uri.query.to_params.values.select(&:is_link?)
+  URI.parse(link).params.values.map do |val|
+    if val.url?
+      val
+    elsif (decoded = val.from_base64).url?
+      decoded
+    else
+      nil
+    end
+  end.compact
 end
 
 if $0 == __FILE__
