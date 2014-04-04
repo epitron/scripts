@@ -1,3 +1,27 @@
-#!/bin/bash
-convert $1 -morphology Convolve DoG:15,100,0 -negate -normalize -blur 0x1 -channel RBG -level 60%,91%,0.1 $2
+#!/usr/bin/env ruby
 
+# Background information: https://gist.github.com/lelandbatey/8677901
+
+infile, outfile = ARGV
+
+if infile.nil?
+  puts "usage: whiteboard-cleaner <input image> [<output image>]"
+  exit 1
+elsif outfile.nil?
+  require 'epitools'
+  infile = Path[infile]
+  outfile = infile.with(basename: "#{infile.basename}-clean")
+end
+
+cmd = ["convert", infile.to_s]
+cmd += %w[-morphology Convolve DoG:15,100,0
+          -negate -normalize -blur 0x1 -channel RBG
+          -level 60%,91%,0.1]
+cmd += [outfile.to_s]
+
+p cmd
+
+system *cmd
+
+puts
+system "ls", "-l", outfile.to_s
