@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: image-tile <n>x<m> [input images] [output image]"
+  echo
+  echo "(creates an n-by-m grid out of the input images)"
+else
+  montage -mode concatenate -tile $*
+fi
