@@ -33,6 +33,8 @@ when "aac"
   ext = "m4a"
 when "mp3"
   ext = "mp3"
+when "vorbis"
+  ext = "ogg"
 else
   puts "Unknown input audio format: #{format}"
   exit 2

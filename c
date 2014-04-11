@@ -167,7 +167,7 @@ class BlackCarpet < Redcarpet::Render::Base
     code.cyan
   end
 
-  def header(title, level)
+  def header(title, level, anchor=nil)
     color = case level
       when 1 then :light_yellow
       when 2 then :light_cyan

@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+for arg in ARGV
+  system("ffprobe", "-hide_banner", arg)
+  puts
+end

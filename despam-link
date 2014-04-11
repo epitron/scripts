@@ -19,26 +19,34 @@ def despam(link)
   end.compact
 end
 
+def show_links_for(url)
+  puts "Extracted links:"
+  links = despam(url)
+
+  if links.any?
+    links.each { |link| puts "\t#{link}" }
+  else
+    puts "\tnone found"
+  end
+end
+
 if $0 == __FILE__
 
   args = ARGV
 
   if args.empty?
-    print "Paste link: "
-    args << gets.strip
+    loop do
+      print "Paste link: "
+      url = gets.strip
+      
+      show_links_for url
+      puts
+    end
   end
 
   if args.any?
     args.each do |arg|
-      puts "Extracted links:"
-      links = despam(arg)
-
-      if links.any?
-        links.each { |link| puts "\t#{link}" }
-      else
-        puts "\tnone found"
-      end
-
+      show_links_for arg
     end
   end
 
