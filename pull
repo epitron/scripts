@@ -38,6 +38,8 @@ def pull(path)
       cmd = "svn update"
     elsif (path/"CVS").dir?
       cmd = "cvs update -dP"
+    elsif (path/"pull").exists?
+      cmd = "./pull"
     elsif false #bzr
       cmd = "bzr update"
     else
