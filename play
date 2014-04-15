@@ -164,9 +164,13 @@ def xspf_file(title, media_url)
  </trackList>
 </playlist>}
 
-  file = Tempfile.new(["play", ".xspf"])
+  file = Tempfile.create ["play", ".xspf"]
+  #file = Tempfile.new ["play", ".xspf"]
+
   file.puts xml
-  file.flush
+
+  file.close
+  # file.flush
 
   file
 end
@@ -189,10 +193,11 @@ write_to_log(url, title)
 notify(:video, "Playing:", title, time: 4)
 
 if media_url =~ %r{^https://}i
-  # cmd = ["totem", "--enqueue", media_url]
   xspf = xspf_file(title, media_url)
 
-  cmd = ["totem", xspf.path]
+  # cmd = ["totem", xspf.path]
+  # cmd = ["totem", "--enqueue", xspf.path]
+  cmd = ["parole", "-i", xspf.path]
 else  
   cmd = %w[mplayer -title] + 
           [title] + 
@@ -203,5 +208,4 @@ else
   cmd += ["-ss", seek] if seek
 end
 
-# Server returned 403: Forbidden
 system(*cmd)

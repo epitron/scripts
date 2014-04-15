@@ -1,0 +1,3 @@
+#!/bin/bash
+#sudoifnotroot sysdig -c topprocs_file
+sudoifnotroot sysdig -c fdbytes_by proc.exe

@@ -249,6 +249,7 @@ alias jc='journalctl'
 alias jt='journalctl -f'
 alias pkgfile='sudoifnotroot pkgfile'
 alias sys='systemctl'
+alias sysdig='sudoifnotroot sysdig'
 
 alias flash='crutziplayer'
 alias rdp='xfreerdp'

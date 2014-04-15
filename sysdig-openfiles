@@ -1,0 +1,2 @@
+#!/bin/bash
+sudoifnotroot sysdig -p "%12user.name %6proc.pid %12proc.name %3fd.num %fd.typechar %fd.name" evt.type=open
