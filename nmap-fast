@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+TWOBYTES_RE = /[a-f0-9]{4}/i
+IP6_RE = /^(?:#{TWOBYTES_RE}:){7}#{TWOBYTES_RE}$/
+
+opts, args = ARGV.partition {|arg| arg[/^-\w+/] }
+
+if args.size != 1
+  puts "usage: nmap-fast <address>"
+  exit 1
+else
+  # nmap -6 -n -r -v -p1-65535 -sT fc12:4011:20c0:d8a6:d7e3:c696:4a1c:e43e
+
+  addr = args.first
+  cmd = %w[nmap -n -r -v -sT]
+  unless ports = opts.find { |opt| opt[/^-p/] }
+    ports = "-p1-65535"
+  end
+
+  cmd << ports
+  cmd << "-6" if addr =~ IP6_RE
+  cmd << addr
+  
+  system *cmd
+end
+
