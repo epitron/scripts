@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+require 'digest/sha2'
+
+IGNORE = %w[
+  .git
+  .svn
+  .bzr
+  .hg
+  CVS
+]
+
+def hashtree(dir)
+  result = nil
+
+  FileUtils.cd(dir) do
+
+    result = Dir["**/*"].sort.map do |path|
+      next if IGNORE.include? path
+      next if File.directory? path
+
+      begin
+        hash = Digest::SHA2.file(path)
+      rescue Errno::ENOENT
+        if File.symlink? path
+          hash = Digest::SHA2.hexdigest(path)
+        else
+          next
+        end
+      end
+
+      [hash, path]
+    end
+    
+  end
+
+  result
+end
+
+args = ARGV
+
+if args.size != 1
+  puts "usage: treesum [directory]"
+  exit 1
+else
+  dir = args.first
+
+  if not File.directory? dir
+    $stderr.puts "Error: #{dir.inspect} is not a directory"
+    exit 1
+  end
+
+  hashes = hashtree(dir)
+  hashes.each { |sum, path| puts "#{sum}\t#{path}" }
+end
+
