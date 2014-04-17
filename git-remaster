@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: git-remaster <branch-to-make-the-new-master>"
+else
+  git checkout $1
+  git merge -s ours master
+  git checkout master
+  git merge $1
+fi
+
