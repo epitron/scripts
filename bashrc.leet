@@ -229,7 +229,6 @@ alias dpkg='sudoifnotroot dpkg'
 
 ## Arch linux
 alias pacman='sudo pacman'
-alias pac='pacman -S'     # install package
 alias pacs='pacman -Ss'   # search for package
 alias pacg='pacman -Qg'   # show groups
 alias pacu='pacman -Syu'  # update packages
@@ -242,6 +241,7 @@ alias pacq='pacman -Q|grep'  # find a package
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias y='yaourt'
 alias yu='y -Syua'
+alias abs='sudoifnotroot abs'
 
 alias systemctl='sudoifnotroot systemctl'
 alias journalctl='sudoifnotroot journalctl'
