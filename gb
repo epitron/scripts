@@ -168,8 +168,14 @@ elsif args.first.downcase == "-t"
     remote = "#{remote}/#{current}"
   end
 
+  # FIXME: Create remote branch (or "git push origin master" ) if branch doesn't exist
+  # $ gb -t
+  # * master tracking origin/master
+  # fatal: branch 'origin/master' does not exist
+
+
   puts "<grey>* <light_yellow>#{current} <white>tracking <light_green>#{remote}".colorize
-  system("git branch --set-upstream #{current} #{remote}")
+  system("git branch --set-upstream-to=#{remote} #{current}")
 else
   ## Branch
   branches = get_branches

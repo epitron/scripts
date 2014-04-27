@@ -124,6 +124,62 @@ def play_click_sound
   run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
 end
 
+def xspf_file(title, media_url)
+  require 'tempfile'
+  require 'cgi'
+
+  xml = %{<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/">
+ <trackList>
+  <track>
+   <title>#{CGI.escape_html title}</title>
+   <location>#{CGI.escape_html  media_url}</location>
+  </track>
+ </trackList>
+</playlist>}
+
+  file = Tempfile.create ["play", ".xspf"]
+  #file = Tempfile.new ["play", ".xspf"]
+
+  file.puts xml
+
+  file.close
+  # file.flush
+
+  file
+end
+
+def play(url)
+  notify(:info, "Processing:", url, time: 3); play_click_sound
+
+  media_url, title = youtube_dl(url)
+  # p media_url: media_url
+  # media_url.gsub!(/^https:/, "http:") # mplayer doesn't support https://
+  # p media_url_fixed: media_url
+
+  write_to_log(url, title)
+
+  notify(:video, "Playing:", title, time: 4)
+
+  if media_url =~ %r{^https://}i
+    xspf = xspf_file(title, media_url)
+
+    # cmd = ["totem", xspf.path]
+    # cmd = ["totem", "--enqueue", xspf.path]
+    cmd = ["parole", "-i", xspf.path]
+  else  
+    cmd = %w[mplayer -title] + 
+            [title] + 
+          # %w[-really-quiet] +
+          %w[-cache 20000 -cache-min 0.0128] + 
+            [media_url]
+
+    cmd += ["-ss", seek] if seek
+  end
+
+  system(*cmd)
+end
+
 ###########################################################
 
 args = ARGV
@@ -150,62 +206,14 @@ if opts.any?
   end
 end
 
-def xspf_file(title, media_url)
-  require 'tempfile'
-  require 'cgi'
 
-  xml = %{<?xml version="1.0" encoding="UTF-8"?>
-<playlist version="1" xmlns="http://xspf.org/ns/0/">
- <trackList>
-  <track>
-   <title>#{CGI.escape_html title}</title>
-   <location>#{CGI.escape_html  media_url}</location>
-  </track>
- </trackList>
-</playlist>}
+if args.empty?
+  tail_log
 
-  file = Tempfile.create ["play", ".xspf"]
-  #file = Tempfile.new ["play", ".xspf"]
+# Url
+elsif args.first =~ %r{^https?://}i
+  play(args.first)
 
-  file.puts xml
-
-  file.close
-  # file.flush
-
-  file
+else
+  tail_log args
 end
-
-help! if args.empty?
-
-###########################################################
-
-url = args.first
-
-notify(:info, "Processing:", url, time: 3); play_click_sound
-
-media_url, title = youtube_dl(url)
-# p media_url: media_url
-# media_url.gsub!(/^https:/, "http:") # mplayer doesn't support https://
-# p media_url_fixed: media_url
-
-write_to_log(url, title)
-
-notify(:video, "Playing:", title, time: 4)
-
-if media_url =~ %r{^https://}i
-  xspf = xspf_file(title, media_url)
-
-  # cmd = ["totem", xspf.path]
-  # cmd = ["totem", "--enqueue", xspf.path]
-  cmd = ["parole", "-i", xspf.path]
-else  
-  cmd = %w[mplayer -title] + 
-          [title] + 
-        # %w[-really-quiet] +
-        %w[-cache 20000 -cache-min 0.0128] + 
-          [media_url]
-
-  cmd += ["-ss", seek] if seek
-end
-
-system(*cmd)

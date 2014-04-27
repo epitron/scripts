@@ -100,7 +100,7 @@ if __FILE__ == $0
     if File.exists? new_filename
       STDIN.purge
       print "#{new_filename} exists. Overwrite? (y/N) "
-      case gets.strip.downcase
+      case $stdin.gets.strip.downcase
       when "y"
         puts "Clobbering..."
       else

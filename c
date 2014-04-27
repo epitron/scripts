@@ -172,6 +172,7 @@ class BlackCarpet < Redcarpet::Render::Base
       when 1 then :light_yellow
       when 2 then :light_cyan
       when 3 then :light_blue
+      else :purple
     end
     
     bar = ("-"*(title.size+4)).grey
