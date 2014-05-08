@@ -260,6 +260,8 @@ alias gource='gource --user-image-dir ~/.cache/gravatars'
 
 alias j='journalctl'
 
+alias psx='pcsxr'
+
 gem-cd() { cd `gem-dir $@` ;}
 
 # mkdir and cd, all in one!
@@ -281,3 +283,5 @@ pushpath() {
   echo "'$dir' added to path."
 }
 
+alias record-desktop="simplescreenrecorder"
+alias detach='bg; disown'
