@@ -81,36 +81,74 @@ end
 
 #####################################################################################
 
+def translate_value(key, value)
+  case key
+  when "security.capability"
+    # struct vfs_cap_data_disk {
+    #   __le32 version;
+    #   __le32 effective;
+    #   __le32 permitted;
+    #   __le32 inheritable;
+    # };
+
+    bitmaps = [:effective, :permitted, :inheritable]
+
+    version, *maps = value.unpack("L*")
+
+    "#{value.bytes.size} v#{version}, maps: #{maps.inspect}"
+  else
+    value
+  end
+end
+
+
 def show(path, format=:text)
   if not path.exists?
+
     puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
+
   elsif (attrs = path.attrs).any?
+
     puts "<15>#{path.filename}".colorize
 
     case format
     when :text
       grouped = attrs.
-                map_keys { |key| key.split(".") }.
+                map { |k, v| [k.split("."), translate_value(k, v)] }.
                 sort.
-                group_by { |k,v| k.first == "user" ? k[0..1] : nil }
+                group_by { |k,v| k[0..1] } # first 2 parts of the key
 
-      grouped.each do |group, group_attrs|
-        if group.nil?
-          group_attrs.each do
-          end
+      grouped.each do |first_2_namespaces, attrs_in_namespace|
+        primary_namespace = first_2_namespaces.first
+
+        case primary_namespace
+        when "security"
+          a,b = 4,12
+        when "trusted"
+          a,b = 5,13
+        when "user"
+          a,b = 3,11
         else
-          puts "  <3>[<11>#{group.join('.')}<3>]".colorize
-          group_attrs.each do |attr, value|
-            puts "    <9>#{attr[2..-1].join('.')}<8>: <7>#{value}".colorize
-          end
+          a,b = 8,15
+        end
+
+        puts "  <#{a}>[<#{b}>#{first_2_namespaces.join('.')}<#{a}>]".colorize
+        attrs_in_namespace.each do |attr, value|
+          sub_namespace = attr[2..-1].join('.')
+          puts "    <9>#{sub_namespace}<8>: <7>#{value}".colorize
         end
       end
+
       puts
+
     when :yaml
       puts attrs.to_yaml
+
     when :json
       puts attrs.to_json
+
     end
+
   else
     puts "<7>#{path.filename}".colorize
   end
