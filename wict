@@ -98,7 +98,7 @@ end
 def lookup(args)
 
   bdb_open(INDEX) do |bdb|
-    lesspipe do |less|
+    lesspipe(wrap: true) do |less|
 
       args.map(&:downcase).each do |arg|
 

@@ -328,7 +328,6 @@ end
 #####################################################################################
 
 def extract_audio(file, outfile=nil, extras: [])
-  
   outfile = change_ext(file, ".wav") unless outfile
 
   puts "* Extracting audio from: #{file}"
@@ -336,15 +335,15 @@ def extract_audio(file, outfile=nil, extras: [])
 
   report_thread = report_on(outfile)
 
-  filtered_mplayer(
-    %w[mplayer -vo null -af-clr -af resample=44100:0:1,format=s16ne] + ["-ao", "pcm:fast:file=%#{outfile.size}%#{outfile}", file] + extras,
-    verbose: @opts[:verbose]
-  )
+  cmd =     %w[mplayer -vo null -af-clr -af resample=44100:0:1,format=s16ne] + 
+      ["-ao", "pcm:fast:file=%#{outfile.size}%#{Shellwords.shellescape outfile}", file] + 
+      extras
+
+  filtered_mplayer cmd, verbose: @opts[:verbose]
 
   report_thread.kill
 
   outfile
-
 end
 
 #####################################################################################
