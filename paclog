@@ -10,7 +10,8 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
   # 2010-12-03 01:36:56 remove gir1.0-mutter-2.31 2.31.5-0ubuntu9 2.31.5-0ubuntu9
   # 2010-12-03 01:36:58 install gir1.0-mutter-2.91 <none> 2.91.2+git20101114.982a10ac-0ubuntu1~11.04~ricotz0  
   #LINE_RE = /^(.+ .+) (status \w+|\w+) (.+) (.+)$/
-  LINE_RE = /^\[(.+ .+)\] (removed|installed|upgraded) (.+) \((.+)(?: -> (.+))?\)$/
+  DATE_RE = /[\d:-]+/
+  LINE_RE = /^\[(#{DATE_RE} #{DATE_RE})\] (removed|installed|upgraded) (.+) \((.+)(?: -> (.+))?\)$/
 
   CMD_COLORS = {
     'removed' => :light_red,
@@ -33,7 +34,7 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
 
   def to_s
     date, time = datestr.split
-    "<grey>[<white>#{date} #{time}<grey>] <#{cmd_color}>#{cmd} <light_cyan>#{name} <light_white>#{v2} <white>(#{v1})".colorize
+    "<grey>[<white>#{date} #{time}<grey>] <#{cmd_color}>#{cmd} <light_cyan>#{name} #{"<light_white>#{v2} " if v2}<white>(#{v1})".colorize
   end  
 
   def self.parse_date(date)
@@ -101,7 +102,7 @@ class History
 end
 
 def show_events(events)
-  lesspipe(:tail=>true) do |less| 
+  lesspipe do |less| 
     events.each { |event| less.puts event }
   end
 end
@@ -182,7 +183,7 @@ def main
       es = History.between(first, last)
 
     else
-      puts 'dhist (dpkg install history)'
+      puts 'paclog (pacman install history)'
       puts '------------------------------------------'
       puts
       puts 'Commands:'
