@@ -11,7 +11,7 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
   # 2010-12-03 01:36:58 install gir1.0-mutter-2.91 <none> 2.91.2+git20101114.982a10ac-0ubuntu1~11.04~ricotz0  
   #LINE_RE = /^(.+ .+) (status \w+|\w+) (.+) (.+)$/
   DATE_RE = /[\d:-]+/
-  LINE_RE = /^\[(#{DATE_RE} #{DATE_RE})\] (removed|installed|upgraded) (.+) \((.+)(?: -> (.+))?\)$/
+  LINE_RE = /^\[(#{DATE_RE} #{DATE_RE})\](?: \[PACMAN\])? (removed|installed|upgraded) (.+) \((.+)(?: -> (.+))?\)$/
 
   CMD_COLORS = {
     'removed' => :light_red,
