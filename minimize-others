@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+# https://github.com/ytaka/ruby-wmctrl
+begin
+  require 'wmctrl'
+rescue
+  $stderr.puts "Please install the ruby-wmctrl gem ('gem install ruby-wmctrl')"
+  exit 1
+end
+
+wm             = WMCtrl.instance
+desktop_id     = wm.desktops.find(&:current).id
+other_windows  = wm.windows(desktop: desktop_id, active: nil)
+current_window = wm.windows(desktop: desktop_id, active: true).first
+
+# Minimize it
+
+exit if other_windows.empty?
+
+if other_windows.all? {|w| w.state.include? "_NET_WM_STATE_HIDDEN" }
+  action = "windowraise"
+else
+  action = "windowminimize"
+end
+
+cmd = ["xdotool"]
+other_windows.each do |w|
+  cmd += [action, w.id.to_s]
+end
+
+if action == "windowraise"
+  cmd += ["windowactivate", current_window.id.to_s]
+end
+
+system *cmd
+
+
+
+# action_window(w.id, :change_state, "add", ...?)
+# :state=>["_NET_WM_STATE_HIDDEN"]
+# state_name = XGetAtomName(disp, window_state[j]);
+# xcb_atom_t _NET_WM_STATE_HIDDEN;
+
