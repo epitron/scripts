@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+require 'slop'
+
+#####################################################################################
+# OPTION PARSER
+
+def parse_options
+  @opts = Slop.parse(help: true, strict: true) do
+    banner 'Usage: handbrake-phone-video [options] <video>'
+
+    on 'o=', 'out',       'Output file'
+    on 'p=', 'preset',    'Preset (default=Normal)',       default: "Normal"
+    on 'r=', 'rotate',    'Rotate degrees (default=auto)', default: "auto"
+    on 'l=', 'length',    'Encode this amount of the video'
+    on 's=', 'start',     'Start at this time'
+    on 'e=', 'end',       'Stop at this time'
+
+    # on 'v',  'verbose',   'Show extra debug information'
+  end
+end
+
+#####################################################################################
+
+if $0 == __FILE__
+  opts  = parse_options
+  files = ARGV
+
+  unless files.any?
+    puts "Error: Must supply one video file."
+    puts
+    puts parse_options
+    exit 1
+  end
+
+  if files.size > 1 and opts[:out]
+    puts "Error: Can't specify -o when passing multiple input files."
+    exit 1
+  end
+
+  files.each do |file|
+    inp = file.to_Path
+    outp = opts[:out] || inp.with(base: inp.base + "-handbraked")
+
+    cmd = ["HandBrakeCLI"]
+
+    if opts[:preset] == "help" or opts[:preset] == "list"
+
+      cmd << "--preset-list"
+
+    else
+
+      cmd += ["-i", inp.to_s, "-o", outp.to_s, "--preset", opts[:preset]]
+
+      if opts[:rotate] == "auto"
+        rotate = run_with_stderr("ffprobe", inp).scan(/rotate\s+:\s+(\d+)/).flatten.first
+      else
+        rotate = opts[:rotate]
+      end
+
+      # --rotate arguments:
+      #   (rhv)
+      # 0: 000 = none (rotate 0°)
+      # 1: 001 = vflip
+      # 2: 010 = hflip
+      # 3: 011 = hflip + vflip (rotate 180°)
+      # 4: 100 = right (rotate 90°)
+      # 5: 101 = right + hflip
+      # 6: 110 = right + vflip
+      # 7: 111 = right + hflip + vflip (rotate 270°)
+
+      if rotate
+        case rotate
+        when "270" then r = 7
+        when "180" then r = 3
+        when "90"  then r = 4
+        when "0"   then r = 0
+        else raise "Error: Unknown rotation value: #{rotate}"
+        end
+    
+        cmd += ["--rotate=#{r}"]
+      end
+
+      cmd += ["--start-at", "duration:#{opts[:start]}"] if opts[:start]
+      cmd += ["--stop-at", "duration:#{opts[:length]}"] if opts[:length]
+      cmd += ["--stop-at", "duration:#{opts[:end]}"] if opts[:end]
+
+    end
+
+    # HandBrakeCLI -i "VID_20140519_221543 - front lawn concert.mp4" --rotate 3 --cfr --preset=Normal -o /d/front\ lawn\ concert2.mp4
+    p cmd
+    system *cmd
+    # run_with_stderr(*cmd) do |io|
+    #   io.each_line do |line|
+    #     puts line # if line =~ /Encoding:/
+    #   end
+    # end
+  end
+end
