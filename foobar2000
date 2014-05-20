@@ -24,8 +24,8 @@ echo "LAUNCHING FOOBAR2000 PORTABLE EDITION"
 echo "#####################################"
 echo
 
-echo "Starting tray alert daemon..."
-#foo -n &
+# echo "Starting tray alert daemon..."
+# foo -n &
 
 echo "Starting foobar2000..."
 wine $FBHOME/foobar2000.exe

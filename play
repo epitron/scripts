@@ -46,6 +46,7 @@ end
 
 def youtube_dl(url)
   out, err, status = run("youtube-dl", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url)
+  # out, err, status = run("youtube-dl", "-o", "%(title)s (%(upload_date)s).%(ext)s", "--no-playlist", "-g", "--get-filename", url)
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
@@ -149,7 +150,9 @@ def xspf_file(title, media_url)
   file
 end
 
-def play(url)
+CACHEDIR = File.expand_path("~/play")
+
+def play(url, seek=nil)
   notify(:info, "Processing:", url, time: 3); play_click_sound
 
   media_url, title = youtube_dl(url)
@@ -162,21 +165,26 @@ def play(url)
   notify(:video, "Playing:", title, time: 4)
 
   if media_url =~ %r{^https://}i
-    xspf = xspf_file(title, media_url)
+    # media_url = "http_proxy://localhost:8080/#{media_url}"
 
+    xspf = xspf_file(title, media_url)
     # cmd = ["totem", xspf.path]
     # cmd = ["totem", "--enqueue", xspf.path]
     cmd = ["parole", "-i", xspf.path]
-  else  
+  else
+    # cachefile = File.join(CACHEDIR, title)
+    # title     = title.gsub(/\.\w+$/, '') # remove extension
+
     cmd = %w[mplayer -title] + 
             [title] + 
-          # %w[-really-quiet] +
-          %w[-cache 20000 -cache-min 0.0128] + 
+            %w[-cache 20000 -cache-min 0.0128] + 
+            # %w[-dumpstream -dumpfile] + [cachefile] +
+            # %w[-really-quiet] +
             [media_url]
 
     cmd += ["-ss", seek] if seek
   end
-
+  
   system(*cmd)
 end
 
@@ -212,7 +220,7 @@ if args.empty?
 
 # Url
 elsif args.first =~ %r{^https?://}i
-  play(args.first)
+  play(args.first, seek)
 
 else
   tail_log args

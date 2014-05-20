@@ -1,0 +1,1 @@
+j4-dmenu-desktop --dmenu="dmenu -l 20 -i -b -p 'App:'"

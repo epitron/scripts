@@ -285,3 +285,4 @@ pushpath() {
 
 alias record-desktop="simplescreenrecorder"
 alias detach='bg; disown'
+alias b='chromium'
