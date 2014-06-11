@@ -1,5 +1,9 @@
 #!/bin/bash
-CMD="/usr/bin/fortune"
+if [ -f /usr/bin/fortune ]; then
+  CMD="/usr/bin/fortune"
+elif [ -f /usr/games/fortune ]; then
+  CMD="/usr/games/fortune"
+fi
 
 #FORTUNES="-e wisdom education science art work politics definitions law startrek"
 FORTUNES=~/scripts/fortunes/

@@ -56,7 +56,7 @@ end
 splitpath = ENV["PATH"].split(":")
 dmenu_options = '-l 20 -i -b -p "Launch:"'
 
-if system("stest", "-dqr", "-n", BINARIES_FILE, *splitpath) # if new files in path...
+if not File.exists?(BINARIES_FILE) or system("stest", "-dqr", "-n", BINARIES_FILE, *splitpath) # if new files in path...
   bins = `stest -flx #{splitpath.join ' '} | sort -u | tee #{BINARIES_FILE}`.lines.map(&:strip)
 else
   # result = `cat "#{BINARIES_FILE}" | dmenu #{dmenu_options}`
