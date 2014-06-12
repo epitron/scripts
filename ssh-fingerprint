@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo
+if [ "$1" == "" ]; then
+  echo "=== Local fingerprint ==="
+  echo
+  ssh-keygen -lv -f /etc/ssh/ssh_host_rsa_key
+else
+  HOST="$1"
+  echo "=== Remote fingerprint for $HOST ==="
+  echo
+  t=$(tempfile) || exit
+  if ssh-keyscan $HOST > $t; then
+    ssh-keygen -lv -f $t
+  fi
+  rm $t
+fi
