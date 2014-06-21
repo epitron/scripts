@@ -102,6 +102,7 @@ def tail_log(query=nil, n=10)
 
   ## Results
 
+  open(LOGFILE, "wb") {} unless File.exists?(LOGFILE)
   open(LOGFILE) do |log|
     entries = log.reverse_each.lazy.map {|l| LogEntry.new(l) }
     entries = entries.select { |entry| entry.title =~ regexp } if query
