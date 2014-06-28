@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'coolline'
 require 'fileutils'
-
+require 'set'
 
 def split_ext(filename)
   filename.split /(\.[^\.]+)$/
@@ -15,7 +15,7 @@ def bracket_years(s)
   s.gsub(/(?:19|20)\d\d/, "(\\0)")
 end
 
-LOW_WORDS = %w[of to or the and an a at is for from]
+LOW_WORDS = Set.new %w[of to or the and an a at is for from in]
 def titlecase(str)
   first = true
   words = str.downcase.split(/\b/)
@@ -87,7 +87,14 @@ if __FILE__ == $0
 
     puts "Rename: #{arg}"
 
-    new_filename = edit_filename("    to: ", arg)
+    begin
+      new_filename = edit_filename("    to: ", arg)
+    rescue Interrupt
+      puts
+      puts
+      puts "Rename aborted..."
+      exit 1
+    end
 
     puts
 
