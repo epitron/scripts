@@ -1,2 +1,8 @@
 #!/bin/bash
-wine ~/.wine/drive_c/"Program Files (x86)"/Google/Picasa3/Picasa3.exe
+# wine ~/.wine/drive_c/"Program Files (x86)"/Google/Picasa3/Picasa3.exe
+# WINEARCH=win32
+# WINEPREFIX=~/.local/share/wineprefixes/picasa
+# wine $WINEPREFIX/drive_c/Program\ Files/Google/Picasa3/Picasa3.exe
+# winecfg
+# WINEARCH=win32 WINEPREFIX=~/.local/share/wineprefixes/picasa38 wine ~/downloads/picasa38-setup.exe
+WINEARCH=win32 WINEPREFIX=~/.local/share/wineprefixes/picasa38 wine ~/.local/share/wineprefixes/picasa38/drive_c/Program\ Files/Google/Picasa3/Picasa3.exe

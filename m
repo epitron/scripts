@@ -19,6 +19,11 @@ end
 
 #####################################################################################
 
+def run_with_stderr(*cmd)
+  result = IO.popen(cmd, err: [:child, :out]) { |io| io.read }
+  result.empty? ? nil : result
+end
+
 def change_ext(path, new_ext)
   path.gsub(/\.[^\.]+$/, new_ext)
 end  
