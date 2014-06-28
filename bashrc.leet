@@ -279,7 +279,7 @@ pushpath() {
     dir="`readlink -m "$1"`"
   fi
 
-  export PATH=$PATH:"$dir"
+  export PATH="$dir":$PATH
   echo "'$dir' added to path."
 }
 
