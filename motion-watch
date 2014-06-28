@@ -1,0 +1,1 @@
+ffplay http://localhost:9901/stream.mjpeg &> /dev/null
