@@ -1,9 +1,17 @@
-#!/usr/bin/ruby
+# #!/usr/bin/ruby
+
+Bond.config[:debug] = true if defined? Bond
 
 # theme
-#Pry.config.theme = "tomorrow"
-#Pry.config.theme = "vim-detailed"
-Pry.config.theme = "zenburn"
+# Pry.config.theme = "vim-detailed"
+# Pry.config.theme = "tomorrow"
+# Pry.config.theme = "solarized"
+Pry.config.theme = "pry-siberia-16"
+
+# Pry.config.theme = "zenburn"
+# Pry.config.theme = "pry-classic-256"
+# Pry.config.theme = "twilight"
+
 
 ###################################################################
 ## Gem Loader
@@ -23,31 +31,61 @@ end
 
 #req 'open-uri'
 req 'epitools'
-req 'awesome_print'
+#req 'coolline'
 
-req 'coderay'
-req 'coolline'
+# req 'awesome_print' do
+#   AwesomePrint.pry!
+  
+#   # # awesomeprint output
+#   # Pry.config.print = proc do |output, value|
+#   #   pretty = value.ai(:indent=>2)
+#   #   #Pry::Helpers::BaseHelpers.paged_output("=> #{pretty}", :output=>output)
+#   #   Pry::Helpers::BaseHelpers.stagger_output("=> #{pretty}", output)
+#   # end
+# end
 
-=begin
-# cooline input
-Pry.config.input = Coolline.new do |c|
-  c.transform_proc = proc do
-    CodeRay.scan(c.line, :ruby).term
-  end
+req 'coolline' do
+  req 'coderay' do
 
-  c.completion_proc = proc do
-    word = c.completed_word
-    Object.constants.map(&:to_s).select { |w| w.start_with? word }
+    Pry.config.input = Coolline.new do |c|
+
+      # c.word_boundaries += ["."]
+
+      c.transform_proc = proc do
+        CodeRay.scan(c.line, :ruby).term
+      end
+
+      c.completion_proc = proc do
+        word = c.completed_word
+        Object.constants.map(&:to_s).select { |w| w.start_with? word }
+      end
+    end
+
   end
 end
-=end
 
-# awesomeprint output
-Pry.config.print = proc do |output, value|
-  pretty = value.ai(:indent=>2)
-  #Pry::Helpers::BaseHelpers.paged_output("=> #{pretty}", :output=>output)
-  Pry::Helpers::BaseHelpers.stagger_output("=> #{pretty}", output)
+###################################################################
+## History
+
+PRY_CONFIG_DIR = File.expand_path("~/.pry")
+
+Pry.history.loader = proc do |&block|
+  Dir["#{PRY_CONFIG_DIR}/history-*.log"].sort_by { |f| File.mtime f }.last(2).each do |fn|
+    File.foreach(fn) { |line| block.call(line) }
+  end
 end
+ 
+# history_file = nil
+ 
+Pry.history.saver = proc do |line|
+  if !@history_file
+    Dir.mkdir(PRY_CONFIG_DIR) unless File.exists?(PRY_CONFIG_DIR)
+    filename = "#{PRY_CONFIG_DIR}/history-#{Time.now.strftime('%Y-%m-%d')}.log"
+    @history_file = File.open(filename, 'a', 0600).tap { |f| f.sync = true }
+  end
+  @history_file.puts(line)
+end
+
 
 
 # friendly prompt
@@ -80,27 +118,22 @@ Pry.config.prompt = [
 =end
 
 ## PrintMembers
+# req 'print_members' do
+#   Pry.commands.instance_eval do
+#     rename_command "oldls", "ls"
+#     command "ls", "Better ls" do |arg|
+#       #if target.eval(arg)
+#       query = arg ? Regexp.new(arg, Regexp::IGNORECASE) : //
+#       PrintMembers.print_members(target.eval("self"), query)
+#     end
+#   end
+# end
 
-req 'print_members' do
-
-
-  Pry.commands.instance_eval do
-    rename_command "oldls", "ls"
-
-    command "ls", "Better ls" do |arg|
-      #if target.eval(arg)
-      query = arg ? Regexp.new(arg, Regexp::IGNORECASE) : //
-      PrintMembers.print_members(target.eval("self"), query)
-    end
-  end
-
-end
-
-Pry.commands.command(/^wtf([?!]*)/, "show backtrace") do |arg|
-  raise Pry::CommandError, "No most-recent exception" unless _pry_.last_exception
-  output.puts _pry_.last_exception
-  output.puts _pry_.last_exception.backtrace.first([arg.size, 0.5].max * 10)
-end
+# Pry.commands.command(/^wtf([?!]*)/, "show backtrace") do |arg|
+#   raise Pry::CommandError, "No most-recent exception" unless _pry_.last_exception
+#   output.puts _pry_.last_exception
+#   output.puts _pry_.last_exception.backtrace.first([arg.size, 0.5].max * 10)
+# end
 
 ## Sketches
 
@@ -133,40 +166,46 @@ req 'rdoc/ri/driver' do
 end
 =end
 
-Pry.commands.command "ri", "RI it up!" do |*names|
-  # lazy loading
-  require 'rdoc/ri/driver'
 
-  unless RDoc::RI::Driver.responds_to? :monkeypatched?
-    class RDoc::RI::Driver
-      def page
-        lesspipe {|less| yield less}
-      end
+###################################################################
+# ri
 
-      def formatter(io)
-        if @formatter_klass then
-          @formatter_klass.new
-        else
-          RDoc::Markup::ToAnsi.new
-        end
-      end
+# Pry.commands.command "ri", "RI it up!" do |*names|
+#   require 'rdoc/ri/driver'
 
-      def monkeypatched?
-        true
-      end
-    end
-  end
+#   unless RDoc::RI::Driver.responds_to? :monkeypatched?
+#     class RDoc::RI::Driver
+#       def page
+#         lesspipe {|less| yield less}
+#       end
 
-  ri = RDoc::RI::Driver.new :use_stdout => true, :interactive => false
+#       def formatter(io)
+#         if @formatter_klass then
+#           @formatter_klass.new
+#         else
+#           RDoc::Markup::ToAnsi.new
+#         end
+#       end
 
-  begin
-    ri.display_names names
-  rescue RDoc::RI::Driver::NotFoundError => e
-    $stderr.puts "error: '#{e.name}' not found"
-  end
+#       def monkeypatched?
+#         true
+#       end
+#     end
+#   end
 
-end
+#   ri = RDoc::RI::Driver.new :use_stdout => true, :interactive => false
 
+#   begin
+#     ri.display_names names
+#   rescue RDoc::RI::Driver::NotFoundError => e
+#     $stderr.puts "error: '#{e.name}' not found"
+#   end
+
+# end
+
+
+###################################################################
+# Colours
 
 module Pry::Helpers::Text
   class << self
@@ -177,8 +216,13 @@ end
 
 
 
+###################################################################
+# Other stuff
 
 Pry.commands.instance_eval do
+
+  alias_command("@", "whereami")
+  alias_command("stack", "show-stack") rescue nil
 
   command "gem-search" do |*args|
     require 'open-uri'
