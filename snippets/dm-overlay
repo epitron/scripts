@@ -1,0 +1,8 @@
+dev=/dev/loop0
+ovl=/g/arch-overlay
+newdevname=arch
+size=$(blockdev --getsize "$dev")
+
+loop=$(losetup -f --show "$ovl")
+printf '%s\n' "0 $size snapshot $dev $loop P 8" |
+	dmsetup create "$newdevname"
