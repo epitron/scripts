@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require 'epitools/minimal'
+
+PROCESS_NAME = "mosh-server"
+
+cmd = ["pgrep", "-u", ENV["USER"], PROCESS_NAME]
+
+if pids = run( *cmd )
+  pids        = pids.split
+  newest_pid  = run( *[*cmd, "-n"] ).split
+  old_pids    = pids - newest_pid
+
+  # p pids: pids, newest_pid: newest_pid, old_pids: old_pids
+
+  if old_pids.any?
+    puts "Killing #{old_pids.size} old #{PROCESS_NAME} instances..."
+    run *["kill", *old_pids]
+  end
+end
