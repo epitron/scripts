@@ -403,9 +403,10 @@ def parse_options
     on 'w',  'wav',         'Dump audio to WAV file (same name as video, with .wav at the end)'
     on 'm',  'mp3',         'Dump audio to MP3 file (same name as video, with .mp3 at the end)'
     on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
-    on 'v',  'verbose',     'Show all mplayer output spam'
+    on 'M',  'mono',        'Fix the all-sound-coming-out-of-one-speaker problem'
     on 'N',  'normalize',   'Normalize the audio in this video (saved to a magic filename that will be automatically played)'
     on 'S',  'shuffle',     'Randomize the order of the videos'
+    on 'v',  'verbose',     'Show all mplayer output spam'
   end
 end
 
@@ -460,7 +461,6 @@ if $0 == __FILE__
   extras += ["-ss", seek] if seek
   extras += ["-endpos", length] if length
 
-
   # AUDIOFILE / NORMED AUDIO
   audiofile = opts[:audiofile]
   unless audiofile
@@ -469,6 +469,7 @@ if $0 == __FILE__
   end
   cmd += ["-audiofile", audiofile] if audiofile
 
+  extras += ["-af-add", "extrastereo=0,volume=5"] if opts.mono?
 
   # TITLE
 
