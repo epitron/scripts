@@ -74,7 +74,7 @@ class Systemd
   def services
     # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
     # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
-    systemctl
+    systemctl("list-unit-files")
   end
 
 

@@ -10,6 +10,7 @@ end
 
 executables = %w[
   /usr/bin/subl
+  /usr/bin/subl3
   ~/opt/sublime/sublime_text
   /opt/sublime/sublime_text
   /Applications/Sublime\ Text\ 2.app/Contents/SharedSupport/bin/subl

@@ -2,6 +2,7 @@
 ##############################################################################
 
 require 'coderay'
+require 'coderay_bash'
 
 ##############################################################################
 
@@ -56,7 +57,9 @@ def render(arg=nil)
     arg = which(arg) unless File.exists? arg
 
     if arg
-      if %w[.md .markdown].include? File.extname(arg)
+      ext = File.extname(arg)
+      
+      if %w[.md .markdown].include? ext
         render_markdown(arg)
       else
         render_coderay(arg)
@@ -71,13 +74,16 @@ end
 
 EXTRA_LANGS = {
   ".qml" => :php,
-  ".pro" => :sql
+  ".pro" => :sql,
+  ".service" => :ini,
+  "PKGBUILD" => :bash,
 }
 
 def render_coderay(filename)
   ext = filename[/\..+$/]
 
-  if lang = EXTRA_LANGS[ext]
+  if lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
+    p lang: lang
     CodeRay.scan_file(filename, lang).term
   else
     CodeRay.scan_file(filename).term 
