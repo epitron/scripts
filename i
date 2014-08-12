@@ -1,8 +1,72 @@
 #!/usr/bin/env ruby
 
-# TODO: If script is not found, show close matches.
+#######################################################################
+#
+# TODO: Fuzzy matching when script isn't found
+#
+#######################################################################
 
 args = ARGV
+
+#######################################################################
+
+class Systemd
+
+  def self.detected?
+    system("pidof systemd > /dev/null")
+  end
+
+  def systemctl(*args)
+    cmd = %w[sudoifnotroot systemctl] + args
+    puts "=> #{cmd.join(" ")}"
+    puts
+    system *cmd
+  end
+
+  def services
+    # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
+    # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
+    systemctl("list-unit-files")
+  end
+
+
+  %w[start stop restart disable enable].each do |command|
+    define_method command do |service|
+      systemctl command, service
+    end
+  end
+
+  # def start(service)
+  #   systemctl "start", service
+  # end
+
+  # def stop(service)
+  #   systemctl "stop", service
+  # end
+
+  # def restart(service)
+  #   systemctl "restart", service
+  # end
+
+  def status(service)
+    systemctl "status", "-l", service
+  end
+
+  def default
+    services
+  end
+
+  def search(query)
+    raise "Search not implemented for systemd."
+  end
+
+  def default_command(service)
+    status(service)
+  end
+
+end
+
+#######################################################################
 
 class Initd
 
@@ -62,73 +126,22 @@ end
 
 #######################################################################
 
-class Systemd
-
-  def systemctl(*args)
-    cmd = %w[sudoifnotroot systemctl] + args
-    puts "=> #{cmd.join(" ")}"
-    puts
-    system *cmd
-  end
-
-  def services
-    # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
-    # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
-    systemctl("list-unit-files")
-  end
-
-
-  %w[start stop restart disable enable].each do |command|
-    define_method command do |service|
-      systemctl command, service
-    end
-  end
-
-  # def start(service)
-  #   systemctl "start", service
-  # end
-
-  # def stop(service)
-  #   systemctl "stop", service
-  # end
-
-  # def restart(service)
-  #   systemctl "restart", service
-  # end
-
-  def status(service)
-    systemctl "status", "-l", service
-  end
-
-  def default
-    services
-  end
-
-  def search(query)
-    raise "Search not implemented for systemd."
-  end
-
-  def default_command(service)
-    status(service)
-  end
-
-end
-
-
-sys = if system("pidof systemd > /dev/null")
-  Systemd.new
+## Detection of systemd/init.d
+if Systemd.detected?
+  manager = Systemd.new
 else
-  Initd.new
+  manager = Initd.new
 end
+
 
 if args.empty? # No args
 
-  sys.default
+  manager.default
 
 elsif args.first =~ %r{/(.+?)/}
 
   query = Regexp.new($1)
-  sys.search(query)
+  manager.search(query)
 
 else
 
@@ -139,6 +152,6 @@ else
     service, command = args.first, "default_command"
   end
 
-  sys.send(command, service)
+  manager.send(command, service)
 
 end
