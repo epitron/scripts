@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for ff in `nvidia-smi -L|awk -F ':' '/:/{print $1}'|awk '{print $2}'`; do
+ stmem=`nvidia-smi -i $ff -q -d MEMORY`
+ stmem=`echo $stmem | awk '/[0-9]+ MB Used/{print $28}'`
+ sttem=`nvidia-smi -i $ff -q -d TEMPERATURE | grep Gpu | awk '{print $3 $4}'`
+ stutl=`nvidia-smi -i $ff -q -d UTILIZATION`
+ stutl=`echo $stutl | awk '{print $23 $24}'`
+ echo GPU $ff Memory: $stmem Mb Temperature: $sttem Utilization: $stutl
+done

@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+args = ARGV.map(&:to_Path)
+
+if args.size != 1
+  puts "Usage: yank <symlinked file>"
+  puts
+  puts "  Yanks a symlinked file."
+  puts "  (Replaces the symlink with its target, removing the original target.)"
+  exit 1
+end
+
+dest = Path[ARGV.first]
+src = dest.symlink_target
+
+dest.rm # remove symlink
+src.mv(dest)
+
+ls dest

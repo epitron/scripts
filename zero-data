@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+for arg in ARGV
+  f = Path[arg]
+  puts "* #{arg}"
+  unless f.size > 0
+    puts "  |_ Already deleted..."
+    next
+  end
+
+  f.open("wb") { }
+  f.rename!(ext: "deleted")
+  puts "  |_ #{f.filename}"
+end
+  
+  
