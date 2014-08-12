@@ -267,11 +267,11 @@ BEGIN {
 
     to_clipboard(uri)
 
-    browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
-    sleep 0.2
-    browser.send_keys("<Ctrl-L><Return>")
-    
+
     browser.activate!
+    browser.send_keys("<Ctrl+t><Ctrl+l><Ctrl+v>", 100)
+    sleep 0.05
+    browser.send_keys("<Ctrl+l><Return>", 50)
   end
 
   def which(bin)
@@ -287,7 +287,7 @@ BEGIN {
   def ensure_required_binaries_are_in_the_path
     missing = false
 
-    {"wmctrl"=>"wmctrl", "xse" => "xsendevent", "xclip" => "xclip"}.each do |bin, package|
+    {"wmctrl"=>"wmctrl", "xdotool" => "xdotool", "xclip" => "xclip"}.each do |bin, package|
       unless which(bin)
         puts "* '#{bin}' not found in path; please install the '#{package}' package."
         missing = true
