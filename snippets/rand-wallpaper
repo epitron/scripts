@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Script to randomly set Background from files in a directory
+
+# Directory Containing Pictures
+DIR=~/docs/backgrounds/1680
+
+# Command to Select a random jpg file from directory
+# Delete the *.jpg to select any file but it may return a folder
+PIC=`ls $DIR | grep -E '^[[:digit:]]+\. ' | shuf -n1`
+
+echo "$PIC"
+
+# Command to set Background Image
+gconftool-2 -t string -s /desktop/gnome/background/picture_filename "$PIC"
+
