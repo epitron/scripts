@@ -1,5 +1,6 @@
 #!/bin/bash
-CMD="rspec -fs -c"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CMD="rspec -fd -r $DIR/spec_helper.rb -c"
 
 if [ "$1" == "" ]
 then
