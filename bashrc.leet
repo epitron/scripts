@@ -17,6 +17,26 @@ if [ -d ~/.gem/bin ]; then
   export PATH=$PATH:~/.gem/bin
 fi
 
+function alias_all_as_sudo() {
+  for var in "$@"
+  do
+    alias $var="sudoifnotroot $var"
+  done
+}
+
+
+#
+# magic cross-platform "open" command
+#
+if [ "$OSTYPE" == "cygwin" ]; then
+  alias open="cygstart"
+elif [ -f /usr/bin/gnome-open ]; then
+  alias open="gnome-open"
+elif [ -f /usr/bin/exo-open ]; then
+  alias open="exo-open"
+fi
+
+
 ## Ruby 1.8
 #if ruby -rubygems -e 1 > /dev/null 2>&1; then
 #  export RUBYOPT="rubygems"
@@ -77,14 +97,16 @@ export PAGER=less
 
 ## aliases
 
+# ls
 alias ll='ls -l'
 alias l='ls -al'
 alias la='ls -la'
 alias ll='ls -l'
 alias lts='lt -s'
 
-alias +='pushd .'
-alias -- -='popd'
+# cd
+alias up='cd ..'
+alias back='cd "$OLDPWD"'
 alias cd..='cd ..'
 alias ..='cd ..'
 alias ...='cd ../..'
@@ -92,24 +114,46 @@ alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias ......='cd ../../../../..'
 alias .......='cd ../../../../../..'
+alias +='pushd .'
+alias -- -='popd'
 
-alias nano="nano -w"
-alias pico="nano"
+mkcd() {
+  if [ ! -d "$@" ]; then
+    mkdir "$@"
+  fi
+  cd "$@"
+}
+
+pushpath() {
+  if [ "$1" == "" ]; then
+    dir="$PWD"
+  else
+    dir="`readlink -m "$1"`"
+  fi
+
+  export PATH="$dir":$PATH
+  echo "'$dir' added to path."
+}
+
+# filesystem
 alias mv="mv -v"
 alias cp="cp -v"
 alias rm='trsh'
-alias less='less -X -F -i'
-alias diff='diff -u'
-alias whois='whois -H'
-alias geoip='geoiplookup'
-alias up='cd ..'
-alias back='cd "$OLDPWD"'
+alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
+
+# text
+alias nano="nano -w"
+alias pico="nano"
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
 alias ag='ag --pager "less -RSFXi"'
+alias less='less -X -F -i'
+alias diff='diff -u'
+
+# audio
 alias a="audacious"
 alias ae="a -e"
 alias a2="a"
@@ -118,26 +162,57 @@ alias a2="a"
 #then
 #  alias ssh='ssh-termtitle'
 #fi
+
+# net
+alias_all_as_sudo iptables ifconfig route netctl ufw dhcpcd ip bhogs bmon listening
 alias ssh='ssh -2'
 alias scpfast='scp -c arcfour128'
 alias sshfast='ssh -c arcfour128'
 alias mosh='msh'
+alias whois='whois -H'
+alias geoip='geoiplookup'
 
-#alias ack='ack-grep'
-
-alias md='mkdir -p'
-alias rehash='hash -r'
+# disks
+alias_all_as_sudo fdisk blkid fatrace
+alias md='mdadm'
 alias df='df -h'
 alias screen='screen -U'
+alias dd='dcfldd'
+alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 
+# system
+alias dmesg='dmesg -T'
+alias dstat-wide='dstat -tcyifd'
+alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
+alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
+alias sysdig='sudoifnotroot sysdig'
+alias swapped='swapused | sort-by 1'
+alias sus='ssu'
+
+# systemd
+alias systemctl='sudoifnotroot systemctl'
+alias journalctl='sudoifnotroot journalctl'
+alias jc='journalctl'
+alias jt='journalctl -f'
+alias sys='systemctl'
+alias j='journalctl'
+
+# misc
 alias dict='dictless'
 alias chrome='google-chrome'
+alias dmenu="dmenu -l 50"
+alias resett="tput reset"
+alias xmem='xrestop'
+alias flash='crutziplayer'
+alias rdp='xfreerdp'
+alias gource='gource --user-image-dir ~/.cache/gravatars'
+alias psx='pcsxr'
+alias detach='bg; disown'
+alias dpkg='sudoifnotroot dpkg'
+alias record-desktop="simplescreenrecorder"
+alias b='chromium'
 
-## Things with literal arguments
-#alias math='noglob math'
-#alias gfv='noglob gfv'
-
-## Git aliases
+# git
 alias git="hub"
 alias gs="git status"
 alias gd="git diff"
@@ -157,50 +232,34 @@ gc() {
   git clone "$@"
 }
 
+# ruby
 alias r="rails"
 alias be="bundle exec"
 alias pad="padrino"
 alias z='zeus'
-
-alias dmenu="dmenu -l 50"
-
-## Automatic sudo
-#alias gem="sudoifnotroot gem"
-#alias mount="sudoifnotroot mount"
-alias ufw="sudoifnotroot ufw"
-alias fdisk='sudoifnotroot fdisk'
-alias blkid='sudoifnotroot blkid'
-#alias lsblk='lsblk -a -f'
-alias fatrace='sudoifnotroot fatrace'
-
-alias bhogs="sudoifnotroot nethogs"
-alias bmon="sudoifnotroot bwm-ng"
-alias listening="sudoifnotroot listening"
-
-alias iptables="sudoifnotroot iptables"
-alias ifconfig='sudoifnotroot ifconfig'
-alias route='sudoifnotroot route'
-alias netctl='sudoifnotroot netctl'
-alias dhcpcd='sudoifnotroot dhcpcd'
-alias ip='sudoifnotroot ip'
-
-alias xmem='xrestop'
-alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
-alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
-
-alias resett="tput reset"
+gem-cd() { cd `gem-dir $@` ;}
 
 
-#
-# magic cross-platform "open" command
-#
-if [ "$OSTYPE" == "cygwin" ]; then
-  alias open="cygstart"
-elif [ -f /usr/bin/gnome-open ]; then
-  alias open="gnome-open"
-elif [ -f /usr/bin/exo-open ]; then
-  alias open="exo-open"
-fi
+# Things with literal arguments!
+#alias math='noglob math'
+#alias gfv='noglob gfv'
+
+# arch
+alias pacman='sudo pacman'
+alias pacs='pacman -Ss'   # search for package
+alias pacg='pacman -Qg'   # show groups
+alias pacu='pacman -Syu'  # update packages
+alias pacd='pacman -Syuw' # only download updates (no install)
+alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
+alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
+alias pacpurge='pacman -Rns' # purge a package and all config files
+alias pacf='pacman -Ql|grep' # which package contains this file?
+alias pacq='pacman -Q|grep'  # find a package
+alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
+alias y='yaourt'
+alias yu='y -Syua'
+alias abs='sudoifnotroot abs'
+alias pkgfile='sudoifnotroot pkgfile'
 
 
 # Enable recursive glob (eg: **/*.txt)
@@ -222,68 +281,5 @@ shopt -s histverify
 #if [ -f /etc/bash_completion ]; then
 #    . /etc/bash_completion
 #fi
-
-alias sus='ssu'
-
-alias dpkg='sudoifnotroot dpkg'
-
-## Arch linux
-alias pacman='sudo pacman'
-alias pacs='pacman -Ss'   # search for package
-alias pacg='pacman -Qg'   # show groups
-alias pacu='pacman -Syu'  # update packages
-alias pacd='pacman -Syuw' # only download updates (no install)
-alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
-alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
-alias pacpurge='pacman -Rns' # purge a package and all config files
-alias pacf='pacman -Ql|grep' # which package contains this file?
-alias pacq='pacman -Q|grep'  # find a package
-alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
-alias y='yaourt'
-alias yu='y -Syua'
-alias abs='sudoifnotroot abs'
-
-alias systemctl='sudoifnotroot systemctl'
-alias journalctl='sudoifnotroot journalctl'
-alias jc='journalctl'
-alias jt='journalctl -f'
-alias pkgfile='sudoifnotroot pkgfile'
-alias sys='systemctl'
-alias sysdig='sudoifnotroot sysdig'
-
-alias flash='crutziplayer'
-alias rdp='xfreerdp'
-
-alias swapped='swapused | sort-by 1'
-
-alias gource='gource --user-image-dir ~/.cache/gravatars'
-
-alias j='journalctl'
-
-alias psx='pcsxr'
-
-gem-cd() { cd `gem-dir $@` ;}
-
 # mkdir and cd, all in one!
-mkcd() {
-  if [ ! -d "$@" ]; then
-    mkdir "$@"
-  fi
-  cd "$@"
-}
 
-pushpath() {
-  if [ "$1" == "" ]; then
-    dir="$PWD"
-  else
-    dir="`readlink -m "$1"`"
-  fi
-
-  export PATH="$dir":$PATH
-  echo "'$dir' added to path."
-}
-
-alias record-desktop="simplescreenrecorder"
-alias detach='bg; disown'
-alias b='chromium'
-alias dmesg='dmesg -T'
