@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+require 'slop'
+
+for arg in ARGV
+  puts "<8>=== <14>#{arg} <8>============".colorize
+  puts
+
+  `pacman -Sii #{arg}`.each_line do |l|
+    # p l
+    if l =~ /Required By\s+: (.+)/
+      if $1["None"]
+        puts "  <12>None".colorize
+      else
+        packages = $1.strip.split
+        system "pacman", "-Ss", "^(#{packages.join '|'})$"
+      end
+    end
+  end
+
+  puts
+
+end
