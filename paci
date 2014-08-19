@@ -1,2 +1,5 @@
 #!/bin/bash
-pacman -Qi $1 || pacman -Si $1
+
+for arg in "$@"; do
+  pacman -Qi $arg || pacman -Si $arg
+done
