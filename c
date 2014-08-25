@@ -16,6 +16,7 @@ def lesspipe(*args)
   output = args.first if args.any?
   
   params = []
+  params << "-i"
   params << "-R" unless options[:color] == false
   params << "-S" unless options[:wrap] == true
   params << "-F" unless options[:always] == true
