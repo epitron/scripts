@@ -1,10 +1,50 @@
 #!/usr/bin/env ruby
 require 'epitools'
+require 'slop'
 
-pp ARGV.map(&:to_Path).
+class FakeOptions
+  def method_missing(*args); nil; end
+end
+
+def parse_options
+  Slop.parse(help: true, strict: true) do
+    banner 'Usage: dupes [options] <files or dirs...>'
+
+    on 'd',  'delete',      'Delete dupes'
+    on 'v',  'verbose',     'with verbosity'
+  end
+end
+
+###
+
+if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
+  opts = parse_options
+else
+  opts = FakeOptions.new
+end
+
+### 
+
+grouped_dupes = ARGV.map(&:to_Path).
       map { |path| path.dir? ? path.ls_r : path }.
       flatten.
       select(&:file?).
       group_by(&:md5).
       select {|k, v| v.size > 1}.
       map_values{|v| v.map(&:path) }
+
+puts "* Found #{grouped_dupes.size} dupes..."
+
+###
+
+if opts.delete?
+  puts "* Deleting dupes:"
+  grouped_dupes.each do |hash, dupes|
+    orig = dupes.pop
+    puts "* #{orig}"
+    dupes.each do |dupe|
+      puts "  |_ DELETE: #{dupe}"
+      File.unlink dupe
+    end
+  end
+end   
