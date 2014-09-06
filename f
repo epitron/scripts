@@ -14,10 +14,10 @@ expr="$1"
 shift
 
 if [ "$#" == "0" ]; then
-  find . $ARGS | grep -Ei --color=always "$expr"
+  find $ARGS . | grep -Ei --color=always "$expr"
 else
   while (( "$#" )); do
-    find "$1" $ARGS | grep -Ei --color=always "$expr"
+    find $ARGS "$1" | grep -Ei --color=always "$expr"
     shift
   done
 fi

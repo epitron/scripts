@@ -1,0 +1,2 @@
+unalias rm
+alias ls="gnuls --color=auto"

@@ -4,10 +4,12 @@
 #PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 
 if [ -d /usr/scripts ]; then
-  export PATH=/usr/scripts:$PATH
+  SCRIPTDIR=/usr/scripts
 elif [ -d ~/scripts ]; then
-  export PATH=~/scripts:$PATH
+  SCRIPTDIR=~/scripts
 fi
+
+export PATH=$SCRIPTDIR:$PATH
 
 if [ -d ~/bin ]; then
   export PATH=~/bin:$PATH
@@ -77,14 +79,8 @@ man() {
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
   #export LS_OPTIONS='--color=auto'
-
-  if [ $(uname -s | grep -E '(Darwin|BSD)') ]
-  then
-    alias ls="ls -G"
-  else
-    eval `dircolors -b`
-    alias ls="ls --color=auto"
-  fi
+  eval `dircolors -b`
+  alias ls="ls --color=auto"
 fi
 
 ## FUCK YOU, ^S AND ^Q!!
@@ -284,3 +280,8 @@ shopt -s histverify
 #fi
 # mkdir and cd, all in one!
 
+
+if [ $(uname -s | grep -E '(Darwin|BSD)') ]
+then
+  . $SCRIPTDIR/bashrc.bsd
+fi
