@@ -1,9 +1,11 @@
 #!/usr/bin/env ruby
 ##############################################################################
-
+#
+# TODO: Make .ANS files work in 'less' (less -S)
+#
+##############################################################################
 require 'coderay'
 require 'coderay_bash'
-
 ##############################################################################
 
 def lesspipe(*args)
@@ -50,7 +52,7 @@ end
 
 ##############################################################################
 
-def render(arg=nil)
+def convert(arg=nil)
   if arg.nil?
     # STDIN
     CodeRay.scan($stdin).term
@@ -58,12 +60,14 @@ def render(arg=nil)
     arg = which(arg) unless File.exists? arg
 
     if arg
-      ext = File.extname(arg)
+      ext = File.extname(arg).downcase
       
       if %w[.md .markdown].include? ext
-        render_markdown(arg)
+        convert_markdown(arg)
+      elsif %w[.nfo .ans .drk .ice].include? ext
+        convert_cp437(arg)
       else
-        render_coderay(arg)
+        convert_coderay(arg)
       end
     else
       "\e[31m\e[1mFile not found.\e[0m"
@@ -71,7 +75,7 @@ def render(arg=nil)
   end
 end
 
-##############################################################################
+### Converters ###############################################################
 
 EXTRA_LANGS = {
   ".qml" => :php,
@@ -80,7 +84,7 @@ EXTRA_LANGS = {
   "PKGBUILD" => :bash,
 }
 
-def render_coderay(filename)
+def convert_coderay(filename)
   ext = filename[/\..+$/]
 
   if lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
@@ -91,7 +95,9 @@ def render_coderay(filename)
   end
 end
 
-def render_markdown(filename)
+##############################################################################
+
+def convert_markdown(filename)
   # Lazily load markdown renderer
   eval DATA.read
 
@@ -99,6 +105,11 @@ def render_markdown(filename)
   carpet.render(File.read filename)
 end
 
+##############################################################################
+
+def convert_cp437(filename)
+  open(filename, "r:cp437:utf-8", &:read)
+end
 
 ### MAIN #####################################################################
 
@@ -107,14 +118,14 @@ args = ARGV
 lesspipe(:wrap=>true) do |less|
   case args.size
   when 0
-    less.puts render
+    less.puts convert
   when 1
-    less.puts render(args.first)
+    less.puts convert(args.first)
   else # 2 or more args
     args.each do |arg|
       less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
       less.puts
-      less.puts render(arg)
+      less.puts convert(arg)
       less.puts
     end
   end

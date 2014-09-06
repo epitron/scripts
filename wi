@@ -1,2 +1,2 @@
-`which whois` -h whois.opensrs.net -H $* | less -b 0
+`which whois` -h whois.opensrs.net -H $* | less -S -b 0
 #links "http://whois.domaintools.com/$1"
