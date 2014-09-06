@@ -1,2 +1,11 @@
 #!/bin/bash
-/usr/bin/tree -C "$@" | less -SRXFi
+if [ -f /usr/bin/tree ]; then
+  CMD=/usr/bin/tree
+elif [ -f /usr/local/bin/tree ]; then
+  CMD=/usr/local/bin/tree
+else
+  echo "Error: tree command not found"
+  exit 1
+fi
+
+$CMD -C "$@" | less -SRXFi
