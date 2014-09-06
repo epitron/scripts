@@ -3,6 +3,10 @@
 #if [ -f /etc/profile ]; then . /etc/profile; fi
 #PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
 
+if [ "$EDITOR" == "" ]; then
+  export EDITOR="nano"
+fi
+
 if [ -d /usr/scripts ]; then
   SCRIPTDIR=/usr/scripts
 elif [ -d ~/scripts ]; then
