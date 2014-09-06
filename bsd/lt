@@ -16,9 +16,9 @@ fi
 # Show all files
 if [ "$1" == "-a" ]; then
   shift
-  ls --color=force $ARGS "$@" | sed -r s/'^(\S+\s+){3}\S+'/''/ | less -R -X "+\\>"
+  gnuls --color=force $ARGS "$@" | sed -r s/'^(\S+\s+){3}\S+'/''/ | less -R -X "+\\>"
 
 # Show $NUMFILES files
 else
-  ls --color=force $ARGS "$@" | tail -n $NUMFILES | sed -r s/'^(\S+\s+){3}\S+'/''/
+  gnuls --color=force $ARGS "$@" | tail -n $NUMFILES | sed -r s/'^(\S+\s+){3}\S+'/''/
 fi

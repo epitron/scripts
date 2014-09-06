@@ -1,2 +1,3 @@
 unalias rm
+unalias git
 alias ls="gnuls --color=auto"

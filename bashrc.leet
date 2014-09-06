@@ -12,7 +12,6 @@ if [ -d /usr/scripts ]; then
 elif [ -d ~/scripts ]; then
   SCRIPTDIR=~/scripts
 fi
-
 export PATH=$SCRIPTDIR:$PATH
 
 if [ -d ~/bin ]; then
@@ -289,4 +288,5 @@ shopt -s histverify
 if [ $(uname -s | grep -E '(Darwin|BSD)') ]
 then
   . $SCRIPTDIR/bashrc.bsd
+  export PATH=$SCRIPTDIR/bsd:$PATH
 fi
