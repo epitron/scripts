@@ -179,6 +179,7 @@ alias df='df -h'
 alias screen='screen -U'
 alias dd='dcfldd'
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
+alias disks='lsblk'
 
 # system
 alias dmesg='dmesg -T'
