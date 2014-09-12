@@ -6,7 +6,7 @@ elif [ -f /usr/games/fortune ]; then
 fi
 
 #FORTUNES="-e wisdom education science art work politics definitions law startrek"
-FORTUNES=~/scripts/fortunes/
+FORTUNES=~/scripts/bsd/fortunes/
 
 if [[ "$1" == "" ]]; then
   $CMD $FORTUNES
