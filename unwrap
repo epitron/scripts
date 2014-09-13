@@ -1,23 +1,35 @@
 #!/usr/bin/env ruby
 
-##################################################
-# Unwrap!
-##################################################
+########################################################
+# Unwrap! v0.0002 Copyright (c) 2009 by Chris Gahan
+########################################################
 # Unwraps the lines in a text file.
 #
 # (In other words, it removes all the \n characters
 # that were inserted to wrap the lines of text.)
 #
-
+require 'slop'
 
 DEFAULT_WIDTH = 80
 
+def parse_options
+  Slop.parse(help: true, strict: true) do
+    banner "Usage:\n    unwrap [options] [<input_file.txt>]"
+    on :w=, :width,     "Width of the document (default: #{DEFAULT_WIDTH} characters)", as: Integer, default: DEFAULT_WIDTH
+    on :s,  :stats,     "Statistics on line lengths"
+    on :a,  :autowidth, "Guess the width of the document automatically."
+  end
+end
+
+
 def unwrap(lines, width)
-  i = 0
-  last = lines.size-1
-  
-  para = []
-  doc = []
+  # TODO: Unwrap lines which are close to line_width and don't end with ".", "!", "?"
+  # TODO: Unwrap "conti- nuations"
+
+  i     = 0
+  last  = lines.size-1
+  para  = []
+  doc   = []
   
   loop do
     
@@ -45,103 +57,33 @@ def unwrap(lines, width)
   return doc
 end
 
-def help
-  copyright
-  usage
-  exit 1
-end
 
+def display_statistics(lines)
+  puts "Line length statistics:"
+  puts "-----------------------------"
 
-def copyright
-  puts "Unwrap! v0.0001"
-  puts "----------------------------------------------"
-  puts "Copyright (c) 2009 by Chris Gahan"
-  puts
-end  
+  lengths = lines.map(&:size)
+  n       = lengths.size
+  sum     = lengths.inject(0){|sum,len| sum + len}
 
-def usage
-  puts "Usage:"
-  puts "    unwrap [-w #{DEFAULT_WIDTH}] <input_file.txt> [output_file.txt]"
-  puts
-  puts "Options:"
-  puts "    -w [width]  = Width of wrapped lines (defaults to #{DEFAULT_WIDTH} characters, optional)"
-  puts "    -c          = Calculate line lengths"
-  puts "    in.txt      = The file to read"
-  puts "    out.txt     = The file to write (defaults to standard output, optional)"
-  puts
-end
-
-def calculate_line_lengths(filename)
-  puts "Statistics:"
-  puts "----------------------"
-  lengths = open(filename).map{|line| line.strip.size}
-  n = lengths.size
-  sum = lengths.inject(0){|sum,len| sum + len}
-  puts "  mean: #{sum.to_f / n}"
+  puts " lines: #{n}"
+  puts "  mean: #{(sum.to_f / n).round(2)}"
   puts "median: #{lengths.sort[n / 2]}"
-  puts "   min: #{lengths.min}"
+  puts "   min: #{lengths.reject{|l| l == 0}.min}"
   puts "   max: #{lengths.max}"
 end
 
 
 if $0 == __FILE__
 
-  line_width = DEFAULT_WIDTH
+  opts  = parse_options
+  lines = ARGF.readlines.map(&:rstrip)
 
-  help if ARGV.size < 1
+  if opts.stats?
+    display_statistics(lines)
+  else
+    width = opts[:width]
+    unwrap(lines, width).each { |para| STDOUT.write "#{para}\n\n" }
+  end
 
-  if ARGV.first == "-c"
-    ARGV.shift
-    infile = ARGV.shift
-    calculate_line_lengths(infile)
-    exit
-  end
-  
-  if ARGV.first == "-w"
-    ARGV.shift
-    
-    if ARGV.first =~ /^\d+$/
-      line_width = ARGV.shift.to_i
-    else
-      STDERR.puts "ERROR: Invalid line width: #{ARGV.first}"
-      exit 3
-    end
-  end
-  
-  infile = ARGV.shift
-  
-  unless infile and File.exists? infile
-    STDERR.puts "ERROR: Cannot find file: #{infile.inspect}"
-    exit 2
-  end
-  
-  if ARGV.any?
-    outfile = ARGV.shift
-  else
-    outfile = nil
-  end
-    
-  copyright if outfile
-  
-  print "+ Opening #{infile}..." if outfile
-  lines = open(infile).map { |line| line.strip }
-  
-  puts " (#{lines.size} lines)" if outfile
-  
-  print "+ Unwrapping lines at #{line_width} chars..." if outfile
-  doc = unwrap(lines, line_width)
-  
-  puts " (found #{doc.size} paragraphs)" if outfile
-  
-  if outfile
-    puts "+ Writing #{outfile}..." 
-    out = open(outfile,"w")
-  else
-    out = STDOUT
-  end
-  
-  for para in doc
-    out.write("#{para}\n\n")
-  end  
-  
 end
