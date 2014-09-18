@@ -171,6 +171,7 @@ alias mosh='msh'
 alias bmon='bwm-ng'
 alias whois='whois -H'
 alias geoip='geoiplookup'
+alias iptraf='sudoifnotroot iptraf-ng'
 
 # disks
 alias_all_as_sudo fdisk blkid fatrace
