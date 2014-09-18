@@ -1,6 +1,48 @@
 #!/usr/bin/env python2
-# Jotmuch bookmark manager https://github.com/davidlazar/jotmuch
+#
+# Jotmuch bookmark manager (https://github.com/davidlazar/jotmuch)
 # Copyright (C) 2014 David Lazar
+#
+# A bookmark manager that emphasizes privacy, preservation, and organization.
+# It will be familiar to users of notmuch (http://notmuchmail.org/).
+#
+
+### Installation #####################################
+#
+# Install the prerequisites.  Arch Linux:
+#
+#     $ sudo pacman -S python2-pip python2-xapian python2-jinja python2-lxml python2-yaml webkitgtk
+#
+# Debian/Ubuntu:
+#
+#     $ sudo apt-get install python-pip python-xapian python-jinja2 python-lxml python-yaml libwebkit2gtk-3.0-dev
+#
+# Install required Python libraries that are not available as packages:
+#
+#     $ pip2 install --user arrow click envoy
+#
+# Install Jotmuch and urlsnap:
+#
+#     $ gcc urlsnap.c $(pkg-config --cflags --libs webkit2gtk-3.0) -o urlsnap
+#     $ cp jot urlsnap ~/bin
+#
+#
+######################################################
+
+
+### TODOs: ###########################################
+#
+# * colourize / highlight results
+# * urlsnap ignores 404's
+# * show progress when archiving
+# * parallel url grabbing (pool of spawners)
+# * package it all up into one of those magical python zip binaries
+# * download from web.archive.org (at date of bookmark) if the url is broken
+# * import instapaper
+#
+######################################################
+
+
 from collections import OrderedDict
 import base64
 import email
@@ -15,6 +57,8 @@ from urlparse import urlparse
 
 import arrow
 import click
+import envoy
+
 import jinja2
 from lxml import html
 import xapian
@@ -22,7 +66,6 @@ import yaml
 
 DATABASE_DIR = os.path.expanduser('~/.jotmuch')
 ARCHIVE_DIR = os.path.expanduser('~/.jotmuch/archives')
-URLSNAP = ['urlsnap', '--js']  # get rid of --js to disable JavaScript
 PNGVIEW = 'feh'
 
 HMAC_KEY = 'Jotmuch'
@@ -230,6 +273,9 @@ def get_docid(db, url):
 
 ### Archiving ----------------------------------------------------------
 
+def cleanup_urlsnap_output(e):
+    return "\n".join( l for l in e.split("\n") if len(l) > 0 and "Gtk-WARNING" not in l )
+
 def archive_url(url):
     try:
         os.makedirs(ARCHIVE_DIR)
@@ -242,17 +288,37 @@ def archive_url(url):
     pngpath = os.path.join(ARCHIVE_DIR, uid + '.png')
 
     if os.path.isfile(mhtpath):
+        print "  |_ skipping..."
         return False  # already archived
 
-    urlsnap(url, mhtml=mhtpath, png=pngpath)
+    result = urlsnap(url, mhtml=mhtpath) #, png=pngpath)
+
+    if result.status_code == 0:
+        print "  |_ size: %d bytes" % os.path.getsize(mhtpath)
+    elif result.status_code == -15:
+        print "  |_ Timeout!"
+    else:
+        # error 1: couldn't resolve
+        # if "Name or service not known:" in r.std_err:
+        #     print "  |_ Error: Could not resolve domain name"
+        # else:
+        #     print "  |_ Error!"
+        #     print result.std_err
+        print "  |_ %s" % cleanup_urlsnap_output(result.std_err)
+
     return True
 
 
 def urlsnap(url, **kwargs):
-    args = URLSNAP + [url]
+    # cmd = ['urlsnap', '--js']  # get rid of --js to disable JavaScript
+    cmd = ['urlsnap']
+
+    args = cmd + [url]
     for k, v in kwargs.iteritems():
         args += ['--' + k, v]
-    subprocess.check_call(args)
+
+    return envoy.run([args], timeout=10)
+
 
 
 def get_archive_path(uid, ext='.mhtml'):
@@ -451,12 +517,19 @@ def archive(terms):
     """Archive bookmarks matching the given search terms."""
     mset = search_terms(terms)
     docs = []
+    total = len(mset)
+
     # archive the bookmarks, then edit them
-    for m in mset:
+    for current, m in enumerate(mset):
         url = m.document.get_value(VALUE_URL)
+
+        print "[%d/%d] Archiving: %s" % (current+1, total, url)
+
         if archive_url(url):
-            print('Archived: ' + url)
             docs.append(m.document)
+
+        print
+
     if docs:
         docs = [dict2doc(doc2dict(doc)) for doc in docs]
         newdocs = yaml2docs(editor(docs2yaml(docs)))
@@ -527,7 +600,32 @@ def dump(terms, dump_terms):
     yaml.dump_all(ds, stream=sys.stdout, Dumper=OrderedDumper)
 
 
-@cli.command('import', short_help='import bookmarks from pinboard json')
+@cli.command('import', short_help='import bookmarks from delicious json')
+@click.argument('jsonfile', type=click.File('rb'))
+def jotimport(jsonfile):
+    """Import bookmarks exported as JSON from Delicious."""
+    # {
+    #   "description": "Humans of New York",
+    #   "extended": "A massive collection of small nuggets from conversations with random people in NYC (and the rest of the world).",
+    #   "hash": "7fcb4abb4aaf758b4059d257f65519b1",
+    #   "href": "http://www.humansofnewyork.com/",
+    #   "private": "yes",
+    #   "shared": "no",
+    #   "tag": "art projects collections humanity life nyc people creative blogs photography",
+    #   "time": "2014-09-17T23:48:23+00:00",
+    #   "time_string": "2014-09-17T23:48:23Z"
+    # }
+    import json
+    bs = json.load(jsonfile)
+    db = xapian.WritableDatabase(DATABASE_DIR, xapian.DB_CREATE_OR_OPEN)
+    for b in bs:
+        tags = b['tag'].split(' ')
+        d = {'url': b['href'], 'title': b['description'], 'tags': tags,
+             'created': arrow.get(b['time']), 'notes': b['extended']}
+        db.add_document(dict2doc(d))
+    print('Imported %d bookmarks' % len(bs))
+
+@cli.command('pinimport', short_help='import bookmarks from pinboard json')
 @click.argument('jsonfile', type=click.File('rb'))
 def jotimport(jsonfile):
     """Import bookmarks exported as JSON from Pinboard."""
