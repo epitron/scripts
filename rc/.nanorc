@@ -214,79 +214,35 @@ set suspend
 ## All regexes should be extended regular expressions.
 
 
-## Nanorc files
-include "/usr/share/nano/nanorc.nanorc"
+#### Builtins ###############################
 
-## C/C++
-include "/usr/share/nano/c.nanorc"
+# include "/usr/share/nano/nanorc.nanorc"
+# include "/usr/share/nano/c.nanorc"
+# include "/usr/share/nano/html.nanorc"
+# include "/usr/share/nano/tex.nanorc"
+# include "/usr/share/nano/mutt.nanorc"
+# include "/usr/share/nano/patch.nanorc"
+# include "/usr/share/nano/man.nanorc"
+# include "/usr/share/nano/groff.nanorc"
+# include "/usr/share/nano/perl.nanorc"
+# include "/usr/share/nano/python.nanorc"
+# include "/usr/share/nano/java.nanorc"
+# include "/usr/share/nano/asm.nanorc"
+# include "/usr/share/nano/sh.nanorc"
+# include "/usr/share/nano/pov.nanorc"
 
-## HTML
-include "/usr/share/nano/html.nanorc"
+#### Extras #################################
 
-## TeX
-include "/usr/share/nano/tex.nanorc"
-
-## Quoted emails (under e.g. mutt)
-include "/usr/share/nano/mutt.nanorc"
-
-## Patch files
-include "/usr/share/nano/patch.nanorc"
-
-## Manpages
-include "/usr/share/nano/man.nanorc"
-
-## Groff
-include "/usr/share/nano/groff.nanorc"
-
-## Perl
-include "/usr/share/nano/perl.nanorc"
-
-## Python
-include "/usr/share/nano/python.nanorc"
-
-## Java
-include "/usr/share/nano/java.nanorc"
-
-## Assembler
-include "/usr/share/nano/asm.nanorc"
-
-## Bourne shell scripts
-include "/usr/share/nano/sh.nanorc"
-
-## POV-Ray
-include "/usr/share/nano/pov.nanorc"
-
-########## Extras ##########################################
-
-## Ruby
-include "/usr/scripts/nano/ruby.nanorc"
-
-## Common Lisp
-include "/usr/scripts/nano/lisp.nanorc"
-
-## Config Files (.ini)
-include "/usr/scripts/nano/ini.nanorc"
-
-## Xorg.conf
-include "/usr/scripts/nano/xorg.nanorc"
-
-## CSS
-include "/usr/scripts/nano/css.nanorc"
-
-## XML
-include "/usr/scripts/nano/xml.nanorc"
-
-## Generic .conf
 include "/usr/scripts/nano/conf.nanorc"
-
-## PHP
-include "/usr/scripts/nano/php.nanorc"
-
-## HTML
+include "/usr/scripts/nano/css.nanorc"
+include "/usr/scripts/nano/go.nanorc"
 include "/usr/scripts/nano/html.nanorc"
-
-## javascript
+include "/usr/scripts/nano/ini.nanorc"
 include "/usr/scripts/nano/js.nanorc"
-
-## lua
+include "/usr/scripts/nano/lisp.nanorc"
 include "/usr/scripts/nano/lua.nanorc"
+include "/usr/scripts/nano/php.nanorc"
+include "/usr/scripts/nano/ruby.nanorc"
+include "/usr/scripts/nano/sourceslist.nanorc"
+include "/usr/scripts/nano/xml.nanorc"
+include "/usr/scripts/nano/xorg.nanorc"
