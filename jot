@@ -32,13 +32,15 @@
 
 ### TODOs: ###########################################
 #
+# * store return status of "archive_url" in the database
 # * colourize / highlight results
-# * urlsnap ignores 404's
+# * urlsnap patch: error on 404's
 # * show progress when archiving
 # * parallel url grabbing (pool of spawners)
 # * package it all up into one of those magical python zip binaries
 # * download from web.archive.org (at date of bookmark) if the url is broken
 # * import instapaper
+# * let archive resume where it left off
 #
 ######################################################
 
