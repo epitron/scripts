@@ -1,0 +1,15 @@
+* {
+  -GtkRange-slider-width: 16;
+/*  -GtkScrollbar-has-forward-stepper: 0;
+  -GtkScrollbar-has-backward-stepper: 0;
+  -GtkScrollbar-has-secondary-forward-stepper: 0;
+  -GtkScrollbar-has-secondary-backward-stepper: 0;
+  -GtkScrollbar-min-slider-length: 30;
+*/
+  -GtkScrolledWindow-scrollbars-within-bevel: 0;
+}
+
+.scrollbar.slider.vertical,
+.scrollbar.button.vertical {
+  border-radius: 4;
+}
