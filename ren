@@ -3,18 +3,34 @@ require 'coolline'
 require 'fileutils'
 require 'set'
 
-def split_ext(filename)
-  filename.split /(\.[^\.]+)$/
+#
+# Returns: dir, basename, ext
+#
+def path_parts(path)
+  if path =~ %r{^(.+/)(.+)(\..+)?$}
+    return $1, $2, $3
+  else
+    raise "Cannot match path..."
+  end
 end
 
+#
+# Converts _'s and .'s to spaces
+#
 def restore_spaces(s)
   s.gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
 end
 
+#
+# Puts parens around years
+#
 def bracket_years(s)
-  s.gsub(/(?:19|20)\d\d/, "(\\0)")
+  s.gsub(/\b(?:19|20)\d\d\b/, "(\\0)")
 end
 
+#
+# Convert the String to Title Case.
+#
 LOW_WORDS = Set.new %w[of to or the and an a at is for from in]
 def titlecase(str)
   first = true
@@ -29,6 +45,11 @@ def titlecase(str)
   end.join('')
 end
 
+
+
+#
+# Edit a filename
+#
 def edit_filename(prompt, filename)
 
   Coolline.new do |c|
@@ -38,22 +59,34 @@ def edit_filename(prompt, filename)
 
     # Alt-u capitalizes everything
     c.bind "\eu" do |inst|
-      base, ext = split_ext inst.line
-      pos       = inst.pos
-      
-      inst.line = titlecase(base) + (ext||'')
-      inst.pos  = pos
-      inst.menu.string = "(Capitalized)"
+      begin
+        dir, basename, ext = path_parts(inst.line)
+        pos                = inst.pos
+
+        new_filename       = "#{dir}#{titlecase(basename)}#{ext}"
+
+        inst.line          = new_filename
+        inst.pos           = pos
+
+        inst.menu.string = "(Capitalized)"
+      rescue
+      end
     end
 
     # ^u removes underscores and stuff
     c.bind "\x15" do |inst|
-      base, ext = split_ext inst.line
-      pos       = inst.pos
-      
-      inst.line = bracket_years(restore_spaces(base)) + (ext || "")
-      inst.pos  = pos
-      inst.menu.string = "(Underscores removed)"
+      begin
+        dir, basename, ext = path_parts(inst.line)
+        pos                = inst.pos
+
+        new_filename       = "#{dir}#{bracket_years(restore_spaces(basename))}#{ext}"
+
+        inst.line          = new_filename
+        inst.pos           = pos
+
+        inst.menu.string   = "(Underscores removed)"
+      rescue
+      end
     end
 
     # ^d deletes to the extension
@@ -68,6 +101,9 @@ def edit_filename(prompt, filename)
 
 end
 
+#
+# Clears out keyboard buffer.
+#
 def STDIN.purge
   loop { read_nonblock(4096) } rescue nil
 end

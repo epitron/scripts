@@ -102,14 +102,16 @@ def translate_value(key, value)
 end
 
 
-def show(path, format=:text)
+def show(path, format=:text, timestamp=false)
   if not path.exists?
 
     puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
 
   elsif (attrs = path.attrs).any?
+    title = "<15>#{path.filename}"
+    title += " <6>[<14>#{path.mtime.strftime("%b %d, %Y")}<6>]" if timestamp
 
-    puts "<15>#{path.filename}".colorize
+    puts title.colorize
 
     case format
     when :text
@@ -150,7 +152,7 @@ def show(path, format=:text)
     end
 
   else
-    puts "<7>#{path.filename}".colorize
+    puts "<7>#{path.filename}\n  <8>(none)\n".colorize
   end
 end
 
@@ -169,6 +171,7 @@ def parse_options
     on 'j',  'json',      'Print xattrs as JSON'
     on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
     on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
+    on 't',  'time',      'Sort by file timestamp'
 
   end
 end
@@ -228,30 +231,21 @@ if $0 == __FILE__
 
     paths << Path.pwd if paths.empty?
 
-    puts
+    paths = paths.map { |path| path.dir? ? path.ls : path }.flatten
+    paths = paths.sort_by(&:mtime) if opts.time?
 
-    while paths.any?
-      path = paths.shift
+    paths.each do |path|
+      edit(path) if opts.edit?
 
-      if path.dir?
-
-        puts "* Scanning #{path}..."
-        paths += path.ls
-
+      if opts.yaml?
+        format = :yaml
+      elsif opts.json?
+        format = :json
       else
-
-        edit(path) if opts.edit?
-
-        if opts.yaml?
-          format = :yaml
-        elsif opts.json?
-          format = :json
-        else
-          format = :text
-        end
-
-        show(path, format)
+        format = :text
       end
+
+      show(path, format, timestamp: true)
     end
 
   end
