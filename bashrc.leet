@@ -34,13 +34,14 @@ function alias_all_as_sudo() {
 # magic cross-platform "open" command
 #
 if [ "$OSTYPE" == "cygwin" ]; then
-  alias open="cygstart"
-elif [ -f /usr/bin/gnome-open ]; then
-  alias open="gnome-open"
+  alias open='cygstart'
+elif [ -f /usr/bin/xdg-open ]; then
+  alias open='xdg-open "$@" 2>/dev/null'
 elif [ -f /usr/bin/exo-open ]; then
-  alias open="exo-open"
+  alias open='exo-open "$@" 2>/dev/null'
+elif [ -f /usr/bin/gnome-open ]; then
+  alias open='gnome-open "$@" 2>/dev/null'
 fi
-
 
 ## Ruby 1.8
 #if ruby -rubygems -e 1 > /dev/null 2>&1; then
@@ -183,17 +184,15 @@ alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 
 # system
+alias_all_as_sudo sysdig swapped
 alias dmesg='dmesg -T'
 alias dstat-wide='dstat -tcyifd'
 alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
 alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
-alias sysdig='sudoifnotroot sysdig'
-alias swapped='swapused | sort-by 1'
 alias sus='ssu'
 
 # systemd
-alias systemctl='sudoifnotroot systemctl'
-alias journalctl='sudoifnotroot journalctl'
+alias_all_as_sudo systemctl journalctl
 alias jc='journalctl'
 alias jt='journalctl -f'
 alias sys='systemctl'
