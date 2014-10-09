@@ -7,7 +7,7 @@ require 'set'
 # Returns: dir, basename, ext
 #
 def path_parts(path)
-  if path =~ %r{^(.+/)(.+)(\..+)?$}
+  if path =~ %r{^(.+/)?(.+?)(\..+)?$}
     return $1, $2, $3
   else
     raise "Cannot match path..."
@@ -59,34 +59,28 @@ def edit_filename(prompt, filename)
 
     # Alt-u capitalizes everything
     c.bind "\eu" do |inst|
-      begin
-        dir, basename, ext = path_parts(inst.line)
-        pos                = inst.pos
+      dir, basename, ext = path_parts(inst.line)
+      pos                = inst.pos
 
-        new_filename       = "#{dir}#{titlecase(basename)}#{ext}"
+      new_filename       = "#{dir}#{titlecase(basename)}#{ext}"
 
-        inst.line          = new_filename
-        inst.pos           = pos
+      inst.line          = new_filename
+      inst.pos           = pos
 
-        inst.menu.string = "(Capitalized)"
-      rescue
-      end
+      inst.menu.string = "(Capitalized) #{dir}|#{basename}|#{ext}"
     end
 
     # ^u removes underscores and stuff
     c.bind "\x15" do |inst|
-      begin
-        dir, basename, ext = path_parts(inst.line)
-        pos                = inst.pos
+      dir, basename, ext = path_parts(inst.line)
+      pos                = inst.pos
 
-        new_filename       = "#{dir}#{bracket_years(restore_spaces(basename))}#{ext}"
+      new_filename       = "#{dir}#{bracket_years(restore_spaces(basename))}#{ext}"
 
-        inst.line          = new_filename
-        inst.pos           = pos
+      inst.line          = new_filename
+      inst.pos           = pos
 
-        inst.menu.string   = "(Underscores removed)"
-      rescue
-      end
+      inst.menu.string   = "(Underscores removed) #{dir}|#{basename}|#{ext}"
     end
 
     # ^d deletes to the extension
