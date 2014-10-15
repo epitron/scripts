@@ -1,48 +1,25 @@
-#!/usr/bin/env node
-var http = require("http"),
-    url = require("url"),
-    path = require("path"),
-    fs = require("fs")
-    port = process.argv[2] || 8888;
+#!/usr/bin/env ruby
 
-http.createServer(function(request, response) {
+# Creates a webserver on port 8888 for the current dir (or optionally, the directory passed on the commandline)
 
-  var uri = url.parse(request.url).pathname
-    , filename = path.join(process.cwd(), uri);
+require 'rack'
 
-  var contentTypesByExtension = {
-    '.html': "text/html",
-    '.css':  "text/css",
-    '.js':   "text/javascript"
-  };
+root = ARGV.first || Dir.pwd
 
-  path.exists(filename, function(exists) {
-    if(!exists) {
-      response.writeHead(404, {"Content-Type": "text/plain"});
-      response.write("404 Not Found\n");
-      response.end();
-      return;
-    }
+directory_viewer = proc do |env|
+  req = Rack::Request.new(env)
 
-    if (fs.statSync(filename).isDirectory()) filename += '/index.html';
+  # Show "index.html" if it exists
+  req.path_info += "index.html" if File.exists?(File.join(root, req.path_info, "index.html"))
 
-    fs.readFile(filename, "binary", function(err, file) {
-      if(err) {        
-        response.writeHead(500, {"Content-Type": "text/plain"});
-        response.write(err + "\n");
-        response.end();
-        return;
-      }
+  # Serve the file or directory
+  Rack::Directory.new(root).call(env)
+end
 
-      var headers = {};
-      var contentType = contentTypesByExtension[path.extname(filename)];
-      if (contentType) headers["Content-Type"] = contentType;
-      response.writeHead(200, headers);
-      response.write(file, "binary");
-      response.end();
-    });
-  });
-}).listen(parseInt(port, 10));
+puts
+puts "* Serving files in: #{root}"
+puts "                on: http://localhost:8888/"
+puts
 
-console.log("Static file server running at\n  => http://localhost:" + port + "/\nCTRL + C to shutdown");
-
+server = Rack::Handler.pick ['thin', 'webrick']
+server.run directory_viewer, Port: 8888
