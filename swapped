@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+lesspipe do |less|
+  results = Path["/proc/*/smaps"].map do |smap|
+    pid = smap.dirs.last
+
+    next unless pid =~ /^\d+$/
+
+    STDERR.print "."
+
+    total = smap.open do |f|
+      f.each_line.map do |line|
+        if line =~ /^Swap:\s+(\d+)/
+          $1.to_i
+        end
+      end
+    end.compact.sum
+
+    next if total.nil? or total == 0
+
+    command = smap.with(filename: "cmdline").read.gsub("\0", " ")
+
+    [total, command]
+  end.compact.sort_by { |total, _| -total }
+
+  puts
+
+  results.each do |total, command|
+    indented = "#{total}k".rjust(8)
+    less.puts "<14>#{indented} <7>#{command}".colorize
+  end
+end

@@ -1,0 +1,13 @@
+style "scrollbar"
+{
+    GtkScrollbar::slider-width = 16
+    GtkScrolledWindow::scrollbars-within-bevel = 0
+}
+class "Gtk*Scrollbar" style "scrollbar"
+
+style "resize-grip"
+{
+    GtkWindow::resize-grip-height = 24
+    GtkWindow::resize-grip-width = 24
+}
+class "GtkWindow*" style "resize-grip"

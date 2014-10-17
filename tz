@@ -6,7 +6,7 @@ require 'epitools/colored'
 
 ### Settings ##############################################
 
-CLIENT      = "qbittorrent"
+CLIENT      = "utorrent"
 MAX_RESULTS = 20
 
 ###########################################################

@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+sudoifnotroot
+
+Path["/dev/input/by-path/*-joystick"].each do |js|
+  dev = js.symlink_target
+  if dev.exists?
+    dev.rm
+    puts "#{dev} removed"
+  else
+    puts "#{dev} already removed!"
+  end
+end

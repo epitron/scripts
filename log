@@ -2,11 +2,12 @@
 # --dmesg
 # --user
 # --system
+CMD="sudoifnotroot journalctl"
 
 if [ "$1" == "" ]; then
-  journalctl --since=yesterday "$@"
+  $CMD --since=yesterday
 else
   ARG="$1"
   shift
-  journalctl --since=yesterday -u "*$ARG*" "$@"
+  $CMD -u "*$ARG*" "$@"
 fi

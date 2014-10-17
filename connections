@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+first_line = true
+
+Connection = Struct.new(:command, :pid, :user, :proto, :src, :dest, :state)
+
+conns = run("lsof", "-i").each_line.drop(1).map do |line|
+  command, 
+  pid, 
+  user, 
+  fd, 
+  type, 
+  device, 
+  size, 
+  proto, 
+  addrs, 
+  state = line.strip.split(/\s+/)
+
+  src, dest = addrs.split("->")
+
+  if state and state =~ /^\((.+)\)$/
+    state = $1
+  end
+
+  Connection.new(command, pid, user, proto, src, dest, state)
+end
+
+COLORMAP = {
+  "TCP" => 1,
+  "UDP" => 2,
+}
+
+conns.group_by(&:command).each do |command, conns|
+  puts "<8>== <12>#{command} <8>=====".colorize
+
+  conns.each do |c|
+    protocolor = (COLORMAP[c.proto] || 7)
+
+    puts "  <8>[<#{protocolor}>#{c.proto.downcase}<8>] <9>#{c.src}#{" <3>-> <11>#{c.dest}" if c.dest}#{" <8>(<7>#{c.state.titlecase}<8>)" if c.state} ".colorize
+  end
+
+  puts
+end

@@ -1,6 +1,8 @@
 #!/bin/bash
 if [ -f "$1" ]; then
   ffmpeg -i "$1" -acodec copy -movflags faststart fixed-"$1"
+  x --copy "$1" fixed-"$1"
+
   # mv "$1" "$1".bak
   mv fixed-"$1" "$1"
 else

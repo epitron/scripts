@@ -27,7 +27,7 @@
 #   match host: %w[site1.com site2.com], scheme: "https"
 #   match "site1.com", "site2.com", "site3.com"
 #   match host: "site.com"
-#   match ->(|uri|) { uri.host["site.com"] and Time.now.year == 2012 }
+#   match ->(uri) { uri.host["site.com"] and Time.now.year == 2012 }
 #
 # The 'uri' object:
 #   Each rule matches against Ruby's URI object, and when a match succeds, the block

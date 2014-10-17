@@ -406,6 +406,7 @@ def parse_options
     on 'M',  'mono',        'Fix the all-sound-coming-out-of-one-speaker problem'
     on 'N',  'normalize',   'Normalize the audio in this video (saved to a magic filename that will be automatically played)'
     on 'S',  'shuffle',     'Randomize the order of the videos'
+    on 'i',  'index',       'Rebuild video\'s index (for seeking)'
     on 'v',  'verbose',     'Show all mplayer output spam'
   end
 end
@@ -438,12 +439,13 @@ if $0 == __FILE__
   cmd   = %w[mplayer -quiet]
   extras = []
 
-  cmd << "-nosound"         if opts.nosound?
-  cmd << "-fs"              if opts.fullscreen?
-  cmd += ["-vf-add", "yadif"]   if opts.deinterlace?
-  cmd += ["-vf-add", "yadif=1"] if opts.bob?
-  cmd += ["-vf-add", "scale=1280,pp7"]     if opts.pp?
-  cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
+  cmd << "-nosound"                    if opts.nosound?
+  cmd << "-fs"                         if opts.fullscreen?
+  cmd << "-forceidx"                   if opts.index?
+  cmd += ["-aspect", opts[:aspect]]    if opts[:aspect]
+  cmd += ["-vf-add", "yadif"]          if opts.deinterlace?
+  cmd += ["-vf-add", "yadif=1"]        if opts.bob?
+  cmd += ["-vf-add", "scale=1280,pp7"] if opts.pp?
 
   seek = opts[:start]
 

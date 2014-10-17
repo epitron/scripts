@@ -12,7 +12,7 @@ else
   # nmap -6 -n -r -v -p1-65535 -sT fc12:4011:20c0:d8a6:d7e3:c696:4a1c:e43e
 
   addr = args.first
-  cmd = %w[nmap -n -r -v -sT]
+  cmd = %w[nmap -n -r -v -sT -Pn]
   unless ports = opts.find { |opt| opt[/^-p/] }
     ports = "-p1-65535"
   end

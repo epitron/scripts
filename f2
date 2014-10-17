@@ -169,7 +169,7 @@ if $0 == __FILE__
         breadth_first_scan(root) do |dirname, filename|
 
           if orig_query['/']
-            # search in the full path if the user put a '/' in the query
+            # search the full path if the user put a '/' in the query
             path = dirname + filename
             less.puts path.highlight(query) if path =~ query
           else

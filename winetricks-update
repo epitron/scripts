@@ -1,4 +1,5 @@
 #!/bin/bash
 cd ~/scripts
-wget http://winetricks.org/winetricks -O winetricks
+#wget http://winetricks.org/winetricks -O winetricks
+wget http://winetricks.googlecode.com/svn/trunk/src/winetricks -O winetricks
 chmod +x winetricks
