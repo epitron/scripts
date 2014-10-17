@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+
+unless ARGV.any?
+  puts "usage: faststart <file.m4a>"
+  exit 1
+end
+
+ARGV.each do |arg|
+
+  unless File.exists?(arg)
+    puts "File not found: #{arg}"
+    next
+  end
+
+  fixed = "faststarted-#{arg}"
+
+  puts "* Faststarting #{arg.inspect}"
+  cmd = ["ffmpeg", "-i", arg, "-c:v", "copy", "-c:a", "copy", "-movflags", "faststart", fixed]
+
+  unless system(*cmd)
+    puts "Error faststarting file."
+    next
+  end
+
+  unless system("x", "--copy", arg, fixed)
+    puts "Error copying metadata."
+    next
+  end
+
+  File.rename(fixed, arg)
+
+end
