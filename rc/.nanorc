@@ -16,7 +16,7 @@
 ## ", ', ), >, ], and }.
 
 ## Use auto-indentation.
-set autoindent
+unset autoindent
 
 ## Backup files to filename~.
 # set backup
