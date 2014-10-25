@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+request=${1:23}               # Delete the first 23 characters
+request=${request//%2F//}     # Replace %2F with /
+request=${request/&line=/:}   # Replace &line= with :
+request=${request/&column=/:} # Replace &column= with :
+subl $request       # Launch ST2
