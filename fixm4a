@@ -1,10 +1,44 @@
-#!/bin/bash
-if [ -f "$1" ]; then
-  ffmpeg -i "$1" -acodec copy -movflags faststart fixed-"$1"
-  x --copy "$1" fixed-"$1"
+#!/usr/bin/env ruby
 
-  # mv "$1" "$1".bak
-  mv fixed-"$1" "$1"
-else
-  echo "usage: fixm4a <file.m4a>"
-fi
+unless ARGV.any?
+  puts "usage: fixm4a <file.m4a>"  
+  exit 1
+end
+
+ARGV.each do |arg|
+
+  unless File.exists?(arg)
+    puts "File not found: #{arg}"
+    next
+  end
+
+  fixed = "fixed-#{arg}"
+
+  puts "* Fixing #{arg.inspect}"
+  cmd = ["ffmpeg", "-i", arg, "-acodec", "copy", "-movflags", "faststart", fixed]
+
+  unless system(*cmd)
+    puts "Error fixing file."
+    next
+  end
+
+  unless system("x", "--copy", arg, fixed)
+    puts "Error copying metadata."
+    next
+  end
+
+  File.rename(fixed, arg)
+
+end
+
+
+# #!/bin/bash
+# if [ -f "$1" ]; then
+#   ffmpeg -i "$1" -acodec copy -movflags faststart fixed-"$1"
+#   x --copy "$1" fixed-"$1"
+
+#   # mv "$1" "$1".bak
+#   mv fixed-"$1" "$1"
+# else
+#   echo "usage: fixm4a <file.m4a>"
+# fi
