@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ "$2" == "" ]; then
+  echo "usage: ffmpeg-encode-mp4 input.avi output.mp4"
+else
+  ffmpeg -i "$1" -strict experimental -c:v libx264 -crf 22 -c:a aac -movflags faststart "$2"
+fi
