@@ -1,0 +1,24 @@
+#!/bin/bash
+DIR=/usr/share/applications
+
+if [ "$1" == "" ]; then
+
+  echo "usage: install-desktop-file <application.desktop>"
+  echo
+  echo "(Note: installs it by copying it to $DIR)"
+  echo
+
+else
+
+  DEST="$DIR"/"$1"
+  if [ -f "$DEST" ]; then
+    echo "Error: $DEST already exists."
+    exit 1
+  fi
+  
+  echo "Installing to $DEST"
+  sudo cp "$1" "$DEST"
+
+  echo "Updating .desktop database"
+  sudo update-desktop-database
+ fi
