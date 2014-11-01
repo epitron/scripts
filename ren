@@ -7,7 +7,7 @@ require 'set'
 # Returns: dir, basename, ext
 #
 def path_parts(path)
-  if path =~ %r{^(.+/)?(.+?)(\..+)?$}
+  if path =~ %r{^(.+/)?(.+?)(\.[^\.]+)?$}
     return $1, $2, $3
   else
     raise "Cannot match path..."
