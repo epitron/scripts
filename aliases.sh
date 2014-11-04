@@ -179,7 +179,10 @@ alias r="rails"
 alias be="bundle exec"
 alias pad="padrino"
 alias z='zeus'
-gem-cd() { cd `gem-dir $@` ;}
+
+gem-cd() { 
+  cd `gem-dir $@`
+}
 
 
 # Things with literal arguments!
