@@ -1,3 +1,9 @@
 unalias rm
 unalias git
-alias ls="gnuls --color=auto"
+
+if which gnuls > /dev/null
+then
+  alias ls="gnuls --color=auto"
+else
+  alias ls='ls -G'
+fi

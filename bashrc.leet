@@ -72,7 +72,7 @@ man() {
 export PAGER=less
 
 # Enable recursive glob (eg: **/*.txt)
-shopt -s globstar
+shopt -s globstar > /dev/null 2>&1
 
 # make readline know that the window has resized
 shopt -s checkwinsize
