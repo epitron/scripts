@@ -3,6 +3,8 @@
 //
 // To build:
 //    gcc urlsnap.c $(pkg-config --cflags --libs webkit2gtk-3.0) -o urlsnap
+//                               OR (on arch):
+//    gcc urlsnap.c $(pkg-config --cflags --libs webkit2gtk-4.0) -o urlsnap
 
 #include <err.h>
 #include <string.h>
