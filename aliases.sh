@@ -115,7 +115,7 @@ alias disks='lsblk'
 
 # system
 alias_all_as_sudo sysdig swapped
-alias dmesg='dmesg -T'
+alias dmesg='dmesg -T --color=always|less -S -R +\>'
 alias dstat-wide='dstat -tcyifd'
 alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
 alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
@@ -144,6 +144,11 @@ alias record-desktop="simplescreenrecorder"
 alias b='chromium'
 alias qemu='qemu-system-x86_64 -enable-kvm'
 
+# archives
+alias ax="aunpack"
+alias ac="apack"
+alias al="als"
+
 # git
 alias git="hub"
 alias gs="git status"
@@ -168,7 +173,7 @@ gc() {
 alias r="rails"
 alias be="bundle exec"
 alias pad="padrino"
-alias z='zeus'
+alias z='be zeus'
 gem-cd() { cd `gem-dir $@` ;}
 
 
@@ -192,3 +197,4 @@ alias y='yaourt'
 alias yu='y -Syua'
 alias abs='sudoifnotroot abs'
 alias pkgfile='sudoifnotroot pkgfile'
+
