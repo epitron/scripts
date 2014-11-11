@@ -21,7 +21,7 @@ function alias_all_as_sudo() {
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
   #export LS_OPTIONS='--color=auto'
-  if which dircolors > /dev/null
+  if which dircolors > /dev/null 2>&1
   then
     eval `dircolors -b`
   fi
@@ -83,7 +83,7 @@ alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
 
-if which ag > /dev/null
+if which ag > /dev/null 2>&1
 then 
   alias ag='ag --pager "less -RSFXi"'
 else
