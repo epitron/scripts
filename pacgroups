@@ -6,7 +6,10 @@ tree = {}
 
 `pacman -Qg`.each_line.with_index do |l,i|
   tree.mkdir_p l.split()
-  print "." if i % 10 == 0
+  if i % 5 == 0
+    $stdout.print "."
+    $stdout.flush
+  end
 end
 
 puts
