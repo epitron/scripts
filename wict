@@ -9,10 +9,8 @@ include TokyoCabinet
 ###################################################################
 
 # http://toolserver.org/~enwikt/definitions/?sortby=7
-# ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
-# ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
-ENGLISH   = "http://chris.ill-logic.com/files/enwikt-defs-latest-en.tsv.gz"
-ALL       = "http://chris.ill-logic.com/files/enwikt-defs-latest-all.tsv.gz"
+ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
+ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
 
 CACHE_DIR = File.expand_path("~/.cache/wict")
 INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
