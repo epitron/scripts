@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 ##############################################################################
 #
-# TODO: Make .ANS files work in 'less' (less -S)
+# TODOs:
+#   * Make .ANS files work in 'less' (less -S -R, cp437)
+#   * Refactor into "filters" and "renderers", with one core loop to dispatch
+#     (eg: special rules for when a shebang starts the file)
 #
 ##############################################################################
 require 'coderay'
@@ -85,10 +88,15 @@ EXTRA_LANGS = {
 }
 
 def convert_coderay(filename)
-  ext = filename[/\..+$/]
+  ext = filename[/\.[^\.]+$/]
 
-  if lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
-    p lang: lang
+  if ext == ".json"
+    require 'json'
+
+    json = JSON.parse(File.read(filename))
+    CodeRay.scan(JSON.pretty_generate(json), :json).term
+  elsif lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
+    # p lang: lang
     CodeRay.scan_file(filename, lang).term
   else
     CodeRay.scan_file(filename).term 

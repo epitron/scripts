@@ -115,7 +115,8 @@ alias geoip='geoiplookup'
 alias iptraf='sudoifnotroot iptraf-ng'
 
 # disks
-alias_all_as_sudo fdisk blkid fatrace
+alias_all_as_sudo fdisk blkid
+alias fatrace="sudoifnotroot fatrace | grep -v xfce4-terminal"
 alias md='mdadm'
 alias df='df -h'
 alias screen='screen -U'
