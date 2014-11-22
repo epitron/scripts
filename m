@@ -403,6 +403,7 @@ def parse_options
     on 'w',  'wav',         'Dump audio to WAV file (same name as video, with .wav at the end)'
     on 'm',  'mp3',         'Dump audio to MP3 file (same name as video, with .mp3 at the end)'
     on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
+    on 'F=', 'fps',         'Set playback speed in frames-per-second'
     on 'M',  'mono',        'Fix the all-sound-coming-out-of-one-speaker problem'
     on 'N',  'normalize',   'Normalize the audio in this video (saved to a magic filename that will be automatically played)'
     on 'S',  'shuffle',     'Randomize the order of the videos'
@@ -446,6 +447,7 @@ if $0 == __FILE__
   cmd += ["-vf-add", "yadif"]          if opts.deinterlace?
   cmd += ["-vf-add", "yadif=1"]        if opts.bob?
   cmd += ["-vf-add", "scale=1280,pp7"] if opts.pp?
+  cmd += ["-fps", opts[:fps]]          if opts.fps?
 
   seek = opts[:start]
 

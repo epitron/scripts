@@ -4,7 +4,23 @@
 
 require 'rack'
 
-root = ARGV.first || Dir.pwd
+# Defaults
+port = 8888
+root = Dir.pwd
+
+# Parse commandline arguments (root dir or port)
+ARGV.each do |arg|
+  if arg =~ /^\d{2,5}$/
+    port = arg.to_i
+  else
+    if File.directory? arg
+      root = arg
+    else
+      puts "Error: #{arg.inspect} is not a directory."
+      exit 1
+    end
+  end
+end
 
 directory_viewer = proc do |env|
   req = Rack::Request.new(env)
@@ -18,8 +34,8 @@ end
 
 puts
 puts "* Serving files in: #{root}"
-puts "                on: http://localhost:8888/"
+puts "                on: http://localhost:#{port}/"
 puts
 
 server = Rack::Handler.pick ['thin', 'webrick']
-server.run directory_viewer, Port: 8888
+server.run directory_viewer, Port: port
