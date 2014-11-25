@@ -1,5 +1,11 @@
 // $XKeyboardConfig$
+//
+// Broolucks' crazy XKB keymap!
 // from: https://raw.github.com/breuleux/old_quaint/master/goodies/keyboard/usq
+//
+// Installation instructions:
+//    $ sudo ln -s ~/scripts/rc/xkbmap.leet /usr/share/X11/xkb/symbols/usq
+//    $ setxkbmap -layout usq
 
 partial default alphanumeric_keys
 xkb_symbols "basic" {
