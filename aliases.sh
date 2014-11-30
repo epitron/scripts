@@ -93,10 +93,11 @@ fi
 alias less='less -X -F -i'
 alias diff='diff -u'
 
-# audio
+# media
 alias a="audacious"
 alias ae="a -e"
 alias a2="a"
+alias baka="baka-mplayer"
 
 #if [ "$TERM" == "xterm" ]
 #then
@@ -211,3 +212,7 @@ alias y='yaourt'
 alias yu='y -Syua'
 alias abs='sudoifnotroot abs'
 alias pkgfile='sudoifnotroot pkgfile'
+
+# npm
+alias ni="sudoifnotroot npm install -g"
+alias nl="npm list -g --color=always |& less -S"
