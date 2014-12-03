@@ -65,10 +65,10 @@ todo:
 
 #####################################################################
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 import os, sys, re, urllib, time, tempfile
-from os.path import join, isfile, isdir, exists, split, splitext
+from os.path import join, isfile, isdir, exists, split
 
 #####################################################################
 
@@ -209,7 +209,7 @@ class FileExtractor:
         lowername = archivename.lower()
         for ext in self.exts:
             if lowername.endswith(ext):
-                return archivename.rstrip(ext)
+                return archivename[0:-len(ext)]
         return None
 
     def find_binary(self):
