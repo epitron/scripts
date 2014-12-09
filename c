@@ -64,8 +64,11 @@ def convert(arg=nil)
 
     if arg
       ext = File.extname(arg).downcase
-      
-      if %w[.md .markdown].include? ext
+
+      if %w[.gz].include? ext
+        require 'epitools'
+        zopen(arg).read
+      elsif %w[.md .markdown].include? ext
         convert_markdown(arg)
       elsif %w[.nfo .ans .drk .ice].include? ext
         convert_cp437(arg)
