@@ -6,12 +6,17 @@ require 'rack'
 
 # Defaults
 port = 8888
+host = "localhost"
 root = Dir.pwd
 
 # Parse commandline arguments (root dir or port)
 ARGV.each do |arg|
-  if arg =~ /^\d{2,5}$/
+  case arg
+  when /^\d{2,5}$/
     port = arg.to_i
+  when /^(\w+):(\d+)$/, /^([\d\.]+):(\d+)$/
+    host = $1
+    port = $2.to_i
   else
     if File.directory? arg
       root = arg
@@ -34,8 +39,8 @@ end
 
 puts
 puts "* Serving files in: #{root}"
-puts "                on: http://localhost:#{port}/"
+puts "                on: http://#{host}:#{port}/"
 puts
 
 server = Rack::Handler.pick ['thin', 'webrick']
-server.run directory_viewer, Port: port
+server.run directory_viewer, Port: port, Host: host
