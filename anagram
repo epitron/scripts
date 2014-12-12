@@ -1,1 +1,95 @@
-unscramble
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+class Array
+
+  #
+  # Remove one instance of each letter in "letters" from the array.
+  #
+  # (i.e. different from "array - letters", which removes ALL copies
+  #  of each letter in "letters" from the array.)
+  #
+  def without(letters)
+    grouped = group_by { |letter| letter }
+
+    letters.each do |letter|
+      if group = grouped[letter]
+        group.pop
+      else
+        raise "Error: tried to remove #{letter.inspect} from #{self.inspect}"
+      end
+    end
+
+    grouped.values.flatten
+  end
+
+end
+
+
+class Anagrammer
+
+  attr_accessor :words
+
+  SHORTWORDS = %w[
+    a in be to if in of at it ho no ye yo we
+    so um uh us vs ya am he jr me mr ms oz do
+    go hi id is kmlb kg ow ox oh oi my ma
+  ]
+
+  def initialize
+    @words = Set.new open("/usr/share/dict/words").
+                map { |w| w.chomp.chomp("'s") }.
+                select { |w| w.size > 2 and w.upcase != w }.
+                map { |l| l.downcase }
+
+    @words += SHORTWORDS
+  end
+
+  def words_from(letters)
+    return to_enum(:words_from, letters) unless block_given?
+
+    letters = letters.sort.reverse
+
+    (1..letters.size).each do |n|
+      letters.permutation(n) do |perm|
+
+        word = perm.join
+
+        if word.in? @words
+          remaining = letters.without(perm)
+          
+          if remaining.any?
+            words_from(remaining).map { |subword| yield "#{word} #{subword}" }
+          else
+            yield word
+          end
+        end
+
+      end
+    end
+  end
+
+  def solve(phrase)
+    letters = phrase.downcase.scan(/\w/)
+    words_from(letters)
+  end
+
+end
+
+if $0 == __FILE__
+
+  if ARGV.empty?
+    puts "usage: anagram [words]"
+    exit 1
+  end
+
+  phrase = ARGV.join
+
+  lesspipe do |less|
+    Anagrammer.new.solve(phrase).each do |word|
+      less.puts word
+    end
+  end
+
+end
