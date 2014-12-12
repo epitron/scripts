@@ -8,6 +8,7 @@
 # Parser:
 #
 # => unit conversions (lbs -> kg, C -> F, etc.)
+# => Translate @symbol to &:symbol (for inline Ruby expressions)
 # => / does floating point division, // does integer division
 # => Bignum.sqrt should work (convert all numbers to BigDecimal?)
 # => proper parser
@@ -15,6 +16,7 @@
 # => lazy blocks: 1..100.map \this * 5\
 # => Non-globbing operators: x / + - %
 # => | or |> to compute the prior expression and return the result, which can then be operated on more
+# => Treetop Parser (http://blog.glaucocustodio.com/2014/11/10/natural-language-parsing-with-ruby/)
 #
 #############################################################################
 
@@ -66,15 +68,15 @@ class MathOTron
     /([\d\):]+\s*)\^(\s*[\d\(]+)/ => "\\1**\\2",
 
     # backwards division: "a \ b" becomes "b / a"
-    # /([\d\)]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
+    /([\d\):]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
 
 
     ## COLON OPERATOR
     # turns "1..10: function" into "(1..10).function"
-    /(.+?): (\w+)/               => "(\\1).\\2",
+    /(.+?): (\w+)/ => "(\\1).\\2",
 
     # turns "5 - 3: / 6" into "(5 - 3) / 6"
-    /(.+?): (\W+)/               => "(\\1) \\2",
+    /(.+?): (\W+)/ => "(\\1) \\2",
 
   }
 
