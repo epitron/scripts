@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'epitools'
+require 'set'
 
 class Array
 
@@ -56,7 +56,7 @@ class Anagrammer
 
         word = perm.join
 
-        if word.in? @words
+        if @words.include? word
           remaining = letters.without(perm)
           
           if remaining.any?
@@ -86,10 +86,8 @@ if $0 == __FILE__
 
   phrase = ARGV.join
 
-  lesspipe do |less|
-    Anagrammer.new.solve(phrase).each do |word|
-      less.puts word
-    end
+  Anagrammer.new.solve(phrase).each do |word|
+    puts word
   end
 
 end
