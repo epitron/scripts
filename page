@@ -1,0 +1,369 @@
+#!/usr/bin/env ruby
+#
+# page: like less, but it doesn't stop working if your input stream pauses
+#
+# -------------------------
+#    TODOs:
+# -------------------------
+#
+# * Other possible names: "lest"
+# * Syntax highlighting (like "c" script)
+# * ungzip/xz
+# * Only update status bar
+#
+
+require 'io/console'
+
+class Pager
+
+  attr_accessor :width, :height,
+                :top, :bottom,
+                :scrollback, :queue, 
+                :read_thread, :display_thread
+
+
+  def self.pipe
+    IO.pipe do |r, w|
+      pager = new(r)
+      Thread.new { yield w }
+      pager.page!
+    end
+  end
+
+  def initialize(io)
+    @scrollback       = []
+    @queue            = Queue.new
+    @reader_thread    = nil
+    @termheight, @width = IO.console.winsize
+    @pos              = 0
+    @io               = io
+    @max_fps          = 45
+    @refresh_throttle = 1.0 / @max_fps
+    @last_refresh     = Time.now - @refresh_throttle
+
+    @height = @termheight - 1
+
+    pager = self
+
+    @keymap = KeyMap.new do
+      key(:up)      { pager.scroll_down }
+      key(:down)    { pager.scroll_up }
+
+      key(:pgup)    { pager.pageup }
+      key(:pgdown)  { pager.pagedown }
+      key(" ")      { pager.pagedown }
+
+      # key(:left)    { display.next_word }
+      # key(:right)   { display.prev_word }
+      key(:home)    { pager.scroll_home }
+      key(:end)     { pager.scroll_end }
+
+      key("/")      { pager.searchmode }
+      key("n")      { pager.next_match }
+      key("p")      { pager.prev_match }
+      key("w")      { pager.toggle_wrap }
+      key("t")      { pager.toggle_tail }
+      key("\x12")   { pager.refresh! }
+      key("?", "h", "\b", "\u001F") { pager.toggle_help }
+
+      # key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
+      # key( "0" ) { display.set_wpm 1000 }
+
+      # key("?", "/", "h")    { display.toggle_help! }
+      key("q", "Q", "\C-c") { raise KeyMap::Quit }
+
+      # default { |c| puts "tty: #{c}\r" }
+    end
+  end
+
+  def spawn_reader_thread!
+    @read_thread = Thread.new do
+      @io.each_line { |line| @queue << line }
+
+      # wait until the queue has been processed
+      loop do
+        break if @queue.empty?
+        sleep 0.01
+      end
+      refresh!
+    end
+  end
+
+  def spawn_display_thread!
+    @display_thread = Thread.new do
+      loop do
+        line = queue.pop
+        @scrollback << line
+
+        if @tail_mode then scroll_end else refresh end
+      end
+    end
+  end
+
+  def page!
+    spawn_display_thread!
+    spawn_reader_thread!
+
+    IO.console.raw { |io| @keymap.process(io) }
+
+    clear # done!
+  end
+
+
+
+
+
+  def clear
+    print "\e[H\e[J"
+  end
+
+  def refresh
+    return if @help_mode
+
+    delta = Time.now - @last_refresh
+
+    if delta > @refresh_throttle
+      refresh!
+      @last_refresh = Time.now
+    end
+  end
+
+  def refresh!
+    @last_refresh = Time.now
+    clear
+    scrollback[top..bottom].each { |line| display line }
+    display_status_bar
+  end
+
+  def percent
+    pct = (bottom.to_f / lines) * 100
+    "%0.1f%" % pct
+  end
+
+  def display_status_bar
+    move_to_row(@termheight)
+    print "\e[37m\e[1mline: #{bottom+1}/#{lines}, pos: #{percent} #{"[TAIL MODE]" if @tail_mode} (? = help)\e[0m"
+  end
+
+  def top
+    @pos
+  end
+
+  def bottom
+    [lines, @pos+(@height-1)].min
+  end
+
+  def display(line)
+    print "#{line}\r"
+  end
+
+  def pageup
+    scroll_down(height/2)
+  end
+
+  def pagedown
+    scroll_up(height/2)
+  end
+
+  def scroll_home
+    @pos = 0
+    refresh
+  end
+
+  def scroll_end
+    @pos = [0, lines-height].max
+    refresh
+  end
+
+  def scroll_up(n=1)
+    # print "\e[#{n}S"
+    # move_to_row(height-n-1)
+    # next_lines(n).each { |line| display line }
+    @pos = [ [lines-height,0].max, @pos+n ].min
+    refresh
+  end
+
+  def scroll_down(n=1)
+    # print "\e[#{n}T"
+    # move_to_row(1)
+    # prev_lines(n).each { |line| display line }
+    # move_to_bottom
+    @pos = [0, @pos-n].max
+    refresh
+  end
+
+  def lines
+    @scrollback.size
+  end
+
+  def move_to_row(n)
+    print "\e[#{n}H"
+  end
+
+  def move_to_bottom
+    move_to_row(height-1)
+  end
+
+  def toggle_wrap
+    @wrap = !@wrap
+  end
+
+  def toggle_tail
+    @tail_mode = !@tail_mode
+  end
+
+  def toggle_help
+    @help_mode = !@help_mode
+    if @help_mode then help_screen else refresh! end
+  end
+
+  def help_screen
+    clear
+    puts %{
+      ------------------\r
+        Help!!!\r
+      ------------------\r
+      \r
+      Up/Down:   Scroll up/down\r
+      PgUp/PgDn: Scroll up/down by a page\r
+      Space:     Scroll down by a page\r
+      \r
+      t: Toggle tail-mode\r
+      w: Toggle word-wrap\r
+      \r
+      /: Search\r
+      ?: Search backwards\r
+      n: Next match\r
+      p: Previous match\r
+      \r
+      q: Quit\r
+      \r
+      ?/h/^h/^?: HELP!\r
+    }
+  end
+
+end
+
+
+
+
+
+class KeyMap
+
+  attr_accessor :config
+
+  class Quit < Exception; end
+
+  def initialize(&block)
+    @config = Config.new(&block)
+  end
+
+  def process(input)
+    level = config.trie_root
+
+    # Read one character at a time from the input, and incrementally
+    # walk through levels of the trie until a :handler is found, or
+    # we hit a dead-end in the trie.
+    loop do
+      c = input.getc
+
+      handler = nil
+
+      if found = level[c]
+        level = found
+
+        if handler = level[:handler]
+          level = config.trie_root
+        end
+      else
+        handler = config.default
+        level   = config.trie_root
+      end
+
+      handler.call(c) if handler
+    end
+
+  rescue Quit
+    # one of the key handlers threw a KeyMap::Quit
+  end
+
+
+
+  class Config
+
+    NAMED_KEYS = {
+      :up     => "\e[A",
+      :down   => "\e[B",
+      :left   => "\e[C",
+      :right  => "\e[D",
+      :home   => "\eOH",
+      :end    => "\eOF",
+      :pgup   => "\e[5~",
+      :pgdown => "\e[6~",
+    }
+
+    attr_accessor :trie_root
+
+    def initialize(&block)
+      @trie_root = {}
+
+      instance_eval(&block)
+
+      # Make sure ^C is defined
+      @trie_root["\C-c"] ||= { handler: proc { exit } }
+    end
+
+    #
+    # Add a command to the trie of input sequences
+    #
+    def key(*seqs, &block)
+      seqs.each do |seq|
+        if keycode = NAMED_KEYS[seq]
+          seq = keycode
+        end
+
+        level = @trie_root
+
+        seq.each_char do |c|
+          level = (level[c] ||= {})
+        end
+        
+        level[:handler] = block
+      end
+    end
+
+    #
+    # This block will be run if the key isn't defined.
+    #
+    def default(&block)
+      if block_given?
+        @default = block
+      else
+        @default
+      end
+    end
+  end
+
+end
+
+
+
+
+
+if $0 == __FILE__
+  if $stdin.tty? and ARGV.empty?
+    # show help
+    puts DATA.read
+  else
+    Pager.new(ARGF).page!
+  end
+  exit!
+end
+
+__END__
+Usage:
+
+  $ page <file(s)>
+        or
+  $ command | page
+
