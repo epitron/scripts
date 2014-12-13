@@ -19,8 +19,8 @@ class Pager
   attr_accessor :width, :height,
                 :top, :bottom,
                 :scrollback, :queue, 
-                :read_thread, :display_thread
-
+                :read_thread, :display_thread,
+                :tail_mode
 
   def self.pipe
     IO.pipe do |r, w|
@@ -67,10 +67,15 @@ class Pager
       key("?", "h", "\b", "\u001F") { pager.toggle_help }
 
       # key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
-      # key( "0" ) { display.set_wpm 1000 }
 
-      # key("?", "/", "h")    { display.toggle_help! }
       key("q", "Q", "\C-c") { raise KeyMap::Quit }
+
+      always do |c|
+        unless ["t", "?", "h", "\b", "\u001F"].include? c
+          pager.tail_mode = false
+          pager.refresh
+        end
+      end
 
       # default { |c| puts "tty: #{c}\r" }
     end
@@ -219,7 +224,7 @@ class Pager
 
   def help_screen
     clear
-    puts %{
+    print %{
       ------------------\r
         Help!!!\r
       ------------------\r
@@ -281,6 +286,7 @@ class KeyMap
       end
 
       handler.call(c) if handler
+      config.always.call(c) if config.always
     end
 
   rescue Quit
@@ -336,12 +342,13 @@ class KeyMap
     # This block will be run if the key isn't defined.
     #
     def default(&block)
-      if block_given?
-        @default = block
-      else
-        @default
-      end
+      if block_given? then @default = block else @default end
     end
+
+    def always(&block)
+      if block_given? then @always = block else @always end
+    end
+
   end
 
 end
