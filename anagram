@@ -77,17 +77,25 @@ class Anagrammer
 
 end
 
-if $0 == __FILE__
+begin
+  if $0 == __FILE__
 
-  if ARGV.empty?
-    puts "usage: anagram [words]"
-    exit 1
+    if ARGV.empty?
+      puts "usage: anagram [words]"
+      exit 1
+    end
+
+    phrase = ARGV.join
+
+    Anagrammer.new.solve(phrase).each do |word|
+      puts word
+    end
+
   end
-
-  phrase = ARGV.join
-
-  Anagrammer.new.solve(phrase).each do |word|
-    puts word
-  end
-
+rescue Interrupt
+  # SIGINT or ^C received
+  exit 130 # INT received
+rescue Errno::EPIPE
+  # STDOUT was closed before execution completed
+  exit 74 # EX_IOERR
 end
