@@ -6,10 +6,17 @@
 #    TODOs:
 # -------------------------
 #
-# * Other possible names: "lest"
-# * Syntax highlighting (like "c" script)
-# * ungzip/xz
-# * Only update status bar
+# + Search
+# + More efficient redraws
+# |- Use the scroll up/down sequences and set a scrollable region
+# |- Only update status bar if the visible portion of the screen doesn't change
+# \- Only apply throttle to status bar
+# + Word wrap
+# + Scroll horizontally
+# + Mouse wheel
+# + Other possible names: "moar", "lest", "pager"
+# + Syntax highlighting (see the "c" script)
+# + Read gzip/xz files
 #
 
 require 'io/console'
@@ -33,7 +40,6 @@ class Pager
   def initialize(io)
     @scrollback       = []
     @queue            = Queue.new
-    @reader_thread    = nil
     @termheight, @width = IO.console.winsize
     @pos              = 0
     @io               = io
@@ -83,6 +89,7 @@ class Pager
 
   def spawn_reader_thread!
     @read_thread = Thread.new do
+      refresh!
       @io.each_line { |line| @queue << line }
 
       # wait until the queue has been processed
