@@ -1,0 +1,3 @@
+motion -c ~/.motion.conf
+sleep 1
+curl http://localhost:9900/0/detection/start
