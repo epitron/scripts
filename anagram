@@ -34,11 +34,11 @@ class Anagrammer
   SHORTWORDS = %w[
     a in be to if in of at it ho no ye yo we
     so um uh us vs ya am he jr me mr ms oz do
-    go hi id is kmlb kg ow ox oh oi my ma
+    go hi id is km lb kg ow ox oh oi my ma
   ]
 
-  def initialize
-    @words = Set.new open("/usr/share/dict/words").
+  def initialize(wordlist="/usr/share/dict/words")
+    @words = Set.new open(wordlist).
                 map { |w| w.chomp.chomp("'s") }.
                 select { |w| w.size > 2 and w.upcase != w }.
                 map { |l| l.downcase }
@@ -71,31 +71,32 @@ class Anagrammer
   end
 
   def solve(phrase)
+    puts "# Searching for anagrams of #{phrase.inspect}..."
     letters = phrase.downcase.scan(/\w/)
     words_from(letters)
   end
 
 end
 
-begin
-  if $0 == __FILE__
+if $0 == __FILE__
+  begin
 
     if ARGV.empty?
-      puts "usage: anagram [words]"
+      puts "usage: anagram [phrase]"
       exit 1
     end
 
-    phrase = ARGV.join
+    phrase = ARGV.join(" ")
 
     Anagrammer.new.solve(phrase).each do |word|
       puts word
     end
 
+  rescue Interrupt
+    # SIGINT or ^C received
+    exit 130 # INT received
+  rescue Errno::EPIPE
+    # STDOUT was closed before execution completed
+    exit 74 # EX_IOERR
   end
-rescue Interrupt
-  # SIGINT or ^C received
-  exit 130 # INT received
-rescue Errno::EPIPE
-  # STDOUT was closed before execution completed
-  exit 74 # EX_IOERR
 end
