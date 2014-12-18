@@ -7,19 +7,44 @@
 # -------------------------
 #
 # + Search
-# + More efficient redraws
-# |- Use the scroll up/down sequences and set a scrollable region
-# |- Only update status bar if the visible portion of the screen doesn't change
-# \- Only apply throttle to status bar
-# + Word wrap
-# + Scroll horizontally
 # + Mouse wheel
 # + Other possible names: "moar", "lest", "pager"
 # + Syntax highlighting (see the "c" script)
 # + Read gzip/xz files
 #
+# -------------------------
+#    TODONEs:
+# -------------------------
+#
+# + Word wrap
+# + Scroll horizontally
+# + More efficient redraws
+# |- Use the scroll up/down sequences and set a scrollable region
+# |- Only update status bar if the visible portion of the screen doesn't change
+# \- Only apply throttle to status bar
+#
 
 require 'io/console'
+
+def debug(msg)
+  $stderr.puts(msg.inspect) if $debug
+end
+
+class Numeric
+  def clamp(range)
+    if self < range.first
+      range.first
+    elsif self >= range.last 
+      if range.exclude_end?
+        range.last - 1
+      else
+        range.last
+      end
+    else
+      self
+    end
+  end
+end
 
 class Pager
 
@@ -38,14 +63,18 @@ class Pager
   end
 
   def initialize(io)
-    @scrollback       = []
-    @queue            = Queue.new
-    @termheight, @width = IO.console.winsize
-    @pos              = 0
-    @io               = io
-    @max_fps          = 45
-    @refresh_throttle = 1.0 / @max_fps
-    @last_refresh     = Time.now - @refresh_throttle
+    @display_lock            = Mutex.new
+    @scrollback              = []
+    @queue                   = Queue.new
+    @termheight, @width      = IO.console.winsize
+    @pos                     = 0
+    @hpos                    = 0
+    @longest_line            = 0
+    @io                      = io
+    @max_fps                 = 45
+    @refresh_throttle        = 1.0 / @max_fps
+    @last_refresh            = Time.now - @refresh_throttle
+    @last_display_status_bar = Time.now - @refresh_throttle
 
     @height = @termheight - 1
 
@@ -54,22 +83,25 @@ class Pager
     @keymap = KeyMap.new do
       key(:up)      { pager.scroll_down }
       key(:down)    { pager.scroll_up }
+      key(:left)    { pager.scroll_right }
+      key(:right)   { pager.scroll_left }
 
       key(:pgup)    { pager.pageup }
       key(:pgdown)  { pager.pagedown }
       key(" ")      { pager.pagedown }
 
-      # key(:left)    { display.next_word }
-      # key(:right)   { display.prev_word }
       key(:home)    { pager.scroll_home }
       key(:end)     { pager.scroll_end }
 
-      key("/")      { pager.searchmode }
-      key("n")      { pager.next_match }
-      key("p")      { pager.prev_match }
+      # key("/")      { pager.searchmode }
+      # key("n")      { pager.next_match }
+      # key("p")      { pager.prev_match }
+
+      key("t")      { pager.toggle_tail_mode }
       key("w")      { pager.toggle_wrap }
-      key("t")      { pager.toggle_tail }
-      key("\x12")   { pager.refresh! }
+      key("n")      { pager.toggle_line_numbers }
+      
+      key("r", "\x12", "\r", "\f")  { pager.refresh! }
       key("?", "h", "\b", "\u001F") { pager.toggle_help }
 
       # key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
@@ -77,9 +109,9 @@ class Pager
       key("q", "Q", "\C-c") { raise KeyMap::Quit }
 
       always do |c|
-        unless ["t", "?", "h", "\b", "\u001F"].include? c
+        unless ["t", "?", "n", "h", "\b", "\u001F"].include? c
           pager.tail_mode = false
-          pager.refresh
+          # pager.refresh!
         end
       end
 
@@ -87,15 +119,18 @@ class Pager
     end
   end
 
+
+
+
+
   def spawn_reader_thread!
     @read_thread = Thread.new do
-      refresh!
       @io.each_line { |line| @queue << line }
 
       # wait until the queue has been processed
       loop do
         break if @queue.empty?
-        sleep 0.01
+        sleep 0.05
       end
       refresh!
     end
@@ -103,11 +138,21 @@ class Pager
 
   def spawn_display_thread!
     @display_thread = Thread.new do
+      refresh!
       loop do
         line = queue.pop
         @scrollback << line
+        @longest_line = line.size if @longest_line < line.size
 
-        if @tail_mode then scroll_end else refresh end
+        if @tail_mode
+          scroll_end
+        else
+          if lines < height
+            refresh
+          else
+            display_status_bar
+          end
+        end
       end
     end
   end
@@ -116,10 +161,17 @@ class Pager
     spawn_display_thread!
     spawn_reader_thread!
 
+    hide_cursor
+
+    # main loop (handle keyboard events)
     IO.console.raw { |io| @keymap.process(io) }
 
+    show_cursor
     clear # done!
   end
+
+
+
 
 
 
@@ -129,32 +181,44 @@ class Pager
     print "\e[H\e[J"
   end
 
-  def refresh
-    return if @help_mode
-
-    delta = Time.now - @last_refresh
-
-    if delta > @refresh_throttle
-      refresh!
-      @last_refresh = Time.now
-    end
+  def clear_line
+    print "\e[2K"
   end
 
-  def refresh!
-    @last_refresh = Time.now
-    clear
-    scrollback[top..bottom].each { |line| display line }
-    display_status_bar
+  def clear_eol
+    print "\e[0K"
   end
+
+  def move_to(row: 1, col: 1)
+    print "\e[#{row};#{col}H"
+  end
+
+  def move_to_row(n)
+    move_to(row: n)
+  end
+
+  def move_to_bottom
+    move_to_row(height-1)
+  end
+
+  def move_to_top
+    move_to_row(1)
+  end
+
+  def hide_cursor
+    print "\e[?25l"
+  end
+
+  def show_cursor
+    print "\e[?25h"
+  end
+
+
+
 
   def percent
     pct = (bottom.to_f / lines) * 100
     "%0.1f%" % pct
-  end
-
-  def display_status_bar
-    move_to_row(@termheight)
-    print "\e[37m\e[1mline: #{bottom+1}/#{lines}, pos: #{percent} #{"[TAIL MODE]" if @tail_mode} (? = help)\e[0m"
   end
 
   def top
@@ -165,8 +229,123 @@ class Pager
     [lines, @pos+(@height-1)].min
   end
 
-  def display(line)
-    print "#{line}\r"
+  def end_pos
+    [lines - height, 0].max
+  end
+
+  def lines
+    @scrollback.size
+  end
+
+
+
+  def lines_on_screen(padded=true)
+
+    range = top..bottom
+
+    debug(lines_on_screen: range.size, range: range, lines: lines)
+
+    l = scrollback[range] || []
+    l += [""] * (height-l.size) if padded and l.size < height
+
+    # debug(scrollback_size: l.size)
+    l.zip(range)
+  end
+
+  def display(line, row: nil, num: nil)
+    width = @width
+    left  = @hpos
+
+    if @line_numbers
+      num_width = lines.to_s.size
+      right     = @hpos + (@width - num_width - 2)
+      cropped   = "#{num.to_s.rjust(num_width)}: #{line[left...right]}"
+    else
+      right   = @hpos+@width
+      cropped = line[left...right]
+    end
+
+    move_to_row(row) if row
+    clear_eol
+    print cropped
+  end
+
+  def move_pos(delta)
+    prev_pos, @pos = @pos, (@pos+delta).clamp(0..end_pos)
+
+    change = @pos - prev_pos # returns the actual number of rows moved
+
+    debug(pos_moved: change)
+    change
+  end
+
+  def move_hpos(delta)
+    prev_hpos, @hpos = @hpos, (@hpos+delta).clamp(0...@longest_line)
+
+    change = @hpos - prev_hpos # returns the actual number of columns moved
+
+    debug(hpos_moved: change)
+    change
+  end
+
+
+  #
+  # Page moves up (new lines added at bottom)
+  #
+  def scroll_up(n=1)
+    n = move_pos(n)
+
+    if n != 0
+      bottom_line = height-n+1
+      clear_status_bar
+      print "\e[#{n}S"
+      move_to(row: bottom_line)
+      debug(scrolled_up: n)
+      lines_on_screen.last(n).each_with_index do |(line,num),i|
+        display(line, row: bottom_line+i, num: num)
+      end
+      display_status_bar!
+    end
+  end
+
+  #
+  # Page moves down (new lines added at top)
+  #
+  def scroll_down(n=1)
+    n = move_pos(-n).abs
+    if n != 0
+      move_to(row: 1)
+      print "\e[#{n}T"
+      debug(scrolled_down: n)
+      lines_on_screen.first(n).each_with_index do |(line,num), i|
+        display(line, row: 1+i, num: num)
+      end
+      display_status_bar!
+    end
+  end
+
+  def scroll_left(n=20)
+    refresh! if move_hpos(-n) != 0    
+  end
+
+  def scroll_right(n=20)
+    refresh! if move_hpos(n) != 0    
+  end
+
+  def scroll_home
+    @pos = 0
+    refresh!
+  end
+
+  def scroll_end
+    lines_from_end = lines - bottom
+
+    if lines_from_end < height
+      scroll_up(lines_from_end)
+    else
+      @pos = end_pos
+      refresh!
+    end
   end
 
   def pageup
@@ -177,81 +356,109 @@ class Pager
     scroll_up(height/2)
   end
 
-  def scroll_home
-    @pos = 0
-    refresh
+
+  #
+  # Refresh the display immediately (threadsafe).
+  #
+  def refresh!
+    @display_lock.synchronize do
+      debug("refresh!")
+      @last_refresh = Time.now
+      # clear
+      move_to_top
+      lines_on_screen.each_with_index { |(line,num), i| display line, row: i+1, num: num }
+      display_status_bar!
+    end
   end
 
-  def scroll_end
-    @pos = [0, lines-height].max
-    refresh
+  def clear_status_bar
+    move_to_row(@termheight)
+    clear_eol
   end
 
-  def scroll_up(n=1)
-    # print "\e[#{n}S"
-    # move_to_row(height-n-1)
-    # next_lines(n).each { |line| display line }
-    @pos = [ [lines-height,0].max, @pos+n ].min
-    refresh
+  def display_status_bar!
+    move_to_row(@termheight)
+
+    print "\e[37;1m" +
+      "line: #{bottom+1}/#{lines} (#{percent}), " +
+      "col: #{@hpos} " + 
+      "#{"[TAIL] " if @tail_mode}" +
+      "#{"[WRAP] " if @wrap}" +
+      "(? = help)" +
+      "\e[0m"
+
+    clear_eol
   end
 
-  def scroll_down(n=1)
-    # print "\e[#{n}T"
-    # move_to_row(1)
-    # prev_lines(n).each { |line| display line }
-    # move_to_bottom
-    @pos = [0, @pos-n].max
-    refresh
-  end
+  #
+  # Throttles (limited to @max_fps updates per second)
+  #
+  %w[refresh display_status_bar].each do |meth|
+    class_eval %{
+      def #{meth}
+        return if @help_mode
 
-  def lines
-    @scrollback.size
-  end
+        delta = Time.now - @last_#{meth}
 
-  def move_to_row(n)
-    print "\e[#{n}H"
-  end
-
-  def move_to_bottom
-    move_to_row(height-1)
-  end
-
-  def toggle_wrap
-    @wrap = !@wrap
-  end
-
-  def toggle_tail
-    @tail_mode = !@tail_mode
+        if delta > @refresh_throttle
+          #{meth}!
+          @last_#{meth} = Time.now
+        end
+      end
+    }
   end
 
   def toggle_help
     @help_mode = !@help_mode
-    if @help_mode then help_screen else refresh! end
+    if @help_mode then display_help_screen else refresh! end
   end
 
-  def help_screen
+  def toggle_tail_mode
+    @tail_mode = !@tail_mode
+    scroll_end
+    refresh!
+  end
+
+  def toggle_line_numbers
+    @line_numbers = !@line_numbers
+    refresh!
+  end
+
+  def toggle_wrap
+    @wrap = !@wrap
+    refresh!
+  end
+
+
+  def display_help_screen
     clear
     print %{
       ------------------\r
         Help!!!\r
       ------------------\r
       \r
-      Up/Down:   Scroll up/down\r
-      PgUp/PgDn: Scroll up/down by a page\r
-      Space:     Scroll down by a page\r
+      Up/Down:    Scroll vertically\r
+      Left/Right: Scroll horizontally\r
+      PgUp/PgDn:  Scroll vertically by a page\r
+      Space:      Scroll down by a page\r
       \r
       t: Toggle tail-mode\r
       w: Toggle word-wrap\r
+      n: Toggle line numbers\r
       \r
-      /: Search\r
-      ?: Search backwards\r
-      n: Next match\r
-      p: Previous match\r
       \r
       q: Quit\r
       \r
       ?/h/^h/^?: HELP!\r
     }
+
+    # TODO:
+    #
+    # /: Search\r
+    # ?: Search backwards\r
+    # n: Next match\r
+    # p: Previous match\r
+
   end
 
 end
@@ -323,7 +530,7 @@ class KeyMap
       instance_eval(&block)
 
       # Make sure ^C is defined
-      @trie_root["\C-c"] ||= { handler: proc { exit } }
+      @trie_root["\C-c"] ||= { handler: proc { raise KeyMap::Quit } }
     end
 
     #
@@ -368,9 +575,30 @@ if $0 == __FILE__
   if $stdin.tty? and ARGV.empty?
     # show help
     puts DATA.read
-  else
-    Pager.new(ARGF).page!
+    exit
   end
+
+  opts, args = ARGV.partition { |arg| arg[/^-\w$/] }
+
+  opts.each do |opt|
+    case opt
+    when "-d" then $debug = true
+    else
+      $stderr.puts "Unrecognized option: #{opt}"
+    end
+  end
+
+  case args.size
+  when 0
+    Pager.new($stdin).page!
+  when 1
+    Pager.new(open(args.first)).page!
+  else
+    IO.popen(["c", *args], :err=>[:child, :out]) do |io|
+      Pager.new(io).page!
+    end
+  end  
+
   exit!
 end
 
