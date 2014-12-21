@@ -1,0 +1,10 @@
+unalias rm
+unalias git
+unalias ls
+unalias grep
+unalias mv
+
+if which colorls 2> /dev/null
+then
+  alias ls="colorls"
+fi
