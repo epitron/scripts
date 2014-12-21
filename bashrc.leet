@@ -5,6 +5,7 @@
 
 # The directory from which this script is being called
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 source "$DIR/aliases.sh"
 
 if [ "$EDITOR" == "" ]; then
@@ -93,8 +94,13 @@ shopt -s histverify
 # mkdir and cd, all in one!
 
 
-if [ $(uname -s | grep -E '(Darwin|BSD)') ]
-then
-  . $SCRIPTDIR/bashrc.bsd
-  export PATH=$SCRIPTDIR/bsd:$PATH
-fi
+case $(uname -s) in
+  Darwin|FreeBSD)
+    . $SCRIPTDIR/bashrc.bsd
+    export PATH=$SCRIPTDIR/bsd:$PATH
+    ;;
+  OpenBSD)
+    . $SCRIPTDIR/bashrc.openbsd
+    export PATH=$SCRIPTDIR/bsd:$PATH
+    ;;
+esac
