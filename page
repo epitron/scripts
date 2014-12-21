@@ -101,8 +101,8 @@ class Pager
       key("w")      { pager.toggle_wrap }
       key("n")      { pager.toggle_line_numbers }
       
-      key("r", "\x12", "\r", "\f")  { pager.refresh! }
-      key("?", "h", "\b", "\u001F") { pager.toggle_help }
+      key("r", "\C-r", "\r", "\f")  { pager.refresh! }
+      key("?", "h", "\C-/", "\C-?") { pager.toggle_help }
 
       # key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
 
@@ -516,10 +516,11 @@ class KeyMap
       :down   => "\e[B",
       :left   => "\e[C",
       :right  => "\e[D",
-      :home   => "\eOH",
-      :end    => "\eOF",
+      :home   => ["\eOH", "\e[1~"],
+      :end    => ["\eOF", "\e[4~"],
       :pgup   => "\e[5~",
       :pgdown => "\e[6~",
+      :ctrl_c => "\C-c"
     }
 
     attr_accessor :trie_root
@@ -527,21 +528,19 @@ class KeyMap
     def initialize(&block)
       @trie_root = {}
 
-      instance_eval(&block)
-
       # Make sure ^C is defined
-      @trie_root["\C-c"] ||= { handler: proc { raise KeyMap::Quit } }
+      key(:ctrl_c) { raise KeyMap::Quit }
+
+      instance_eval(&block)
     end
 
     #
     # Add a command to the trie of input sequences
     #
     def key(*seqs, &block)
-      seqs.each do |seq|
-        if keycode = NAMED_KEYS[seq]
-          seq = keycode
-        end
+      seqs = seqs.flat_map { |seq| NAMED_KEYS[seq] || seq }
 
+      seqs.each do |seq|
         level = @trie_root
 
         seq.each_char do |c|
@@ -566,6 +565,8 @@ class KeyMap
   end
 
 end
+
+
 
 
 
