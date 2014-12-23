@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 #
-# page: like less, but it doesn't stop working if your input stream pauses
+# like less, but it doesn't stop working if your input stream pauses
 #
 # -------------------------
 #    TODOs:
 # -------------------------
 #
+# + Wrap ANSI properly (strip ANSI codes)
 # + Search
 # + Mouse wheel
-# + Other possible names: "moar", "lest", "pager"
 # + Syntax highlighting (see the "c" script)
 # + Read gzip/xz files
 #
@@ -22,6 +22,7 @@
 # |- Use the scroll up/down sequences and set a scrollable region
 # |- Only update status bar if the visible portion of the screen doesn't change
 # \- Only apply throttle to status bar
+# + Other possible names: "moar", "lest", "pager"
 #
 
 require 'io/console'
@@ -606,7 +607,7 @@ end
 __END__
 Usage:
 
-  $ page <file(s)>
+  $ moar <file(s)>
         or
-  $ command | page
+  $ command | moar
 
