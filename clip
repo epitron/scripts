@@ -17,7 +17,7 @@ def parse_options
     on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)'
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
-    on 'u=', 'use',      'Tool to use (ffmpeg, mencoder, etc. default: mencoder)', default: "mencoder"
+    on 'u=', 'use',      'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
   end
 end
 
@@ -74,15 +74,14 @@ if $0 == __FILE__
     puts "ERROR: Input file not found: #{infile}"
     exit 1
   end
-
-
   
 
   ## Compute length
 
-  start = opts[:start]
+  start  = opts[:start]
+  length = opts[:length]
 
-  unless length = opts[:length]
+  if length.nil? and opts[:end]
     length = timediff(start, opts[:end])
   end
 
@@ -100,7 +99,8 @@ if $0 == __FILE__
       cmd = ["ffmpeg", "-i", infile]
       cmd += ["-codec:v", opts[:vcodec]]
       cmd += ["-codec:a", opts[:acodec]]
-      cmd += ["-ss", start, "-t", length]
+      cmd += ["-ss", start]
+      cmd += ["-t", length] if length
 
       cmd << outfile
 
@@ -109,10 +109,10 @@ if $0 == __FILE__
         "mencoder", infile, 
         "-o", outfile, 
         "-ss", start, 
-        "-endpos", length,
         "-of", "lavf", "-lavfopts", "format=#{outfile.ext}"
       ]
-
+        
+      cmd += ["-endpos", length] if length
       cmd += ["-ovc", opts[:vcodec]]
 
       case opts[:acodec]
@@ -143,6 +143,7 @@ if $0 == __FILE__
 
 
   ## Rip it!
+  p cmd
   system(*cmd)
 
 end
