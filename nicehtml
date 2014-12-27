@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
 require 'nokogiri'
 
-puts Nokogiri::XML(ARGF, &:noblanks).to_xhtml(indent: 2)
+# puts Nokogiri::XML(ARGF, &:noblanks).to_xhtml(indent: 2)
+puts Nokogiri::HTML(ARGF).to_xhtml(indent: 2)
