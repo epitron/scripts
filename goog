@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+unless ARGV.any?
+  puts "Usage: goog <query>"
+  exit 1
+end
+
+
+class Result
+  attr_accessor :title, :url, :desc, :highlighted_desc
+  
+  def initialize(result)
+    link   = result.at("h3.r a")
+    @title = link.text
+    @url   = URI.parse(link["href"]).params["q"]
+
+    desc  = result.at(".s .st")
+    @desc = desc.text
+    @highlighted_desc = highlight(desc)
+  end
+
+  def highlight(desc, color=7, highlight=14)
+    translated = desc.children.map do |child|
+
+      case child
+      when Nokogiri::XML::Text
+        child.text
+      when Nokogiri::XML::Element
+
+        case child.name
+        when "b"
+          "<#{highlight}>#{child.text}</#{highlight}>"
+        else
+          child.text
+        end
+
+      end
+
+    end
+
+    "<#{color}>#{translated.join}</#{color}>"
+  end
+
+end
+
+query = ARGV.join(" ")
+
+puts "Searching for: <14>#{query}".colorize
+
+b = Browser.new
+page = b.get "http://google.com/"
+
+form = page.forms.first
+form.fields_with(name: "q").first.value = query
+
+page = form.submit
+
+results = page.at("#ires").search("li.g").map {|result| Result.new result }
+puts "Results: #{results.size}"
+
+results = Hash[ (1..results.size).zip(results) ]
+
+results.each do |n, r|
+  indent = " " * (n.to_s.size + 2)
+  puts "<11>#{n}. <15>#{r.title}".colorize
+  puts "#{indent}#{r.url}".light_blue
+  puts "#{indent}#{r.highlighted_desc.colorize}"
+  puts
+end
+
+print "pick > ".light_yellow
+
+choices = $stdin.gets.strip.split
+choices.each do |choice|
+  result = results[choice.to_i]
+  puts result.url
+end
