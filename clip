@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-VIDEO_EXTS = %[mp4 mkv avi mov mpg mpeg m4v]
+VIDEO_EXTS = %[mp4 mkv avi mov mpg mpeg m4v webm]
 AUDIO_EXTS = %[mp3 aac m4a]
 
 def parse_options
@@ -12,8 +12,8 @@ def parse_options
     banner 'Usage: clip [options] <videos...>'
 
     on 'o=', 'output',   'The file to write the clip to.'
-    on 'a=', 'acodec',   'Output audio codec (default: mp3)', default: "mp3"
-    on 'v=', 'vcodec',   'Output video codec (default: copy)', default: "copy"
+    on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
+    on 'v=', 'vcodec',   'Output video codec', default: "copy"
     on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)'
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
@@ -127,7 +127,7 @@ if $0 == __FILE__
       raise "Unknown tool: #{opts[:use]}"
     end
 
-  elsif infile.ext.in? AUDIO_EXISTS
+  elsif infile.ext.in? AUDIO_EXTS
     raise "stub"
     # mpgtx
   else

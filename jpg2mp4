@@ -1,0 +1,1 @@
+cat *.jpg | ffmpeg -f image2pipe -vcodec mjpeg -t 20 -i - -vcodec libx264 -s 2048x2048 -r 24 out.mp4
