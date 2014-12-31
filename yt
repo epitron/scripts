@@ -70,7 +70,7 @@ page = Nokogiri::HTML(HTTP.get(url).to_s)
 
 lis = page.search("#results #section-list ol.item-section > li")
 results = lis.map do |li|
-  next if li.at(".spell-correction") or li.at(".yt-lockup-playlist")
+  next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
   Result.new li
 end.compact
 
