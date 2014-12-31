@@ -1,0 +1,9 @@
+# Screenshots
+
+Here are screenshots of some of the scripts.
+
+<% Dir["screenshots/*.{png,jpg}"].each do |fn| name = File.basename(fn, File.extname(fn)) %>
+## <%= name %>
+
+![<%= name %>](https://raw.githubusercontent.com/epitron/scripts/master/<%= fn %>)
+<% end %>
