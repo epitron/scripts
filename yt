@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'epitools'
-require 'open-uri'
+# require 'open-uri'
+require 'http'
 
 unless ARGV.any?
   puts "Usage: yt <query>"
@@ -61,8 +62,11 @@ query = ARGV.join(" ")
 
 puts "Searching for: <14>#{query}".colorize
 
-#b = Browser.new
-page = Nokogiri::HTML(open("https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=Search"))
+url = "https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=Search"
+# b = Browser.new url
+# page = Nokogiri::HTML(open(url))
+page = Nokogiri::HTML(HTTP.get(url).to_s)
+
 
 lis = page.search("#results #section-list ol.item-section > li")
 results = lis.map do |li|
@@ -74,35 +78,14 @@ puts "Results: #{results.size}"
 
 results = Hash[ (1..results.size).zip(results) ]
 
-
-    # :title,
-    # :url,
-    # :desc,
-    # :length,
-    # :views,
-    # :date,
-    # :user
-
 results.to_a.reverse.each do |n, r|
   puts "<11>#{n}. <15>#{r.title}".colorize
 
   indent = " " * (n.to_s.size + 2)
  
-  puts "#{indent}by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
+  puts "#{indent}<8>by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
   puts "#{indent}#{r.url}".light_blue
-  puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc
+  # puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc
+  puts r.desc.wrapdent(indent) if r.desc
   puts
 end
-
-# print "pick > ".light_yellow
-
-# choices = $stdin.gets
-# choices = choices.strip.split if choices
-# exit if choices.nil? or choices.empty?
-
-# fork do
-#   choices.each do |choice|
-#     result = results[choice.to_i]
-#     system("play", result.url)
-#   end
-# end
