@@ -158,34 +158,38 @@ def play(url, seek=nil)
 
   media_url, title = youtube_dl(url)
   # p media_url: media_url
-  # media_url.gsub!(/^https:/, "http:") # mplayer doesn't support https://
-  # p media_url_fixed: media_url
-
+  
   write_to_log(url, title)
 
   notify(:video, "Playing:", title, time: 4)
 
-  if media_url =~ %r{^https://}i
-    # media_url = "http_proxy://localhost:8080/#{media_url}"
+  # if media_url =~ %r{^https://}i
+  #   # media_url = "http_proxy://localhost:8080/#{media_url}"
 
-    xspf = xspf_file(title, media_url)
-    # cmd = ["totem", xspf.path]
-    # cmd = ["totem", "--enqueue", xspf.path]
-    cmd = ["parole", "-i", xspf.path]
-  else
-    # cachefile = File.join(CACHEDIR, title)
-    # title     = title.gsub(/\.\w+$/, '') # remove extension
+  #   # cmd = ["totem", xspf.path]
+  #   # cmd = ["totem", "--enqueue", xspf.path]
 
-    cmd = %w[mplayer -title] + 
-            [title] + 
-            %w[-cache 20000 -cache-min 0.0128] + 
-            # %w[-dumpstream -dumpfile] + [cachefile] +
-            # %w[-really-quiet] +
-            [media_url]
+  #   # xspf = xspf_file(title, media_url)
+  #   # cmd = ["parole", "-i", xspf.path]
 
-    cmd += ["-ss", seek] if seek
-  end
+  #   # cmd = ["mpv", "--media-title", title, media_url]
+  #   # cmd = ["baka-mplayer", "-media-title", title, media_url]
+  # else
+  #   # cachefile = File.join(CACHEDIR, title)
+  #   # title     = title.gsub(/\.\w+$/, '') # remove extension
+
+  #   cmd = %w[mplayer -title] + 
+  #           [title] + 
+  #           %w[-cache 20000 -cache-min 0.0128] + 
+  #           # %w[-dumpstream -dumpfile] + [cachefile] +
+  #           # %w[-really-quiet] +
+  #           [media_url]
+
+  #   cmd += ["-ss", seek] if seek
+  # end
   
+  cmd = ["baka-mplayer", "-title", title, media_url]
+
   system(*cmd)
 end
 

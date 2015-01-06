@@ -88,6 +88,7 @@ EXTRA_LANGS = {
   ".pro" => :sql,
   ".service" => :ini,
   "PKGBUILD" => :bash,
+  ".gradle" => :groovy,
 }
 
 def convert_coderay(filename)

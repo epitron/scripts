@@ -1,7 +1,7 @@
 #!/bin/bash
 BIN="`which redshift-gtk gtk-redshift`"
 
-$BIN -t 6500:4000 -l 42.8142432:-73.9395687
+$BIN -t 6300:3400 -l 42.8142432:-73.9395687
 # -t DAY:NIGHT	Color temperature to set at daytime/night
 #
 # The neutral temperature is 6500K. Using this value will not

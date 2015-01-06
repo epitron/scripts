@@ -1,0 +1,1 @@
+find . \( -type d -printf "%p/\n" , -type f -print \)
