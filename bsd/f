@@ -7,11 +7,11 @@ fi
 expr="$1"
 shift
 
-if [ "$#" == "0" ]; then
-  find -x . | grep -Ei --color=always "$expr"
+if [ "$#" == "0" ]; then # no directories specified
+  find -x . | ag "$expr" # grep -Ei --color=always "$expr"
 else
-  while (( "$#" )); do
-    find -x "$1" | grep -Ei --color=always "$expr"
+  while (( "$#" )); do   # for each directory
+    find -x "$1" | ag "$expr"  #grep -Ei --color=always "$expr"
     shift
   done
 fi
