@@ -3,6 +3,8 @@ unalias git
 unalias ls
 unalias grep
 unalias mv
+unalias cp
+alias dmesg="dmesg|less +\>"
 
 if which colorls 2> /dev/null
 then
