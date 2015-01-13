@@ -1,7 +1,15 @@
 #!/usr/bin/env ruby
 
-opts, args = ARGV.partition { |arg| arg =~ /^-/ }
-opts.uniq!
+opts, args = ARGV.partition { |arg| arg =~ /^-\w/ }
+
+# expand smashed-together options (ie: -alp) into individual options (ie: -a -l -p)
+opts = opts.flat_map do |opt|
+  if opt =~ /^-(\w{2,})/
+    $1.chars.map { |c| "-#{c}" }
+  else
+    opt
+  end
+end.uniq
 
 if args.any?
 
@@ -31,8 +39,8 @@ if args.any?
     params << "--size-only"
   end
 
-  params += opts
-  params += args
+  params += opts # pass through remaining arguments to rsync
+  params += args # ...and the source/destination
 
   cmd = ["rsync", "-#{letters.join ''}"] + params
 
