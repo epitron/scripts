@@ -2,7 +2,7 @@
 
 # Name of this version of winetricks (YYYYMMDD)
 # (This doesn't change often, use the sha1sum of the file when reporting problems)
-WINETRICKS_VERSION=20140817
+WINETRICKS_VERSION=20141125
 
 # This is a utf-8 file
 # You should see an o with two dots over it here [ö]
@@ -1986,6 +1986,7 @@ w_do_call()
             load_vd $arg
             _W_status=$?
             test "$W_OPT_NOCLEAN" = 1 || rm -rf "$W_TMP"
+            mkdir -p "$W_TMP"
             return $_W_status
         fi
 
@@ -2018,6 +2019,7 @@ w_do_call()
             w_override_dlls $cmd $arg
             _W_status=$?
             test "$W_OPT_NOCLEAN" = 1 || rm -rf "$W_TMP"
+            mkdir -p "$W_TMP"
             return $_W_status
         else
             w_die "No such verb $1"
@@ -2091,6 +2093,7 @@ w_do_call()
 
         # Clean up after this verb
         test "$W_OPT_NOCLEAN" = 1 || rm -rf "$W_TMP"
+        mkdir -p "$W_TMP"
 
         # Calling subshell must explicitly propagate error code with exit $?
     ) || exit $?
@@ -2172,7 +2175,17 @@ _EOF_
 #---- Private Functions ----
 
 winetricks_print_version() {
-    echo "$WINETRICKS_VERSION"
+    # Also print sha1, since WINETRICKS_VERSION isn't incremented often
+    if [ -x "`which sha1sum 2>/dev/null`" ]
+    then
+        winetricks_sha1=`sha1sum < $0 | sed 's/ .*//'`
+    elif [ -x "`which openssl 2>/dev/null`" ]
+    then
+        winetricks_sha1=`openssl dgst -sha1 < $0 | sed 's/ .*//'`
+    else
+        w_warn "No sha1sum utility available."
+    fi
+    echo "$WINETRICKS_VERSION - sha1sum: $winetricks_sha1"
 }
 
 # Run a small wine command for internal use
@@ -3678,13 +3691,7 @@ winetricks_init()
         w_die "No sha1sum utility available."
     fi
 
-    # Which sourceforge mirror to use.  Rotate based on time, since
-    # their mirror picker sometimes persistantly sends you to a broken
-    # mirror.
-    case `date +%S` in
-    *[3])  WINETRICKS_SOURCEFORGE=http://surfnet.dl.sourceforge.net/sourceforge ;;
-    *)     WINETRICKS_SOURCEFORGE=http://downloads.sourceforge.net;;
-    esac
+    WINETRICKS_SOURCEFORGE=http://downloads.sourceforge.net
 
     #---- Public Variables ----
 
@@ -3720,25 +3727,37 @@ winetricks_init()
         WINE="${WINE:-wine}"
         # Find wineserver.  Some distros (Debian) don't have it on the path,
         # on the mistaken understanding that user scripts never need it :-(
+        # If wineserver is from wine-development set WINE to wine-development.
         # FIXME: get packagers to put wineserver on the path.
         for x in \
             "$WINESERVER" \
             "${WINE}server" \
             "`which wineserver 2> /dev/null`" \
-            /usr/lib*/wine-unstable/wineserver \
-            /usr/lib*/wine/wineserver \
-            /usr/lib*/wine/bin/wineserver \
-            /usr/lib/*/wine-unstable/wineserver \
-            /usr/lib/*/wine-unstable/bin/wineserver \
-            /usr/lib/*/wine-unstable/wine/wineserver \
-            /usr/lib/*/wine-unstable/wine/bin/wineserver \
-            /usr/lib/*/wine/wineserver \
-            /usr/lib/*/wine/bin/wineserver \
             "`dirname $WINE`/server/wineserver" \
+            /usr/lib/wine/wineserver \
+            /usr/lib/i386-kfreebsd-gnu/wine/wineserver \
+            /usr/lib/i386-linux-gnu/wine/wineserver \
+            /usr/lib/powerpc-linux-gnu/wine/wineserver \
+            /usr/lib/i386-kfreebsd-gnu/wine/bin/wineserver \
+            /usr/lib/i386-linux-gnu/wine/bin/wineserver \
+            /usr/lib/powerpc-linux-gnu/wine/bin/wineserver \
+            /usr/lib/x86_64-linux-gnu/wine/bin/wineserver \
+            /usr/lib/i386-kfreebsd-gnu/wine-development/wineserver \
+            /usr/lib/i386-linux-gnu/wine-development/wineserver \
+            /usr/lib/powerpc-linux-gnu/wine-development/wineserver \
+            /usr/lib/x86_64-linux-gnu/wine-development/wineserver \
             file-not-found
         do
             if test -x "$x"
             then
+                case "$x" in
+                 /usr/lib/*/wine-development/wineserver)
+                    if test -x /usr/bin/wine-development
+                    then
+                        WINE="/usr/bin/wine-development"
+                    fi
+                    ;;
+                esac
                 break
             fi
         done
@@ -4015,7 +4034,7 @@ helper_win7sp1()
 #---------------------------------------------------------
 
 w_metadata  adobeair dlls \
-    title="Adobe AIR 4.0" \
+    title="Adobe AIR 15.0" \
     publisher="Adobe" \
     year="2014" \
     media="download" \
@@ -4033,7 +4052,9 @@ load_adobeair()
     # 2011-10-26: 2.7   sha1sum dfa337d4b53e9d924356febc116450190fa183dd
     # 2014-03-01: 4.0   sha1sum 0034bdd4e0b2ce0fa6198b0b715fba85754d9a57
     # http://helpx.adobe.com/en/flash-player/release-note/fp_12_air_4_release_notes.html
-    w_download http://airdownload.adobe.com/air/win/download/4.0/AdobeAIRInstaller.exe 0034bdd4e0b2ce0fa6198b0b715fba85754d9a57
+    # 2014-09-30: 15.0  sha1sum 46341f1358bc6e0b9ddeae3591662a2ac68dc360
+    # 2014-11-24: i15.0.0.356 sha1sum c0e6b8b1ed5ffa282945d21b21f8a5e03febc904
+    w_download http://airdownload.adobe.com/air/win/download/15.0/AdobeAIRInstaller.exe c0e6b8b1ed5ffa282945d21b21f8a5e03febc904
     cd "$W_CACHE"/adobeair
     w_try "$WINE" AdobeAIRInstaller.exe $W_UNATTENDED_DASH_SILENT
 }
@@ -4942,7 +4963,8 @@ load_dotnet_verifier()
     # http://blogs.msdn.com/b/astebner/archive/2008/10/13/8999004.aspx
     # 2013/03/28: sha1sum 0eba832a0733cd47b7639463dd5a22a41e95ee6e
     # 2014/01/23: sha1sum 8818f3460826145e2a66bb91727afa7cd531037b
-    w_download http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Components-PostAttachments/00-08-99-90-04/netfx_5F00_setupverifier_5F00_new.zip 8818f3460826145e2a66bb91727afa7cd531037b
+    # 2014/11/22: sha1sum 47de0b849c4c3d354df23588c709108e7816d788
+    w_download http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Components-PostAttachments/00-08-99-90-04/netfx_5F00_setupverifier_5F00_new.zip 47de0b849c4c3d354df23588c709108e7816d788
 
     cd "$W_CACHE"/dotnet_verifier
 
@@ -5630,10 +5652,8 @@ load_flash()
     # See
     # http://blogs.adobe.com/psirt/
     # http://get.adobe.com/de/flashplayer/otherversions/
-    # In theory we could install older versions like 10.3 by using zipfiles at
+    # Now, we install older versions by using zipfiles at
     # http://helpx.adobe.com/flash-player/kb/archived-flash-player-versions.html
-    # They don't have installers, just raw files.  Let's wait until we have
-    # a reason to do that.
 
     # Active X plugin
     # 2013-03-28
@@ -5643,10 +5663,13 @@ load_flash()
     # 2014-01-21
     #w_download http://fpdownload.macromedia.com/get/flashplayer/pdc/12.0.0.38/install_flash_player_ax.exe 8deb33bcbbbbecfcbcbeb0f861d2c7492599da2b
     # 2014-08-17
-    w_download https://fpdownload.macromedia.com/get/flashplayer/pdc/14.0.0.176/install_flash_player_ax.exe 16231b509d8e689dc34ae36597d41c4fb1b3a67e
-    cd "$W_CACHE"/flash
-
-    w_try "$WINE" install_flash_player_ax.exe ${W_OPT_UNATTENDED:+ /install}
+    #w_download https://fpdownload.macromedia.com/get/flashplayer/pdc/14.0.0.176/install_flash_player_ax.exe 16231b509d8e689dc34ae36597d41c4fb1b3a67e
+    # 2014-10-02
+    w_download http://download.macromedia.com/pub/flashplayer/installers/archive/fp_14.0.0.176_archive.zip 40df72ab2c22bcd4442aa35eb586000776129982
+    
+    w_try_unzip -d "$W_TMP" "$W_CACHE"/flash/fp_14.0.0.176_archive.zip fp_14.0.0.176_archive/14_0_r0_176/flashplayer14_0r0_176_winax.exe
+    cd "$W_TMP"/fp_14.0.0.176_archive/14_0_r0_176
+    w_try "$WINE" flashplayer14_0r0_176_winax.exe ${W_OPT_UNATTENDED:+ /install}
 
     # Mozilla / Firefox plugin
     # 2013-03-28
@@ -5656,8 +5679,13 @@ load_flash()
     # 2014-01-21
     #w_download http://fpdownload.macromedia.com/get/flashplayer/pdc/12.0.0.43/install_flash_player.exe 5a68f7aa21c4217cf801a46616fe724d601f773a
     # 2014-08-17
-    w_download https://fpdownload.macromedia.com/get/flashplayer/pdc/14.0.0.179/install_flash_player.exe 1d5725fd0d50eb1361213179ffae9ee24944755a
-    w_try "$WINE" install_flash_player.exe ${W_OPT_UNATTENDED:+ /install}
+    #w_download https://fpdownload.macromedia.com/get/flashplayer/pdc/14.0.0.179/install_flash_player.exe 1d5725fd0d50eb1361213179ffae9ee24944755a
+    # 2014-10-02
+    w_download http://download.macromedia.com/pub/flashplayer/installers/archive/fp_14.0.0.179_archive.zip b94860ca0eff3e1420c24f9647a5f9f5e610ce34
+
+    w_try_unzip -d "$W_TMP" "$W_CACHE"/flash/fp_14.0.0.179_archive.zip fp_14.0.0.179_archive/14_0_r0_179/flashplayer14_0r0_179_win.exe
+    cd "$W_TMP"/fp_14.0.0.179_archive/14_0_r0_179
+    w_try "$WINE" flashplayer14_0r0_179_win.exe ${W_OPT_UNATTENDED:+ /install}
 
     if w_workaround_wine_bug 25966 "Flash11 still needs native visual c++ 2005 runtimes" 1.5.7,
     then
@@ -6798,8 +6826,9 @@ load_shockwave() {
     # 2014-02-26 sha1sum: ae2855b729bfaedc766f3addd8c2b74eac576909
     # 2014-04-15 sha1sum: c2ea56450fb4a5bac66cb7d70e3b522431521787
     # 2014-05-21 sha1sum: d95d1a14ee264235b29e093105bd2baa8b06eb12
-
-    w_download http://fpdownload.macromedia.com/get/shockwave/default/english/win95nt/latest/sw_lic_full_installer.msi d95d1a14ee264235b29e093105bd2baa8b06eb12
+    # 2014-11-22 sha1sum: 644d3228654ded798eabe40e7044b96b90e742f6x
+    
+    w_download http://fpdownload.macromedia.com/get/shockwave/default/english/win95nt/latest/sw_lic_full_installer.msi 644d3228654ded798eabe40e7044b96b90e742f6
     cd "$W_CACHE"/shockwave
     w_try "$WINE" msiexec /i sw_lic_full_installer.msi $W_UNATTENDED_SLASH_Q
 }
@@ -7932,7 +7961,9 @@ load_droid()
 {
     # See http://en.wikipedia.org/wiki/Droid_(font)
     # Old url was http://android.git.kernel.org/?p=platform/frameworks/base.git;a=blob_plain;f=data/fonts/'
-    DROID_URL='https://github.com/android/platform_frameworks_base/blob/master/data/fonts/'
+    # Then it was https://github.com/android/platform_frameworks_base/blob/master/data/fonts/
+    # but the fonts are no longer in master. Using an older commit instead:
+    DROID_URL='https://github.com/android/platform_frameworks_base/blob/feef9887e8f8eb6f64fc1b4552c02efb5755cdc1/data/fonts/'
 
     do_droid DroidSans-Bold.ttf        "Droid Sans Bold"         560e4bcafdebaf29645fbf92633a2ae0d2f9801f
     do_droid DroidSansFallback.ttf     "Droid Sans Fallback"     c5e4f11e2f1d0b84e5f268a7ebfd28b54dc6bcdc
@@ -8610,21 +8641,21 @@ load_emu8086()
 #----------------------------------------------------------------
 
 w_metadata firefox apps \
-    title="Firefox 24" \
+    title="Firefox 33.1" \
     publisher="Mozilla" \
-    year="2013" \
+    year="2014" \
     media="download" \
-    file1="Firefox Setup 24.0.exe" \
+    file1="Firefox Setup 33.1.exe" \
     installed_exe1="$W_PROGRAMS_X86_WIN/Mozilla Firefox/firefox.exe"
 
 load_firefox()
 {
-    if w_workaround_wine_bug 29077
+    if w_workaround_wine_bug 29077 "" 1.7.25,
     then
         w_warn "Visit about:config, search for dom.ipc, and set those booleans false if you want to use flash."
     fi
 
-    w_download "http://download.mozilla.org/?product=firefox-24.0&os=win&lang=en-US" d6213601b69a606f4537c394dfa0dd7968b17b93 "$file1"
+    w_download "http://download.mozilla.org/?product=firefox-33.1&os=win&lang=en-US" c721219fda2915c570e3de0954c8033ed7b1e7fa "$file1"
     cd "$W_CACHE"/firefox
     w_try "$WINE" "$file1" ${W_OPT_UNATTENDED:+ -ms}
 
@@ -9792,6 +9823,28 @@ load_vc2005express()
     fi
 
     w_declare_exe "$W_PROGRAMS_X86_WIN\\Microsoft Visual Studio 8\\Common7\\IDE" "VCExpress.exe"
+}
+
+#----------------------------------------------------------------
+
+w_metadata vc2005expresssp1 apps \
+    title="MS Visual C++ 2005 Express SP1" \
+    publisher="Microsoft" \
+    year="2007" \
+    media="download" \
+    file1="VS80sp1-KB926748-X86-INTL.exe"
+
+load_vc2005expresssp1()
+{
+    w_call vc2005express
+
+    # http://www.microsoft.com/downloads/details.aspx?FamilyId=7B0B0339-613A-46E6-AB4D-080D4D4A8C4E
+    if w_workaround_wine_bug 37375
+        then
+            w_warn "Installer currently fails"
+    fi 
+    w_download http://download.microsoft.com/download/7/7/3/7737290f-98e8-45bf-9075-85cc6ae34bf1/VS80sp1-KB926748-X86-INTL.exe 8b9a0172efad64774aa122f29e093ad2043b308d
+    w_try $WINE "$W_CACHE"/vc2005expresssp1/VS80sp1-KB926748-X86-INTL.exe
 }
 
 #----------------------------------------------------------------
