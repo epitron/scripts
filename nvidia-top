@@ -1,69 +1,68 @@
-#!/bin/bash
-# 
-# simply displays the current GPU usage and memory consumption every
-# second on the console, or in genmon bar style when started with
-# --genmon
-#
-# works only on Nvidia cards
-#
+#!/usr/bin/env ruby
 
-export GPU=0
-export MEM=0
+require 'epitools'
 
-function genmon_mode
-{
-    get_gpu
-    get_mem
+fields = %w[
+  name
+  memory.used
+  memory.total
 
-    if [ ${GPU} -lt 10 ]; then
-        GPU=0${GPU}
-    fi
+  temperature.gpu
+  fan.speed
 
-    if [ ${MEM} -lt 10 ]; then
-        MEM=0${MEM}
-    fi
+  compute_mode
+  pstate
+  vbios_version
+]
 
-    echo "<img>/usr/share/pixmaps/nvidia-current-settings.png</img>"
-    echo "<txt><b><big><tt>${GPU} ${MEM}</tt></big></b></txt>"
-    echo "<tool>GPU: ${GPU}%, Memory: ${MEM}%</tool>"
-}
+#   utilization.gpu
+#   memory.free
+#   power.draw
+#   inforom.power
+#   inforom.pwr
+#   pcie.link.width.max
+#   pcie.link.gen.max
+#   pcie.link.width.current
+#   driver_version
 
-function console_mode
-{
-    echo -e "\033[30;42mPress Ctrl-C to break ...\033[0m"
+#   clocks.current.sm
+#   clocks.current.graphics
+#   clocks.current.memory
 
-    while true; do
-        get_gpu
-        get_mem
+#   clocks.applications.graphics
+#   clocks.applications.memory
 
-        ## gpu usage
-        echo -ne "\033[5G"
-        echo -ne "\033[1;37;41mGPU:\033[0m ${GPU} %"
+#   clocks.default_applications.graphics
+#   clocks.default_applications.memory
 
-        ## gpu memory
-        echo -ne "\033[15G"
-        echo -e "\033[1;37;41mMEM:\033[0m ${MEM} %"
+#   clocks.max.graphics
+#   clocks.max.sm
+#   clocks.max.memory
 
-        sleep 1
-    done
-}
+# ]
 
-function get_mem
-{
-    MEM=`nvidia-smi -q -g 0 2>&1 | grep -A 2 -i utilization | grep -i memory | tail -1 | awk '{print $3}' | sed s/\%//g`
-}
 
-function get_gpu
-{
-    GPU=`nvidia-smi -q -g 0 2>&1 | grep -A 2 -i utilization | grep -i gpu | tail -1 | awk '{print $3}' | sed s/\%//g`
-}
+args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv,noheader,nounits", "-l", "1"]
+# args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv", "-l", "1"]
 
-if [ $# -eq 0 ]; then
-    console_mode
-else
-    case $1 in
-        "--genmon") genmon_mode;;
-        "--console") console_mode;;
-    esac
-fi
+# Note: Unsupported features return "[Not Supported]"
+Stat = Struct.new(:name, :memused, :memtotal, :temp, :fan, :compute_mode, :pstate, :bios_version)
 
+class Stat
+  # def initialize(*args)
+  #   super
+  #   # self.memused = memused.split.first
+  #   # self.memtotal = memused.split.first
+  # end
+
+  def to_color
+    "<8>[ <7>#{name} v#{bios_version} <8>] [ <10>#{memused}<2>/<10>#{memtotal}<2>MB <8>| <12>#{temp}<4>°C <8>| <11>#{fan}<3>% <8>| <13>#{pstate} <8>| <9>#{compute_mode} <8>]".colorize
+  end
+end
+
+run(*args) do |output|
+  CSV.new(output).each do |row|
+    s = Stat.new(*row.map(&:strip))
+    puts s.to_color
+  end
+end
