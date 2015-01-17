@@ -60,9 +60,13 @@ class Stat
   end
 end
 
-run(*args) do |output|
-  CSV.new(output).each do |row|
-    s = Stat.new(*row.map(&:strip))
-    puts s.to_color
+
+begin
+  run(*args) do |output|
+    CSV.new(output).each do |row|
+      s = Stat.new(*row.map(&:strip))
+      puts s.to_color
+    end
   end
+rescue Interrupt
 end
