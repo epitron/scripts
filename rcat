@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+if ARGV.empty?
+  puts "usage: rcat <files...>"
+  exit 1
+else
+  ARGV.each do |arg|
+    open(arg) { |f| f.reverse_each(&:display) }
+  end
+end
