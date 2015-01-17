@@ -82,6 +82,14 @@ alias pico="nano"
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
+alias rcat='tac'
+
+rgrep() {
+  expression=$1
+  shift
+
+  rcat "$@" | grep -Ei $expression
+}
 
 if which ag > /dev/null 2>&1
 then 
