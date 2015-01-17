@@ -5,7 +5,10 @@ if ARGV.empty?
   puts "usage: rcat <files...>"
   exit 1
 else
-  ARGV.each do |arg|
-    open(arg) { |f| f.reverse_each(&:display) }
+  begin
+    ARGV.each do |arg|
+      open(arg) { |f| f.reverse_each(&:display) }
+    end
+  rescue Interrupt
   end
 end
