@@ -1,1 +1,2 @@
-pkg info "$@"
+#!/bin/bash
+pkg info "$@" | less -XFi

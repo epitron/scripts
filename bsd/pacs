@@ -1,1 +1,2 @@
-pkg search "$@" | grep -i --color "$@"
+#!/bin/bash
+pkg search "$@" | grep -i --color=always "$@" | less -XFSRi
