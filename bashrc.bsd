@@ -1,6 +1,7 @@
 unalias rm
 unalias git
 unalias pacs
+alias pacu="pkg upgrade"
 
 if which gnuls > /dev/null
 then
