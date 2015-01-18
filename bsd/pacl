@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ "$1" == "" ]; then
-  pkg info | less
+  pkg info | less -XFSi
 else
-  pkg info -l "$@" | less
+  pkg info -l "$@" | less -XFSi
 fi
