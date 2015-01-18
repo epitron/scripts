@@ -1,5 +1,6 @@
 unalias rm
 unalias git
+unalias pacs
 
 if which gnuls > /dev/null
 then

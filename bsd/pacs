@@ -1,0 +1,1 @@
+pkg search "$@" | grep -i --color "$@"
