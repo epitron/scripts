@@ -3,7 +3,7 @@ PLATFORM=`uname`
 
 if [ "$PLATFORM" == "Darwin" ]; then
   ps ax | grep -si "$*" | grep -v "psfind" | grep -v "grep -si"
-elif [ "$PLATFORM" == "OpenBSD" ]; then
+elif [ "$PLATFORM" == "OpenBSD" ] || [ "$PLATFORM" == "FreeBSD" ]; then
   ps xaw | grep -vE "(psfind|grep -vE)" | ag "$*"
 else
   ps afx -eo '%p %u %t %a' | grep -si --color=always "$*" | grep -v "psfind" | grep -v "grep -si --color=always"
