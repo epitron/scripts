@@ -102,7 +102,7 @@ def translate_value(key, value)
 end
 
 
-def show(path, format=:text, timestamp=false)
+def show(path, timestamp=false)
   if not path.exists?
 
     puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
@@ -113,43 +113,33 @@ def show(path, format=:text, timestamp=false)
 
     puts title.colorize
 
-    case format
-    when :text
-      grouped = attrs.
-                map { |k, v| [k.split("."), translate_value(k, v)] }.
-                sort.
-                group_by { |k,v| k[0..1] } # first 2 parts of the key
+    grouped = attrs.
+              map { |k, v| [k.split("."), translate_value(k, v)] }.
+              sort.
+              group_by { |k,v| k[0..1] } # first 2 parts of the key
 
-      grouped.each do |first_2_namespaces, attrs_in_namespace|
-        primary_namespace = first_2_namespaces.first
+    grouped.each do |first_2_namespaces, attrs_in_namespace|
+      primary_namespace = first_2_namespaces.first
 
-        case primary_namespace
-        when "security"
-          a,b = 4,12
-        when "trusted"
-          a,b = 5,13
-        when "user"
-          a,b = 3,11
-        else
-          a,b = 8,15
-        end
-
-        puts "  <#{a}>[<#{b}>#{first_2_namespaces.join('.')}<#{a}>]".colorize
-        attrs_in_namespace.each do |attr, value|
-          sub_namespace = attr[2..-1].join('.')
-          puts "    <9>#{sub_namespace}<8>: <7>#{value}".colorize
-        end
+      case primary_namespace
+      when "security"
+        a,b = 4,12
+      when "trusted"
+        a,b = 5,13
+      when "user"
+        a,b = 3,11
+      else
+        a,b = 8,15
       end
 
-      puts
-
-    when :yaml
-      puts attrs.to_yaml
-
-    when :json
-      puts attrs.to_json
-
+      puts "  <#{a}>[<#{b}>#{first_2_namespaces.join('.')}<#{a}>]".colorize
+      attrs_in_namespace.each do |attr, value|
+        sub_namespace = attr[2..-1].join('.')
+        puts "    <9>#{sub_namespace}<8>: <7>#{value}".colorize
+      end
     end
+
+    puts
 
   else
     puts "<7>#{path.filename}\n  <8>(none)\n".colorize
@@ -171,6 +161,7 @@ def parse_options
     on 'j',  'json',      'Print xattrs as JSON'
     on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
     on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
+    on 'R',  'recursive', 'Recurse into subdirectories'
     on 't',  'time',      'Sort by file timestamp'
 
   end
@@ -182,6 +173,18 @@ def assert(expr, error_message)
   raise error_message unless expr
 end
 
+def paths_as_hashes(paths)
+  paths.map do |path|
+    next if path.dir?
+    {
+      "filename" => path.filename,
+      "dir" => path.dir,
+      "mtime" => path.mtime,
+      "size" => path.size,
+      "xattrs" => path.xattrs,
+    }
+  end.compact
+end
 
 if $0 == __FILE__
 
@@ -231,21 +234,29 @@ if $0 == __FILE__
 
     paths << Path.pwd if paths.empty?
 
-    paths = paths.map { |path| path.dir? ? path.ls : path }.flatten
+    paths = paths.map do |path|
+      if path.dir?
+        if opts.recursive?
+          path.ls_r
+        else
+          path.ls
+        end
+      else
+        path
+      end
+    end.flatten
+
     paths = paths.sort_by(&:mtime) if opts.time?
 
-    paths.each do |path|
-      edit(path) if opts.edit?
-
-      if opts.yaml?
-        format = :yaml
-      elsif opts.json?
-        format = :json
-      else
-        format = :text
+    if opts.yaml?
+      puts YAML.dump(paths_as_hashes(paths))
+    elsif opts.json?
+      puts JSON.pretty_generate(paths_as_hashes(paths))
+    else
+      paths.each do |path|
+        edit(path) if opts.edit?
+        show(path, timestamp: true)
       end
-
-      show(path, format, timestamp: true)
     end
 
   end
