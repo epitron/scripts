@@ -3,21 +3,22 @@
 opts, args = ARGV.partition { |arg| arg =~ /^-\w/ }
 
 # expand smashed-together options (ie: -alp) into individual options (ie: -a -l -p)
-opts = opts.flat_map do |opt|
+opts = opts.map do |opt|
   if opt =~ /^-(\w{2,})/
     $1.chars.map { |c| "-#{c}" }
   else
     opt
   end
-end.uniq
+end.flatten.uniq
+
+SSH_ARG_REGEXP = /^([^@]+)@([^:]+):(.+)$/
 
 if args.any?
-
-  letters = %w[r l t z]
-  params  = []
-
+  letters  = %w[r l t]
   letters += %w[o g p] if opts.delete("-o") # ownership
+  letters += %w[z]     if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
 
+  params  = []
   unless opts.delete "-q"
     params  << "--progress"        
     letters << "v"
