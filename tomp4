@@ -11,9 +11,10 @@ echo "    in: $IN"
 echo "   out: $OUT"
 echo "----------------------------------------------------------------"
 echo
-if [ -f "$OUT" ]; then
-  echo "$OUT already exists. Aborting."
-else
-  ffmpeg -y -i "$IN" -b 2M -bt 4M -vcodec libx264 -pass 1 -vpre medium_firstpass -an "$OUT"
-  ffmpeg -y -i "$IN" -b 2M -bt 4M -vcodec libx264 -pass 2 -vpre medium -acodec libfaac -ab 192k "$OUT"
-fi
+# if [ -f "$OUT" ]; then
+#   echo "$OUT already exists. Aborting."
+# else
+  # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 1 -pre medium_firstpass -an "$OUT"
+  # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 2 -pre medium -c:a aac -ab 192k "$OUT"
+  ffmpeg -i "$IN" -c:v h264 -crf 20 -movflags faststart -c:a copy "$OUT"
+# fi
