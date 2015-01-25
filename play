@@ -2,21 +2,64 @@
 
 ###########################################################
 
-LOGFILE = File.expand_path("~/play.log")
+LOGFILE  = File.expand_path("~/play.log")
+CACHEDIR = File.expand_path("~/play")
+
+PLAYERS  = {
+  "baka-mplayer": proc { |url, title|
+    ["baka-mplayer", "-title", title, url]
+  },
+
+  mplayer: proc { |url, title|
+    ["mplayer", "-title", title, 
+      "-cache", "20000", "-cache-min", "0.0128",
+      url]
+  },
+
+  totem: proc { |url, title|
+    # ["totem", "--enqueue", xspf.path]
+    ["totem", xspf.path]
+  },
+
+  parole: proc { |url, title|
+    ["parole", "-i", xspf_file(title, url)]
+  },
+
+
+  mpv: proc { |url, title|
+    ["mpv", "--media-title", title, url]
+  },
+}
+
+
+def parse_options
+  require 'slop' # lazy load
+
+  Slop.parse(help: true, strict: true) do
+    banner 'Usage: play [options] <video URL, or history number>'
+
+    on 'l', 'list',      "List <n> previously viewed videos"
+    on 'd',  'download', "Download video <n>"
+    on 'p=', 'player',   "Video player to use: #{PLAYERS.keys.join(", ")}", default: "baka-mplayer"
+  end
+end
 
 ###########################################################
 
-def help!
-  puts
-  puts "Usage:"
-  puts "  play <video url> => streams a youtube/vimeo/etc. in mplayer"
-  puts "  play -l          => log of 10 most recent videos"
-  puts "  play -l <query>  => search log for <query>"
-  puts "  play -l<n>       => log of <n> most recent videos"
-  puts "  play -s<time>    => seek to time"
-  puts
-  exit 1
+class LogEntry < Struct.new(:date, :time, :url, :title, :pos)
+  def initialize(line, pos)
+    timestamp, url, title = line.strip.split(" | ", 3)
+    date, time            = timestamp.split
+
+    super(date, time, url, title, pos)
+  end
+
+  def to_s
+    url
+  end
 end
+
+###########################################################
 
 def notify(type, title, body, time: 5)
   require 'cgi'
@@ -32,8 +75,6 @@ def notify(type, title, body, time: 5)
   cmd << "--icon=#{type}"
   cmd += [title, body].map {|s| CGI.escapeHTML s }
 
-  # p cmd
-
   system *cmd
 end
 
@@ -44,9 +85,34 @@ def run(*cmd)
   [out.strip, err.strip, status]
 end
 
+def play_click_sound
+  run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
+end
+
+def xspf_file(title, media_url)
+  require 'tempfile'
+  require 'cgi'
+
+  xml = %{<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/">
+ <trackList>
+  <track>
+   <title>#{CGI.escape_html title}</title>
+   <location>#{CGI.escape_html  media_url}</location>
+  </track>
+ </trackList>
+</playlist>}
+
+  file = Tempfile.create ["play", ".xspf"]
+  file.puts xml
+  file.close
+  file
+end
+
+###########################################################
+
 def youtube_dl(url)
   out, err, status = run("youtube-dl", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url)
-  # out, err, status = run("youtube-dl", "-o", "%(title)s (%(upload_date)s).%(ext)s", "--no-playlist", "-g", "--get-filename", url)
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
@@ -58,6 +124,9 @@ def youtube_dl(url)
   [media_url, title]
 end
 
+
+###########################################################
+
 def write_to_log(url, title)
   open(LOGFILE, "a") do |f|
     timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
@@ -65,16 +134,38 @@ def write_to_log(url, title)
   end
 end
 
-class LogEntry < Struct.new(:date, :time, :url, :title)
-  def initialize(line)
-    timestamp, url, title = line.strip.split(" | ", 3)
-    date, time            = timestamp.split
-
-    super(date, time, url, title)
-  end
+def log_entries
+  open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
+  log = open(LOGFILE)
+  log.reverse_each.lazy.with_index.map {|logline, i| LogEntry.new(logline, i+1) }
 end
 
-def tail_log(query=nil, n=10)
+def entries_for_nums(nums)
+  require 'set'
+
+  nums    = Set.new(nums)
+  entries = []
+
+  log_entries.each do |entry|
+    if nums.include? entry.pos
+      entries << entry
+      nums.delete entry.pos
+
+      break if nums.empty?
+    end
+  end
+
+  entries
+end
+
+###########################################################
+
+def show_result(result, regexp=nil)
+  require 'epitools/colored'
+
+end  
+
+def search(query=nil, n=10)
   require 'epitools/colored'
 
   if query
@@ -100,133 +191,100 @@ def tail_log(query=nil, n=10)
   puts "----------------------------------".grey
   puts
 
-  ## Results
+  entries = log_entries
+  entries = entries.select { |entry| entry.title =~ regexp } if query
+  results = entries.take(n).to_a.reverse
 
-  open(LOGFILE, "wb") {} unless File.exists?(LOGFILE)
-  open(LOGFILE) do |log|
-    entries = log.reverse_each.lazy.map {|l| LogEntry.new(l) }
-    entries = entries.select { |entry| entry.title =~ regexp } if query
+  max_pos_width = results.map(&:pos).sort.last.to_s.size
 
-    results = entries.take(n).to_a.reverse
+  results.each do |result|
+    pos = result.pos
 
-    results.each do |result|
-      indent = " " * (result.date.size - result.time.size)
+    indent = " " * (result.date.size - result.time.size)
 
-      title = result.title
-      title = title.gsub(regexp) { |m| "<14>#{m}</14>" } if query
+    title = result.title
+    title = title.gsub(regexp) { |m| "<14>#{m}</14>" } if regexp
 
-      puts "<10>#{result.date} <12>| <11>#{title}".colorize
-      puts "<2>#{indent}#{result.time} <4>| <9>#{result.url}".colorize
-      puts
-    end
+    print "#{pos.to_s.rjust(max_pos_width)}. ".bright_yellow
+    indent += " " * (max_pos_width + 2)
+
+    puts "<10>#{result.date} <12>| <11>#{title}".colorize
+    puts "<2>#{indent}#{result.time} <4>| <9>#{result.url}".colorize
+    puts
   end
 end
 
-def play_click_sound
-  run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
+###########################################################
+
+
+def download(*urls)
+  urls << log_entries.first if urls.empty?
+
+  urls.each do |url|
+    system "youtube-dl", "--no-mtime", "--xattrs", "-o", "%(title)s.%(ext)s", url.to_s
+  end
 end
 
-def xspf_file(title, media_url)
-  require 'tempfile'
-  require 'cgi'
+def play(url, player=nil)
+  if url.is_a? LogEntry
+    notify(:info, "Loading:", url.title, time: 4)
+  else
+    notify(:info, "Processing:", url.to_s, time: 3)
+  end
 
-  xml = %{<?xml version="1.0" encoding="UTF-8"?>
-<playlist version="1" xmlns="http://xspf.org/ns/0/">
- <trackList>
-  <track>
-   <title>#{CGI.escape_html title}</title>
-   <location>#{CGI.escape_html  media_url}</location>
-  </track>
- </trackList>
-</playlist>}
+  play_click_sound
 
-  file = Tempfile.create ["play", ".xspf"]
-  #file = Tempfile.new ["play", ".xspf"]
-
-  file.puts xml
-
-  file.close
-  # file.flush
-
-  file
-end
-
-CACHEDIR = File.expand_path("~/play")
-
-def play(url, seek=nil)
-  notify(:info, "Processing:", url, time: 3); play_click_sound
-
-  media_url, title = youtube_dl(url)
-  # p media_url: media_url
+  media_url, title = youtube_dl(url.to_s)
   
-  write_to_log(url, title)
+  write_to_log(url, title) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
 
   notify(:video, "Playing:", title, time: 4)
 
-  # if media_url =~ %r{^https://}i
-  #   # media_url = "http_proxy://localhost:8080/#{media_url}"
-
-  #   # cmd = ["totem", xspf.path]
-  #   # cmd = ["totem", "--enqueue", xspf.path]
-
-  #   # xspf = xspf_file(title, media_url)
-  #   # cmd = ["parole", "-i", xspf.path]
-
-  #   # cmd = ["mpv", "--media-title", title, media_url]
-  #   # cmd = ["baka-mplayer", "-media-title", title, media_url]
-  # else
-  #   # cachefile = File.join(CACHEDIR, title)
-  #   # title     = title.gsub(/\.\w+$/, '') # remove extension
-
-  #   cmd = %w[mplayer -title] + 
-  #           [title] + 
-  #           %w[-cache 20000 -cache-min 0.0128] + 
-  #           # %w[-dumpstream -dumpfile] + [cachefile] +
-  #           # %w[-really-quiet] +
-  #           [media_url]
-
-  #   cmd += ["-ss", seek] if seek
-  # end
-  
-  cmd = ["baka-mplayer", "-title", title, media_url]
-
+  cmd_proc = PLAYERS[player.to_sym]
+  cmd      = cmd_proc.call(media_url, title)
   system(*cmd)
 end
 
 ###########################################################
 
-args = ARGV
-opts, args = args.partition { |arg| arg[/^--?\w/] }
 
-seek = nil
+if $0 == __FILE__
+  opts = parse_options
+  args = ARGV
 
-if opts.any?
-  opts.each do |opt|
-    case opt 
-    when "-h", "--help"
-      help!
-    when "-l"
-      tail_log(args)
+  if args.empty?
+    search
+    exit
+  elsif args.all? { |arg| arg =~ /^\d+$/ } # all args are numbers?
+    nums = args.map(&:to_i)
+  elsif args.all? { |arg| arg =~ %r{^https?://}i } # all args are urls?
+    urls = args
+  else # must be a search query
+    query = args
+  end
+
+  if opts.list?
+    if nums
+      search(nil, nums.first)
       exit
-    when /^-l(\d+)$/
-      tail_log(args, $1.to_i)
-      exit
-    when /^-s([\d:]+)$/
-      seek = $1
-    else
-      puts "Unrecognized option: #{opt}"
     end
   end
-end
 
+  urls = entries_for_nums(nums) if nums
 
-if args.empty?
-  tail_log
+  if query
 
-# Url
-elsif args.first =~ %r{^https?://}i
-  play(args.first, seek)
+    search(query)
 
-else
-  tail_log args
+  elsif urls
+
+    urls.each do |url|
+      if opts.download?
+        download(url)
+      else
+        play(url, opts[:player])
+      end
+    end
+
+  end
 end
