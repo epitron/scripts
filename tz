@@ -126,12 +126,11 @@ end
 
 def display(results)
   results.each_with_index do |r, n|
-    line = "<13>#{n+1}."
+    line = "<13>#{(n+1).to_s.rjust(3)}. "
     # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
     # line += " <14>#{r.size} <7>(#{r.age})"
-    line += " <14>#{r.title}"
+    line += "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(9)} <8>| <14>#{r.title}"
     # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
-    line += " <12>#{r.size} <8>| <11>#{r.age} <8>| <10>#{r.seeds} <8>| <13>#{r.peers}"
 
     puts line.colorize
   end
