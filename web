@@ -68,7 +68,7 @@ routes do
   play_video = proc { |uri| exec("play", uri) }
   match host: %w[youtube.com youtu.be wimp.com vimeo.com blip.tv], &play_video
   match host: "ted.com", path: "/talks/", &play_video
-  match path: /\.(mp4|mkv|webm|avi|flv|ts|mpe?g|mjpeg)$/, &play_video
+  match path: /\.(mp4|mkv|m4v|webm|avi|flv|ts|mpe?g|mjpeg)$/, &play_video
 
   # Other videos open in browsers that are good at playing videos
   match host: %w[liveleak.com justin.tv infoq.com] do |uri|
