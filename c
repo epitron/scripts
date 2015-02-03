@@ -89,6 +89,7 @@ EXTRA_LANGS = {
   ".service" => :ini,
   "PKGBUILD" => :bash,
   ".gradle" => :groovy,
+  ".cr" => :ruby,
 }
 
 def convert_coderay(filename)
