@@ -53,10 +53,16 @@ Path.cd("/var/cache/pacman/pkg") do
     puts
   end
 
+  if all_removals.empty?
+    puts
+    puts "Nothing to cleanup!"
+    puts
+    exit
+  end
+
   puts
   puts "Keeping #{keep} cop(y/ies) of each package..."
   puts
-
 
   total_size = all_removals.map(&:size).sum
   if prompt("Remove #{all_removals.size} old packages (#{total_size.commatize} bytes)?", "yN") == "y"
