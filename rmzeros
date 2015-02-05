@@ -2,14 +2,19 @@
 require 'epitools'
 
 if ARGV.any?
-  files = ARGV.map { |arg| Path[arg].ls }.flatten
+  files = ARGV.map(&:to_Path)
+  files.map { |f| f.dir? ? f.ls : f }.flatten
 else
   files = Path["*"]
 end
 
 zeros = files.select{|f| f.size == 0 }
 
-zeros.each { |path| puts path }
+puts "Zero-byte files found:"
+puts "----------------------"
+puts
+zeros.each { |path| puts "#{path.mtime} #{path}" }
+puts
 
 if prompt("Remove these files?") == "y"
   puts "Removing files..."

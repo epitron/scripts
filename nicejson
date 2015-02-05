@@ -1,7 +1,32 @@
 #!/usr/bin/ruby
-require 'rubygems'
 require 'json'
 
-json = JSON.parse($<.read)
-puts JSON.pretty_generate(json)
+def pretty(json)
+  JSON.pretty_generate(json)
+end
 
+def load(file)
+  JSON.parse(File.read(file))
+end
+
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+
+if args.any?
+  if opts.delete("-i")
+    # rewrite files
+    args.each do |arg|
+      puts "* #{arg}"
+      json = pretty(load(arg))
+      # File.rename(arg, arg + "-backup")
+      File.write(arg, json)
+    end
+  else
+    # print to stdout
+    args.each do |arg|
+      puts pretty(load(arg))
+    end
+  end
+
+else
+  puts pretty(JSON.parse($stdin.read))
+end
