@@ -1,9 +1,11 @@
 #!/bin/bash
 
 if [ "$1" == "" ]; then
-  if [ -f *.pkg.tar.xz ]; then
+  LATEST_PKG="`ls -tr *.pkg.tar.xz|tail -n1`"
+
+  if [ -f "$LATEST_PKG" ]; then
     # install it
-    sudoifnotroot pacman -U "`ls *.pkg.tar.xz|tail -n1`"
+    sudoifnotroot pacman -U "$LATEST_PKG"
     exit
   fi
 fi
