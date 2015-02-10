@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+class String
+  def rot13
+    tr "a-z", "n-za-m"
+  end
+end
+
+puts ARGV.any? ? ARGV.join(" ").rot13 : STDIN.read.rot13
+  
