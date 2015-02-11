@@ -1,1 +1,2 @@
-redshift -O 3800 -g 1.3
+#!/bin/bash
+redshift -O 2200 -g 0.9 -b 0.7
