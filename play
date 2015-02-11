@@ -5,32 +5,37 @@
 LOGFILE  = File.expand_path("~/play.log")
 CACHEDIR = File.expand_path("~/play")
 
-PLAYERS  = {
-  "baka-mplayer": proc { |url, title|
-    ["baka-mplayer", "-title", title, url]
-  },
+PLAYERS  = [
+  [ "baka-mplayer", proc { |url, title| ["baka-mplayer", "-title", title, url] } ],
+  [          "mpv", proc { |url, title| ["mpv", "--media-title", title, url] } ],
+  [       "parole", proc { |url, title| ["parole", "-i", xspf_file(title, url)] } ],
+  [        "totem", proc { |url, title| ["totem", xspf.path] } ],
+  [      "mplayer", proc { |url, title| ["mplayer", "-title", title, "-cache", "20000", "-cache-min", "0.0128", url] } ],
+]
 
-  mplayer: proc { |url, title|
-    ["mplayer", "-title", title, 
-      "-cache", "20000", "-cache-min", "0.0128",
-      url]
-  },
+PLAYER_NAMES = PLAYERS.map(&:first)
 
-  totem: proc { |url, title|
-    # ["totem", "--enqueue", xspf.path]
-    ["totem", xspf.path]
-  },
+def which(bin)
+  ENV["PATH"].split(":").each do |dir|
+    full_path = File.join(dir, bin)
+    return full_path if File.exists? full_path
+  end
+  nil
+end  
 
-  parole: proc { |url, title|
-    ["parole", "-i", xspf_file(title, url)]
-  },
+def best_player
+  PLAYERS.each do |bin, command|
+    return bin if which(bin)
+  end
+  nil
+end
 
-
-  mpv: proc { |url, title|
-    ["mpv", "--media-title", title, url]
-  },
-}
-
+#
+# Returns a proc that takes two args: "url" and "title"
+#
+def player_proc(bin)
+  Hash[PLAYERS][bin]
+end
 
 def parse_options
   require 'slop' # lazy load
@@ -38,9 +43,9 @@ def parse_options
   Slop.parse(help: true, strict: true) do
     banner 'Usage: play [options] <video URL, or history number>'
 
-    on 'l', 'list',      "List <n> previously viewed videos"
-    on 'd',  'download', "Download video <n>"
-    on 'p=', 'player',   "Video player to use: #{PLAYERS.keys.join(", ")}", default: "baka-mplayer"
+    on 'l',  'list',      "List <n> previously viewed videos"
+    on 'd',  'download',  "Download video <n>"
+    on 'p=', 'player',    "Video player to use: #{PLAYER_NAMES.join(", ")}", default: best_player
   end
 end
 
@@ -86,7 +91,9 @@ def run(*cmd)
 end
 
 def play_click_sound
-  run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
+  if which("mplayer")
+    run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
+  end
 end
 
 def xspf_file(title, media_url)
@@ -240,8 +247,7 @@ def play(url, player=nil)
 
   notify(:video, "Playing:", title, time: 4)
 
-  cmd_proc = PLAYERS[player.to_sym]
-  cmd      = cmd_proc.call(media_url, title)
+  cmd = player_proc(player).call(media_url, title)
   system(*cmd)
 end
 
@@ -282,7 +288,12 @@ if $0 == __FILE__
       if opts.download?
         download(url)
       else
-        play(url, opts[:player])
+        if opts[:player]
+          play(url, opts[:player])
+        else
+          notify(:error, "Could not find a player!", "You must install one of the following: #{PLAYER_NAMES.join(", ")}")
+          exit 1
+        end
       end
     end
 
