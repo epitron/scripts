@@ -1,0 +1,10 @@
+#!/bin/bash
+
+HARD_DIR=/usr/lib/hardening-wrapper
+
+if [ -d $HARD_DIR ]; then
+  PATH="$HARD_DIR/bin:$PATH" make "$@"
+else
+  echo "Error: 'hardening-wrapper' package isn't installed."
+  echo "(You should fix that.)"
+fi
