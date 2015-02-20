@@ -193,11 +193,11 @@ class Display
              word[red_char_pos+1..-1]
     end
 
-    print "\e[3F\e[K" # move to start of word area (3 lines up) and clear line
-    print "\e[#{indent}G" # move to position of word
+    print "\e[3A\e[2K" # move to start of word area (3 lines up) and clear line
+    print "\e[0G\e[#{indent}G" # move to position of word
     print word
     print "\e[#{@word_area_size+2}G#{wpm_indicator}"
-    print "\e[3E" # move down to status area
+    print "\e[3B\e[0G" # move down to status area
   end
 
   def show_message(message)
@@ -210,7 +210,7 @@ class Display
     @help = !@help
 
     if @help
-      show_message "\e[F Q/^C = Quit | SPACE = Pause | Left/Right = Skip word | HOME/END = Start/End\e[E" +
+      show_message "\e[F  Q/^C = Quit | SPACE = Pause | Left/Right = Skip word | HOME/END = Start/End\e[E" +
                    " Up/Down = Increase/decrease wpm by 50 | 1-9 = Set wpm to <n> * 100\e[0G"
     else
       # show_message "\e[E"
