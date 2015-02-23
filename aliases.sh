@@ -203,6 +203,17 @@ gem-cd() {
 }
 
 
+case `uname -m` in
+  x86_64)
+    # it's all good.
+    ;;
+  *)
+    # use the ruby version on non-64-bit machines
+    alias f="f2"
+    ;;
+esac
+
+
 # Things with literal arguments!
 #alias math='noglob math'
 #alias gfv='noglob gfv'
