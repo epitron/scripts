@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+require 'bencode_ext'
+
+##################################################################
+
+def torrent_info(path)
+  data = path.read.bdecode
+  data && data["info"]
+rescue BEncode::DecodeError
+  nil  
+end
+
+def matching_files(files, pattern)
+  files.select {|file| file["path"].any? {|part| part[pattern] } }
+end
+
+def highlight(str, pattern)
+  str.highlight(pattern) { |m| "<14>#{m}</14>"}
+end
+
+def relative_path(pwd, path)
+  pstring      = path.to_s
+  pstring[pwd] = "" if pstring.startswith(pwd)
+  pstring
+end
+
+##################################################################
+
+args = ARGV
+
+if args.size < 1
+  puts "tgrep - Search the files inside torrents"
+  puts
+  puts "usage: tgrep <regexp> <torrent(s)>"
+  puts
+  exit 1
+end
+
+pattern = Regexp.new(args.shift, Regexp::IGNORECASE)
+
+args << "." if args.empty?
+
+paths = args.map(&:to_Path)
+paths = paths.map{|path| path.dir? ? path.ls_r : path }.flatten.select(&:file?)
+
+pwd = Path.pwd.to_s
+
+for path in paths
+  next unless path.ext == "torrent"
+
+  relpath = relative_path(pwd, path)
+
+  info = torrent_info(path)
+
+  if info
+    files = info["files"] # array of {path: [..], length: 999} hashes
+    name = info["name"]
+
+    if files
+      matches = matching_files(files, pattern)
+
+      if matches.any?
+        puts "* #{relpath}"
+        puts "  #{name}".light_cyan
+
+        tree = {}
+        matches.each do |h|
+          tree.mkdir_p(h["path"])
+        end
+
+        tree.print_tree do |key, level|
+          "     #{"  "*level}<8>|_ <7>#{highlight(key, pattern)}".colorize
+        end
+
+        puts
+      end
+    else
+      if name[pattern]
+        puts "* #{relpath}"
+        puts "  <11>#{highlight(name, pattern)}".colorize
+        puts
+      end
+    end
+
+  else
+    puts "* <12>#{relpath} <7>could not be parsed".colorize
+    puts
+  end
+end
+
+##################################################################
