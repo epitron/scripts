@@ -1,0 +1,7 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  echo "usage: torcache <torrent hash>"
+  exit 1
+fi
+
+wget "http://torcache.net/torrent/$1.torrent"
