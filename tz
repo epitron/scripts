@@ -76,15 +76,56 @@ end
 
 ###########################################################
 
-def search(query)
+def search(query, page=nil)
   url = "http://torrentz.eu/search"
-  url += "?f=#{URI.escape(query)}" unless query.empty? 
 
-  page = Nokogiri::HTML(open url)
+  opts = {}
+  opts["f"] = URI.escape(query) unless query.empty?
+  opts["p"] = page || 1
+
+  url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
+
+  page = Nokogiri::HTML(open(url))
   page.search(".results dl").
        take(MAX_RESULTS).
        map { |dl| Result.new(dl) rescue nil }.
        compact
+end
+
+def cleanup(title)
+  title.gsub(/[\^\*\"]/, '').strip
+end
+
+def download_torrent(result)
+
+  puts "<3>* <11>#{result.title} <8>(<10>#{result.seeds}/<2>#{result.peers}<8>)".colorize
+
+  url = "http://torcache.net/torrent/#{result.hash}.torrent"
+  open(url) do |t|
+    data = t.read
+
+    filename = "#{result.hash} - #{cleanup result.title}.torrent"
+    open(filename, "wb") { |o| o.write(data) }
+
+    puts "  |_ wrote #{data.size} bytes"
+  end
+
+rescue OpenURI::HTTPError => e
+  puts "  |_ error: #{e}".light_red
+end
+
+def mirror(query, pages=10)
+  (1..pages).each do |page|
+    results = search(query, page)
+
+    break if results.empty?
+
+    puts "* Got #{results.size} results..."
+
+    results.each do |result|
+      download_torrent(result)
+    end
+  end
 end
  
 def choose_torrents(results)
@@ -139,15 +180,18 @@ end
 ###########################################################
 
 if __FILE__ == $0
-  query = ARGV.join(" ")
+  opts, args = ARGV.partition { |arg| arg[/^-\w/] }
 
-  results = search(query)
+  query = args.join(" ")
 
-  display(results)
-
-  chosen = choose_torrents(results)
-
-  chosen.each do |t|
-    system(CLIENT, t.magnet_url)
+  if opts.delete("-m")
+    mirror(query)
+  else
+    results = search(query)
+    display(results)
+    chosen = choose_torrents(results)
+    chosen.each do |t|
+      system(CLIENT, t.magnet_url)
+    end
   end
 end
