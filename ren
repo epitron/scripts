@@ -3,49 +3,52 @@ require 'coolline'
 require 'fileutils'
 require 'set'
 
-#
-# Returns: dir, basename, ext
-#
-def path_parts(path)
-  if path =~ %r{^(.+/)?(.+?)(\.[^\.]+)?$}
-    return $1, $2, $3
-  else
-    raise "Cannot match path..."
-  end
-end
+class String
 
-#
-# Converts _'s and .'s to spaces
-#
-def restore_spaces(s)
-  s.gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
-end
-
-#
-# Puts parens around years
-#
-def bracket_years(s)
-  s.gsub(/\b(?:19|20)\d\d\b/, "(\\0)")
-end
-
-#
-# Convert the String to Title Case.
-#
-LOW_WORDS = Set.new %w[of to or the and an a at is for from in]
-def titlecase(str)
-  first = true
-  words = str.downcase.split(/\b/)
-
-  words.map.with_index do |word,i|
-    if LOW_WORDS.include?(word) and i > 0 # leave LOW_WORDS lowercase, unless it's the first word.
-      word
+  #
+  # Returns: dir, basename, ext
+  #
+  def path_parts
+    if self =~ %r{^(.+/)?(.+?)(\.[^\.]+)?$}
+      return $1, $2, $3
     else
-      word.gsub(/\b\w/) { |c| c.upcase } # capitalize first letter
+      raise "Cannot match path..."
     end
-  end.join('')
+  end
+
+  #
+  # Converts _'s and .'s to spaces
+  #
+  def restore_spaces
+    gsub(/(?<=\S)(_|\.)(?=\S)/, ' ')
+  end
+
+  #
+  # Puts parens around years
+  #
+  def bracket_years
+    gsub(/(?<!\()\b(?:19|20)\d\d\b(?!\))/, "(\\0)")
+  end
+
+  LOWERCASE_WORDS = Set.new %w[of to or the and an a at is for from in]
+
+  #
+  # Return a new string converted to "Title Case" (first letter of each word capitalized)
+  #
+  def titlecase
+    first = true
+    words = downcase.split(/(?<!\w')\b/)
+
+    words.map.with_index do |word,i|
+      if LOWERCASE_WORDS.include?(word) and i > 0 # leave LOWERCASE_WORDS lowercase, unless it's the first word.
+        word
+      else
+        word.gsub(/^\w/) { |c| c.upcase } # capitalize first letter
+      end
+    end.join('')
+  end
+
 end
-
-
 
 #
 # Edit a filename
@@ -59,10 +62,10 @@ def edit_filename(prompt, filename)
 
     # Alt-u capitalizes everything
     c.bind "\eu" do |inst|
-      dir, basename, ext = path_parts(inst.line)
+      dir, basename, ext = inst.line.path_parts
       pos                = inst.pos
 
-      new_filename       = "#{dir}#{titlecase(basename)}#{ext}"
+      new_filename       = "#{dir}#{basename.titlecase}#{ext}"
 
       inst.line          = new_filename
       inst.pos           = pos
@@ -72,10 +75,10 @@ def edit_filename(prompt, filename)
 
     # ^u removes underscores and stuff
     c.bind "\x15" do |inst|
-      dir, basename, ext = path_parts(inst.line)
+      dir, basename, ext = inst.line.path_parts
       pos                = inst.pos
 
-      new_filename       = "#{dir}#{bracket_years(restore_spaces(basename))}#{ext}"
+      new_filename       = "#{dir}#{basename.restore_spaces.bracket_years}#{ext}"
 
       inst.line          = new_filename
       inst.pos           = pos
