@@ -48,7 +48,7 @@
 ######################################################################################
 
 # A list of browsers, which will be tried in order.
-BROWSERS         = %w[opera chrome chromium midori firefox jumanji]
+BROWSERS         = %w[opera vivaldi-bin chrome chromium midori firefox jumanji]
 VIDEO_BROWSERS   = %w[chrome chromium firefox opera]
 
 routes do
@@ -226,7 +226,8 @@ BEGIN {
 
   def find_browsers(windows, browsers)
     browsers.map do |browser_name|
-      browser_window = windows.select do |w|
+
+      browser_window = windows.find do |w|
         next if w.command.nil?
 
         # Hack for Chrome's "Tabs Outliner" plugin
@@ -234,8 +235,10 @@ BEGIN {
 
         binary = w.command.split.first
         binary[browser_name]
-      end.first
+      end
+      
       [ browser_name, browser_window ] if browser_window
+    
     end.compact
   end
 
