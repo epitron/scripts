@@ -26,6 +26,17 @@ def relative_path(pwd, path)
   pstring
 end
 
+def print_tree(hash, level=0, &block)
+  hash.each do |key, val|
+    leaf = val.empty?
+
+    yield key, level, leaf
+
+    print_tree(val, level+1, &block) unless leaf
+  end
+end  
+
+
 ##################################################################
 
 args = ARGV
@@ -47,47 +58,53 @@ paths = paths.map{|path| path.dir? ? path.ls_r : path }.flatten.select(&:file?)
 
 pwd = Path.pwd.to_s
 
-for path in paths
-  next unless path.ext == "torrent"
+lesspipe do |less|
+  for path in paths
+    next unless path.ext == "torrent"
 
-  relpath = relative_path(pwd, path)
+    relpath = relative_path(pwd, path)
 
-  info = torrent_info(path)
+    info = torrent_info(path)
 
-  if info
-    files = info["files"] # array of {path: [..], length: 999} hashes
-    name = info["name"]
+    if info
+      files = info["files"] # array of {path: [..], length: 999} hashes
+      name = info["name"]
 
-    if files
-      matches = matching_files(files, pattern)
+      if files
+        matches = matching_files(files, pattern)
 
-      if matches.any?
-        puts "* #{relpath}"
-        puts "  #{name}".light_cyan
+        if matches.any?
+          less.puts "* <2>#{relpath}".colorize
+          less.puts "  #{name}".light_cyan
 
-        tree = {}
-        matches.each do |h|
-          tree.mkdir_p(h["path"])
+          tree = {}
+          matches.each do |h|
+            tree.mkdir_p(h["path"])
+          end
+
+          print_tree(tree) do |key, level, leaf|
+            color = leaf ? 7 : 9
+            less.puts "     #{"  "*level}<8>|_ <#{color}>#{highlight(key, pattern)}".colorize
+          end
+
+          # tree.print_tree do |key, level|
+          #   "     #{"  "*level}<8>|_ <7>#{highlight(key, pattern)}".colorize
+          # end
+
+          less.puts
         end
-
-        tree.print_tree do |key, level|
-          "     #{"  "*level}<8>|_ <7>#{highlight(key, pattern)}".colorize
+      else
+        if name[pattern]
+          less.puts "* #{relpath}"
+          less.puts "  <11>#{highlight(name, pattern)}".colorize
+          less.puts
         end
-
-        puts
       end
+
     else
-      if name[pattern]
-        puts "* #{relpath}"
-        puts "  <11>#{highlight(name, pattern)}".colorize
-        puts
-      end
+      less.puts "* <12>#{relpath} <7>could not be parsed".colorize
+      less.puts
     end
-
-  else
-    puts "* <12>#{relpath} <7>could not be parsed".colorize
-    puts
   end
 end
-
 ##################################################################
