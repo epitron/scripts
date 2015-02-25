@@ -165,7 +165,7 @@ def unwrap(text)
 end
 
 def indent(text,amount=2)
-  text.lines.map{|line| " "*amount + line }.join("\n")
+  text.lines.map{|line| " "*amount + line }.join
 end
 
 class BlackCarpet < Redcarpet::Render::Base
@@ -187,7 +187,7 @@ class BlackCarpet < Redcarpet::Render::Base
   def block_code(code, language)
     language ||= :ruby
     require 'coderay'
-    "#{indent CodeRay.scan(code, language).term}\n"
+    "#{indent CodeRay.scan(code, language).term, 4}\n"
   end
   
   def block_quote(text)
