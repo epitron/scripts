@@ -29,6 +29,9 @@ class Systemd
     systemctl("list-unit-files")
   end
 
+  def reload
+    systemctl("daemon-reload")
+  end
 
   %w[start stop restart disable enable].each do |command|
     define_method command do |service|
@@ -79,6 +82,10 @@ class Initd
 
   def services
     Path["#{@initdir}/*"].map(&:filename).compact.sort
+  end
+
+  def reload
+    puts "Reload not needed for init.d"
   end
 
   def run(service, command)
@@ -137,6 +144,10 @@ end
 if args.empty? # No args
 
   manager.default
+
+elsif args == ["reload"]
+
+  manager.reload
 
 elsif args.first =~ %r{/(.+?)/}
 
