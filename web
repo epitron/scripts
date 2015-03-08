@@ -276,11 +276,11 @@ BEGIN {
 
     to_clipboard(uri)
 
+    browser.activate!
+
     browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
     sleep 0.2
     browser.send_keys("<Ctrl-L><Return>")
-    
-    browser.activate!
   end
 
   def which(bin)
@@ -310,7 +310,16 @@ BEGIN {
     $router.route! url
   end
 
-} 
+  LOGFILE = File.join(ENV["HOME"], "web.log")
+
+  def write_to_log(url)
+    open(LOGFILE, "a") do |f|
+      timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+      f.puts "#{timestamp} | #{url}"
+    end
+  end
+
+}
 
 
 if $0 == __FILE__
@@ -335,7 +344,8 @@ if $0 == __FILE__
   if url = ARGV.first
     url = "http://#{url}" unless url[%r{^https?://}i] # slap an http:// on the argument if necessary
 
-    # The $router variable is assigned when "router()" is called.
+    write_to_log url
+
     route url
   else
     puts "usage: web <url>"
