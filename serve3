@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+require 'sinatra'
+require 'epitools'
+require 'better_errors'
+require "sinatra/reloader" if development?
+
+set :public_folder, Dir.pwd
+set :bind, "0.0.0.0"
+public_folder = Path[settings.public_folder]
+
+configure :development do
+  use BetterErrors::Middleware
+  # you need to set the application root in order to abbreviate filenames
+  # within the application:
+  BetterErrors.application_root = File.expand_path('.', __FILE__)
+end
+
+
+
+class Array
+  include Comparable
+end
+
+
+class Path
+
+  def name
+    dir? ? dirs.last : filename
+  end
+
+  def sort_key
+    [dir? ? 0 : 1, name]
+  end
+
+  def <=>(other)
+    self.sort_key <=> other.sort_key
+  end
+
+end
+
+
+
+def to_row(row)
+  "  <tr>\n" + 
+    row.map {|cell| "    <td>#{cell}</td>" }.join("\n") + 
+    "\n  </tr>\n"
+end
+
+get '*' do |path|
+  # require 'pry'; binding.pry
+
+  requested = public_folder/path
+
+  html = []
+  html << %{
+    <style>
+      a { text-decoration: none; color: blue; }
+      .dir { background-color: yellow; font-weight: bold; }
+    </style>
+  }
+
+  if requested.dir?
+
+    files = requested.ls
+
+    order_by = params[:order] || "name"
+
+    case order_by
+    when "date"
+      files.sort_by! { |f| -f.mtime.to_i }
+    when "name"
+      files.sort!
+    when "size"
+      files.sort_by! { |f| -f.size }
+    end
+
+    html << "<table>"
+    titles = %w[name size date].map do |col|
+      %{<a href="?order=#{col}"><b>#{col.titlecase}</b></a>}
+    end
+
+    html << to_row(titles)
+
+    files.each do |file|
+      name = name_for(file)
+      link = %{<a href="#{File.join(path, name)}" class="#{file.dir? ? "dir" : "file"}">#{name}</a>}
+      size = file.size.to_s.reverse.each_slice(3).to_a.join(" ")
+      date = file.mtime.strftime("%Y-%m-%d")
+
+      html << to_row([link, size, date])
+    end
+  
+    html << "</table>"
+
+    html.join("\n")
+  elsif requested.file?
+    # send_file requested.to_s
+    send_file File.join(settings.public_folder, path)
+  else
+    not_found
+  end
+
+
+  # if File.exist?(File.join(settings.public_folder, path))
+  #   if File.directory?(File.join(settings.public_folder, path))
+  #     list()
+  #   else
+  #     send_file File.join(settings.public_folder, path)
+  #   end
+  # else
+  #   not_found
+  # end
+end
+
+not_found do
+  'Try again.'
+end

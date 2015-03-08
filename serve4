@@ -1,0 +1,152 @@
+#!/usr/bin/env ruby
+
+# Creates a webserver on port 8888 for the current dir (or optionally, the directory passed on the commandline)
+
+require 'rack'
+require 'epitools'
+
+class Array
+  include Comparable
+end
+
+
+class Path
+
+  def name
+    dir? ? dirs.last : filename
+  end
+
+  def sort_key
+    [dir? ? 0 : 1, name]
+  end
+
+  def <=>(other)
+    self.sort_key <=> other.sort_key
+  end
+
+end
+
+
+
+def to_row(row)
+  "  <tr>\n" + 
+    row.map {|cell| "    <td>#{cell}</td>" }.join("\n") + 
+    "\n  </tr>\n"
+end
+
+
+class DirectoryLister
+
+  attr_accessor :root, :params
+
+  def initialize(root)
+    @root = root
+  end
+
+  def send_html(html)
+    [ 200, {'Content-Type'=>'text/html; charset=utf-8'}, html.each_line ]
+  end
+
+  def entity_not_found
+    body = "Entity not found: #{@path_info}\n"
+    size = Rack::Utils.bytesize(body)
+    return [404, {"Content-Type" => "text/plain",
+      "Content-Length" => size.to_s,
+      "X-Cascade" => "pass"}, [body]]
+  end
+
+
+  def check_forbidden
+    return unless @path_info.include? ".."
+
+    body = "Forbidden\n"
+    size = Rack::Utils.bytesize(body)
+    return [403, {"Content-Type" => "text/plain",
+      "Content-Length" => size.to_s,
+      "X-Cascade" => "pass"}, [body]]
+  end
+
+  def directory_listing_html(requested, relative_path, order)
+    html = []
+    html << %{
+      <style>
+        a { text-decoration: none; color: blue; }
+        .dir { background-color: yellow; font-weight: bold; }
+      </style>
+    }
+
+    files = requested.ls
+
+    order_by = order || "name"
+
+    case order_by
+    when "date"
+      files.sort_by! { |f| -f.mtime.to_i }
+    when "name"
+      files.sort!
+    when "size"
+      files.sort_by! { |f| -f.size }
+    else
+      raise "unknown order_by: #{order_by}"
+    end
+
+    html << "<table>"
+    titles = %w[name size date].map do |col|
+      %{<a href="?order=#{col}"><b>#{col.titlecase}</b></a>}
+    end
+
+    html << to_row(titles)
+
+    files.each do |file|
+      link = %{<a href="#{File.join(relative_path, file.name)}" class="#{file.dir? ? "dir" : "file"}">#{file.name}</a>}
+      size = file.size.to_s.reverse.each_slice(3).to_a.join(" ")
+      date = file.mtime.strftime("%Y-%m-%d")
+
+      html << to_row([link, size, date])
+    end
+  
+    html << "</table>"
+
+    html.join("\n")
+  end
+
+  def call(env)
+    req = Rack::Request.new(env)
+
+    params = env["QUERY_STRING"].to_params
+
+    relative_path = req.path_info
+    requested = root/relative_path
+
+    if requested.dir?
+      if (index = requested/"index.html").exists?
+        # serve index.html
+        send_html index.read
+      else
+        # serve directory listing
+        send_html directory_listing_html(requested, relative_path, params["order"])
+      end
+    else
+      # serve file
+      Rack::File.new(@root.path).call(env)
+    end
+
+  end
+
+end
+
+
+if ARGV.first
+  root = Path[ARGV.first]
+else
+  root = Path.pwd
+end
+
+puts
+puts "* Serving files in: #{root}"
+puts "                on: http://localhost:8888/"
+puts
+
+# server = Rack::Handler.pick ['thin', 'webrick']
+server = Rack::Handler.pick ['webrick']
+server.run DirectoryLister.new(root), Port: 8888

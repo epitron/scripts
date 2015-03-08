@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+require 'sinatra'
+require 'sinatra/directory_listing'
+require 'pry/rescue'
+
+
+set :public_folder, Dir.pwd
+set :bind, "0.0.0.0"
+        
+
+list_opts = {
+  :filename_truncate_length => 100,
+}
+
+get '*' do |path|
+  # require 'pry'; binding.pry
+  Pry.rescue {
+
+  if File.exist?(File.join(settings.public_folder, path))
+    if File.directory?(File.join(settings.public_folder, path))
+      list(list_opts)
+    else
+      send_file File.join(settings.public_folder, path)
+    end
+  else
+    not_found
+  end
+
+  }
+end
+
+not_found do
+  'Try again.'
+end
