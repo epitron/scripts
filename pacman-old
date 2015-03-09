@@ -1,0 +1,148 @@
+#!/usr/bin/env ruby
+#####################################################################
+
+require 'epitools'
+require 'open-uri'
+
+#####################################################################
+
+Package = Struct.new(:root, :file, :desc, :date, :size)
+
+class Package
+  ARM_ROOT="http://seblu.net/a/arm/packages/"
+
+  attr_reader :name, :ver, :rev, :arch, :sig
+
+  def initialize(*args)
+    super
+    parse_filename!
+  end
+
+  def self.pkg_root_url(name)
+    URI.parse("#{ARM_ROOT}#{name[0]}/#{name}/")
+  end
+
+  def self.versions(name)
+    root = pkg_root_url(name)
+
+    data = open(root).read
+
+    pkgs = data.each_line.map do |l|
+      ((file, desc, datesize)) = l.chomp.scan(/<a href="(.+)">(.+)<\/a>(.+)/)
+
+      next unless file and desc and datesize and !file[/^\.\./]
+      next if file[/\.sig$/]
+
+      date, size = datesize.strip.split(/\s{2,}/).map(&:strip)
+
+      Package.new(root, file, desc, DateTime.parse(date), size)
+    end.compact
+
+  end
+
+  def self.versions_for_arch(name, arch="x86_64")
+    versions(name).select { |pkg| pkg.arch == arch }
+  end
+
+  def url
+    URI.join(root, file)
+  end
+
+  def parse_filename!
+    if file =~ /(.+)-([\d\.]+)-(\d)-(\w+)\.pkg\.tar\.xz$/
+      @name, @ver, @rev, @arch = $1, $2, $3, $4
+    end
+  end
+
+  def to_s
+    "<11>#{name} <15>#{ver}<8>-<7>#{rev}<8> <12>#{arch} <8>=> <13>#{size} <8>(<9>#{date.strftime("%Y-%m-%d")}<8>)"
+  end
+
+end
+
+
+def pick(items)  
+  choices = (1..items.size).zip(items.reverse).reverse
+  max_item_size = items.size.to_s.size
+
+
+  puts
+  choices.each do |n, item|
+    puts "<14>#{n.to_s.rjust(max_item_size)}<7>. #{item}".colorize
+  end
+  puts
+
+  input = nil
+
+  loop do
+    print "Pick package> "
+
+    begin
+      input = $stdin.gets
+    rescue Interrupt
+      puts "Nevermind!"
+      exit 1
+    end
+
+    unless input
+      puts "Fine, be that way!"
+      exit 1
+    end
+
+    input = input.to_i
+
+    unless input > 0 and input <= choices.size
+      puts "Invalid choice!"
+      next
+    end
+
+    break
+  end
+
+  choices.find {|n, item| n == input }.last
+end
+
+#####################################################################
+
+DOWNLOADERS = [
+  %w[http --download], 
+  %w[curl -O --xattr], 
+  %w[wget]
+]
+
+def download(url)
+  puts "<8>* <15>Downloading <11>#{url}<7>...".colorize
+  puts
+
+  DOWNLOADERS.each do |cmd|
+    if path = Path.which(cmd.first)
+      return system(*cmd, url)
+    end
+  end
+
+  puts "No program to download stuff was found! Please install curl, httpie, or wget."
+end
+
+#####################################################################
+
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+n_vers = 20
+pkg = args.first
+
+if args.size != 1
+  scriptname = Path[__FILE__].filename
+  puts
+  puts "Download an old arch package using the Arch Rollback Machine!"
+  puts
+  puts "Usage: #{scriptname} <packagename>"
+  puts 
+else
+  puts "<8>* <7>Retrieving last <15>#{n_vers}</15> versions of <11>#{pkg}</11>...".colorize
+  versions = Package.versions_for_arch(pkg)
+
+  version = pick(versions.last(n_vers))
+
+  download(version.url)
+end
+
+#####################################################################
