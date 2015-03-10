@@ -63,6 +63,8 @@ def convert(arg=nil)
     arg = which(arg) unless File.exists? arg
 
     if arg
+      return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
+
       ext = File.extname(arg).downcase
 
       if %w[.gz].include? ext
