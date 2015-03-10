@@ -55,6 +55,22 @@ end
 
 ##############################################################################
 
+def decompress(arg, ext)
+  case ext
+  when ".xz"
+
+  when ".bz2"
+  end
+
+end
+
+
+COMPRESSORS = {
+  ".gz"  => %w[gzip -d -c],
+  ".xz"  => %w[xz -d -c],
+  ".bz2" => %w[bzip2 -d -c],
+}
+
 def convert(arg=nil)
   if arg.nil?
     # STDIN
@@ -67,9 +83,8 @@ def convert(arg=nil)
 
       ext = File.extname(arg).downcase
 
-      if %w[.gz].include? ext
-        require 'epitools'
-        zopen(arg).read
+      if cmd = COMPRESSORS[ext]
+        IO.popen([*cmd, arg])
       elsif %w[.md .markdown].include? ext
         convert_markdown(arg)
       elsif %w[.nfo .ans .drk .ice].include? ext
@@ -135,12 +150,13 @@ lesspipe(:wrap=>true) do |less|
   when 0
     less.puts convert
   when 1
-    less.puts convert(args.first)
+    convert(args.first).each_line { |line| less.puts line }
   else # 2 or more args
     args.each do |arg|
       less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
       less.puts
-      less.puts convert(arg)
+      convert(arg).each_line { |line| less.puts line }
+      less.puts 
       less.puts
     end
   end
