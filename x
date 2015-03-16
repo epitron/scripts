@@ -83,6 +83,8 @@ end
 
 def translate_value(key, value)
   case key
+  when "user.com.dropbox.attributes"
+    "#{value.size} bytes"
   when "security.capability"
     # struct vfs_cap_data_disk {
     #   __le32 version;
