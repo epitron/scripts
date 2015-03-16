@@ -1,0 +1,50 @@
+body { font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; }
+td { vertical-align: top; }
+
+#search {
+	position: absolute;
+	right: 5px;
+	top: 5px;
+}
+
+/* Page Background Color */
+.bodystyles { background-color: ffffff; }				
+
+/* Description of Directory Contents */
+.descfont { font-color: #000000 }
+
+/* Directory Listing Header - "Filename", "Size" */
+thead td { background-color: #777; }
+thead td a {
+  display:block;
+  width:100%;	
+}
+thead {
+	font-size: 10pt; 
+	font-weight: bold;
+	color: #eee;
+}
+thead a:link, 
+thead a:visited, 
+thead a:active, 
+thead a:hover { color: #eee; }
+
+
+/* Directory Entries Within Listing */
+.dirfont { font-size: 10pt; 	}
+
+/* File Entries Within Listing */
+.filefont { font-size: 10pt; }
+
+/* Alternating Background Colors Within Listing */
+.grey { background-color: #eeeeee; }
+
+/* Link Formatting */
+a { text-decoration: none; }  				/* remove default underline from link */
+a:link { color: #0000ff }  					/* color for unvisited links */
+a:visited { color: #000099 } 				/* color for visited links */
+a:active { color: #990000 } 				/* color when link is clicked */
+a:hover {									/* when mouse is over link */
+	color: #0000FF; 
+	text-decoration: underline
+}

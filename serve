@@ -1,13 +1,29 @@
 #!/usr/bin/env ruby
+###########################################################################
 
-# Creates a webserver on port 8888 for the current dir (or optionally, the directory passed on the commandline)
+require 'sinatra'
+require 'sinatra/reloader' if __FILE__[/serve-dev\.rb$/]
+require 'haml'
+require 'puma'
 
-require 'rack'
+require 'epitools/core_ext'
+require 'epitools/rash'
+require 'pathname'
+
+###########################################################################
+
+if ARGV.include? "-h"
+  puts
+  puts "usage:"
+  puts "  serve <directory> [host[:port]]"
+  puts
+  exit
+end
 
 # Defaults
-port = 8888
-host = "localhost"
-root = Dir.pwd
+port       = 8888
+host       = "0.0.0.0"
+public_dir = Dir.pwd
 
 # Parse commandline arguments (root dir or port)
 ARGV.each do |arg|
@@ -19,7 +35,7 @@ ARGV.each do |arg|
     port = $2.to_i
   else
     if File.directory? arg
-      root = arg
+      public_dir = arg
     else
       puts "Error: #{arg.inspect} is not a directory."
       exit 1
@@ -27,20 +43,278 @@ ARGV.each do |arg|
   end
 end
 
-directory_viewer = proc do |env|
-  req = Rack::Request.new(env)
+###########################################################################
 
-  # Show "index.html" if it exists
-  req.path_info += "index.html" if File.exists?(File.join(root, req.path_info, "index.html"))
+set :server, :puma
 
-  # Serve the file or directory
-  Rack::Directory.new(root).call(env)
+set :bind, host
+set :port, port
+
+set :assets,     Pathname.new(__FILE__).expand_path.dirname / "assets"
+set :public_dir, Pathname.new(public_dir).expand_path
+
+puts
+puts "Serving all files in: #{settings.public_dir}"
+puts "                  on: http://#{host}:#{port}/"
+puts
+
+###########################################################################
+
+helpers do
+  def highlight(thing, regexp)
+    thing.to_s.gsub(regexp) { |m| "<mark>#{m}</mark>" }
+  end
 end
 
-puts
-puts "* Serving files in: #{root}"
-puts "                on: http://#{host}:#{port}/"
-puts
+###########################################################################
 
-server = Rack::Handler.pick ['thin', 'webrick']
-server.run directory_viewer, Port: port, Host: host
+class Pathname
+
+  TYPES = Rash.new(
+    /\.(avi|ogm|webm|mpv|mp4|m4v|mkv|mj?pe?g|flv|mov|wmv)$/ => "video",
+    /(^README|\.(pdf|doc|txt|srt|sub)$)/ => "doc",
+    /\.(jpe?g|gif|png)$/ => "image",
+    /\.(mp3|ogg|m4a|aac|flac)$/ => "audio",
+  )
+
+  SORT_METHOD = {
+    "date" => :cmp_date,
+    "size" => :cmp_size,
+    "type" => :cmp_type,
+    "name" => :cmp_name,
+  }
+
+  def children_sorted_by(sort="name")
+    method = SORT_METHOD[sort] || :cmp_name
+    children.sort_by &method
+  end
+
+  def type
+    dir? ? "dir" : TYPES[basename.to_s] || "file"
+  end
+
+  def icon
+    if dir?
+      "/_/dir.gif"
+    else
+      "/_/#{type}.gif"
+    end
+  end
+
+  def cmp_date
+    -mtime.to_i
+  end
+
+  def cmp_size
+    [dir? ? 0 : -size, cmp_name]
+  end
+
+  def cmp_type
+    [type, cmp_name]
+  end
+
+  def cmp_name
+    [dir? ? 0 : 1, to_s.downcase]
+  end
+
+  def relative_name(root)
+    dir = dir?
+    name = relative_to(root).to_s
+    dir ? "#{name}/" : name
+  end
+
+  def name
+    if dir?
+      "#{basename}/"
+    else
+      "#{basename}"
+    end
+  end
+
+  alias_method :relative_to, :relative_path_from
+
+  alias_method :ls,       :children
+  alias_method :exists?,  :exist?
+  alias_method :dir?,     :directory?
+end
+
+###########################################################################
+
+class Time
+  def formatted_like_ls
+    if year == Time.now.year
+      fmt = "%b %d %H:%M"
+    else
+      fmt = "%b %d %Y"
+    end
+
+    strftime(fmt)
+  end
+end
+
+###########################################################################
+
+def flip_order(order)
+  order == "reversed" ? "forwards" : "reversed"
+end
+
+
+def sort_params(field, current_sort, current_order)
+  current_sort ||= "name"
+  next_order     = "forwards"
+  next_order     = flip_order(current_order) if current_sort == field
+
+  "?sort=#{field}&order=#{next_order}"
+end
+
+###########################################################################
+###########################################################################
+ 
+#
+# Secret assets directory
+#
+get '/_/*' do |path|
+  send_file settings.assets / path
+end
+
+#
+# Regular directories
+#
+get '/*' do |path|
+  @path          = settings.public_dir / path
+  @relative_path = @path.relative_to(settings.public_dir)
+
+  return not_found       unless @path.exists?
+  return send_file @path unless @path.directory?
+
+  # Search all subdirectories
+  if params[:search]
+    if params[:throbber]
+      @redirect = "/#{path}?search=#{params[:search]}"
+      return haml :throbber
+    end
+
+    union = Regexp.union params[:search].split
+    @query = /#{union.source}/i
+
+    @files = @path.find.map do |file|
+      rel = file.relative_to(@path)
+      file if rel.to_s =~ @query
+    end.compact
+
+    @grouped = @files.group_by { |file| file.dirname }
+
+    haml :search
+
+  # Display files in directory
+  else
+    @sort  = params[:sort] || "name"
+    @files = @path.children_sorted_by(@sort)
+
+    if @order = params[:order]
+      @files.reverse! if @order == "reversed"
+    else
+      @order = "forwards"
+    end
+
+    haml :index
+  end
+end
+
+
+not_found do
+  'Try again!'
+end
+
+###########################################################################
+__END__
+
+@@layout
+!!!
+%html
+  %head
+    %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}
+    %title
+      [dir]
+      = @path
+    %link{href: "/_/default.css", rel: "stylesheet", type: "text/css"}
+
+  %body.bodystyles
+    %h2.descfont
+      %a{href: "/"} [ root ]
+      - @relative_path.descend do |fn|
+        - next if fn.to_s == "."
+        \/
+        %a{href: "/#{fn}/"}= fn.basename
+
+    %form#search
+      %input{name: "search", placeholder: "Search", value: params[:search]}
+      %input{type: "hidden", name: "throbber", value: "true"}
+      / %input{type: "submit"}
+
+    = yield
+
+
+
+
+@@index
+%table{cellpadding: 3}
+  / HEADERS
+  %thead
+    %tr
+      %td
+        %a{href: sort_params("type", @sort, @order)} &nbsp;
+      %td
+        %a{href: sort_params("name", @sort, @order)} Filename
+      %td{align: "right"}
+        %a{href: sort_params("size", @sort, @order)} Size
+      %td
+        %a{href: sort_params("date", @sort, @order)} Date
+
+
+  / FILE LISTING
+  %tbody
+    - @files.each_with_index do |file,i|
+
+      %tr{class: (i % 2 == 0 ? "grey" : "")}
+        / ICON
+        %td
+          %img{src: file.icon}
+
+        / NAME
+        %td{style: "min-width:100px"}
+          %a{href: file.name}= file.name
+
+        / SIZE
+        %td{nowrap: true, align: 'right'}
+          = file.dir? ? "" : file.size.commatize
+
+        / DATE
+        %td{nowrap: true, align: 'right'}
+          = file.mtime.formatted_like_ls
+
+
+
+@@throbber
+%meta{"http-equiv": "refresh", content: "0;URL=#{@redirect}"}
+
+%h2
+  Searching for: 
+  %mark= params[:search]
+
+
+@@search
+%h2
+  Results for: 
+  %mark= params[:search]
+
+
+- @grouped.each do |dir, files|
+
+  %h4= highlight(dir.relative_name(@path), @query)
+  
+  %ul
+    - files.each do |file|
+      %a{href: file.relative_name(@path)}
+        = highlight(file.relative_name(dir), @query)
+      %br
