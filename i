@@ -12,12 +12,23 @@ args = ARGV
 
 class Systemd
 
+  def initialize(user=false)
+    @user = user
+  end
+
   def self.detected?
     system("pidof systemd > /dev/null")
   end
 
   def systemctl(*args)
-    cmd = %w[sudoifnotroot systemctl] + args
+    if @user
+      cmd = %w[systemctl --user]
+    else
+      cmd = %w[sudoifnotroot systemctl]
+    end
+    
+    cmd += args
+
     puts "=> #{cmd.join(" ")}"
     puts
     system *cmd
@@ -135,7 +146,12 @@ end
 
 ## Detection of systemd/init.d
 if Systemd.detected?
-  manager = Systemd.new
+  if ARGV.first == "--user"
+    ARGV.shift
+    manager = Systemd.new(true)
+  else
+    manager = Systemd.new
+  end
 else
   manager = Initd.new
 end
