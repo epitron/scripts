@@ -241,7 +241,7 @@ __END__
 
   %body.bodystyles
     %h2.descfont
-      %a{href: "/"} [ root ]
+      %a{href: "/"} [ #{settings.public_dir.basename} ]
       - @relative_path.descend do |fn|
         - next if fn.to_s == "."
         \/
