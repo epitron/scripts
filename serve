@@ -53,6 +53,8 @@ set :port, port
 set :assets,     Pathname.new(__FILE__).expand_path.dirname / "assets"
 set :public_dir, Pathname.new(public_dir).expand_path
 
+mime_type :mkv, 'video/x-matroska'
+
 puts
 puts "Serving all files in: #{settings.public_dir}"
 puts "                  on: http://#{host}:#{port}/"
@@ -69,6 +71,12 @@ end
 ###########################################################################
 
 class Pathname
+
+  alias_method :relative_to, :relative_path_from
+
+  alias_method :ls,       :children
+  alias_method :exists?,  :exist?
+  alias_method :dir?,     :directory?
 
   TYPES = Rash.new(
     /\.(avi|ogm|webm|mpv|mp4|m4v|mkv|mj?pe?g|flv|mov|wmv)$/ => "video",
@@ -131,11 +139,6 @@ class Pathname
     end
   end
 
-  alias_method :relative_to, :relative_path_from
-
-  alias_method :ls,       :children
-  alias_method :exists?,  :exist?
-  alias_method :dir?,     :directory?
 end
 
 ###########################################################################
@@ -239,8 +242,8 @@ __END__
       = @path
     %link{href: "/_/default.css", rel: "stylesheet", type: "text/css"}
 
-  %body.bodystyles
-    %h2.descfont
+  %body
+    %h2
       %a{href: "/"} [ #{settings.public_dir.basename} ]
       - @relative_path.descend do |fn|
         - next if fn.to_s == "."
