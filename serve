@@ -54,6 +54,7 @@ set :assets,     Pathname.new(__FILE__).expand_path.dirname / "assets"
 set :public_dir, Pathname.new(public_dir).expand_path
 
 mime_type :mkv, 'video/x-matroska'
+disable :sessions
 
 puts
 puts "Serving all files in: #{settings.public_dir}"
@@ -177,7 +178,12 @@ end
 # Secret assets directory
 #
 get '/_/*' do |path|
-  send_file settings.assets / path
+  if path == "default.css"
+    content_type :css
+    settings.templates[:css].first
+  else
+    send_file settings.assets / path
+  end
 end
 
 #
@@ -231,6 +237,34 @@ end
 
 ###########################################################################
 __END__
+
+@@css
+body { background-color: ffffff; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; }
+#search { position: absolute; right: 5px; top: 5px; }
+
+/* Directory Listing Header - "Filename", "Size" */
+td { vertical-align: top; font-size: 10pt; }
+td a { display: block; width: 100%; }
+thead { font-weight: bold;  color: #eee; }
+thead td { background-color: #777; }
+thead a:link, 
+thead a:visited, 
+thead a:active, 
+thead a:hover { color: #eee; }
+
+/* File Entries Within Listing */
+.filefont { font-size: 10pt; }
+
+/* Alternating Background Colors Within Listing */
+.grey { background-color: #eeeeee; }
+
+/* Link Formatting */
+a { text-decoration: none; }        /* remove default underline from link */
+a:link { color: #0000ff }           /* color for unvisited links */
+a:visited { color: #000099 }        /* color for visited links */
+a:active { color: #990000 }         /* color when link is clicked */
+a:hover { color: #0000FF; text-decoration: underline }
+
 
 @@layout
 !!!
