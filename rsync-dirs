@@ -18,9 +18,9 @@ if args.any?
   letters += %w[o g p] if opts.delete("-o") # ownership
   letters += %w[z]     if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
 
-  params  = []
+  params  = ["--xattrs"]
   unless opts.delete "-q"
-    params  << "--progress"        
+    params  << "--progress"
     letters << "v"
   end
 
@@ -29,7 +29,7 @@ if args.any?
   params << "--partial"         if opts.delete "-p"  # partials
   params << "--delete-after"    if opts.delete "-d"  # delete destination files
   params << "--dry-run"         if opts.delete "-n"  # simulated sync (no changes are made)
-  params << "--xattrs"          if opts.delete "-x"  # sync extended attributes
+  # params << "--xattrs"          if opts.delete "-x"  # sync extended attributes
   params << "--remove-source-files"   if opts.delete "-m" # move files (delete source files)
   params += ["-e", "ssh -c blowfish"] if opts.delete "-f" # fast cipher
   params += %w[--specials --devices]  if opts.delete "-s" # sync special files (sockets, fifos) and devices

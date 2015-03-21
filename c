@@ -55,16 +55,6 @@ end
 
 ##############################################################################
 
-def decompress(arg, ext)
-  case ext
-  when ".xz"
-
-  when ".bz2"
-  end
-
-end
-
-
 COMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],

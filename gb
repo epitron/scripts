@@ -36,7 +36,11 @@ class Branches
       puts "<grey>== <light_white>#{type} branches: <grey>=============".colorize
       for branch in send(type)
         selected = (branch == current && type == :local)
-        puts "   #{branch}".send(selected ? :bright_yellow : color)
+        if selected 
+          puts "   #{branch} <===".bright_yellow
+        else
+          puts "   #{branch}".send(color)
+        end
       end
       puts
     end
@@ -93,9 +97,8 @@ end
 args = ARGV
 
 if args.empty?
-  
-  get_branches.print  
-  
+  # Do nothing!
+
 elsif args.first.in? ["--help", "-h"]
   
   puts %{usage: gb <branch name>
@@ -110,6 +113,8 @@ eg:
   gb -t [<remote>[/<branch>]] => track current branch on origin/<branchname> (or <remote>/<branchname>)
   gb -r <new_name>            => rename current branch to <new_name>
 }
+
+  exit
 # TODO: 'gb -t' tracks current branch (git branch --set-upstream <branch> origin/<branch>)
 # TODO: auto-stash uncommitted changes when switching branches, and auto-unstash when switching back.
 # TODO: 'gb -r <dest>' renames current branch to <dest> (git branch -m <src> <dest>)
@@ -195,3 +200,5 @@ else
   end    
   
 end
+
+get_branches.print
