@@ -1,0 +1,2 @@
+#!/bin/bash
+sudoifnotroot mdadm -D /dev/md{0,1,2}
