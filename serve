@@ -192,6 +192,7 @@ end
 get '/*' do |path|
   @path          = settings.public_dir / path
   @relative_path = @path.relative_to(settings.public_dir)
+  @root_dir      = settings.public_dir.basename
 
   return not_found       unless @path.exists?
   return send_file @path unless @path.directory?
@@ -252,6 +253,8 @@ thead a:visited,
 thead a:active, 
 thead a:hover { color: #eee; }
 
+// https://css-tricks.com/snippets/html/responsive-meta-tag/
+
 /* File Entries Within Listing */
 .filefont { font-size: 10pt; }
 
@@ -273,12 +276,12 @@ a:hover { color: #0000FF; text-decoration: underline }
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}
     %title
       [dir]
-      = @path
+      #{@root_dir}/#{@relative_path}
     %link{href: "/_/default.css", rel: "stylesheet", type: "text/css"}
 
   %body
     %h2
-      %a{href: "/"} [ #{settings.public_dir.basename} ]
+      %a{href: "/"} [ #{@root_dir} ]
       - @relative_path.descend do |fn|
         - next if fn.to_s == "."
         \/
