@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if ! which socat > /dev/null 2>&1; then
+  echo "Error: socat not found. Please install it."
+  exit 1
+fi
+
+
+if [ "$1" == "" ]; then
+  echo "usage: sslnet <host>:<port> [<cert-name>]"
+  echo
+  echo "An SSL telnet!"
+  echo
+  echo "Note: <cert-name> is a base filename; .pem and .crt will be"
+  echo "      appended automatically."
+  echo
+  echo "      If <cert-name> is not supplied, the connection won't be verified."
+else
+
+  if [ "$2" == "" ]; then
+    CERTOPTS="verify=0"
+  else
+    CERTOPTS="cert=$2.pem,cafile=$2.crt"
+  fi
+
+  HOST="$1"
+
+  echo "* SSL connection to $HOST ($CERTOPTS) opened..."
+
+  socat -x READLINE OPENSSL:$1,$CERTOPTS
+fi
