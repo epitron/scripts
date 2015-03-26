@@ -99,15 +99,14 @@ end
 def download_torrent(result)
   puts "<3>* <11>#{result.title} <8>(<10>#{result.seeds}/<2>#{result.peers}<8>)".colorize
 
+  filename = "#{result.hash} - #{cleanup result.title}.torrent"
+  if File.exists? filename
+    puts "  |_ skipping".light_yellow
+    return
+  end
+
   url = "http://torcache.net/torrent/#{result.hash}.torrent"
   open(url) do |t|
-    filename = "#{result.hash} - #{cleanup result.title}.torrent"
-
-    if File.exists? filename
-      puts "  |_ skipping".light_cyan
-      next
-    end
-    
     data = t.read
     open(filename, "wb") { |o| o.write(data) }
 
