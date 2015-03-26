@@ -8,7 +8,7 @@ require 'epitools'
 
 def absolute_uri(root, url)
   #pp [:url_join, root, url]
-  URI.join(root, url).to_s
+  URI.join(root, URI.escape(url)).to_s
 end
 
 
