@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+if ARGV.any?
+  files = ARGV.map(&:to_Path)
+  files.map { |f| f.dir? ? f.ls : f }.flatten
+else
+  files = Path["*"]
+end
+
+empties = files.select{|f| f.dir? and f.ls_r.all?(&:dir?) }
+
+puts "Empty directories found:"
+puts "----------------------"
+puts
+empties.each { |path| puts "#{path.mtime} #{path}" }
+puts
+
+if prompt("Remove these directories?") == "y"
+  puts "Removing directories..."
+  empties.each { |e| cmd("trsh", "-r", e) }  
+end
+
