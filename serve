@@ -5,6 +5,7 @@ require 'sinatra'
 require 'sinatra/reloader' if __FILE__[/serve-dev\.rb$/]
 require 'haml'
 require 'puma'
+require 'socket'
 
 require 'epitools/core_ext'
 require 'epitools/rash'
@@ -46,6 +47,7 @@ end
 ###########################################################################
 
 set :server, :puma
+set :machine_name, Socket.gethostname
 
 set :bind, host
 set :port, port
@@ -95,7 +97,7 @@ class Pathname
 
   def children_sorted_by(sort="name")
     method = SORT_METHOD[sort] || :cmp_name
-    children.sort_by &method
+    children.select(&:exist?).sort_by &method
   end
 
   def type
@@ -207,7 +209,7 @@ get '/*' do |path|
     union = Regexp.union params[:search].split
     @query = /#{union.source}/i
 
-    @files = @path.find.map do |file|
+    @files = @path.find.select(&:exist?).map do |file|
       rel = file.relative_to(@path)
       file if rel.to_s =~ @query
     end.compact
@@ -275,13 +277,15 @@ a:hover { color: #0000FF; text-decoration: underline }
   %head
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}
     %title
-      [dir]
-      #{@root_dir}/#{@relative_path}
+      [#{settings.machine_name}]
+      #{@root_dir}#{"/#{@relative_path}" if @relative_path.to_s != "."}
+
     %link{href: "/_/default.css", rel: "stylesheet", type: "text/css"}
 
   %body
     %h2
-      %a{href: "/"} [ #{@root_dir} ]
+      [#{settings.machine_name}]
+      %a{href: "/"} #{@root_dir}
       - @relative_path.descend do |fn|
         - next if fn.to_s == "."
         \/
@@ -323,7 +327,7 @@ a:hover { color: #0000FF; text-decoration: underline }
 
         / NAME
         %td{style: "min-width:100px"}
-          %a{href: file.name}= file.name
+          %a{href: file.name.urlencode}= file.name
 
         / SIZE
         %td{nowrap: true, align: 'right'}
