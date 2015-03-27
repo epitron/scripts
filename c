@@ -61,30 +61,25 @@ COMPRESSORS = {
   ".bz2" => %w[bzip2 -d -c],
 }
 
-def convert(arg=nil)
-  if arg.nil?
-    # STDIN
-    CodeRay.scan($stdin).term
-  else
-    arg = which(arg) unless File.exists? arg
+def convert(arg)
+  arg = which(arg) unless File.exists? arg
 
-    if arg
-      return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
+  if arg
+    return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
 
-      ext = File.extname(arg).downcase
+    ext = File.extname(arg).downcase
 
-      if cmd = COMPRESSORS[ext]
-        IO.popen([*cmd, arg])
-      elsif %w[.md .markdown].include? ext
-        convert_markdown(arg)
-      elsif %w[.nfo .ans .drk .ice].include? ext
-        convert_cp437(arg)
-      else
-        convert_coderay(arg)
-      end
+    if cmd = COMPRESSORS[ext]
+      IO.popen([*cmd, arg])
+    elsif %w[.md .markdown].include? ext
+      convert_markdown(arg)
+    elsif %w[.nfo .ans .drk .ice].include? ext
+      convert_cp437(arg)
     else
-      "\e[31m\e[1mFile not found.\e[0m"
+      convert_coderay(arg)
     end
+  else
+    "\e[31m\e[1mFile not found.\e[0m"
   end
 end
 
@@ -138,7 +133,7 @@ args = ARGV
 lesspipe(:wrap=>true) do |less|
   case args.size
   when 0
-    less.puts convert
+    puts "usage: c <filename(s)>"
   when 1
     convert(args.first).each_line { |line| less.puts line }
   else # 2 or more args
