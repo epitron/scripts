@@ -1,9 +1,15 @@
 #!/usr/bin/env ruby
 ###########################################################################
+if __FILE__[/serve-dev\.rb$/]
+  require 'sinatra/reloader' 
+else
+  ENV["RACK_ENV"] = "production"
+end
 
 require 'sinatra'
-require 'sinatra/reloader' if __FILE__[/serve-dev\.rb$/]
 require 'haml'
+# require 'tilt/haml'
+# require 'tilt/coffee'
 require 'puma'
 require 'socket'
 
@@ -53,13 +59,14 @@ set :bind, host
 set :port, port
 
 set :assets,     Pathname.new(__FILE__).expand_path.dirname / "assets"
-set :public_dir, Pathname.new(public_dir).expand_path
+set :root_dir,   Pathname.new(public_dir).expand_path
+set :public_folder, nil
 
 mime_type :mkv, 'video/x-matroska'
 disable :sessions
 
 puts
-puts "Serving all files in: #{settings.public_dir}"
+puts "Serving all files in: #{settings.root_dir}"
 puts "                  on: http://#{host}:#{port}/"
 puts
 
@@ -192,12 +199,21 @@ end
 # Regular directories
 #
 get '/*' do |path|
-  @path          = settings.public_dir / path
-  @relative_path = @path.relative_to(settings.public_dir)
-  @root_dir      = settings.public_dir.basename
+  @path          = settings.root_dir / path
+  @relative_path = @path.relative_to(settings.root_dir)
+  @root_dir      = settings.root_dir.basename
 
   return not_found       unless @path.exists?
-  return send_file @path unless @path.directory?
+  
+  unless @path.directory?
+    return \
+    case @path.extname
+    when ".haml"
+      haml @path.read, layout: false
+    else
+      send_file @path
+    end
+  end
 
   # Search all subdirectories
   if params[:search]
