@@ -134,7 +134,7 @@ alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 
 # system
-alias_all_as_sudo sysdig swapped
+alias_all_as_sudo sysdig swapped perf
 alias dmesg='dmesg -T --color=always|less -S -R +\>'
 alias dmesg-tail='\dmesg -T --color -w'
 alias dstat-wide='dstat -tcyifd'
@@ -197,14 +197,13 @@ alias gcs="gc --depth=1"
 alias r="rails"
 alias be="bundle exec"
 alias pad="padrino"
-alias z='zeus'
 alias cr='crystal'
 
 gem-cd() { 
   cd `gem-dir $@`
 }
 
-
+# 64/32bit specific aliases
 case `uname -m` in
   x86_64)
     # it's all good.
@@ -214,7 +213,6 @@ case `uname -m` in
     alias f="f2"
     ;;
 esac
-
 
 # Things with literal arguments!
 #alias math='noglob math'
@@ -240,3 +238,8 @@ alias pkgfile='sudoifnotroot pkgfile'
 # npm
 alias ni="sudoifnotroot npm install -g"
 alias nl="npm list -g --color=always |& less -S"
+
+# pip
+alias_all_as_sudo pip pip2
+
+
