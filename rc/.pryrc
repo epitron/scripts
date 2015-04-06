@@ -1,5 +1,7 @@
 # #!/usr/bin/ruby
 
+return if defined? Rails
+
 Bond.config[:debug] = true if defined? Bond
 
 # theme
@@ -29,12 +31,16 @@ end
 ###################################################################
 ## Misc Ruby libraries
 
-#req 'open-uri'
 req 'epitools'
-#req 'coolline'
 
 # req 'awesome_print' do
+
 #   AwesomePrint.pry!
+
+#   # autoreq :Nokogiri do
+#   #   require 'awesome_print/ext/nokogiri'
+#   #   require 'nokogiri'
+#   # end
   
 #   # # awesomeprint output
 #   # Pry.config.print = proc do |output, value|
@@ -44,25 +50,25 @@ req 'epitools'
 #   # end
 # end
 
-req 'coolline' do
-  req 'coderay' do
+# req 'coolline' do
+#   req 'coderay' do
 
-    Pry.config.input = Coolline.new do |c|
+#     Pry.config.input = Coolline.new do |c|
 
-      # c.word_boundaries += ["."]
+#       c.word_boundaries += ["."]
 
-      c.transform_proc = proc do
-        CodeRay.scan(c.line, :ruby).term
-      end
+#       c.transform_proc = proc do
+#         CodeRay.scan(c.line, :ruby).term
+#       end
 
-      c.completion_proc = proc do
-        word = c.completed_word
-        Object.constants.map(&:to_s).select { |w| w.start_with? word }
-      end
-    end
+#       c.completion_proc = proc do
+#         word = c.completed_word
+#         Object.constants.map(&:to_s).select { |w| w.start_with? word }
+#       end
+#     end
 
-  end
-end
+#   end
+# end
 
 ###################################################################
 ## History
@@ -298,13 +304,16 @@ Pry.commands.instance_eval do
     end
   end
 
+
   command "req-verbose", "Requires gem(s). No need for quotes! (If the gem isn't installed, it will ask if you want to install it.)" do |*gems|
 
     def tree_to_array(hash, indent=0)
+      colors = [:light_white, :light_cyan, :light_blue]
       result = []
       dent = "  " * indent
       hash.each do |key,val|
-        result << dent+key
+        color = colors[indent] || :white
+        result << dent+key.send(color)
         result += tree_to_array(val, indent+1) if val.any?
       end
       result
@@ -318,7 +327,7 @@ Pry.commands.instance_eval do
       mods.sort.each { |path| mod_tree.mkdir_p(path) }
 
       results = tree_to_array(mod_tree)
-      table = Term::Table.new(results, :cols=>3, :vertically => true)
+      table = Term::Table.new(results, :cols=>3, :vertically => true, :colored => true)
       puts table
     end
 
@@ -336,17 +345,17 @@ Pry.commands.instance_eval do
           output.puts "#{text.bright_white(gem)} already loaded"
         end
 
-      rescue LoadError => e
+      # rescue LoadError => e
 
-        if gem_installed? gem
-          output.puts e.inspect
-        else
-          output.puts "#{gem.bright_red} not found"
-          if prompt("Install the gem?") == "y"
-            run "gem-install", gem
-            run "req", gem
-          end
-        end
+      #   if gem_installed? gem
+      #     output.puts e.inspect
+      #   else
+      #     output.puts "#{gem.bright_red} not found"
+      #     if prompt("Install the gem?") == "y"
+      #       run "gem-install", gem
+      #       run "req", gem
+      #     end
+      #   end
 
       end # rescue
     end # gems
