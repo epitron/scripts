@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+def print_stats(events, bytes)
+  $stderr.print "\e[0E\e[0K  |_ #{events.commatize} events (#{bytes.commatize} bytes)\e[0K"
+end
+
+logs = ARGV.map(&:to_Path) 
+logs += Path["~/.go-ipfs/logs/*.log"] if logs.empty?
+
+counts      = Hash.of_integers
+last_update = Time.now - 10
+
+logs.each do |arg|
+  $stderr.puts "* Analyzing: #{arg}"
+
+  open(arg) do |f|
+    events = 0
+
+    f.each_line do |l|
+      events += 1
+     
+      h = l.from_json
+      
+      if wants = h["wants"]
+        wants.each do |w|
+          counts[w["Key"]] += 1
+        end
+      end
+
+      dt = Time.now - last_update 
+
+      if dt > 1.0
+        print_stats(events, f.pos)
+        last_update = Time.now
+      end
+
+    end
+
+    print_stats(events, f.pos)
+    puts
+  end
+end
+
+counts.sort_by{|k,v| v}.each do |k,v|
+  # puts "[#{v}] http://localhost:8080/ipfs/#{k}"
+  puts "[#{v}] http://gateway.ipfs.io/ipfs/#{k}"
+end
