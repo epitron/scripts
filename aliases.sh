@@ -113,7 +113,8 @@ alias baka="baka-mplayer"
 #fi
 
 # net
-alias_all_as_sudo iptables ifconfig route netctl ufw dhcpcd ip bhogs bwm-ng listening
+alias_all_as_sudo iptables ifconfig route netctl ufw dhcpcd ip nethogs bwm-ng listening
+alias bhogs='nethogs'
 alias ssh='ssh -2'
 alias scpfast='scp -c arcfour128'
 alias sshfast='ssh -c arcfour128'

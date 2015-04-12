@@ -45,4 +45,4 @@ files = ARGV.map do |arg|
   end
 end
 
-system(cmd, *files)
+exec(cmd, *files)
