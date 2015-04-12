@@ -5,9 +5,9 @@
 CMD="sudoifnotroot journalctl"
 
 if [ "$1" == "" ]; then
-  $CMD --since=yesterday
+  $CMD --since=yesterday | less +F
 else
   ARG="$1"
   shift
-  $CMD -u "*$ARG*" "$@"
+  $CMD -u "*$ARG*" "$@" | less +F
 fi
