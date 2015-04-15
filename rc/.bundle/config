@@ -1,0 +1,5 @@
+---
+BUNDLE_--JOBS: '2'
+#BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG: http://localhost:9292
+#BUNDLE_MIRROR__HTTP://RUBYGEMS.ORG: http://localhost:9292
+#BUNDLE_MIRROR__HTTP://RUBYGEMS.ORG: http://us.yarp.io
