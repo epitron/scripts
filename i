@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 
 #######################################################################
-#
-# TODO: Fuzzy matching when script isn't found
-#
+# TODOs:
+# - "start" => start + status
+# - "enable" => enable + start
+# - Fuzzy matching when script isn't found
 #######################################################################
 
 args = ARGV
@@ -29,8 +30,7 @@ class Systemd
     
     cmd += args
 
-    puts "=> #{cmd.join(" ")}"
-    puts
+    puts "\e[30m\e[1m=> \e[0m\e[34m\e[1m#{cmd.join(" ")}\e[0m"
     system *cmd
   end
 
@@ -44,9 +44,20 @@ class Systemd
     systemctl("daemon-reload")
   end
 
-  %w[start stop restart disable enable].each do |command|
-    define_method command do |service|
-      systemctl command, service
+  # "command1>command2" means to call command2 whenever command1 is called
+  # something starting with a ":" means to call a method
+  %w[start>status stop>status restart>status disable>stop enable>send:start].each do |command|
+    commands = command.split(">")
+    
+    define_method commands.first do |service|
+      commands.each do |command|
+        case command
+        when /^send:(.+)$/
+          send($1, service)
+        else
+          systemctl command, service
+        end
+      end
     end
   end
 
