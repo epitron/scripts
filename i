@@ -22,6 +22,8 @@ class Systemd
   end
 
   def systemctl(*args)
+    opts = args.last.is_a?(Hash) ? args.pop : {}
+
     if @user
       cmd = %w[systemctl --user]
     else
@@ -30,18 +32,22 @@ class Systemd
     
     cmd += args
 
-    puts "\e[30m\e[1m=> \e[0m\e[34m\e[1m#{cmd.join(" ")}\e[0m"
+    puts
+    print "\e[30m\e[1m=>"
+    print " \e[36m\e[1m#{opts[:msg]}" if opts[:msg]
+    puts  " \e[30m\e[1m(\e[34m\e[1m#{cmd.join(" ")}\e[30m\e[1m)\e[0m"
+    puts 
     system *cmd
   end
 
   def services
     # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
     # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
-    systemctl("list-unit-files")
+    systemctl("list-unit-files", msg: "Units")
   end
 
   def reload
-    systemctl("daemon-reload")
+    systemctl("daemon-reload", msg: "Reloading")
   end
 
   # "command1>command2" means to call command2 whenever command1 is called
@@ -74,7 +80,7 @@ class Systemd
   # end
 
   def status(service)
-    systemctl "status", "-l", service
+    systemctl "status", "-l", service, msg: "Status of: #{service}"
   end
 
   def default
