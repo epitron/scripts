@@ -149,6 +149,7 @@ alias jc='journalctl'
 alias jt='journalctl -f'
 alias sys='systemctl'
 alias j='journalctl'
+alias iu='i --user'
 
 # misc
 alias dict='dictless'

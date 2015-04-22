@@ -7,4 +7,4 @@ echo
 echo -n "Press enter to start..."
 read
 
-mplayer "$*" -vf rectangle=512:512:0:0 -input conf=crop.conf
+mplayer "$@" -vf rectangle=512:512:0:0 -input conf=crop.conf

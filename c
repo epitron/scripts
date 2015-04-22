@@ -98,6 +98,11 @@ EXTRA_LANGS = {
   ".pro" => :sql,
   ".service" => :ini,
   "PKGBUILD" => :bash,
+  "Makefile" => :bash,
+  "Rakefile" => :ruby,
+  "Gemfile" => :ruby,
+  "Gemfile.lock" => :yaml,
+  "database.yml" => :yaml,
   ".gradle" => :groovy,
   ".cr" => :ruby,
 }
@@ -105,16 +110,28 @@ EXTRA_LANGS = {
 def convert_coderay(filename)
   ext = filename[/\.[^\.]+$/]
 
-  if ext == ".json"
-    require 'json'
+  if File.read(filename, 256) =~ /\A#!(.+)/
+    # Shebang!
+    lang = case $1
+    when /ruby/ then :ruby
+    when /\b(bash|zsh|sh)\b/ then :bash
+    when /python/ then :python
+    when /perl/ then :perl
+    end
 
-    json = JSON.parse(File.read(filename))
-    CodeRay.scan(JSON.pretty_generate(json), :json).term
-  elsif lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
-    # p lang: lang
     CodeRay.scan_file(filename, lang).term
   else
-    CodeRay.scan_file(filename).term 
+    if ext == ".json"
+      require 'json'
+
+      json = JSON.parse(File.read(filename))
+      CodeRay.scan(JSON.pretty_generate(json), :json).term
+    elsif lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
+      # p lang: lang
+      CodeRay.scan_file(filename, lang).term
+    else
+      CodeRay.scan_file(filename).term 
+    end
   end
 end
 
