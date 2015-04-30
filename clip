@@ -92,7 +92,7 @@ if $0 == __FILE__
     outfile = infile.with(basename: infile.basename + "_clip-#{start}-#{length}")
   end
 
-  if infile.ext.in? VIDEO_EXTS
+  if infile.ext.in? (VIDEO_EXTS+AUDIO_EXTS)
 
     case opts[:use]
     when "ffmpeg"
@@ -127,9 +127,6 @@ if $0 == __FILE__
       raise "Unknown tool: #{opts[:use]}"
     end
 
-  elsif infile.ext.in? AUDIO_EXTS
-    raise "stub"
-    # mpgtx
   else
     raise "Unknown file type"
   end
