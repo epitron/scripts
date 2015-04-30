@@ -48,7 +48,7 @@
 ######################################################################################
 
 # A list of browsers, which will be tried in order.
-BROWSERS         = %w[opera vivaldi-bin chrome chromium midori firefox jumanji]
+BROWSERS         = %w[xombrero opera vivaldi-bin chrome chromium midori firefox jumanji]
 VIDEO_BROWSERS   = %w[chrome chromium firefox opera]
 
 routes do
@@ -274,13 +274,17 @@ BEGIN {
 
     puts "* Opening #{uri.inspect} in #{name} on #{browser.desktop.name}"
 
-    to_clipboard(uri)
-
-    browser.activate!
-
-    browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
-    sleep 0.2
-    browser.send_keys("<Ctrl-L><Return>")
+    case name
+    when "xombrero"
+      system("xombrero", "-n", uri)
+      browser.activate!
+    else
+      to_clipboard(uri)
+      browser.activate!
+      browser.send_keys("<Ctrl-T><Ctrl-L><Ctrl-V>")
+      sleep 0.2
+      browser.send_keys("<Ctrl-L><Return>")
+    end
   end
 
   def which(bin)
