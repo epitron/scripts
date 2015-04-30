@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  echo "Usage:"
+  echo "  wayback-mirror <url>"
+  echo
+  echo "Example:"
+  echo "  wayback-mirror http://web.archive.org/web/20150214081221/http://www.aaronsw.com/weblog/fullarchive"
+  echo
+else
+  wget -np -e robots=off --mirror --domains=staticweb.archive.org,web.archive.org "$@"
+fi

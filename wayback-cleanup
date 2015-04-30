@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+args = ARGV
+puts "Checking #{args.size} files for Wayback Machine toolbars..."
+
+webarchive_header_re = /<!-- BEGIN WAYBACK TOOLBAR INSERT -->.+<!-- END WAYBACK TOOLBAR INSERT -->[\n\r]{1,2}/m
+
+args.each do |arg|
+  next if File.directory? arg
+
+  data = File.read(arg)
+  clean_data = data.gsub(webarchive_header_re, '')
+
+  if clean_data != data
+    puts "|_ cleaned: #{arg} (#{File.size(arg)} bytes)"
+    File.write(arg, clean_data)
+  end
+end
+
