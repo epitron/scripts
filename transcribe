@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+require 'google_speech'
+require 'slop'
+
+def wavify(arg)
+  case File.extname arg
+  when /\.(mpe?g|mp4|avi|mkv|ogg|webm|mp3|ogg|flac|aac|m4a)$/
+    IO.popen(["ffmpeg", "-i", arg, "-f", "wav", "-"], "r")
+  else
+    open(arg)
+  end
+end
+
+opts = Slop.parse(help: true, strict: true) do
+  on :l=, :language, "what language is the speech in?", default: 'en-US' # language
+  on :c=, :chunk_length, "break wav into chunks of # seconds", default: 8 # chunk_duration
+  on :o=, :overlap, "chunking ignores word boundaries; overlap seconds can compensate", default: 1 # overlap
+  on :n=, :num_results, "# of results to request from the speech API", default: 2 # max_results
+  on :d=, :delay, "length of pause between chunk transcription requests", default: 1 # request_pause
+  on :f, :filter_profanity, "use google's profanity filter" # profanity_filter
+end
+
+args = ARGV
+
+if args.empty?
+  puts opts
+else
+  
+  GoogleSpeech.logger = Logger.new(STDOUT)
+  GoogleSpeech.logger.level = Logger::DEBUG
+
+  args.each do |arg|
+
+    if arg == "-"
+      input = $stdin
+    else
+      input = wavify(arg)
+    end
+
+    $stderr.puts "* Processing #{input}..."
+
+    recognicer = GoogleSpeech::Transcriber.new(
+      input,
+      :language         => opts[:language],
+      :chunk_duration   => opts[:chunk_length],
+      :overlap          => opts[:overlap],
+      :max_results      => opts[:num_results],
+      :request_pause    => opts[:delay],
+      :profanity_filter => opts.filter_profanity?
+    )
+
+    p recognicer.transcribe
+  end
+
+end
