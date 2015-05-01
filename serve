@@ -76,6 +76,18 @@ helpers do
   def highlight(thing, regexp)
     thing.to_s.gsub(regexp) { |m| "<mark>#{m}</mark>" }
   end
+
+  def current_full_url
+    "#{request.base_url}#{request.fullpath}"
+  end
+
+  def current_url
+    "#{request.base_url}#{request.path}"
+  end
+
+  def url_for(relative_path)
+    "#{request.base_url}/#{"#{@fullpath}/" if @fullpath.any?}#{relative_path}"
+  end
 end
 
 ###########################################################################
@@ -88,12 +100,48 @@ class Pathname
   alias_method :exists?,  :exist?
   alias_method :dir?,     :directory?
 
+  def relative_name(root)
+    dir = dir?
+    name = relative_to(root).to_s
+    dir ? "#{name}/" : name
+  end
+
+  def name
+    if dir?
+      "#{basename}/"
+    else
+      "#{basename}"
+    end
+  end
+
+
+
   TYPES = Rash.new(
     /\.(avi|ogm|webm|mpv|mp4|m4v|mkv|mj?pe?g|flv|mov|wmv)$/ => "video",
-    /(^README|\.(pdf|doc|txt|srt|sub)$)/ => "doc",
-    /\.(jpe?g|gif|png)$/ => "image",
-    /\.(mp3|ogg|m4a|aac|flac)$/ => "audio",
+    /(^README|\.(pdf|doc|txt|srt|sub)$)/                    => "doc",
+    /\.(jpe?g|gif|png)$/                                    => "image",
+    /\.(mp3|ogg|m4a|aac|flac)$/                             => "audio",
   )
+
+  def type
+    dir? ? "dir" : TYPES[basename.to_s] || "file"
+  end
+
+  def video?; type == "video"; end
+  def audio?; type == "audio"; end
+  def doc?;   type == "doc"; end
+  def image?; type == "image"; end
+  def media?; %w[audio video doc image].include? type; end
+
+  def icon
+    if dir?
+      "/_/dir.gif"
+    else
+      "/_/#{type}.gif"
+    end
+  end
+
+
 
   SORT_METHOD = {
     "date" => :cmp_date,
@@ -105,18 +153,6 @@ class Pathname
   def children_sorted_by(sort="name")
     method = SORT_METHOD[sort] || :cmp_name
     children.select(&:exist?).sort_by &method
-  end
-
-  def type
-    dir? ? "dir" : TYPES[basename.to_s] || "file"
-  end
-
-  def icon
-    if dir?
-      "/_/dir.gif"
-    else
-      "/_/#{type}.gif"
-    end
   end
 
   def cmp_date
@@ -135,19 +171,6 @@ class Pathname
     [dir? ? 0 : 1, to_s.downcase]
   end
 
-  def relative_name(root)
-    dir = dir?
-    name = relative_to(root).to_s
-    dir ? "#{name}/" : name
-  end
-
-  def name
-    if dir?
-      "#{basename}/"
-    else
-      "#{basename}"
-    end
-  end
 
 end
 
@@ -163,6 +186,11 @@ class Time
 
     strftime(fmt)
   end
+
+  def rfc822
+    strftime("%a, %-d %b %Y %T %z")
+  end
+  alias_method :rss, :rfc822
 end
 
 ###########################################################################
@@ -201,27 +229,32 @@ end
 get '/*' do |path|
   @path          = settings.root_dir / path
   @relative_path = @path.relative_to(settings.root_dir)
-  @root_dir      = settings.root_dir.basename
+  @root_dir_name = settings.root_dir.basename
+  @fullpath      = @relative_path.to_s
+  @fullpath      = "" if @fullpath == "."
 
-  return not_found       unless @path.exists?
+  return not_found unless @path.exists?
   
   unless @path.directory?
-    return \
-    case @path.extname
-    when ".haml"
-      haml @path.read, layout: false
-    else
-      send_file @path
-    end
+    return case @path.extname
+           when ".haml"
+             haml @path.read, layout: false
+           when ".md"
+             markdown @path.read, layout: false
+           else
+             send_file @path
+           end
   end
 
-  # Search all subdirectories
   if params[:search]
+    # SEARCH
+
     if params[:throbber]
       @redirect = "/#{path}?search=#{params[:search]}"
       return haml :throbber
     end
 
+    # TODO: link to directories
     union = Regexp.union params[:search].split
     @query = /#{union.source}/i
 
@@ -233,9 +266,28 @@ get '/*' do |path|
     @grouped = @files.group_by { |file| file.dirname }
 
     haml :search
+  elsif feedtype = params[:rss]
+    # RSS
 
-  # Display files in directory
+    @files = @path.children_sorted_by("date")
+
+    case feedtype
+    when "video"
+      @files = @files.select(&:video?)
+    when "audio"
+      @files = @files.select(&:audio?)
+    when "doc"
+      @files = @files.select(&:doc?)
+    else
+      @files = @files.select(&:media?)
+    end
+
+    content_type :atom
+    # application/atom+xml
+    haml :rss, layout: false
   else
+    # FILES
+
     @sort  = params[:sort] || "name"
     @files = @path.children_sorted_by(@sort)
 
@@ -245,7 +297,7 @@ get '/*' do |path|
       @order = "forwards"
     end
 
-    haml :index
+    haml :files
   end
 end
 
@@ -260,6 +312,7 @@ __END__
 @@css
 body { background-color: ffffff; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; }
 #search { position: absolute; right: 5px; top: 5px; }
+#rss { position: absolute; right: 300px; top: 5px; }
 
 /* Directory Listing Header - "Filename", "Size" */
 td { vertical-align: top; font-size: 10pt; }
@@ -294,18 +347,23 @@ a:hover { color: #0000FF; text-decoration: underline }
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}
     %title
       [#{settings.machine_name}]
-      #{@root_dir}#{"/#{@relative_path}" if @relative_path.to_s != "."}
+      #{@root_dir_name} / #{@fullpath}
 
     %link{href: "/_/default.css", rel: "stylesheet", type: "text/css"}
 
   %body
     %h2
       [#{settings.machine_name}]
-      %a{href: "/"} #{@root_dir}
+      %a{href: "/"} #{@root_dir_name}
       - @relative_path.descend do |fn|
         - next if fn.to_s == "."
         \/
         %a{href: "/#{fn}/"}= fn.basename
+
+    #rss
+      - %w[video audio doc].each do |type|
+        %a{href: "?rss=#{type}"}
+          %img{src: "/_/#{type}.gif"}
 
     %form#search
       %input{name: "search", placeholder: "Search", value: params[:search]}
@@ -317,7 +375,7 @@ a:hover { color: #0000FF; text-decoration: underline }
 
 
 
-@@index
+@@files
 %table{cellpadding: 3}
   / HEADERS
   %thead
@@ -371,10 +429,35 @@ a:hover { color: #0000FF; text-decoration: underline }
 
 - @grouped.each do |dir, files|
 
-  %h4= highlight(dir.relative_name(@path), @query)
+  %h4
+    %a{href: "/#{dir.relative_name(@path)}"}
+      = highlight(dir.relative_name(@path), @query)
   
   %ul
     - files.each do |file|
       %a{href: file.relative_name(@path)}
         = highlight(file.relative_name(dir), @query)
       %br
+
+@@rss
+!!! XML
+%rss(version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:atom="http://www.w3.org/2005/Atom")
+ 
+  %channel
+    %title 
+      [#{settings.machine_name}]/#{@root_dir_name}/
+
+    %link #{current_url}
+    %atom:link(href="#{current_full_url}"
+               rel="self"
+               type="application/rss+xml")
+    %language en-US
+    %lastBuildDate #{@files.first.mtime.rss}
+ 
+    - @files.each do |file|
+      %item
+        %title #{file.basename}
+        %link  #{url_for(file.name)}
+        %pubDate #{file.mtime.rss}
