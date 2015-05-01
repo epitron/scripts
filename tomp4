@@ -1,20 +1,93 @@
-#!/bin/bash
-#ffmpeg -y -i INPUT -r 30000/1001 -b 2M -bt 4M -vcodec libx264 -pass 1 -vpre fastfirstpass -an output.mp4
-#ffmpeg -y -i INPUT -r 30000/1001 -b 2M -bt 4M -vcodec libx264 -pass 2 -vpre hq -acodec libfaac -ac 2 -ar 48000 -ab 192k output.mp4
+#!/usr/bin/env ruby
+require 'epitools'
 
-IN="$*"
-OUT="${IN%.*}.mp4"
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-echo "----------------------------------------------------------------"
-echo "* Two-pass encoding:"
-echo "    in: $IN"
-echo "   out: $OUT"
-echo "----------------------------------------------------------------"
-echo
-# if [ -f "$OUT" ]; then
-#   echo "$OUT already exists. Aborting."
-# else
-  # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 1 -pre medium_firstpass -an "$OUT"
-  # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 2 -pre medium -c:a aac -ab 192k "$OUT"
-  ffmpeg -i "$IN" -c:v h264 -crf 20 -movflags faststart -c:a copy "$OUT"
-# fi
+if args.empty? or opts.delete("-h") or opts.delete("--help")
+  puts "usage:"
+  puts "  tomp4 [options] <file(s)...>"
+  puts
+  puts "options:"
+  puts
+  puts "  -hq    Higher quality (-crf 20)"
+  puts "  -c     Copy video stream (don't re-encode)"
+  puts "  -a     Re-encode audio to MP3"
+  puts "  -y     Overwrite existing"
+  puts "  -n     Skip existing"
+  puts
+  exit 1
+end
+
+def error(msg)
+  $stderr.puts msg.light_red
+end
+
+
+# Two-pass encode:
+# ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 1 -pre medium_firstpass -an "$OUT"
+# ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 2 -pre medium -c:a aac -ab 192k "$OUT"
+
+args.map(&:to_Path).each do |inp|
+  puts "----------------------------------------------------------------"
+  puts " Encoding:"
+  puts "    in: #{inp}"
+
+  if not inp.exists?
+    errir "ERROR: File doesn't exist."
+    next
+  end
+
+  if inp.ext == "mp4"
+    error "ERROR: Input file is already a .mp4 -- skipping"
+    next
+  end
+
+  out = inp.with(ext: "mp4")
+
+  puts "   out: #{out}"
+  puts "----------------------------------------------------------------"
+  puts
+
+  cmd = ["ffmpeg"]
+
+  cmd << "-y" if opts.delete("-y")
+  cmd << "-n" if opts.delete("-n")
+
+  cmd += ["-i", inp]
+  cmd += %w[-c:a mp3]
+
+  if opts.delete("-c")
+    cmd += %w[-c:v copy]
+  else 
+    cmd += %w[-c:v h264]
+  end
+
+  if opts.delete("-a")
+    cmd += %w[-c:a mp3]
+  else 
+    cmd += %w[-c:a copy]
+  end
+
+  cmd += %w[-crf 20] if opts.delete("-hq")
+  cmd += %w[-movflags faststart]
+
+  cmd << out
+
+  p cmd
+
+  begin
+    unless system(*cmd)
+      error "ERROR: Conversion failed.".bright_red
+      next
+    end
+
+    unless system("x", "--copy", inp, out)
+      error "ERROR: Copying metadata failed."
+      next
+    end
+  rescue Interrupt
+    puts
+    puts
+    exit 1
+  end
+end
