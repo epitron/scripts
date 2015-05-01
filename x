@@ -190,6 +190,11 @@ end
 
 if $0 == __FILE__
 
+  unless Path.which("getfattr")
+    puts "'getfattr' not found in path. Please install the 'attr' package"
+    exit 1
+  end
+
   if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
     opts = parse_options
   else
