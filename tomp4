@@ -1,33 +1,29 @@
 #!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
 require 'epitools'
-
-opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
-
-if args.empty? or opts.delete("-h") or opts.delete("--help")
-  puts "usage:"
-  puts "  tomp4 [options] <file(s)...>"
-  puts
-  puts "options:"
-  puts
-  puts "  -hq    Higher quality (-crf 20)"
-  puts "  -c     Copy video stream (don't re-encode)"
-  puts "  -a     Re-encode audio to MP3"
-  puts "  -y     Overwrite existing"
-  puts "  -n     Skip existing"
-  puts
-  exit 1
-end
 
 def error(msg)
   $stderr.puts msg.light_red
 end
 
+opts = Slop.parse(help: true, strict: true) do
+  banner 'Usage: tomp4 [options] <file(s)...>'
+
+  on "c",  "copy",     "Copy video stream (don't re-encode)"
+  on "y",  "yes",      "Overwrite existing"
+  on "n",  "no",       "Skip existing"
+  on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
+  on 'v=', 'vcodec',   'Output video codec', default: "h264"
+end
+
+files = ARGV.map(&:to_Path)
 
 # Two-pass encode:
 # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 1 -pre medium_firstpass -an "$OUT"
 # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 2 -pre medium -c:a aac -ab 192k "$OUT"
 
-args.map(&:to_Path).each do |inp|
+files.each do |inp|
   puts "----------------------------------------------------------------"
   puts " Encoding:"
   puts "    in: #{inp}"
@@ -48,32 +44,32 @@ args.map(&:to_Path).each do |inp|
   puts "----------------------------------------------------------------"
   puts
 
-  cmd = ["ffmpeg"]
+  cmd = %w[ffmpeg -hide_banner]
 
-  cmd << "-y" if opts.delete("-y")
-  cmd << "-n" if opts.delete("-n")
+  cmd << "-y" if opts.yes?
+  cmd << "-n" if opts.no?
 
   cmd += ["-i", inp]
   cmd += %w[-c:a mp3]
 
-  if opts.delete("-c")
-    cmd += %w[-c:v copy]
-  else 
-    cmd += %w[-c:v h264]
+  if opts.copy?
+    vcodec = "copy"
+  else
+    vcodec = opts[:vcodec]
   end
 
-  if opts.delete("-a")
-    cmd += %w[-c:a mp3]
-  else 
-    cmd += %w[-c:a copy]
-  end
+  acodec = opts[:acodec]
 
-  cmd += %w[-crf 20] if opts.delete("-hq")
+  cmd += ["-c:v", vcodec, "-c:a", acodec]
+  cmd += %w[-crf 20] if opts.hq?
   cmd += %w[-movflags faststart]
 
   cmd << out
 
-  p cmd
+  puts "Executing:"
+  puts "    #{cmd.join(" ")}"
+  puts
+  puts
 
   begin
     unless system(*cmd)
