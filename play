@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
 
 ###########################################################
 
@@ -38,12 +40,12 @@ def player_proc(bin)
 end
 
 def parse_options
-  require 'slop' # lazy load
 
   Slop.parse(help: true, strict: true) do
     banner 'Usage: play [options] <video URL, or history number>'
 
     on 'l',  'list',      "List <n> previously viewed videos"
+    on 'a',  'all',       "List all videos (piped to less)"
     on 'd',  'download',  "Download video <n>"
     on 'p=', 'player',    "Video player to use: #{PLAYER_NAMES.join(", ")}", default: best_player
   end
@@ -119,7 +121,7 @@ end
 ###########################################################
 
 def youtube_dl(url)
-  out, err, status = run("youtube-dl", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url)
+  out, err, status = run("youtube-dl", "-f", "best", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url)
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
@@ -167,12 +169,7 @@ end
 
 ###########################################################
 
-def show_result(result, regexp=nil)
-  require 'epitools/colored'
-
-end  
-
-def search(query=nil, n=10)
+def search(query=nil, n=10, reverse=true, paged=false)
   require 'epitools/colored'
 
   if query
@@ -187,22 +184,34 @@ def search(query=nil, n=10)
 
   regexp = /#{query}/i if query
 
+  if paged
+    output = IO.popen("less -RXFi", "w")
+  else
+    output = $stdout
+  end
+
   ## Header
   
-  puts "----------------------------------".grey
+  output.puts "----------------------------------".grey
   if query
-    puts " <15>Searching for: <14>#{query.inspect}".colorize
+    output.puts " <15>Searching for: <14>#{query.inspect}".colorize
   else
-    puts " #{n} most recent plays:".light_white
+    output.puts " #{n == 0 ? "All" : n} most recent plays:".light_white
   end
-  puts "----------------------------------".grey
-  puts
+  output.puts "----------------------------------".grey
+  output.puts
 
   entries = log_entries
   entries = entries.select { |entry| entry.title =~ regexp } if query
-  results = entries.take(n).to_a.reverse
+  entries = entries.take(n) unless n == 0
 
-  max_pos_width = results.map(&:pos).sort.last.to_s.size
+  if reverse
+    results = entries.to_a.reverse
+    max_pos_width = results.map(&:pos).sort.last.to_s.size
+  else
+    results = entries
+    max_pos_width = 4
+  end
 
   results.each do |result|
     pos = result.pos
@@ -212,23 +221,25 @@ def search(query=nil, n=10)
     title = result.title
     title = title.gsub(regexp) { |m| "<14>#{m}</14>" } if regexp
 
-    print "#{pos.to_s.rjust(max_pos_width)}. ".bright_yellow
+    output.print "#{pos.to_s.rjust(max_pos_width)}. ".bright_yellow
     indent += " " * (max_pos_width + 2)
 
-    puts "<10>#{result.date} <12>| <11>#{title}".colorize
-    puts "<2>#{indent}#{result.time} <4>| <9>#{result.url}".colorize
-    puts
+    output.puts "<10>#{result.date} <12>| <11>#{title}".colorize
+    output.puts "<2>#{indent}#{result.time} <4>| <9>#{result.url}".colorize
+    output.puts
   end
+
+  output.close if paged
+rescue Errno::EPIPE
 end
 
 ###########################################################
-
 
 def download(*urls)
   urls << log_entries.first if urls.empty?
 
   urls.each do |url|
-    system "youtube-dl", "--no-mtime", "--xattrs", "-o", "%(title)s.%(ext)s", url.to_s
+    system "youtube-dl", "--no-mtime", "--xattrs", "-f", "best", "-o", "%(title)s.%(ext)s", url.to_s
   end
 end
 
@@ -257,6 +268,11 @@ end
 if $0 == __FILE__
   opts = parse_options
   args = ARGV
+
+  if opts[:all]
+    search(nil, 0, false, true)
+    exit
+  end
 
   if args.empty?
     search
