@@ -1,10 +1,46 @@
-#!/bin/bash
-OPTS="--no-mtime --xattrs"
+#!/usr/bin/env ruby
 
-if [ "$1" == "-a" ]; then
-  shift
-  echo "Extracting audio..."
-  OPTS="$OPTS --extract-audio"
-fi
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-youtube-dl $OPTS -o "%(title)s.%(ext)s" "$@"
+if args.empty? or opts.delete("--help") or opts.delete("-h")
+  puts "Youtube-DL Wrapper!"
+  puts
+  puts "Usage:"
+  puts "  gfv [options] <youtube url(s)>"
+  puts
+  puts "Options:"
+  puts "  -hq    High quality mode (often has to remux)"
+  puts "  -a     Extract audio only"
+  puts
+  puts "(any other options will be passed directly to youtube-dl)"
+  puts
+  exit 1
+end
+
+cmd = %w[youtube-dl --no-mtime --xattrs -o %(title)s.%(ext)s]
+
+if opts.delete("-hq")
+  format = "bestvideo[ext=mp4]+bestaudio[ext=m4a]"
+else
+  format = "best"
+end
+cmd += ["-f", format]
+
+cmd << "--extract-audio" if opts.delete("-a")
+
+cmd += opts
+
+args.each do |arg|
+  onecmd = cmd.dup
+  onecmd << arg
+
+  puts "-------------------------------------------------"
+  puts "  Downloading #{arg}"
+  puts "-------------------------------------------------"
+  puts
+  puts "Commandline:"
+  puts "  #{onecmd.join(" ")}"
+  puts
+
+  system *onecmd
+end
