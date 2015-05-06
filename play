@@ -223,12 +223,12 @@ def download(*urls)
   urls << log_entries.first if urls.empty?
 
   urls.each do |url|
-    system "youtube-dl", "--no-mtime", "--xattrs", "-f", "best", "--playlist-items", "1", "-o", "%(title)s.%(ext)s", url.to_s
+    system "youtube-dl", "--no-mtime", "--xattrs", "-f", "best", "--no-playlist", "-o", "%(title)s.%(ext)s", url.to_s
   end
 end
 
 def youtube_dl(url)
-  out, err, status = run("youtube-dl", "-f", "best", "-o", "%(title)s (%(upload_date)s)", "--playlist-items", "1", "-g", "--get-filename", url)
+  out, err, status = run("youtube-dl", "-f", "best", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url)
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
