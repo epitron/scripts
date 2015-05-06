@@ -1,0 +1,135 @@
+-- cache
+-- Network cache fill state (0-100.0).
+
+-- cache-size (RW)
+-- Total network cache size in KB. This is similar to --cache. This allows to set the cache size at runtime. Currently, it's not possible to enable or disable the cache at runtime using this property, just to resize an existing cache.
+-- Note that this tries to keep the cache contents as far as possible. To make this easier, the cache resizing code will allocate the new cache while the old cache is still allocated.
+
+-- Don't use this when playing DVD or Blu-ray.
+
+-- cache-free (R)
+-- Total free cache size in KB.
+
+-- cache-used (R)
+-- Total used cache size in KB.
+
+-- file-size
+-- Length in bytes of the source file/stream. (This is the same as ${stream-end}. For ordered chapters and such, the size of the currently played segment is returned.)
+
+-- speed (RW)
+-- See --speed.
+
+-- stream-pos (RW)
+-- Raw byte position in source stream.
+
+-- stream-end
+-- Raw end position in bytes in source stream.
+
+-- length
+-- Length of the current file in seconds. If the length is unknown, the property is unavailable. Note that the file duration is not always exactly known, so this is an estimate.
+
+-- percent-pos (RW)
+-- Position in current file (0-100). The advantage over using this instead of calculating it out of other properties is that it properly falls back to estimating the playback position from the byte position, if the file duration is not known.
+
+-- time-pos (RW)
+-- Position in current file in seconds.
+
+-- time-start
+-- Return the start time of the file. (Usually 0, but some kind of files, especially transport streams, can have a different start time.)
+
+-- time-remaining
+-- Remaining length of the file in seconds. Note that the file duration is not always exactly known, so this is an estimate.
+
+-- playtime-remaining
+-- time-remaining scaled by the the current speed.
+
+-- playback-time
+-- Return the playback time, which is the time difference between start PTS and current PTS.
+
+-- tick
+-- Called after a video frame was displayed. This is a hack, and you should avoid using it. Use timers instead and maybe watch pausing/unpausing events to avoid wasting CPU when the player is paused.
+
+
+-- tick
+-- cache
+-- cache-size
+-- time-pos
+-- demuxer-cache-duration
+-- cache-used
+
+-- file-size
+-- stream-end
+
+-- filename
+-- path
+
+function showprop(name)
+  print(name .. ": " .. mp.get_property(name, "null"))
+end  
+
+function atl(k,v)
+  currentline = currentline .. ", \"" .. k .. "\": " .. v
+end
+
+function lf()
+  currentline = currentline .. "},"
+  print(currentline)
+  logfile:write(currentline.."\n")
+end
+
+function aprop(name, default)
+  atl(name, mp.get_property(name, "null"))
+end
+
+
+logfile    = io.open("mpv.log", "w")
+framecount = -1
+
+logfile:write("[\n")
+
+function tick_me()
+  framecount = framecount + 1
+  currentline = "{frame: " .. framecount
+
+  aprop("time-pos", 0)
+  aprop("stream-pos")
+  aprop("video-pos")
+  aprop("demuxer-cache-duration")
+  aprop("cache-used")
+  aprop("file-size")
+  aprop("stream-end")
+  aprop("length")
+
+  lf()
+end
+
+function shutdown_me()
+  print("DONE!")
+
+  showprop("filename")
+  showprop("stream-open-filename")
+  showprop("file-size")
+  showprop("path")
+  showprop("media-title")
+  showprop("stream-path")
+
+  logfile:write("]\n")
+  logfile:close()
+
+  oldfilename = "mpv.log"
+  newfilename = mp.get_property("filename", "mpv") .. ".log"
+  os.rename("mpv.log", newfilename)
+  print("renamed " .. oldfilename .. " to " .. newfilename)
+end
+
+function filename_changed_me(propname, value)
+  mp.osd_message("filename: ".. tostring(value), 1)
+end
+
+mp.register_event("tick", tick_me)
+mp.register_event("shutdown", shutdown_me)
+
+mp.observe_property("media-title", native, filename_changed_me)
+
+--frames=<number>
+-- Play/convert only first <number> video frames, then quit.
