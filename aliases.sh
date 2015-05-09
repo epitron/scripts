@@ -187,7 +187,7 @@ alias gr="git remote -v"
 alias gf="git fetch --all"
 alias fetch="gf"
 
-alias gc="git clone"
+# alias gc="git clone"
 # gc() {
 #   # Cloning into 'reponame'...
 #   git clone "$@"

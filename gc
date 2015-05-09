@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+
+if opts.remove("-h")
+  puts "Usage:"
+  puts "  gc [options] <git repo url>"
+  puts
+  puts "Options:"
+  puts "  -s   Shallow clone (no history, much faster)"
+  puts
+  exit
+end
+
+cmd = %w[git clone]
+cmd << "--depth=1" if opts.remove("-s")
+cmd += args
+
+reponame = nil
+IO.popen(cmd, "r") do |stdout|
+  stdout.each_line do |line|
+    if line =~ /Cloning into '([^']+)'/
+      reponame = $1
+    end
+  end
+end
+
+if reponame
+  if readme = Dir["#{reponame}/README*"].first
+  system("subl", readme)
+end
+
