@@ -77,7 +77,7 @@ end
 ###########################################################
 
 def search(query, page=nil)
-  url = "http://torrentz.eu/search"
+  url = "https://torrentz.eu/search"
 
   opts = {}
   opts["f"] = URI.escape(query) unless query.empty?

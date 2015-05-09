@@ -67,8 +67,7 @@ url = "https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=
 # page = Nokogiri::HTML(open(url))
 page = Nokogiri::HTML(HTTP.get(url).to_s)
 
-
-lis = page.search("#results #section-list ol.item-section > li")
+lis = page.search("#results ol.section-list ol.item-section > li")
 results = lis.map do |li|
   next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
   Result.new li
