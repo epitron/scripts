@@ -9,6 +9,8 @@ require 'open-uri'
 Package = Struct.new(:root, :file, :desc, :date, :size)
 
 class Package
+  include Comparable
+
   ARM_ROOT="http://seblu.net/a/arm/packages/"
 
   attr_reader :name, :ver, :rev, :arch, :sig
@@ -37,11 +39,10 @@ class Package
 
       Package.new(root, file, desc, DateTime.parse(date), size)
     end.compact
-
   end
 
   def self.versions_for_arch(name, arch="x86_64")
-    versions(name).select { |pkg| pkg.arch == arch }
+    versions(name).select { |pkg| pkg.arch == arch }.sort
   end
 
   def url
@@ -56,6 +57,10 @@ class Package
 
   def to_s
     "<11>#{name} <15>#{ver}<8>-<7>#{rev}<8> <12>#{arch} <8>=> <13>#{size} <8>(<9>#{date.strftime("%Y-%m-%d")}<8>)"
+  end
+
+  def <=>(other)
+    date <=> other.date
   end
 
 end
@@ -137,12 +142,18 @@ if args.size != 1
   puts "Usage: #{scriptname} <packagename>"
   puts 
 else
-  puts "<8>* <7>Retrieving last <15>#{n_vers}</15> versions of <11>#{pkg}</11>...".colorize
-  versions = Package.versions_for_arch(pkg)
+  puts "<8>* <7>Finding the last <15>#{n_vers}</15> versions of <11>#{pkg}</11>...".colorize
 
-  version = pick(versions.last(n_vers))
+  begin
+    versions = Package.versions_for_arch(pkg)
 
-  download(version.url)
+    version = pick(versions.last(n_vers))
+
+    download(version.url)
+  rescue OpenURI::HTTPError => e
+    puts "<12>Error: <15>#{pkg} <14>not found in the Arch Rollback Machine".colorize
+    puts
+  end
 end
 
 #####################################################################
