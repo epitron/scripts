@@ -15,6 +15,18 @@ Here are screenshots of some of the scripts.
 
 ![dpkg-log](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/dpkg-log.png)
 
+## latest
+
+![latest](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/latest.png)
+
+## pacman-rollback
+
+![pacman-rollback](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/pacman-rollback.png)
+
+## play
+
+![play](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/play.png)
+
 ## pacgroups
 
 ![pacgroups](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/pacgroups.png)
@@ -31,7 +43,15 @@ Here are screenshots of some of the scripts.
 
 ![wict](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/wict.png)
 
+## yt
+
+![yt](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/yt.png)
+
 ## gb
 
 ![gb](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/gb.png)
+
+## paclog
+
+![paclog](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/paclog.png)
 
