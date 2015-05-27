@@ -116,7 +116,7 @@ DOWNLOADERS = [
 ]
 
 def download(url)
-  puts "<8>* <15>Downloading <11>#{url}<7>...".colorize
+  puts "<8>* <15>Downloading <11>#{url}".colorize
   puts
 
   DOWNLOADERS.each do |cmd|
