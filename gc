@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 
-opts, args = ARGV.partition { |arg| arg[/^-\w/] }
-
-if opts.remove("-h")
+if ARGV.empty?
   puts "Usage:"
   puts "  gc [options] <git repo url>"
   puts
@@ -12,21 +10,39 @@ if opts.remove("-h")
   exit
 end
 
-cmd = %w[git clone]
-cmd << "--depth=1" if opts.remove("-s")
+def which(*args)
+  args.map { |arg| Dir.glob( "{#{ENV["PATH"].split(':').join(',')}}/#{arg}" ) }.flatten.compact.uniq
+end
+
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+
+cmd = []
+cmd << which("hub", "git")
+cmd << "clone"
+cmd << "--depth=1" if opts.delete("-s")
 cmd += args
 
 reponame = nil
-IO.popen(cmd, "r") do |stdout|
-  stdout.each_line do |line|
-    if line =~ /Cloning into '([^']+)'/
-      reponame = $1
+
+require 'pty'
+PTY.spawn(*cmd) do |r, w, pid|
+  begin
+    loop do
+      line = r.readpartial(4096)
+
+      if line =~ /Cloning into '([^']+)'/
+        reponame = $1
+      end
+
+      print line
     end
+  rescue Errno::EIO
   end
 end
 
 if reponame
+  system("subl", reponame)
   if readme = Dir["#{reponame}/README*"].first
-  system("subl", readme)
+    system("subl", readme)
+  end
 end
-
