@@ -41,7 +41,7 @@ use Fcntl;
 use Term::ANSIColor;
 use Term::ReadKey;
 
-my $VERSION = "3.15-6";
+my $VERSION = "3.15-13";
 
 ##############################################################################
 #			   Function Declarations                             #
@@ -1007,12 +1007,10 @@ sub GetTrashDir($)
 sub MakeTrashDir($)
 {
 	my $root	=	shift;
-	unless(-d "$root") {
-		system("mkdir", "-p", "$root");
-		mkdir "$root/files";
-		mkdir "$root/info";
-		system("touch", "$root/metadata");
-	}
+	system("mkdir", "-p", "$root") unless(-d "$root");
+	mkdir "$root/files" unless(-d "$root/files");
+	mkdir "$root/info" unless(-d "$root/info");
+	system("touch", "$root/metadata") unless(-e "$root/metadata");
 }
 
 
@@ -1182,7 +1180,9 @@ sub DebugDump()
 DEBUG
 ;
 	foreach my $dev (sort keys %SystemDevices) {
-		print "\t$dev\n";
+		my $trsh = GetTrashDir("$dev/TEST");
+		print "\tDEVICE PATH: \"$dev\" TRASH PATH: \"$trsh\"\n";
+		
 	}
 	exit;
 }
