@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  echo "usage: 0x0 <file or url>"
+  exit
+fi
+
+echo "* Uploading: $1"
+
+if [[ $1 =~ ^https?:// ]]
+then
+  curl -F"url=$1" https://0x0.st
+else
+  curl -F"file=@$1" https://0x0.st
+fi
