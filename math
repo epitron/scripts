@@ -58,6 +58,18 @@ class MathOTron
 
   #############################################################################
 
+  UNITS = {
+    "kb" => 1_000,
+    "mb" => 1_000_000,
+    "mm" => 1_000_000,
+    "bn" => 1_000_000_000,
+    "gb" => 1_000_000_000,
+    "k"  => 1_000,
+    "m"  => 1_000_000,
+    "g"  => 1_000_000_000,
+    "t"  => 1_000_000_000_000,
+  }
+
   REWRITE_RULES = {
     ## NICE MATH
 
@@ -77,15 +89,24 @@ class MathOTron
 
     # turns "5 - 3: / 6" into "(5 - 3) / 6"
     /(.+?): (\W+)/ => "(\\1) \\2",
-
   }
 
   def translate(expr)
+    
+    expr = expr.gsub(/([\d_]+)(#{UNITS.keys.join("|")})/i) do |m|
+      $1.to_i * UNITS[$2]
+    end
+
     REWRITE_RULES.each do |regexp, replacement|
       # p expr
       loop do
         last_expr = expr
-        expr      = expr.gsub(regexp, replacement)
+        # if replacement.is_a?(Proc)
+        #   expr = expr.gsub(regexp, &replacement)
+        # else
+          expr = expr.gsub(regexp, replacement)
+        # end
+
         # p expr
         break if expr == last_expr
       end
