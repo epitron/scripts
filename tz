@@ -76,12 +76,22 @@ end
 
 ###########################################################
 
+# def curl_get(url)
+#   cmd = [
+#     "curl",
+#     "-A", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.81 Safari/537.36",
+#     "-e", "http://torrentz.eu/",
+#     url
+#   ]
+#   IO.popen(cmd, "r") { |f| f.read }
+# end
+
 def search(query, page=nil)
   url = "https://torrentz.eu/search"
 
   opts = {}
   opts["f"] = URI.escape(query) unless query.empty?
-  opts["p"] = page || 1
+  opts["p"] = page || 0
 
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
@@ -117,7 +127,7 @@ rescue OpenURI::HTTPError => e
 end
 
 def mirror(query, pages=10)
-  (1..pages).each do |page|
+  (0..pages).each do |page|
     results = search(query, page)
 
     break if results.empty?
