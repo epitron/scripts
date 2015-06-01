@@ -17,7 +17,13 @@ if args.empty? or opts.delete("--help") or opts.delete("-h")
   exit 1
 end
 
-cmd = %w[youtube-dl --no-mtime --xattrs -o %(title)s.%(ext)s]
+cmd = %w[youtube-dl --no-mtime --xattrs -o]
+
+if opts.delete("-n")
+ cmd << "%(playlist_index)s. %(title)s.%(ext)s"
+else
+ cmd << "%(title)s.%(ext)s"
+end
 
 if opts.delete("-hq")
   format = "bestvideo[ext=mp4]+bestaudio[ext=m4a]"
