@@ -48,7 +48,7 @@
 ######################################################################################
 
 # A list of browsers, which will be tried in order.
-BROWSERS         = %w[xombrero opera vivaldi-bin chrome chromium midori firefox jumanji]
+BROWSERS         = %w[opera vivaldi-bin chrome chromium xombrero midori firefox jumanji]
 VIDEO_BROWSERS   = %w[chrome chromium firefox opera]
 
 routes do

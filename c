@@ -105,6 +105,7 @@ EXTRA_LANGS = {
   "database.yml" => :yaml,
   ".gradle" => :groovy,
   ".cr" => :ruby,
+  ".sage" => :python,
 }
 
 def convert_coderay(filename)
