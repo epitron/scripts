@@ -1,0 +1,47 @@
+[
+  { "keys": ["ctrl+t", "ctrl+r"], "command": "rebuild_tags" },
+  { "keys": ["alt+s"], "command": "git_status" },
+  { "keys": ["alt+d"], "command": "git_diff" },
+  { "keys": ["alt+w"], "command": "toggle_setting", "args": {"setting": "word_wrap"} },
+
+  {
+    "keys": ["alt+r"],
+    "command": "show_symbols",
+    "context": [
+      {
+        "key": "selector",
+        "match_all": true,
+        "operand": "source -source.css",
+        "operator": "equal"
+      }
+    ],
+  },
+
+  {
+    "keys": ["alt+shift+r"],
+    "command": "show_symbols",
+    "args": {"type": "multi"},
+    "context": [
+      {
+        "key": "selector",
+        "match_all": true,
+        "operand": "source -source.css",
+        "operator": "equal"
+      }
+    ],
+  },
+
+  {
+    "keys": ["ctrl+alt+shift+r"],
+    "command": "show_symbols",
+    "args": {"type": "lang"},
+    "context": [
+      {
+        "key": "selector",
+        "match_all": true,
+        "operand": "source -source.css",
+        "operator": "equal"
+      }
+    ],
+  },
+]
