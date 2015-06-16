@@ -14,6 +14,7 @@ def parse_options
     on 'o=', 'output',   'The file to write the clip to.'
     on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
     on 'v=', 'vcodec',   'Output video codec', default: "copy"
+    on 'c',  'codecs',   'List the availiable codecs'
     on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)'
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
@@ -55,6 +56,21 @@ if $0 == __FILE__
   opts = parse_options
   files = ARGV
 
+  if opts.codecs?
+    
+    case opts[:use]
+    when "ffmpeg"
+      system("ffmpeg", "-codecs")
+
+    when "mencoder"
+      %w[oac ovc].each do |oac_or_ovc|
+        system("mencoder", "-#{oac_or_ovc}", "help")
+      end
+    end
+
+    exit
+
+  end
 
   ## Files
 
