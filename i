@@ -135,11 +135,10 @@ class Initd
   def search(query)
     require 'epitools'
 
-    puts "Services (filtered by /#{$1}/):"
+    puts "Services (filtered by /#{query}/):"
     puts "================================================="
-
     
-    highlighted = sys.services.map { |s| s.highlight(query) if query =~ s }.compact
+    highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
 
     puts Term::Table.new(highlighted, :ansi=>true).by_columns
   end
