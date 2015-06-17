@@ -9,8 +9,10 @@ include TokyoCabinet
 ###################################################################
 
 # http://toolserver.org/~enwikt/definitions/?sortby=7
-ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
-ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
+# ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
+# ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
+ENGLISH   = "http://chris.ill-logic.com/files/enwikt-defs-latest-en.tsv.gz"
+ALL       = "http://chris.ill-logic.com/files/enwikt-defs-latest-all.tsv.gz"
 
 CACHE_DIR = File.expand_path("~/.cache/wict")
 INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
@@ -23,8 +25,8 @@ def options
   @opts ||= Slop.parse(help: true, strict: true) do
     banner 'Usage: wict [options] <word(s)...>'
 
-    on 'u',  'update',  'Update the database'
-    on 'a',  'all',     'All langauges!'
+    on 'u',  'update',  'Download the English wikipedia dictionary'
+    on 'a',  'all',     'Download the wikipedia dictionary for all languages'
   end
 end
 
@@ -79,10 +81,10 @@ def update
         lang, word, type, definition = line.strip.split("\t")
         #p [:lang, lang, :word, word, :type, type, :definition, definition]
 
-	# TODO: figure out how to do case-insensitive searches without downcasing the actual key
+        # TODO: figure out how to do case-insensitive searches without downcasing the actual key
         bdb.putdup(word.downcase, definition)
 
-	print "\e[1G  |_ words imported: #{n.commatize}\e[J" if n % 137 == 0
+        print "\e[1G  |_ words imported: #{n.commatize}\e[J" if n % 137 == 0
       end
 
       puts
@@ -187,7 +189,7 @@ if $0 == __FILE__
 
   Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
 
-  if options.u?
+  if options.u? or options.a?
 
     update
 

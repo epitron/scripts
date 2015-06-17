@@ -67,6 +67,7 @@ class MathOTron
     "k"  => 1_000,
     "m"  => 1_000_000,
     "g"  => 1_000_000_000,
+    "b"  => 1_000_000_000,
     "t"  => 1_000_000_000_000,
   }
 
@@ -93,8 +94,8 @@ class MathOTron
 
   def translate(expr)
     
-    expr = expr.gsub(/([\d_]+)(#{UNITS.keys.join("|")})/i) do |m|
-      $1.to_i * UNITS[$2]
+    expr = expr.gsub(/([\d_]+(?:\.\d+)?)(#{UNITS.keys.join("|")})/i) do |m|
+      $1.to_f * UNITS[$2]
     end
 
     REWRITE_RULES.each do |regexp, replacement|
@@ -129,9 +130,11 @@ class MathOTron
 
       case result
       when Numeric
-        puts result.commatize.bright_purple
-        result_in_words = result.to_words
-        puts "<8>(<7>#{result_in_words}<8>)".colorize if not result_in_words.blank?
+        puts "<13>#{result.commatize} <4>(<12>#{"%.2e" % result}<4>)".colorize
+
+        unless (words = result.to_words).blank?
+          puts "<8>(<7>#{words}<8>)".colorize 
+        end
       else
         p result
       end

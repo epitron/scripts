@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
-opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+args = ARGV
 
-if args.empty? or opts.delete("--help") or opts.delete("-h")
+if args.empty? or args.delete("--help") or args.delete("-h")
   puts "Youtube-DL Wrapper!"
   puts
   puts "Usage:"
@@ -10,6 +10,7 @@ if args.empty? or opts.delete("--help") or opts.delete("-h")
   puts
   puts "Options:"
   puts "  -hq    High quality mode (often has to remux)"
+  puts "  -n     Number the files when downloading playlists"
   puts "  -a     Extract audio only"
   puts
   puts "(any other options will be passed directly to youtube-dl)"
@@ -17,31 +18,39 @@ if args.empty? or opts.delete("--help") or opts.delete("-h")
   exit 1
 end
 
-cmd = %w[youtube-dl --no-mtime --xattrs -o]
+cmd = %w[
+  youtube-dl
+  --no-mtime
+  --xattrs
+  --sub-format=srt --sub-lang=en --write-sub 
+  -o]
+  # --sub-lang=en --write-sub
+  # --convert-subtitles=srt --sub-lang=en --embed-subs
 
-if opts.delete("-n")
+if args.delete("-n")
  cmd << "%(playlist_index)s. %(title)s.%(ext)s"
 else
  cmd << "%(title)s.%(ext)s"
 end
 
-if opts.delete("-hq")
-  format = "bestvideo[ext=mp4]+bestaudio[ext=m4a]"
+if args.delete("-hq")
+  cmd += ["-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]"]
 else
-  format = "best"
+  cmd += ["-f", "best", "--youtube-skip-dash-manifest"]
 end
-cmd += ["-f", format]
 
-cmd << "--extract-audio" if opts.delete("-a")
+cmd << "--extract-audio" if args.delete("-a")
 
-cmd += opts
+urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
 
-args.each do |arg|
+cmd += args
+
+urls.each do |url|
   onecmd = cmd.dup
-  onecmd << arg
+  onecmd << url
 
   puts "-------------------------------------------------"
-  puts "  Downloading #{arg}"
+  puts "  Downloading #{url}"
   puts "-------------------------------------------------"
   puts
   puts "Commandline:"

@@ -79,8 +79,12 @@ class Systemd
   #   systemctl "restart", service
   # end
 
-  def status(service)
-    systemctl "status", "-l", service, msg: "Status of: #{service}"
+  def status(service, amount=nil)
+    cmd = ["status", "-l"]
+    cmd += ["-n", amount.to_s] if amount
+    cmd << service
+
+    systemctl *cmd, msg: "Status of: #{service}"
   end
 
   def default
@@ -92,7 +96,7 @@ class Systemd
   end
 
   def default_command(service)
-    status(service)
+    status(service, 33)
   end
 
 end

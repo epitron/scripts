@@ -28,8 +28,14 @@ class Package < TypedStruct["name ver rev arch path size mtime"]
   end
 end
 
+def installed_package_names
+  require 'set'
+  Set.new `pacman -Q`.each_line.map { |line| line.split.first }
+end
 
-keep = (ARGV.first || "2").to_i
+num_to_keep = (ARGV.first || "2").to_i
+
+installed = installed_package_names
 
 Path.cd("/var/cache/pacman/pkg") do
   pkgs = Path["*.xz"].map {|path| Package.new(path) }
@@ -39,18 +45,26 @@ Path.cd("/var/cache/pacman/pkg") do
 
   grouped.sort.each do |name, pkgs|
     versions = pkgs.sort_by { |pkg| pkg.mtime }.reverse
-    to_remove = versions[keep..-1]
 
-    print "+ <11>#{name}: <10>#{versions.first.version}".colorize
-
-    if to_remove and to_remove.any?
-      all_removals += to_remove
-
-      oldvers = to_remove.map(&:version).join("<8>, <12>")
-      print "<8>, <12>#{oldvers}".colorize
+    if installed.include? name
+      to_keep   = versions[0...num_to_keep]
+      to_remove = versions[num_to_keep..-1] || []
+      output    = "+ <11>#{name}: "
+    else
+      to_keep   = []
+      to_remove = versions
+      output    = "+ <8>#{name}: "
     end
 
-    puts
+    all_removals += to_remove
+
+    version_str  = []
+    version_str += to_keep.map   { |pkg| "<10>#{pkg.version}" }
+    version_str += to_remove.map { |pkg| "<12>#{pkg.version}" }
+
+    output += version_str.join("<8>, ")
+
+    puts output.colorize
   end
 
   if all_removals.empty?
@@ -61,7 +75,7 @@ Path.cd("/var/cache/pacman/pkg") do
   end
 
   puts
-  puts "Keeping #{keep} cop(y/ies) of each package..."
+  puts "Keeping #{num_to_keep} cop(y/ies) of each package..."
   puts
 
   total_size = all_removals.map(&:size).sum
