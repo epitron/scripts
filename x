@@ -24,7 +24,7 @@ end
 
 #####################################################################################
 
-COMMON_KEYS = %w[
+POPULAR_KEYS = %w[
   user.dublincore.title 
   user.dublincore.creator
   user.dublincore.subject 
@@ -65,7 +65,7 @@ def edit(path)
     f.puts "#"
     f.puts "# Examples:"
     f.puts "#"
-    COMMON_KEYS.each { |key| f.puts "##{key}: "}
+    POPULAR_KEYS.each { |key| f.puts "##{key}: "}
     f.puts "#"
   end
 
@@ -105,10 +105,10 @@ end
 
 
 def show(path, timestamp=false)
-  if not path.exists?
-
+  if path.dir?
+    return
+  elsif not path.exists?
     puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
-
   elsif (attrs = path.attrs).any?
     title = "<15>#{path.filename}"
     title += " <6>[<14>#{path.mtime.strftime("%b %d, %Y")}<6>]" if timestamp
