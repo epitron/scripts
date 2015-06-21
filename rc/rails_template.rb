@@ -4,7 +4,7 @@ gem 'jquery-rails'
 gem 'pg'
 gem 'simple_form'
 
-gem_group :development do
+gem_group :development, :test do
   gem 'pry-rails'
   gem 'pry-theme'
   gem 'best_errors'
@@ -15,7 +15,7 @@ gem_group :development do
 end
 
 environment 'config.action_mailer.delivery_method = :letter_opener', env: 'development'
-environment 'config.assets.js_compressor = :closure', env: 'assets'
+# environment 'config.assets.js_compressor = :closure', env: 'assets'
 
 rakefile("db.rake") do
   %{
