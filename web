@@ -66,12 +66,12 @@ routes do
 
   # Open videos in mplayer
   play_video = proc { |uri| exec("play", uri) }
-  match host: %w[youtube.com youtu.be wimp.com vimeo.com blip.tv], &play_video
+  match host: %w[youtube.com youtu.be liveleak.com wimp.com vimeo.com blip.tv], &play_video
   match host: "ted.com", path: "/talks/", &play_video
   match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg|gifv)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
-  match host: %w[imgur.com liveleak.com twitch.tv justin.tv infoq.com] do |uri|
+  match host: %w[imgur.com twitch.tv justin.tv infoq.com] do |uri|
     open_in_best_browser uri, VIDEO_BROWSERS
   end
 
@@ -206,6 +206,28 @@ BEGIN {
 
   ######################################################################################
 
+  #
+  # Type: :error, :info, :video
+  #
+  def notify(type, title, body, time: 5)
+    require 'cgi'
+
+    puts "[#{type}] #{title}"
+    puts "  #{body}"
+
+    time_in_ms = time * 1000
+
+    cmd = ["notify-send"]
+    cmd << "--expire-time=#{time_in_ms}"
+    cmd << "--app-name=play"
+    cmd << "--icon=#{type}"
+    cmd += [title, body].map {|s| CGI.escapeHTML s }
+
+    system *cmd
+  end
+
+  ######################################################################################
+
   def select_parents(query, &block)
     process = Sys.ps($$).first.parent
 
@@ -268,7 +290,7 @@ BEGIN {
     name, browser = best_browser_for(uri, browsers)
 
     unless browser
-      puts "No suitable browser found on any desktop."
+      notify :error, "No browser!", "No suitable browser found on any desktop."
       exit 1
     end
 
