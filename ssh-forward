@@ -1,0 +1,9 @@
+#!/bin/bash
+HOST="$1"
+shift
+
+if [ "$1" == "" ]; then
+  echo "usage: ssh-forward <user@host> <port(s)...>"
+else
+  ssh -2 -q -f -N -g `for port in $*; do echo -L $port:localhost:$port; done` $HOST
+fi
