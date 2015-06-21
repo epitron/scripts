@@ -143,7 +143,7 @@ class Initd
     puts "================================================="
 
     
-    highlighted = sys.services.map { |s| s.highlight(query) if query =~ s }.compact
+    highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
 
     puts Term::Table.new(highlighted, :ansi=>true).by_columns
   end
