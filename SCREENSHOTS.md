@@ -39,6 +39,10 @@ Here are screenshots of some of the scripts.
 
 ![aur-deps](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/aur-deps.png)
 
+## c
+
+![c](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/c.png)
+
 ## wict
 
 ![wict](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/wict.png)
