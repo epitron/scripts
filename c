@@ -106,6 +106,7 @@ EXTRA_LANGS = {
   ".gradle" => :groovy,
   ".cr" => :ruby,
   ".sage" => :python,
+  ".desktop" => :bash,
 }
 
 def convert_coderay(filename)
