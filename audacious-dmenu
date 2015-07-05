@@ -6,18 +6,32 @@ paths = Dir["#{ENV["HOME"]}/mp3*/*"].
           map {|path| [path.split("/").last, path] }.
           sort_by {|path| path.first.downcase }
 
-# Prepend some random albums
-paths = paths.sample(10) + [["-"*50,nil]] + paths
 
+paths = 
+  paths.sample(10) +  # Random albums
+  [["-"*50,nil]] +    # ASCII horizontal line
+  paths
 
-names = Hash[ paths ]
+names = Hash[paths]
 
-path = IO.popen(%w[dmenu -l 40 -i -b -p Album:], "r+") do |f|
-  f.puts names.keys.join("\n")
-  f.close_write
+path = 
+  IO.popen(%w[dmenu -l 40 -i -b -p Album:], "r+") do |f|
+    f.puts names.keys.join("\n")
+    f.close_write
 
-  picked = f.gets.strip
-  names[picked]
-end
-  
-exec("audacious", path)
+    picked = f.gets.strip
+    names[picked]
+  end
+
+EXTS = %w[
+  mp3 m4a flac ogg wma fla flv mp2
+]
+
+expanded = 
+  Dir.open(path).
+  drop(2).
+  map { |filename| File.join(path, filename) }.
+  select { |fullpath| File.directory?(fullpath) || fullpath =~ /\.#{Regexp.union EXTS}$/ }
+
+# require 'pp'; pp expanded
+exec("audacious", *expanded)
