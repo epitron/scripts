@@ -23,6 +23,28 @@ class FakeOptions
 end
 
 #####################################################################################
+# OPTION PARSER
+
+def parse_options
+  require 'slop' # lazy loaded
+  @opts = Slop.parse(help: true, strict: true) do
+    banner "xattr editor\n\nUsage: x [options] <files...>"
+
+    on 's=', 'set',       'Set an attr (eg: "x -s dublincore.title=Something something.mp4")'
+    on 'e',  'edit',      'Edit xattrs (with $EDITOR)'
+    on 'c',  'copy',      'Copy xattrs from one file to another (ERASING the original xattrs)'
+    on 'm',  'merge',     'Overlay xattrs from one file onto another (overwriting only the pre-existing attrs)'
+    on 'y',  'yaml',      'Print xattrs as YAML'
+    on 'j',  'json',      'Print xattrs as JSON'
+    on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
+    on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
+    on 'R',  'recursive', 'Recurse into subdirectories'
+    on 't',  'time',      'Sort by file timestamp'
+
+  end
+end
+
+#####################################################################################
 
 POPULAR_KEYS = %w[
   user.dublincore.title 
@@ -47,34 +69,33 @@ POPULAR_KEYS = %w[
 #####################################################################################
 
 def edit(path)
-  tmp = Path.tmp
-  
-  tmp.io("w") do |f|
-    f.puts(path.attrs.to_yaml) if path.attrs.any?
-    f.puts
-    f.puts "#"
-    f.puts "# Editing xattrs for #{path}"
-    f.puts "# -----------------------------------------"
-    f.puts "# Type in xattrs in this format (YAML):"
-    f.puts "#    user.custom.attr: This is a custom attribute."
-    f.puts "#    user.xdg.referrer.url: http://site.com/path/"
-    f.puts "#"
-    f.puts "# (Note: custom attributes must begin with 'user.')"
-    f.puts "#"
-    f.puts "# Enter your attributes at the top of the file."
-    f.puts "#"
-    f.puts "# Examples:"
-    f.puts "#"
-    POPULAR_KEYS.each { |key| f.puts "##{key}: "}
-    f.puts "#"
-  end
+  file = Tempfile.new('foo')
 
-  cmd = (ENV["EDITOR"] || "nano").split
-  cmd << tmp
+  file.puts(path.attrs.to_yaml) if path.attrs.any?
+  file.puts
+  file.puts "#"
+  file.puts "# Editing xattrs for #{path}"
+  file.puts "# -----------------------------------------"
+  file.puts "# Type in xattrs in this format (YAML):"
+  file.puts "#    user.custom.attr: This is a custom attribute."
+  file.puts "#    user.xdg.referrer.url: http://site.com/path/"
+  file.puts "#"
+  file.puts "# (Note: custom attributes must begin with 'user.')"
+  file.puts "#"
+  file.puts "# Enter your attributes at the top of the file."
+  file.puts "#"
+  file.puts "# Examples:"
+  file.puts "#"
+  POPULAR_KEYS.each { |key| file.puts "##{key}: "}
+  file.puts "#"
+  file.close
 
-  system *cmd
+  editor = (ENV["EDITOR"] || "nano").split
+  system *editor, file.path
 
-  path.attrs = tmp.read_yaml
+  path.attrs = Path[file.path].read_yaml
+
+  file.unlink    # deletes the temp file
 
   path
 end
@@ -149,27 +170,6 @@ def show(path, timestamp=false)
 end
 
 #####################################################################################
-# OPTION PARSER
-
-def parse_options
-  require 'slop' # lazy loaded
-  @opts = Slop.parse(help: true, strict: true) do
-    banner "xattr editor\n\nUsage: x [options] <files...>"
-
-    on 'e',  'edit',      'Edit xattrs (with $EDITOR)'
-    on 'c',  'copy',      'Copy xattrs from one file to another (ERASING the original xattrs)'
-    on 'm',  'merge',     'Overlay xattrs from one file onto another (overwriting only the pre-existing attrs)'
-    on 'y',  'yaml',      'Print xattrs as YAML'
-    on 'j',  'json',      'Print xattrs as JSON'
-    on 'u=', 'url',       'Set origin URL (user.xdg.origin.url)'
-    on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
-    on 'R',  'recursive', 'Recurse into subdirectories'
-    on 't',  'time',      'Sort by file timestamp'
-
-  end
-end
-
-#####################################################################################
 
 def assert(expr, error_message)
   raise error_message unless expr
@@ -221,14 +221,21 @@ if $0 == __FILE__
 
     show(dest)
 
-  # Set the URL or REFERRER attrs
-  elsif opts.url? or opts.referrer?
+  # Set the URL or REFERRER or CUSTOM (set) attrs
+  elsif opts.url? or opts.referrer? or opts.set?
 
     assert paths.size == 1, "Must supply exactly one filename."
 
     path = paths.first
 
-    if opts.url?
+    if opts.set?
+      key, val = opts[:set].split("=", 2)
+      key = "user.#{key}" unless key[/^user\./]
+
+      puts "* Setting '#{key}' to '#{val}'"
+
+      path[key] = val
+    elsif opts.url?
       path["user.xdg.origin.url"] = opts[:url]
     elsif opts.referrer?
       path["user.xdg.referrer.url"] = opts[:referrer]
