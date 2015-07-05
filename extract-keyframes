@@ -1,2 +1,1 @@
-#!/bin/bash
-ffmpeg -vsync 0 -i "$*" -vf select="eq(pict_type\,I)" -f image2 keyframe-%03d.jpg
+ffmpeg-extract-keyframes
