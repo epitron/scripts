@@ -118,7 +118,7 @@ class Pathname
 
   TYPES = Rash.new(
     /\.(avi|ogm|webm|mpv|mp4|m4v|mkv|mj?pe?g|flv|mov|wmv)$/ => "video",
-    /(^README|\.(pdf|doc|txt|srt|sub)$)/                    => "doc",
+    /(^README|\.(pdf|doc|txt|srt|sub|nfo)$)/                => "doc",
     /\.(jpe?g|gif|png)$/                                    => "image",
     /\.(mp3|ogg|m4a|aac|flac)$/                             => "audio",
   )
@@ -259,8 +259,11 @@ get '/*' do |path|
     @query = /#{union.source}/i
 
     @files = @path.find.select(&:exist?).map do |file|
-      rel = file.relative_to(@path)
-      file if rel.to_s =~ @query
+      begin
+        rel = file.relative_to(@path)
+        file if rel.to_s =~ @query
+      rescue ArgumentError
+      end
     end.compact
 
     @grouped = @files.group_by { |file| file.dirname }
@@ -419,6 +422,8 @@ a:hover { color: #0000FF; text-decoration: underline }
 %h2
   Searching for: 
   %mark= params[:search]
+
+%img{src: "/_/throbber.gif"}
 
 
 @@search
