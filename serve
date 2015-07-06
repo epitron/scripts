@@ -258,15 +258,22 @@ get '/*' do |path|
     union = Regexp.union params[:search].split
     @query = /#{union.source}/i
 
-    @files = @path.find.select(&:exist?).map do |file|
-      begin
-        rel = file.relative_to(@path)
-        file if rel.to_s =~ @query
-      rescue ArgumentError
-      end
+    # @matches = @path.find.select(&:exist?).map do |file|
+    #   begin
+    #     rel = file.relative_to(@path)
+    #     file if rel.to_s =~ @query
+    #   rescue ArgumentError
+    #   end
+    # end.compact
+
+    @matches = Dir["#{@path}/**/*"].select { |file| file =~ @query rescue nil }.map do |file|
+      file = Pathname.new(file)
+      next unless file.exists?
+      rel = file.relative_to(@path)
+      file if rel.to_s =~ @query
     end.compact
 
-    @grouped = @files.group_by { |file| file.dirname }
+    @grouped = @matches.group_by { |file| file.dirname }
 
     haml :search
   elsif feedtype = params[:rss]
