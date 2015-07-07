@@ -44,20 +44,31 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
  
 end
 
+def all_events
+  return to_enum(:all_events) unless block_given?
 
-if $0 == __FILE__
+  logs = Path["/var/log/pacman.log*"].sort_by(&:mtime)
 
-  lesspipe do |less|
-    logs = Path["/var/log/pacman.log*"].sort_by(&:mtime)
-
-    logs.each do |log|
-      open(log, 'r').reverse_each do |line|
-        line.strip!
-        if e = Event.from_line(line)
-          less.puts e
-        end
+  logs.each do |log|
+    open(log, 'r').reverse_each do |line|
+      if e = Event.from_line(line.strip)
+        yield e 
       end
     end
   end
-  
+end
+
+if $0 == __FILE__
+  query = /#{ARGV.join ".+"}/ if ARGV.any?
+
+  lesspipe do |less|
+    if query
+      all_events.select { |e| e.name =~ query }.each do |e|
+        e.name = e.name.gsub(query) { |m| m.light_yellow.on_blue }
+        less.puts e
+      end
+    else
+      all_events.each { |e| less.puts e }
+    end
+  end
 end
