@@ -1,3 +1,1 @@
-#!/bin/bash
-sudoifnotroot systemctl suspend
-
+standby
