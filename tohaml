@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+require 'haml'
+require 'html2haml/html'
+
+args = ARGV
+
+if args.empty?
+  puts "usage: tohaml <html files...>"
+  puts
+  puts "It will write out files with the same name, but a .haml extension."
+  puts "It will overwrite existing .haml files."
+  exit 1
+end
+
+args.each do |infile|
+  unless File.exists? infile
+    puts "* #{infile} not found. Skipping."
+    next
+  end
+
+  outfile = File.basename(infile, File.extname(infile)) + ".haml"
+
+  puts "* #{infile} => #{outfile}"
+  File.write(outfile, Html2haml::HTML.new(open(infile)).render)
+end
