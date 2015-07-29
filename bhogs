@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+devs = open("/proc/net/dev").each_line.map do |line|
+  if line =~ /^\s*([ewa][^:]+): /
+    $1
+  end
+end.compact
+
+system("sudoifnotroot", "nethogs", *devs)

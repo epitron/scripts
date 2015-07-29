@@ -60,7 +60,6 @@ files.each do |inp|
   cmd << "-n" if opts.no?
 
   cmd += ["-i", inp]
-  cmd += %w[-c:a mp3]
 
   if opts.copy?
     vcodec = "copy"
