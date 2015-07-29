@@ -3,25 +3,39 @@ puts "====================================="
 puts "         Underscorize_v_0.000000001"
 puts "--------------------------------------"
 
-if ARGV.empty?
+opts, args = ARGV.partition { |arg| arg[/^--?\w+/] }
+
+if args.empty?
  puts "Purpose:"
  puts "    Replace spaces with underscores in filenames."
  puts
  puts "Usage:"
- puts "    underscorize [filenames...]"
+ puts "    underscorize <options> [filenames...]"
+ puts
+ puts "Options:"
+ puts"   -s      Create a symbolic link instead of renaming"
  puts
  exit
 end
 
-for fn in ARGV
+for fn in args
  new_fn = fn.gsub(' ', '_')
  if fn == new_fn
   puts %{ - Skipping "#{fn}"}
- elsif File.exists? fn
-  puts %{* Renaming "#{fn}" -> "#{new_fn}"}
-  File.rename fn, new_fn
- else
+ elsif not File.exists? fn
   puts %{! cannot find file: "#{fn}"}
+ else
+  if File.exists? new_fn
+   puts %{ - Skipping "#{fn}" ("#{new_fn}" already exists) }
+  else
+   if opts.include? "-s"
+    puts %{* Symlinking "#{fn}" -> "#{new_fn}"}
+    File.symlink fn, new_fn
+   else
+    puts %{* Renaming "#{fn}" -> "#{new_fn}"}
+    File.rename fn, new_fn
+   end
+  end
  end
 end
 
