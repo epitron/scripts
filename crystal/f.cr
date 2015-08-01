@@ -5,6 +5,7 @@
 
 #################################################################
 ## Globals
+
 if ARGV.delete("-v")
   $verbose = true
 else
@@ -31,7 +32,6 @@ Usage:
 end
 #################################################################
 
-
 #################################################################
 ## NEW path scanner
 
@@ -45,14 +45,24 @@ def listdir(root)
   dirs  = [] of String
   files = [] of String
 
-  Dir.list(root) do |fn, type|
-    if type == Dir::Type::DIR
-      next if fn == "." || fn == ".."
-      dirs << fn
+  dir = Dir.new(root)
+  dir.each do |fn|
+    if File.directory? fn
+      dirs << fn unless fn == "." || fn == ".."
     else
       files << fn
     end
   end
+  dir.close
+
+  # Dir.list(root) do |fn, type|
+  #   if type == Dir::Type::DIR
+  #     next if fn == "." || fn == ".."
+  #     dirs << fn
+  #   else
+  #     files << fn
+  #   end
+  # end
 
   [dirs, files]
 end
@@ -65,14 +75,14 @@ def breadth_first_scan(root, &block : (String, String) -> )
   root        = slashed(root)
   dirs, files = listdir(root) 
   path_id     = File.lstat(root).ino
-  
+
   # p [root, path_id]
   unless $visited[path_id]?
     $visited[path_id] = root
-    
-    dirs.each  { |f| yield root, f }
-    files.each { |f| yield root, f }
-    
+
+    dirs.each  { |fn| yield root, fn }
+    files.each { |fn| yield root, fn }
+
     dirs.each do |dir|
       breadth_first_scan(root+dir, &block)
     end
@@ -86,6 +96,32 @@ class String
     gsub(query) { |str| "\e[33m\e[1m#{str}\e[0m" }
   end
 end
+
+#################################################################
+
+# module IO
+
+#   def self.popen(cmd, opts)
+#     r, w = IO.pipe
+#     case opts
+#     when "r"
+#       Process.run(cmd, output: w)
+#       yield r
+#     when "w"
+#       Process.run(cmd, input: r)
+#       yield w
+#     else
+#       raise "Unknown options: #{opts}"
+#     end
+#     w.close
+#   end
+
+# end
+
+# def lesspipe
+#   # IO.popen("less -XFiRS", "w") { |w| yield w }
+#   IO.popen("ls", "r") { |w| yield w }
+# end
 
 #################################################################
 ## MAIN
@@ -125,7 +161,8 @@ end
 
 # Matches
 
-re = Regex.new( Regex.escape( query ), Regex::IGNORE_CASE )
+re = Regex.new( Regex.escape( query ), Regex::Options::IGNORE_CASE )
+# re = /#{query}/
 has_query = !query.empty?
 
 # Ignore bad path arguments
@@ -135,12 +172,13 @@ end
 
 # Search!
 # lesspipe(:wrap=>true) do |less|
+# lesspipe do |less|
 
 roots.each do |root|
   breadth_first_scan(root) do |dirname, filename|
 
     if has_query
-      if query["/"]
+      if query["/"]?
         # search the full path if the user put a '/' in the query
         path = dirname + filename
         if path =~ re
@@ -159,4 +197,5 @@ roots.each do |root|
   end
 end
 
+# end
 #################################################################
