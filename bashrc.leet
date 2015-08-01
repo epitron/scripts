@@ -104,3 +104,6 @@ case $(uname -s) in
     export PATH=$SCRIPTDIR/bsd:$PATH
     ;;
 esac
+
+export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
+export MAKEOPTS="-j`expr $PROCESSORS + 1`"

@@ -98,6 +98,7 @@ EXTRA_LANGS = {
   ".pro" => :sql,
   ".service" => :ini,
   "PKGBUILD" => :bash,
+  ".install" => :bash,
   "Makefile" => :bash,
   "Rakefile" => :ruby,
   "Gemfile" => :ruby,
@@ -135,6 +136,8 @@ def convert_coderay(filename)
       CodeRay.scan_file(filename).term 
     end
   end
+rescue ArgumentError
+  IO.popen("file", "filename") { |io| }
 end
 
 ##############################################################################

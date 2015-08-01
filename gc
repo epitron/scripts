@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+# TODO:
+# - combine this with a shell script that 'cd's into the directory
+# - list the directory after the clone
+
+
 if ARGV.empty?
   puts "Usage:"
   puts "  gc [options] <git repo url>"
