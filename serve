@@ -243,19 +243,25 @@ get '/*' do |path|
   return not_found unless @path.exists?
   
   unless @path.directory?
-    return case @path.extname
-           when ".haml"
-             haml @path.read, layout: false
-           when ".md"
-             markdown @path.read, layout: false
-           else
-             send_file @path
-           end
+    return \
+      case @path.extname
+      when ".haml"
+        haml @path.read, layout: false
+      when ".md"
+        markdown @path.read, layout: false
+      when ".swf"
+        if params[:file]
+          send_file @path
+        else
+          haml :swf, layout: false
+        end
+      else
+        send_file @path
+      end
   end
 
   if params[:search]
     # TODO: link to directories
-
 
     # SEARCH
 
@@ -488,3 +494,14 @@ a:hover { color: #0000FF; text-decoration: underline }
         %title #{file.basename}
         %link  #{url_for(file.name)}
         %pubDate #{file.mtime.rss}
+
+@@swf
+!!! XML
+
+%head
+  %title
+  :css
+    body { background-color: black; margin: 0 0 0 0; padding: 0 0 0 0; }
+
+%body
+  %object{data: "#{@path.name}?file=yes", width: "100%", height: "100%"}
