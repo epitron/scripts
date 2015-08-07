@@ -94,6 +94,7 @@ end
 ### Converters ###############################################################
 
 EXTRA_LANGS = {
+  ".lisp" => :clojure,
   ".qml" => :php,
   ".pro" => :sql,
   ".service" => :ini,
