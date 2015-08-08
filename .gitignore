@@ -1,4 +1,5 @@
-fortunes/quotes.bak
-win32/sqlitespy.db3
+/fortunes/quotes.bak
+/win32/sqlitespy.db3
 *~
 *.pyc
+/crystal/.crystal
