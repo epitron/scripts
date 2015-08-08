@@ -18,7 +18,8 @@ if args.any?
   letters += %w[o g p] if opts.delete("-o") # ownership
   letters += %w[z]     if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
 
-  params  = ["--xattrs"]
+  params = ["--xattrs"]; opts.delete("-x") # Always sync xattrs
+  
   unless opts.delete "-q"
     params  << "--progress"
     letters << "v"
@@ -59,7 +60,7 @@ else
   puts "    -b    Binary rsync (and dereference symlinks)"
   puts "    -o    Preserve ownership (user/group/permissions)"
   puts "    -s    Sync special files (sockets, fifos, devices)"
-  puts "    -x    Preserve xattrs"
+  # puts "    -x    Preserve xattrs"
   puts "    -a    Append to smaller destination files"
   puts "          (if their overlap has the same checksum)"
   puts "    -d    Delete destination files that aren't in the source"
