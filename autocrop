@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+def cropdetect(file, verbose: false, seek: nil)
+  captures = []
+
+  cmd = %w[mplayer -quiet -ao null -frames 10 -vf cropdetect -vo null]
+  cmd += ["-ss", seek || "60"]
+  cmd += [file]
+
+  p cmd if verbose
+
+  IO.popen(cmd, :err=>[:child, :out]) do |io|
+    io.each_line do |line|
+      if line =~ /\((-vf) (crop=.+?)\)/
+        captures << [$1, $2]
+      end
+    end
+  end
+
+  #["-vf", "crop=640:368:108:62"]
+  grouped = captures.group_by { |c| c }.map{|k,v| [v.size, k] }.sort
+  # pp grouped
+  best = grouped.last.last
+end
+
+paths = ARGV.map { |arg| Path[arg] }
+
+paths.each do |path|
+  puts "<8>* <11>Autocropping <13>#{path.filename}<8>".colorize
+  vf, vfopts = cropdetect(path)
+  path["user.mpv.vf"] = vfopts
+  puts "  <8>|_ <7>New xattrs: <15>#{path.attrs}".colorize
+end
+
