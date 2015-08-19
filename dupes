@@ -25,26 +25,49 @@ end
 
 ### 
 
-grouped_dupes = ARGV.map(&:to_Path).
-      map { |path| path.dir? ? path.ls_r : path }.
-      flatten.
-      select(&:file?).
-      group_by(&:md5).
-      select {|k, v| v.size > 1}.
-      map_values{|v| v.map(&:path) }
+cache   = {}
+matches = []
 
-puts "* Found #{grouped_dupes.size} dupes..."
+files = ARGV.map do |arg|
+  path = Path[arg]
+  path.dir? ? path.ls_r.select(&:file?) : path 
+end.flatten
+
+$stderr.puts "* Comparing #{files.size} files..."
+
+files.shuffle.combination(2).each do |a,b|
+  # p [a,b]
+  cache[a] ||= a.md5
+  cache[b] ||= b.md5
+  
+  if cache[a] == cache[b] and a.size > 0
+    puts "#{a}    |    #{b}"
+    matches << [a,b]
+  end
+end
+
+
+
+# grouped_dupes = ARGV.map(&:to_Path).
+#       map { |path| path.dir? ? path.ls_r : path }.
+#       flatten.
+#       select(&:file?).
+#       group_by(&:md5).
+#       select {|k, v| v.size > 1}.
+#       map_values{|v| v.map(&:path) }
+
+# puts "* Found #{grouped_dupes.size} dupes..."
 
 ###
 
-if opts.delete?
-  puts "* Deleting dupes:"
-  grouped_dupes.each do |hash, dupes|
-    orig = dupes.pop
-    puts "* #{orig}"
-    dupes.each do |dupe|
-      puts "  |_ DELETE: #{dupe}"
-      File.unlink dupe
-    end
-  end
-end   
+# if opts.delete?
+#   puts "* Deleting dupes:"
+#   grouped_dupes.each do |hash, dupes|
+#     orig = dupes.pop
+#     puts "* #{orig}"
+#     dupes.each do |dupe|
+#       puts "  |_ DELETE: #{dupe}"
+#       File.unlink dupe
+#     end
+#   end
+# end   
