@@ -70,7 +70,7 @@ def edit_filename(prompt, filename)
       inst.line          = new_filename
       inst.pos           = pos
 
-      inst.menu.string = "(Capitalized) #{dir}|#{basename}|#{ext}"
+      inst.menu.string = "(Capitalized)"
     end
 
     # ^u removes underscores and stuff
@@ -83,7 +83,7 @@ def edit_filename(prompt, filename)
       inst.line          = new_filename
       inst.pos           = pos
 
-      inst.menu.string   = "(Underscores removed) #{dir}|#{basename}|#{ext}"
+      inst.menu.string   = "(Underscores removed)"
     end
 
     # ^d deletes to the extension
