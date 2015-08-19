@@ -346,7 +346,7 @@ class FileExtractor:
 
 class TarballExtractor(FileExtractor):
     exts            = ['.tar.gz', '.tar.bz2',
-                       '.tar', '.tgz', '.tar.lzma', 
+                       '.tar', '.tgz', '.tar.lzma', '.tar.lrz',
                        '.tar.xz', '.tpxz', '.gem', '.pixz']
     streamable      = True
     desc            = "TAR file"
@@ -367,15 +367,17 @@ class TarballExtractor(FileExtractor):
     	lower = filename.lower()
     	
         if lower.endswith(".gz") or lower.endswith(".tgz"):
-            cmd = "tar -zxvf"
+            cmd = "tar --xattrs -zxvf"
         elif lower.endswith(".bz2"):
-            cmd = "tar -jxvf"
+            cmd = "tar --xattrs -jxvf"
         elif lower.endswith(".xz") or lower.endswith(".lzma"):
-            cmd = "tar -Jxvf"
+            cmd = "tar --xattrs -Jxvf"
+        elif lower.endswith(".lrz"):
+            cmd = "tar --xattrs -Ilrzip -xvf"
         elif lower.endswith(".tpxz") or lower.endswith(".pixz"):
-            cmd = "tar -Ipixz -xvf"
+            cmd = "tar --xattrs -Ipixz -xvf"
         else:
-            cmd = "tar -xvf"
+            cmd = "tar --xattrs -xvf"
         
         return cmd        
                 
