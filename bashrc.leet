@@ -50,6 +50,8 @@ export CLICOLOR=1
 #export TERM=xterm-color
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
+export PYTHONSTARTUP=~/.pystartup
+
 # colorful manpages
 man() {
 	env \
