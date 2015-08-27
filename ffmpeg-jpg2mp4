@@ -1,1 +1,2 @@
-cat *.jpg | ffmpeg -f image2pipe -vcodec mjpeg -i - -vcodec libx264 -qp 20 -s 2160x2160 -r 24 output.mp4
+#!/bin/bash
+cat *.jpg | ffmpeg -f image2pipe -vcodec mjpeg -i - -c:v h264 -r 24 output.mp4
