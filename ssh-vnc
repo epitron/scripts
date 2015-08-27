@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "Purpose:"
+  echo "  Open an x11vnc over an SSH tunnel on localhost:5900"
+  echo
+  echo "Usage:"
+  echo "  ssh-vnc user@host"
+  echo
+  exit 1
+fi
+
+ssh "$1" -C -L 5900:localhost:5900 "x11vnc -display :0 -ncache_cr -ncache 10 -noxdamage"
