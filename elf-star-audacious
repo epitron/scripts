@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+require 'json'
+
+STARLOG = open(File.expand_path("~/elf-stars.json"), "a")
+
+
+def aud(command)
+  `audtool #{command}`.strip
+end
+
+def playing?
+  aud("playback-status") == "playing"
+end
+
+def song
+  aud("current-song")
+end
+
+def filename
+  aud("current-song-filename")
+end
+
+
+
+def notify(type, title, body, time: 5)
+  require 'cgi'
+
+  puts "#{title}"
+  puts "  #{body}"
+
+  time_in_ms = time * 1000
+
+  cmd = ["notify-send"]
+  cmd << "--expire-time=#{time_in_ms}"
+  cmd << "--app-name=play"
+  cmd << "--icon=#{type}"
+  cmd += [title, body].map {|s| CGI.escapeHTML s }
+
+  system *cmd
+end
+
+
+
+if playing?
+  info = {date: Time.now.to_i, name: song, filename: filename}
+  notify(:info, "ELF STAR!", info[:name])
+  STARLOG.puts JSON.dump(info)
+end
+
