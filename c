@@ -19,6 +19,15 @@ THEMES = {
 }
 CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
 
+class Enumerator
+  def +(other)
+    Enumerator.new do |y|
+      each { |e| y << e }
+      other.each { |e| y << e }
+    end
+  end
+end
+
 def lesspipe(*args)
   if args.any? and args.last.is_a?(Hash)
     options = args.pop
@@ -50,7 +59,6 @@ def lesspipe(*args)
 rescue Errno::EPIPE, Interrupt
   # less just quit -- eat the exception.
 end
-
 ##############################################################################
 
 def which(bin)
@@ -63,64 +71,43 @@ end
 
 ##############################################################################
 
-COMPRESSORS = {
-  ".gz"  => %w[gzip -d -c],
-  ".xz"  => %w[xz -d -c],
-  ".bz2" => %w[bzip2 -d -c],
-}
-
-def convert(arg)
-  arg = which(arg) unless File.exists? arg
-
-  if arg
-    return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
-
-    ext = File.extname(arg).downcase
-
-    if cmd = COMPRESSORS[ext]
-      IO.popen([*cmd, arg])
-    elsif %w[.md .markdown].include? ext
-      convert_markdown(arg)
-    elsif %w[.nfo .ans .drk .ice].include? ext
-      convert_cp437(arg)
-    else
-      convert_coderay(arg)
-    end
-  else
-    "\e[31m\e[1mFile not found.\e[0m"
-  end
+def show_image(filename)
+  system("feh", filename)
+  ""
 end
 
 ### Converters ###############################################################
 
 EXTRA_LANGS = {
-  ".lisp" => :clojure,
-  ".qml" => :php,
-  ".pro" => :sql,
-  ".service" => :ini,
-  "PKGBUILD" => :bash,
-  ".install" => :bash,
-  "Makefile" => :bash,
-  "Rakefile" => :ruby,
-  "Gemfile" => :ruby,
+  ".cr"          => :ruby,
+  ".jl"          => :ruby,
+  ".pl"          => :ruby,
+  "Rakefile"     => :ruby,
+  "Gemfile"      => :ruby,
+  "Makefile"     => :bash,
+  "PKGBUILD"     => :bash,
+  ".install"     => :bash,
+  ".desktop"     => :bash,
   "Gemfile.lock" => :yaml,
   "database.yml" => :yaml,
-  ".gradle" => :groovy,
-  ".cr" => :ruby,
-  ".sage" => :python,
-  ".desktop" => :bash,
+  ".gradle"      => :groovy,
+  ".sage"        => :python,
+  ".lisp"        => :clojure,
+  ".qml"         => :php,
+  ".pro"         => :sql,
+  ".service"     => :ini,
 }
 
-def convert_coderay(filename)
+def print_source(filename)
   ext = filename[/\.[^\.]+$/]
 
   if File.read(filename, 256) =~ /\A#!(.+)/
     # Shebang!
     lang = case $1
-    when /ruby/ then :ruby
-    when /\b(bash|zsh|sh)\b/ then :bash
-    when /python/ then :python
-    when /perl/ then :perl
+      when /\b(bash|zsh|sh)\b/ then :bash
+      when /ruby/   then :ruby
+      when /python/ then :python
+      when /perl/   then :ruby
     end
 
     CodeRay.scan_file(filename, lang).term
@@ -138,12 +125,12 @@ def convert_coderay(filename)
     end
   end
 rescue ArgumentError
-  IO.popen("file", "filename") { |io| }
+  run "file", filename
 end
 
 ##############################################################################
 
-def convert_markdown(filename)
+def print_markdown(filename)
   # Lazily load markdown renderer
   eval DATA.read
 
@@ -153,8 +140,73 @@ end
 
 ##############################################################################
 
-def convert_cp437(filename)
+def print_cp437(filename)
   open(filename, "r:cp437:utf-8", &:read)
+end
+
+##############################################################################
+
+def run(*args)
+  IO.popen(args, "r")
+end  
+
+def highlight(enum, &block)
+  Enumerator.new do |y|
+    enum.each do |line|
+      y << block.call(line)
+    end
+  end
+end
+
+def print_elf(filename)
+  highlight(run("objdump", "-x", filename)) do |line|
+    if line =~ /^(\S+.*):(.*)/
+      "\e[37;1m#{$1}\e[0m: #{$2}"
+    else
+      line
+    end
+  end
+end
+
+##############################################################################
+
+COMPRESSORS = {
+  ".gz"  => %w[gzip -d -c],
+  ".xz"  => %w[xz -d -c],
+  ".bz2" => %w[bzip2 -d -c],
+}
+
+def convert(arg)
+  arg = which(arg) unless File.exists? arg
+
+  if arg
+    return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
+
+    # TODO: Fix relative symlinks
+    # arg = File.readlink(arg) if File.symlink?(arg)
+
+    ext = File.extname(arg).downcase
+
+    if cmd = COMPRESSORS[ext]
+      IO.popen([*cmd, arg])
+    elsif %w[.md .markdown].include? ext
+      print_markdown(arg)
+    elsif %w[.nfo .ans .drk .ice].include? ext
+      print_cp437(arg)
+    else
+      format = run('file', arg).read
+
+      case format
+      when /ELF\b.+\bexecutable/
+        print_elf(arg)
+      when /(image,|image data)/
+      else
+        print_source(arg)
+      end
+    end
+  else
+    "\e[31m\e[1mFile not found.\e[0m"
+  end
 end
 
 ### MAIN #####################################################################
@@ -162,16 +214,24 @@ end
 args = ARGV
 
 lesspipe(:wrap=>true) do |less|
-  case args.size
-  when 0
+  if args.size == 0
     puts "usage: c <filename(s)>"
-  when 1
-    convert(args.first).each_line { |line| less.puts line }
-  else # 2 or more args
+  else # 1 or more args
     args.each do |arg|
-      less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
-      less.puts
-      convert(arg).each_line { |line| less.puts line }
+      if args.size > 1
+        less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
+        less.puts
+      end
+
+      result = convert(arg)
+
+      case result
+      when Enumerable
+        result.each { |line| less.puts line }
+      when String
+        result.each_line { |line| less.puts line }
+      end
+
       less.puts 
       less.puts
     end
