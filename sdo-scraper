@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'slop'
+
+#############################################################################################
+
+opts = Slop.parse(help: true, strict: true) do
+  banner %{
+Scrape images from NASA's Solar Dynamics Observatory
+
+Usage: sdo-scraper [options] <start date> <end date>
+}
+
+  on :s=, :size, "Image resolution (512, 1024, 2048, 4096)", default: '4096'
+  on :t=, :type, "Image type (see --list)", default: 'red' 
+  on :d=, :dest, "Destination directory", default: '.' 
+  on :c,  :cache, "Cache HTML pages", default: false
+  on :l,  :list, "List of image types"
+end
+
+args = ARGV
+
+#############################################################################################
+
+TYPES = {
+  "0094"      => "green",
+  "0131"      => "teal",
+  "0171"      => "gold",
+  "0193"      => "bronze",
+  "0211"      => "purple",
+  "0304"      => "red",
+  "0335"      => "blue",
+  "1600"      => "yellowgreen",
+  "1700"      => "pink",
+  "4500"      => "sunspots",
+  "094335193" => "green,blue,bronze",
+  "211193171" => "purple,bronze,gold",
+  "304211171" => "red,purple,gold",
+  "HMI171"    => "HMI171",
+  "HMIB"      => "magnetogram",
+  "HMIBC"     => "magnetogram_color",
+  "HMID"      => "dopplergram",
+  "HMII"      => "intensitygram",
+  "HMIIC"     => "intensitygram_color",
+  "HMIIF"     => "intensitygram_flat"  
+}
+
+class Image < Struct.new(:link, :datecode, :timecode, :size, :code)
+
+  ####################################################
+  
+  def self.from_link(link)
+    new link, *link.href.split(".").first.split("_")
+  end
+
+  ####################################################
+
+  def datetime
+    @datetime ||= DateTime.strptime("#{datecode}-#{timecode}", "%Y%m%d-%H%M%S")
+  end
+
+  def nice_datetime
+    datetime.strftime("%Y-%m-%d %I:%M%p")
+  end
+
+  def type
+    TYPES[code]
+  end
+
+  def inspect
+    "[#{type} @ #{nice_datetime} (#{size}px)]"
+  end
+  alias to_s inspect
+
+  def save!(savedir=".")
+    image = link.click
+
+    unless File.exists?(savedir)
+      puts "Created #{savedir}..."
+      FileUtils.mkdir_p(savedir)
+    end
+
+    outfile = File.join(savedir, image.filename)
+    image.save!(outfile)
+
+    image["content-length"].to_i.commatize
+  end
+
+end
+
+def list_types
+  puts "-----------------------"
+  puts "Image types:"
+  puts "-----------------------"
+  puts
+  TYPES.each do |code, type|
+    puts "  #{type}"
+  end
+  puts
+end
+
+#############################################################################################
+
+if opts.list?
+  list_types
+  exit
+elsif args.size == 2
+  first, last = args.map { |arg| Date.parse arg }
+elsif args.size == 1
+  first, last = Date.parse(args.first), Date.today
+else
+  puts opts
+  exit 1
+end
+
+#############################################################################################
+
+puts "Saving images from #{first} to #{last}..."
+
+b = Browser.new(cache: opts.cache?)
+
+(first..last).each do |date|
+  url = "http://sdo.gsfc.nasa.gov/assets/img/browse/%d/%0.2d/%0.2d/" % [date.year, date.month, date.day]
+
+  page = b.get(url)
+
+  images = page.links_with(href: /\.jpg$/).map{|l| Image.from_link(l) }
+
+  images.select! do |image|
+    image.type == opts[:type] && image.size == opts[:size]
+  end.sort_by!(&:datetime)
+
+  images.each do |image|
+    print image
+    puts " - saved (#{image.save!} bytes)"
+  end
+end
