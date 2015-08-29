@@ -13,6 +13,9 @@ opts = Slop.parse(help: true, strict: true) do
   on "c",  "copy",     "Copy video stream (don't re-encode)"
   on "y",  "yes",      "Overwrite existing"
   on "n",  "no",       "Skip existing"
+  on "s=", "scale",    "Scale to resolution (eg: 1024x768)"
+  on "q=", "quality",  "Quantization Parameter (eg: 22)"
+  on "a=", "aspect",   "Aspect ratio (eg: 4:3, 1.6666)"
   on "d=", "outdir",   "Output directory"
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
   on 'v=', 'vcodec',   'Output video codec', default: "h264"
@@ -70,7 +73,10 @@ files.each do |inp|
   acodec = opts[:acodec]
 
   cmd += ["-c:v", vcodec, "-c:a", acodec]
-  cmd += %w[-crf 20] if opts.hq?
+  cmd += ["-s", opts[:scale]]       if opts.scale?
+  cmd += ["-qp", opts[:quality]]    if opts.quality?
+  cmd += ["-aspect", opts[:aspect]] if opts.aspect?
+  # cmd += %w[-crf 20] if opts.hq?
   cmd += %w[-movflags faststart]
 
   cmd << out
