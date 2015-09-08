@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'sequel'
+
+def help!
+  puts "usage: sqgrep <expr> <sqlite-files...>"
+  exit
+end  
+
+opts, args = ARGV.partition { |arg| arg[/^-\w$/] }
+expr = args.shift
+
+help! if args.empty? or opts.include? "-h"
+
+lesspipe do |less|
+
+  args.each do |arg|
+    unless File.exists? arg
+      less.puts "<12>Error: <14>#{arg} <7>not found. Skipping...".colorize
+      next
+    end
+
+    less.puts
+    less.puts "<7>Grepping <14>#{arg}<7>...".colorize
+    less.puts
+
+    db = Sequel.sqlite arg
+
+    db.tables.each do |table_name|
+      table = db[table_name]
+
+      schema = db.schema(table_name)
+      text_cols = schema.map { |col,opts| col if opts[:db_type] =~ /(char|blob|text)/i }.compact
+
+      if text_cols.empty?
+        less.puts "<8>* <13>#{table_name} <7>has no text columns; <12>skipping.".colorize
+        next
+      else
+        less.puts "<8>* <13>#{table_name} <8>(<15>#{table.count} <7>rows<8>)".colorize
+      end
+
+      table.where("(#{text_cols.join(" || ")}) LIKE '%#{expr}%'").each_with_index do |match, num|
+        less.puts
+        less.puts "<8>---------------------------------------------------------".colorize
+        less.puts "<10>#{arg}<8>, <7>table: <11>#{table_name}<8>, <7>match #<15>#{num}".colorize
+        less.puts "<8>---------------------------------------------------------".colorize
+        
+        match.each do |k,v|
+          v = v.gsub(expr) { |m| m.bright_yellow } if v.is_a? String
+          less.puts "#{k.to_s.cyan}: #{v}"
+        end
+      end
+    end
+
+  end
+
+  less.puts
+end
