@@ -7,7 +7,7 @@ def help!
   exit
 end  
 
-opts, args = ARGV.partition { |arg| arg[/-\w+/] }
+opts, args = ARGV.partition { |arg| arg[/^-\w$/] }
 expr = args.shift
 
 help! if args.empty? or opts.include? "-h"
