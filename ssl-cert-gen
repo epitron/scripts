@@ -9,10 +9,8 @@ fi
 
 ID="$1"
 
-[ -z "$ID" ] && exit 1
-
 if [ "$2" == "" ]; then
-  BITS=1024
+  BITS=2048
 else
   BITS=$2
 fi
