@@ -12,7 +12,7 @@ expr = args.shift
 
 help! if args.empty? or opts.include? "-h"
 
-lesspipe do |less|
+lesspipe(wrap: true) do |less|
 
   args.each do |arg|
     unless File.exists? arg
@@ -39,7 +39,9 @@ lesspipe do |less|
         less.puts "<8>* <13>#{table_name} <8>(<15>#{table.count} <7>rows<8>)".colorize
       end
 
-      table.where("(#{text_cols.join(" || ")}) LIKE '%#{expr}%'").each_with_index do |match, num|
+      # where_expr = "(#{text_cols.join(" || ")}) LIKE '%#{expr}%'"
+      where_expr = text_cols.map {|col| "instr(#{col}, '#{expr}')"}.join(" OR ")
+      table.where(where_expr).each_with_index do |match, num|
         less.puts
         less.puts "<8>---------------------------------------------------------".colorize
         less.puts "<10>#{arg}<8>, <7>table: <11>#{table_name}<8>, <7>match #<15>#{num}".colorize

@@ -200,6 +200,7 @@ def convert(arg)
       when /ELF\b.+\bexecutable/
         print_elf(arg)
       when /(image,|image data)/
+        show_image(arg)
       else
         print_source(arg)
       end
