@@ -1,1 +1,2 @@
-cpupower frequency-set -g ondemand
+#!/bin/bash
+sudoifnotroot cpupower frequency-set -g ondemand
