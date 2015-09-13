@@ -8,6 +8,7 @@ fields = %w[
   memory.total
 
   temperature.gpu
+  utilization.gpu
   fan.speed
 
   compute_mode
@@ -15,6 +16,7 @@ fields = %w[
   vbios_version
 ]
 
+#   fan.speed
 #   utilization.gpu
 #   memory.free
 #   power.draw
@@ -46,7 +48,7 @@ args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv,noheader,
 # args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv", "-l", "1"]
 
 # Note: Unsupported features return "[Not Supported]"
-Stat = Struct.new(:name, :memused, :memtotal, :temp, :fan, :compute_mode, :pstate, :bios_version)
+Stat = Struct.new(:name, :memused, :memtotal, :temp, :gpu, :fan, :compute_mode, :pstate, :bios_version)
 
 class Stat
   # def initialize(*args)
@@ -60,7 +62,7 @@ class Stat
   end
 
   def to_color
-    "#{timestamp} <8>[ <7>#{name} v#{bios_version} <8>| <10>#{memused}<2>/<10>#{memtotal}<2>MB <8>| <12>#{temp}<4>°C <8>| <11>#{fan}<3>% <8>| <13>#{pstate} <8>| <9>#{compute_mode} <8>]".colorize
+    "#{timestamp} <8>[ <7>#{name} v#{bios_version} <8>| <10>#{memused}<2>/<10>#{memtotal}<2>MB <8>| <11>#{gpu}<3>% GPU <8>| <12>#{temp}<4>°C <8>| <13>#{pstate} <8>| <9>#{compute_mode} <8>]".colorize
   end
 end
 

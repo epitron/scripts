@@ -2,6 +2,17 @@
 require 'epitools'
 require 'sequel'
 
+#
+# TODOs:
+# * Add slop and some options:
+#   -d   Dump entire database
+#   -f   Show/grep specified fields
+#   -a   Show all columns (default: show only columns with matches)
+#   -t   Show tables
+#
+# Idea: Lucene query syntax (eg: "url:butt.com whee")
+#
+
 def help!
   puts "usage: sqgrep <expr> <sqlite-files...>"
   exit

@@ -197,7 +197,7 @@ def convert(arg)
       format = run('file', arg).read
 
       case format
-      when /ELF\b.+\bexecutable/
+      when /ELF\b.+\b(executable|shared object)/
         print_elf(arg)
       when /(image,|image data)/
         show_image(arg)
