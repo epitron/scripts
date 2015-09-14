@@ -36,13 +36,13 @@ unless args.include?("-o")
   end
 end
 
-if args.delete("-hq")
-  cmd += ["-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]"]
+if args.delete("-a")
+  cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
+elsif args.delete("-hq")
+  cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
 else
-  cmd += ["-f", "best", "--youtube-skip-dash-manifest"]
+  cmd += %w[-f best --youtube-skip-dash-manifest]
 end
-
-cmd << "--extract-audio" if args.delete("-a")
 
 urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
 
