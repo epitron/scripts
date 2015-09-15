@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+def which(bin)
+  ENV["PATH"].split(":").find do |path|
+    result = File.join(path, bin)
+    return result if File.exists? result
+  end
+  nil
+end
+
+def magic(file)
+  IO.popen(["file", file], "r") { |io| io.read }.strip
+end
+
+args = ARGV
+
+if args.empty?
+  puts "usage: run <linux binary> [arguments]"
+  puts "       (Lets you execute a binary that doesn't have the +x mode set)"
+  exit 1
+end
+
+
+exe = args.shift
+
+
+
+if File.exists?(exe)
+  exe = File.absolute_path(exe)
+else 
+  exe = which(exe)
+  raise "Couldn't find executable" unless exe
+end
+
+info = magic(exe)
+
+# file /bin/ls:
+#   /bin/ls: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 2.6.32, BuildID[sha1]=29912b8824a8868c656d280245b03b087b9341a1, stripped
+
+if info =~ /ELF (64|32)-bit.+executable.+interpreter (\S+),/
+  interp = $2
+  exec(interp, exe, *args)
+end
