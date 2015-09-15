@@ -158,8 +158,8 @@ def highlight(enum, &block)
   end
 end
 
-def print_elf(filename)
-  highlight(run("objdump", "-x", filename)) do |line|
+def highlight_lines_with_colons(enum)
+  highlight(enum) do |line|
     if line =~ /^(\S+.*):(.*)/
       "\e[37;1m#{$1}\e[0m: #{$2}"
     else
@@ -168,7 +168,17 @@ def print_elf(filename)
   end
 end
 
+def print_elf(filename)
+  highlight_lines_with_colons(run("objdump", "-x", filename))
+end
+
+def print_ssl_certificate(filename)
+  #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
+  highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
+end
+
 ##############################################################################
+
 
 COMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
@@ -193,6 +203,8 @@ def convert(arg)
       print_markdown(arg)
     elsif %w[.nfo .ans .drk .ice].include? ext
       print_cp437(arg)
+    elsif %w[.pem .crt].include? ext
+      print_ssl_certificate(arg)
     else
       format = run('file', arg).read
 
