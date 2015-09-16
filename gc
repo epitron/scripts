@@ -4,7 +4,6 @@
 # - combine this with a shell script that 'cd's into the directory
 # - list the directory after the clone
 
-
 if ARGV.empty?
   puts "Usage:"
   puts "  gc [options] <git repo url>"
@@ -21,10 +20,9 @@ end
 
 opts, args = ARGV.partition { |arg| arg[/^-\w/] }
 
-cmd = []
-cmd << which("hub", "git")
-cmd << "clone"
+cmd = [which("hub", "git"), "clone", "--recursive"]
 cmd << "--depth=1" if opts.delete("-s")
+
 cmd += args
 
 reponame = nil
