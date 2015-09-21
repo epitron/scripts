@@ -11,6 +11,10 @@ Here are screenshots of some of the scripts.
 
 ![ssh-logins](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/ssh-logins.png)
 
+## gc
+
+![gc](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/gc.png)
+
 ## dpkg-log
 
 ![dpkg-log](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/dpkg-log.png)
@@ -30,6 +34,10 @@ Here are screenshots of some of the scripts.
 ## pacgroups
 
 ![pacgroups](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/pacgroups.png)
+
+## nvtop
+
+![nvtop](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/nvtop.png)
 
 ## x
 
