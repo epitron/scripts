@@ -44,8 +44,8 @@ PTY.spawn(*cmd) do |r, w, pid|
 end
 
 if reponame
-  system("subl", reponame)
+  # system("subl", reponame)
   if readme = Dir["#{reponame}/README*"].first
-    system("subl", readme)
+    system("c", readme)
   end
 end
