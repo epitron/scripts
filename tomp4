@@ -13,15 +13,21 @@ opts = Slop.parse(help: true, strict: true) do
   on "c",  "copy",     "Copy video stream (don't re-encode)"
   on "y",  "yes",      "Overwrite existing"
   on "n",  "no",       "Skip existing"
-  on "s=", "scale",    "Scale to resolution (eg: 1024x768)"
+  on "s=", "scale",    "Scale to resolution (eg: 1024x768, 1024:-1, 1024, -1:720)"
   on "q=", "quality",  "Quantization Parameter (eg: 22)"
   on "a=", "aspect",   "Aspect ratio (eg: 4:3, 1.6666)"
   on "d=", "outdir",   "Output directory"
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
   on 'v=', 'vcodec',   'Output video codec', default: "h264"
+  on 'C=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
 end
 
 files = ARGV.map(&:to_Path)
+
+if files.empty?
+  puts opts
+  exit 1
+end
 
 # Two-pass encode:
 # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 1 -pre medium_firstpass -an "$OUT"
@@ -64,22 +70,43 @@ files.each do |inp|
 
   cmd += ["-i", inp]
 
-  if opts.copy?
-    vcodec = "copy"
-  else
+  if (croptions = opts[:crop]) or not opts.copy?
     vcodec = opts[:vcodec]
+  else
+    vcodec = "copy"
   end
 
   acodec = opts[:acodec]
 
   cmd += ["-c:v", vcodec, "-c:a", acodec]
-  cmd += ["-s", opts[:scale]]       if opts.scale?
-  cmd += ["-qp", opts[:quality]]    if opts.quality?
+  cmd += ["-qp", opts[:quality]] if opts.quality?
   cmd += ["-aspect", opts[:aspect]] if opts.aspect?
   # cmd += %w[-crf 20] if opts.hq?
   cmd += %w[-movflags faststart]
 
+  vfilters = []
+  vfilters << "crop=#{croptions}" if croptions
+
+  if scale = opts[:scale]
+    case scale 
+    when /^(\d+)x(\d+)$/
+      scale = "#{$1}:#{$2}"
+    when /^(\d+)$/
+      scale = "#{$1}:-1"
+    when /^-?\d+:-?\d+$/
+      # looks good! no munging necessary ^_^
+    else
+      error "Unrecognized scale option: #{scale}"
+      exit 1
+    end
+
+    vfilters << "scale=#{scale}"
+  end
+
+  cmd += ["-filter:v", vfilters.join(",")] if vfilters.any?
+
   cmd << out
+
 
   puts "   cmd: #{cmd.join(" ")}"
   puts "----------------------------------------------------------------"
