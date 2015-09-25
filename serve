@@ -376,6 +376,7 @@ a:hover { color: #0000FF; text-decoration: underline }
 %html
   %head
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}
+    %meta{:name => "viewport", :content => "width=device-width, initial-scale=1"}
     %title
       [#{settings.machine_name}]
       #{@root_dir_name} / #{@fullpath}
