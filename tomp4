@@ -17,8 +17,10 @@ opts = Slop.parse(help: true, strict: true) do
   on "q=", "quality",  "Quantization Parameter (eg: 22)"
   on "a=", "aspect",   "Aspect ratio (eg: 4:3, 1.6666)"
   on "d=", "outdir",   "Output directory"
+  on "o=", "outfile",  "Output file"
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
-  on 'v=', 'vcodec',   'Output video codec', default: "h264"
+  on 'v=', 'vcodec',   'Output video codec (eg: h264, hevc, nvenc_h264)', default: "h264"
+  on 'N',  'nvidia',   'Use nvidia-accelerated encoder'
   on 'C=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
 end
 
@@ -58,8 +60,12 @@ files.each do |inp|
     next
   end
 
-  out = inp.with(ext: "mp4")
-  out.dir = dir.dir if dir
+  if opts[:outfile]
+    out = Path[opts[:outfile]]
+  else
+    out = inp.with(ext: "mp4")
+    out.dir = dir.dir if dir
+  end
 
   puts "   out: #{out}"
 
@@ -75,6 +81,7 @@ files.each do |inp|
   else
     vcodec = "copy"
   end
+  vcodec = "nvenc_#{vcodec}" if opts.nvidia? and vcodec != "copy"
 
   acodec = opts[:acodec]
 
