@@ -1,0 +1,34 @@
+#!/bin/bash
+
+shallowize() {
+  echo "Shallowizing..."
+
+  git show-ref -s HEAD > .git/shallow
+  git reflog expire --expire=0
+  git prune
+  git prune-packed
+
+  echo "Done!"
+}
+
+confirm () {
+    # call with a prompt string or use a default
+    read -r -p "${1:-Are you sure? [y/N]} " response
+    case $response in
+        [yY][eE][sS]|[yY]) 
+            true
+            ;;
+        *)
+            false
+            ;;
+    esac
+}
+
+if [ ! -d .git ]; then
+  echo "ERROR: Not in a git repo (can't find .git directory)"
+  exit 1
+fi
+
+echo "WARNING: This will wipe out your git history and any commits you've made."
+
+confirm && shallowize
