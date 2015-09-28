@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  echo "usage: aur-get <package name>"
+else
+  gc https://aur.archlinux.org/$1.git
+fi
