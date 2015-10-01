@@ -45,7 +45,8 @@ end
 
 if reponame
   # system("subl", reponame)
-  if readme = Dir["#{reponame}/README*"].first
-    system("c", readme)
+  readmes = Dir.foreach(reponame).select { |f| f[/^readme/i] }.sort_by(&:size)
+  if readme = readmes.first
+    system("c", "#{reponame}/#{readme}")
   end
 end
