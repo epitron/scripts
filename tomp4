@@ -4,24 +4,25 @@ require 'slop'
 require 'epitools'
 
 def error(msg)
-  $stderr.puts msg.light_red
+  $stderr.puts "ERROR: #{msg}".light_red
 end
 
 opts = Slop.parse(help: true, strict: true) do
   banner 'Usage: tomp4 [options] <file(s)...>'
 
-  on "c",  "copy",     "Copy video stream (don't re-encode)"
-  on "y",  "yes",      "Overwrite existing"
-  on "n",  "no",       "Skip existing"
-  on "s=", "scale",    "Scale to resolution (eg: 1024x768, 1024:-1, 1024, -1:720)"
-  on "q=", "quality",  "Quantization Parameter (eg: 22)"
-  on "a=", "aspect",   "Aspect ratio (eg: 4:3, 1.6666)"
-  on "d=", "outdir",   "Output directory"
-  on "o=", "outfile",  "Output file"
+  on 'y',  'yes',      'Overwrite existing'
+  on 'n',  'no',       'Skip existing'
+  on 's=', 'scale',    'Scale to resolution (eg: 1024x768, 1024:-1, 1024, -1:720)'
+  on 'q=', 'quality',  'Quantization Parameter (eg: 22)'
+  on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
+  on 'b',  'bob',      'Bob deinterlace (using yadif)'
+  on "r=", "aspect",   'Aspect ratio (eg: 4:3, 1.6666)'
+  on 'd=', 'outdir',   'Output directory'
+  on 'o=', 'outfile',  'Output file'
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
   on 'v=', 'vcodec',   'Output video codec (eg: h264, hevc, nvenc_h264)', default: "h264"
   on 'N',  'nvidia',   'Use nvidia-accelerated encoder'
-  on 'C=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
+  on 'c=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
 end
 
 files = ARGV.map(&:to_Path)
@@ -38,7 +39,7 @@ end
 if dir = opts[:outdir]
   dir = dir.to_Path
   unless dir.dir?
-    error "ERROR: #{dir} is not a directory"
+    error "#{dir} is not a directory"
     exit 1
   end
 else 
@@ -51,12 +52,12 @@ files.each do |inp|
   puts "    in: #{inp}"
 
   unless inp.exists?
-    error "ERROR: File doesn't exist."
+    error "File doesn't exist."
     next
   end
 
   if inp.ext == "mp4"
-    error "ERROR: Input file is already a .mp4 -- skipping"
+    error "Input file is already a .mp4 -- skipping"
     next
   end
 
@@ -67,8 +68,6 @@ files.each do |inp|
     out.dir = dir.dir if dir
   end
 
-  puts "   out: #{out}"
-
   cmd = %w[ffmpeg -hide_banner]
 
   cmd << "-y" if opts.yes?
@@ -76,23 +75,22 @@ files.each do |inp|
 
   cmd += ["-i", inp]
 
-  if (croptions = opts[:crop]) or not opts.copy?
-    vcodec = opts[:vcodec]
-  else
-    vcodec = "copy"
-  end
+  vcodec = opts[:vcodec]
   vcodec = "nvenc_#{vcodec}" if opts.nvidia? and vcodec != "copy"
 
   acodec = opts[:acodec]
+  acodec = "libfdk_aac" if acodec == "aac"
 
+  # cmd += %w[-crf 20] if opts.hq?
   cmd += ["-c:v", vcodec, "-c:a", acodec]
   cmd += ["-qp", opts[:quality]] if opts.quality?
-  cmd += ["-aspect", opts[:aspect]] if opts.aspect?
-  # cmd += %w[-crf 20] if opts.hq?
+  cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
 
   vfilters = []
-  vfilters << "crop=#{croptions}" if croptions
+  vfilters << "crop=#{opts[:crop]}" if opts[:crop]
+  vfilters << "yadif"             if opts.deinterlace?
+  vfilters << "yadif=1"           if opts.bob?
 
   if scale = opts[:scale]
     case scale 
@@ -111,22 +109,22 @@ files.each do |inp|
   end
 
   cmd += ["-filter:v", vfilters.join(",")] if vfilters.any?
+  cmd += ["-vf", vfilters.join(",")] if vfilters.any?
 
   cmd << out
-
-
+  puts "   out: #{out}"
   puts "   cmd: #{cmd.join(" ")}"
   puts "----------------------------------------------------------------"
   puts
 
   begin
     unless system(*cmd)
-      error "ERROR: Conversion failed.".bright_red
+      error "Conversion failed."
       next
     end
 
     unless system("x", "--copy", inp, out)
-      error "ERROR: Copying metadata failed."
+      error "Copying metadata failed."
       next
     end
   rescue Interrupt
