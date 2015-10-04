@@ -32,12 +32,13 @@ PTY.spawn(*cmd) do |r, w, pid|
   begin
     loop do
       line = r.readpartial(4096)
+      print line
 
       if line =~ /Cloning into '([^']+)'/
         reponame = $1
+      elsif line =~ /destination path .+ already exists/
+        exit 1
       end
-
-      print line
     end
   rescue Errno::EIO
   end
