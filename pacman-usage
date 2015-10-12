@@ -1,0 +1,149 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+class Hash
+  def alter!(key)
+    self[key] = yield(self[key])
+  end
+end
+
+class PackageGraph
+  def add(package)
+  end
+
+  def dep_tree(package)
+  end
+end
+
+class Package
+
+  attr_accessor :hash
+
+  PACKAGE_FIELDS = [
+    "Provides", 
+    "Depends On", 
+    # "Optional Deps", 
+    "Required By", 
+    "Optional For",
+    "Conflicts With", 
+    "Replaces",
+    "Groups", 
+  ]
+
+  DATE_FIELDS = ["Build Date", "Install Date"] 
+
+  def self.all
+    return to_enum(:all) unless block_given?
+
+    IO.popen("pacman -Qi", "r") do |io|
+      io.each_line.split_at("\n").map do |lines|
+        hash = lines.map { |l| l.split(": ", 2).map(&:strip) }.to_h
+        yield new(hash)
+      end
+    end
+  end
+
+  def initialize(hash)
+    # p hash["Optional Deps"]
+
+    PACKAGE_FIELDS.each do |field|
+      if hash[field] == "None"
+        hash[field] = []
+      else
+        hash.alter!(field) { |v| v.split.map { |vv| vv.split(/(>=|<=|>|<|=)/).first } }
+      end
+    end
+
+    DATE_FIELDS.each do |field|
+      hash.alter!(field) { |v| DateTime.parse v }
+    end
+
+    hash.alter!("Installed Size") { |v| parse_size v }
+
+    @hash = hash
+  end
+
+  SIZE_TABLE = {
+    "B"   => 1,
+    "KiB" => 1024**1,
+    "MiB" => 1024**2,
+    "GiB" => 1024**3,
+    "TiB" => 1024**4,
+  }
+
+  def parse_size(str)
+    if str =~ /^(\d+\.\d+) (#{SIZE_TABLE.keys.join("|")})$/
+      ($1.to_f * SIZE_TABLE[$2]).round
+    else
+      raise "Error parsing size: #{str}"
+    end
+  end
+
+  def [](key)
+    @hash[key]
+  end
+
+  CONVENIENCE_METHODS = {
+    "Name"           => :name,
+    "Installed Size" => :size,
+    "Depends On"     => :deps,
+    "Required By"    => :reverse_deps,
+    "Replaces"       => :replaces,
+    "Provides"       => :provides,
+    "Install Date"   => :installed,
+  }
+
+  CONVENIENCE_METHODS.each do |field, method_name|
+    define_method(method_name) { @hash[field] }
+  end
+
+  def recursive_dep_size(visited=nil)
+    visited ||= Set.new([self.name])
+    deps.map do |dep|
+      total = dep.size
+      unless visited.includes? dep.name
+        total += dep.recursive_dep_size(visited) || 0
+        visited << dep.name
+      end
+
+      total
+    end.sum || 0
+  end
+end
+
+
+def link_deps(packages)
+  packages.each do |name, pkg|
+    next if pkg.deps.first.is_a? Package
+
+    pkg.hash.alter!("Depends On") do |v|
+      v.map do |key|
+        dep = packages[key]
+        raise "wtf! #{key}" unless dep
+        dep
+      end
+    end
+  end
+end
+
+
+
+puts "* Parsing pacakges..."
+
+packages    = []
+package_lut = {}
+Package.all.each do |pkg|
+  packages << pkg
+  [pkg.name, *pkg.provides, *pkg.replaces].each { |name| package_lut[name] = pkg }
+end
+puts "  |_ Done! (#{packages.size.commatize} packages found)"
+
+# puts "* Linking packages..."
+# link_deps(packages)
+# puts "  |_ Done!"
+
+packages.sort_by(&:size).each do |pkg|
+  # puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize} <8>(<7>deps: <15>#{pkg.recursive_dep_size}<8>)".colorize
+  puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize}".colorize
+end
