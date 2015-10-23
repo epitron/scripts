@@ -2,7 +2,41 @@
 
 require 'epitools'
 
-fields = %w[
+# compute_mode
+#   "Default" means multiple contexts are allowed per device.
+#   "Exclusive_Thread" means only one context is allowed per device, usable from one thread at a time.
+#   "Exclusive_Process" means only one context is allowed per device, usable from multiple threads at a time.
+#   "Prohibited" means no contexts are allowed per device (no compute apps).
+#
+# pstate
+#    performance state for the GPU: P0 (maximum performance) to P12 (minimum performance)
+#
+# fan.speed
+# utilization.gpu
+# memory.free
+# power.draw
+# inforom.power
+# inforom.pwr
+# pcie.link.width.max
+# pcie.link.gen.max
+# pcie.link.width.current
+# driver_version
+
+# clocks.current.sm
+# clocks.current.graphics
+# clocks.current.memory
+
+# clocks.applications.graphics
+# clocks.applications.memory
+
+# clocks.default_applications.graphics
+# clocks.default_applications.memory
+
+# clocks.max.graphics
+# clocks.max.sm
+# clocks.max.memory
+
+fields = %{
   name
   memory.used
   memory.total
@@ -11,44 +45,18 @@ fields = %w[
   utilization.gpu
   fan.speed
 
-  compute_mode
-  pstate
+  # clocks.applications.memory
+  # clocks.applications.graphics
+  # clocks.current.graphics clocks.max.graphics
+  # clocks.current.sm clocks.max.sm
+  # clocks.current.memory clocks.max.memory
+
   vbios_version
-]
+}.each_line.map(&:strip).reject{|field| field.empty? or field[/^#/] }
 
-#   fan.speed
-#   utilization.gpu
-#   memory.free
-#   power.draw
-#   inforom.power
-#   inforom.pwr
-#   pcie.link.width.max
-#   pcie.link.gen.max
-#   pcie.link.width.current
-#   driver_version
-
-#   clocks.current.sm
-#   clocks.current.graphics
-#   clocks.current.memory
-
-#   clocks.applications.graphics
-#   clocks.applications.memory
-
-#   clocks.default_applications.graphics
-#   clocks.default_applications.memory
-
-#   clocks.max.graphics
-#   clocks.max.sm
-#   clocks.max.memory
-
-# ]
-
-
-args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv,noheader,nounits", "-l", "2"]
-# args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv", "-l", "1"]
 
 # Note: Unsupported features return "[Not Supported]"
-Stat = Struct.new(:name, :memused, :memtotal, :temp, :gpu, :fan, :compute_mode, :pstate, :bios_version)
+Stat = Struct.new(:name, :memused, :memtotal, :temp, :gpu, :fan, :bios_version)
 
 class Stat
   # def initialize(*args)
@@ -62,12 +70,16 @@ class Stat
   end
 
   def to_color
-    "#{timestamp} <8>[ <7>#{name} v#{bios_version} <8>| <10>#{memused}<2>/<10>#{memtotal}<2>MB <8>| <11>#{gpu}<3>% GPU <8>| <12>#{temp}<4>°C <8>| <13>#{pstate} <8>| <9>#{compute_mode} <8>]".colorize
+    # "#{timestamp} <8>[ <7>#{name} v#{bios_version} <8>| <10>#{memused}<2>/<10>#{memtotal}<2>MB <8>| <11>#{gpu}<3>% GPU <8>| <12>#{temp}<4>°C <8>| <13>#{pstate} <8>| <9>#{compute_mode} <8>]".colorize
+    "#{timestamp} <8>[ <7>#{name} v#{bios_version} <8>| <10>#{memused}<2>/<10>#{memtotal}<2>MB <8>| <11>#{gpu}<3>% GPU <8>| <12>#{temp}<4>°C <8>]".colorize
   end
 end
 
 
 begin
+  # args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv", "-l", "1"]
+  args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv,noheader,nounits", "-l", "1"]
+
   run(*args) do |output|
     CSV.new(output).each do |row|
       s = Stat.new(*row.map(&:strip))
