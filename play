@@ -8,7 +8,7 @@ LOGFILE  = File.expand_path("~/play.log")
 CACHEDIR = File.expand_path("~/play")
 
 PLAYERS  = [
-  [          "mpv", proc { |url, title| ["mpv", "--media-title", title, url] } ],
+  [          "mpv", proc { |url, title| ["mpv", "--force-media-title", title, url] } ],
   [ "baka-mplayer", proc { |url, title| ["baka-mplayer", "-title", title, url] } ],
   [       "parole", proc { |url, title| ["parole", "-i", xspf_file(title, url)] } ],
   [        "totem", proc { |url, title| ["totem", xspf_file(title, url).path] } ],
