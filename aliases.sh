@@ -202,6 +202,7 @@ alias r="rails"
 alias be="bundle exec"
 alias pad="padrino"
 alias cr='crystal'
+alias rock='luarocks'
 
 gem-cd() { 
   cd `gem-dir $@`

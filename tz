@@ -6,7 +6,7 @@ require 'epitools/colored'
 
 ### Settings ##############################################
 
-CLIENT      = "utorrent"
+CLIENT      = "deluge"
 MAX_RESULTS = 20
 
 ###########################################################

@@ -2,14 +2,14 @@
 
 args = ARGV
 
-if args.empty? or args.delete("--help") or args.delete("-h")
+if args.empty? or args.delete("--help")
   puts "Youtube-DL Wrapper!"
   puts
   puts "Usage:"
   puts "  gfv [options] <youtube url(s)>"
   puts
   puts "Options:"
-  puts "  -hq    High quality mode (often has to remux)"
+  puts "  -h     High quality mode (often has to remux)"
   puts "  -n     Number the files when downloading playlists"
   puts "  -a     Extract audio only"
   puts
@@ -38,7 +38,7 @@ end
 
 if args.delete("-a")
   cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
-elsif args.delete("-hq")
+elsif args.delete("-hq") or args.delete("-h")
   cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
 else
   cmd += %w[-f best --youtube-skip-dash-manifest]

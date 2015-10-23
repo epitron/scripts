@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-CODE_PATHS  = %w[~/code ~/src]
+CODE_PATHS  = %w[~/work ~/code ~/src]
 BIN_PATHS   = ENV["PATH"].split(":")
 EXECUTABLES = %w[
   /usr/bin/subl

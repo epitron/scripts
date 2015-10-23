@@ -332,10 +332,6 @@ BEGIN {
     exit 1 if missing
   end
 
-  def route(url)
-    $router.route! url
-  end
-
   LOGFILE = File.join(ENV["HOME"], "web.log")
 
   def write_to_log(url)
@@ -343,6 +339,11 @@ BEGIN {
       timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
       f.puts "#{timestamp} | #{url}"
     end
+  end
+
+  def route(url)
+    write_to_log url
+    $router.route! url
   end
 
 }
@@ -369,9 +370,6 @@ if $0 == __FILE__
 
   if url = ARGV.first
     url = "http://#{url}" unless url[%r{^https?://}i] # slap an http:// on the argument if necessary
-
-    write_to_log url
-
     route url
   else
     puts "usage: web <url>"

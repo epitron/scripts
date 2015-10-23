@@ -85,6 +85,7 @@ EXTRA_LANGS = {
   "Rakefile"     => :ruby,
   "Gemfile"      => :ruby,
   "Makefile"     => :bash,
+  ".mk"          => :bash,
   "PKGBUILD"     => :bash,
   ".install"     => :bash,
   ".desktop"     => :bash,
