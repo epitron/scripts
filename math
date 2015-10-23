@@ -56,47 +56,67 @@ class MathOTron
     puts "Type 'help' for help."
   end
 
+  def error(message)
+    puts "<bright_red>ERROR:</bright_red> #{message}".colorize
+  end
+
   #############################################################################
 
-  UNITS = {
-    "kb" => 1_000,
-    "mb" => 1_000_000,
-    "mm" => 1_000_000,
-    "bn" => 1_000_000_000,
-    "gb" => 1_000_000_000,
-    "k"  => 1_000,
-    "m"  => 1_000_000,
-    "g"  => 1_000_000_000,
-    "b"  => 1_000_000_000,
-    "t"  => 1_000_000_000_000,
-  }
+  # UNITS = Rash.new(
+  #   /kb?/i       => 1_000,
+  #   /(m|mb|mm)/i => 1_000_000,
+  #   /(g|bn|gb)/i => 1_000_000_000,
+  #   /(t|tb)/i    => 1_000_000_000_000,
+  #   "q"          => 1_000_000_000_000_000,
+  #   "Q"          => 1_000_000_000_000_000_000,
+  # )
 
   REWRITE_RULES = {
     ## NICE MATH
-
-    # x: turns "5 x 3" into "5 * 3"
+    # x (turn "5 x 3" into "5 * 3")
     /([\d\):]+\s*)(?:x|×)(\s*[\d\(]+)/ => "\\1*\\2",
 
-    # ^: turns "5^2" into "5**2"
+    # ^ (turns "5^2" into "5**2")
     /([\d\):]+\s*)\^(\s*[\d\(]+)/ => "\\1**\\2",
 
-    # backwards division: "a \ b" becomes "b / a"
+    # flipped division ("a \ b" becomes "b / a")
     /([\d\):]+\s*)\\(\s*[\d\(]+)/ => "\\2/\\1",
 
-
     ## COLON OPERATOR
-    # turns "1..10: function" into "(1..10).function"
+    # turn "1..10: function" into "(1..10).function"
     /(.+?): (\w+)/ => "(\\1).\\2",
-
-    # turns "5 - 3: / 6" into "(5 - 3) / 6"
+    # turn "5 - 3: / 6" into "(5 - 3) / 6"
     /(.+?): (\W+)/ => "(\\1) \\2",
   }
 
   def translate(expr)
     
-    expr = expr.gsub(/([\d_]+(?:\.\d+)?)(#{UNITS.keys.join("|")})/i) do |m|
-      $1.to_f * UNITS[$2]
+    expr = expr.gsub(/([\d_]+(?:\.\d+)?)([a-zA-Z]+)\b/) do |m|
+      # unless amount = UNITS[$2]
+      #   return 
+      # end
+      # $1.to_f * amount
+      units = $2
+      num   = $1.to_f
+
+      zeroes = case units.downcase
+      when "k", "kb"
+        10**3
+      when "m", "mb", "mm"
+        10**6
+      when "b", "g", "bn", "gb"
+        10**9
+      when "t", "tb"
+        10**12
+      when "q"
+        10**15
+      else
+        return error("Invalid units: <15>#{units.inspect}</15>, in: <15>#{m.inspect}</15>")
+      end
+
+      num * zeroes
     end
+
 
     REWRITE_RULES.each do |regexp, replacement|
       # p expr
@@ -119,7 +139,9 @@ class MathOTron
   #############################################################################
 
   def calculate(expr)
-    translated_expr = translate expr
+    unless translated_expr = translate(expr)
+      return nil
+    end
 
     if expr != translated_expr
       puts "=> #{translated_expr}".grey 
