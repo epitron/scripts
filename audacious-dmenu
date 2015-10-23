@@ -27,11 +27,16 @@ EXTS = %w[
   mp3 m4a flac ogg wma fla flv mp2
 ]
 
-expanded = 
-  Dir.open(path).
-  drop(2).
-  map { |filename| File.join(path, filename) }.
-  select { |fullpath| File.directory?(fullpath) || fullpath =~ /\.#{Regexp.union EXTS}$/ }
+AUDIO_RE = /\.#{Regexp.union EXTS}$/
 
-# require 'pp'; pp expanded
-exec("audacious", *expanded)
+# expanded = 
+#   Dir.open(path).
+#   drop(2).
+#   map { |filename| File.join(path, filename) }.
+#   select { |fullpath| File.directory?(fullpath) || fullpath =~ AUDIO_RE }
+
+# # require 'pp'; pp expanded
+# exec("audacious", *expanded)
+
+files = Dir["#{path}/**/*.{#{EXTS.join(",")}}"]
+exec("audacious", *files)
