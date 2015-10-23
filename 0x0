@@ -8,7 +8,9 @@ echo "* Uploading: $1"
 
 if [[ $1 =~ ^https?:// ]]
 then
-  curl -F"url=$1" https://0x0.st
+  form="url=$1"
 else
-  curl -F"file=@$1" https://0x0.st
+  form="file=@$1"
 fi
+
+curl --progress-bar -F"$form" https://0x0.st | cat
