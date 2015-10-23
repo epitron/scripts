@@ -1,3 +1,17 @@
+People struggle to devise formal rules with enough complexity to accurately describe the world. For example, Cyc failed to understand a story about a person named Fred shaving in the morning (Linde, 1992). Its inference engine detected an inconsistency in the story: it knew that people do not have electrical parts, but because Fred was holding an electric razor, it believed the entity "FredWhileShaving" contained electrical parts. It therefore asked whether Fred was still a person while he was shaving.
+                -- Yoshua Bengio
+%
+What we now want is closer contact and better understanding between individuals and communities all over the earth, and the elimination of egoism and pride which is always prone to plunge the world into primeval barbarism and strife... Peace can only come as a natural consequence of universal enlightenment.
+                -- Nikola Tesla
+%
+Be picky how you invest your time; wasted time is worse than wasted money.
+%
+Throughout recent years, a vast amount of money and time and brains has been employed in overcoming sales resistance, i.e. in inducing unoffending persons to waste their money in purchasing objects which they had no desire to possess. Everything economic is looked upon from the standpoint of the producer rather than of the consumer. In former times, it was thought that bread is baked in order to be eaten; nowadays we think that it is eaten in order to be baked. When we spend money, we are expected to do so not with a view to our enjoyment of what we purchase but to enrich those who have manufactured it. Since the greatest of virtues is business skill and since skill is shown in making people buy what they don't want rather than what they do, the man who is most respected is the one who has caused the most pain to purchasers.
+                -- Bertrand Russell (On Sales Resistance, 1932)
+%
+There is no such thing as digital circuitry. There is only analog circuitry driven to extremes.
+                -- from NASA Observed Failure Scenarios in Safety Critical Systems
+%
 Experience is the hardest kind of teacher; it gives you the test first, and the lesson afterward.
                 -- Oscar Wilde
 %
