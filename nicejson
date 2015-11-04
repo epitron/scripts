@@ -1,6 +1,16 @@
 #!/usr/bin/ruby
 require 'json'
 
+def usage
+  puts
+  puts "Usage:"
+  puts "  nicejson <options> [file(s)...]"
+  puts
+  puts "Options:"
+  puts "  -i     Inline mode (replace the original file)"
+  puts
+end  
+
 def pretty(json)
   JSON.pretty_generate(json)
 end
@@ -9,7 +19,12 @@ def load(file)
   JSON.parse(File.read(file))
 end
 
-opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if opts.delete("--help") or opts.delete("-h")
+  usage
+  exit 0
+end
 
 if args.any?
   if opts.delete("-i")
