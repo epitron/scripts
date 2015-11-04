@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'shellwords'
+
 # Array of [ [dirname, path], ... ]
 paths = Dir["#{ENV["HOME"]}/mp3*/*"].
           reject { |e| e =~ /\.\w{1,4}$/ unless e =~ /\.(xspf|m3u8?)$/ }.
@@ -38,5 +40,5 @@ AUDIO_RE = /\.#{Regexp.union EXTS}$/
 # # require 'pp'; pp expanded
 # exec("audacious", *expanded)
 
-files = Dir["#{path}/**/*.{#{EXTS.join(",")}}"]
+files = Dir["#{Shellwords.escape path}/**/*.{#{EXTS.join(",")}}"]
 exec("audacious", *files)
