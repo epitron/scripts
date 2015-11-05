@@ -35,7 +35,7 @@ PTY.spawn(*cmd) do |r, w, pid|
       print line
 
       if line =~ /Cloning into '([^']+)'/
-        reponame = $1
+        reponame ||= $1
       elsif line =~ /destination path .+ already exists/
         exit 1
       end
@@ -48,6 +48,7 @@ if reponame
   # system("subl", reponame)
   readmes = Dir.foreach(reponame).select { |f| f[/^readme/i] }.sort_by(&:size)
   if readme = readmes.first
-    system("c", "#{reponame}/#{readme}")
+    Dir.chdir(reponame)
+    system("c", readme)
   end
 end
