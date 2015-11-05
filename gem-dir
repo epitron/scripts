@@ -11,7 +11,12 @@ def spec(name)
 
   first_spec = specs.sort_by{ |spec| Gem::Version.new(spec.version) }.last
 
-  first_spec or raise CommandError, "Gem `#{name}` not found"
+  unless first_spec 
+    STDERR.puts "ERROR: Gem `#{name}` not found"
+    exit 1
+  end
+
+  first_spec
 end
 
 raise "Error: must specify a gem" unless ARGV.size == 1
