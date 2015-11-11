@@ -19,15 +19,6 @@ THEMES = {
 }
 CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
 
-class Enumerator
-  def +(other)
-    Enumerator.new do |y|
-      each { |e| y << e }
-      other.each { |e| y << e }
-    end
-  end
-end
-
 def lesspipe(*args)
   if args.any? and args.last.is_a?(Hash)
     options = args.pop
@@ -67,6 +58,16 @@ def which(bin)
     return result if File.exists? result
   end
   nil
+end
+
+##############################################################################
+
+def concatenate_enumerables(*enums)
+  Enumerator.new do |y|
+    enums.each do |enum|
+      enum.each { |e| y << e }
+    end
+  end
 end
 
 ##############################################################################
@@ -126,13 +127,21 @@ def print_source(filename)
     end
   end
 rescue ArgumentError
-  run "file", filename
+  concatenate_enumerables run("file", filename), run("ls", "-l", filename)
 end
 
 ##############################################################################
 
 def print_markdown(filename)
   # Lazily load markdown renderer
+  begin
+    require 'epitools/colored'
+    require 'redcarpet'
+  rescue LoadError
+    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" +
+      print_source(filename)
+  end
+
   eval DATA.read
 
   carpet = Redcarpet::Markdown.new(BlackCarpet, :fenced_code_blocks=>true)
@@ -143,6 +152,13 @@ end
 
 def print_cp437(filename)
   open(filename, "r:cp437:utf-8", &:read)
+end
+
+##############################################################################
+
+def print_archive(filename)
+  raise "butts"
+  run("atool", "-l", filename)
 end
 
 ##############################################################################
@@ -180,12 +196,13 @@ end
 
 ##############################################################################
 
-
 COMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
 }
+
+ARCHIVES = 
 
 def convert(arg)
   arg = which(arg) unless File.exists? arg
@@ -198,7 +215,9 @@ def convert(arg)
 
     ext = File.extname(arg).downcase
 
-    if cmd = COMPRESSORS[ext]
+    if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
+      print_archive(arg)
+    elsif cmd = COMPRESSORS[ext]
       IO.popen([*cmd, arg])
     elsif %w[.md .markdown].include? ext
       print_markdown(arg)
@@ -258,9 +277,6 @@ end
 __END__
 
 # This gets lazily loaded if markdown is to be rendered.
-
-require 'epitools/colored'
-require 'redcarpet'
 
 def indented?(text)
   indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
