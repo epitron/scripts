@@ -107,5 +107,9 @@ case $(uname -s) in
     ;;
 esac
 
+if [ "`uname -o`" == "Android" ]; then
+  . $SCRIPTDIR/bashrc.android
+fi
+
 export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
 export MAKEOPTS="-j`expr $PROCESSORS + 1`"

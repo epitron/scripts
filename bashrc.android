@@ -1,0 +1,8 @@
+unalias rm
+unalias git
+unalias dpkg
+
+alias ai="apt install"
+alias as="apt search"
+alias ar="apt remove"
+alias au="apt update && apt upgrade"
