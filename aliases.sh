@@ -198,7 +198,7 @@ gc() {
 alias gcs="gc --depth=1"
 
 # ruby
-alias r="rails"
+alias r="ren"
 alias be="bundle exec"
 alias pad="padrino"
 alias cr='crystal'
@@ -247,3 +247,10 @@ alias nl="npm list -g --color=always |& less -S"
 alias_all_as_sudo pip pip2
 
 
+#
+# Usage:
+#   faketty <command> <args>
+#
+# (Almost works... There's just a newline issue)
+#
+#function faketty { script -qfc "$(printf "%q " "$@")"; }
