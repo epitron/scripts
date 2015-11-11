@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  echo "usage: ssl-fingerprint <cert.pem>"
+else
+  openssl x509 -in "$1" -noout -fingerprint -sha1
+fi
