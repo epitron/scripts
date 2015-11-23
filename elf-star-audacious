@@ -20,6 +20,11 @@ def filename
   aud("current-song-filename")
 end
 
+def play_click_sound
+  if which("mplayer")
+    run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
+  end
+end
 
 
 def notify(type, title, body, time: 5)
@@ -43,6 +48,7 @@ end
 
 if playing?
   info = {date: Time.now.to_i, name: song, filename: filename}
+  play_click_sound  
   notify(:info, "ELF STAR!", info[:name])
   STARLOG.puts JSON.dump(info)
 end
