@@ -1,2 +1,2 @@
 #!/bin/bash
-wget -p -k "$@"
+wget --mirror --convert-links --adjust-extension --page-requisites --no-parent "$@"
