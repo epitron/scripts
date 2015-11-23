@@ -13,4 +13,4 @@ else
   form="file=@$1"
 fi
 
-curl --progress-bar -F"$form" https://0x0.st | cat
+curl --compressed --progress-bar -F"$form" https://0x0.st | cat
