@@ -1,14 +1,17 @@
 #!/usr/bin/env ruby
 #
-#   TODOS:
-# ----------------------------------------------
-#   * show "remote" before "local"
-#   * use slop
-#     * -r removes (remote-)branch
-#   * create remote branch (based on current?)
-#   * prompt for confirmation when doing dangerous things
-#     (or things that could be mistakes -- eg: creating a branch)
-#   * eat ugly git messages and make them colourized and pretty 
+#----------------------------------------------
+# TODOS:
+#----------------------------------------------
+# * auto-stash uncommitted changes when switching branches, and auto-unstash when switching back
+# * rename branch also renames remote
+# * -D deletes local and remote branches
+# * show "remote" before "local"
+# * use slop
+# * create remote branch (based on current?)
+# * prompt for confirmation when doing dangerous things
+#   (or things that could be mistakes -- eg: creating a branch)
+# * eat ugly git messages and make them colourized and pretty 
 
 #################################################################################
 require 'epitools'
@@ -91,6 +94,7 @@ def get_branches
   branches
 end  
 
+
 #################################################################################
 ## Main
 
@@ -112,20 +116,42 @@ eg:
   gb -d origin/branch         => delete remote branch
   gb -t [<remote>[/<branch>]] => track current branch on origin/<branchname> (or <remote>/<branchname>)
   gb -r <new_name>            => rename current branch to <new_name>
+  gb -r <src> <dest>          => rename <src> branch to <dest>
 }
 
   exit
-# TODO: 'gb -t' tracks current branch (git branch --set-upstream <branch> origin/<branch>)
-# TODO: auto-stash uncommitted changes when switching branches, and auto-unstash when switching back.
-# TODO: 'gb -r <dest>' renames current branch to <dest> (git branch -m <src> <dest>)
+
+elsif args.first.downcase == "-r"
+  ## Rename
+
+  args.shift
+  branches = get_branches
+
+  case args.size 
+  when 1
+    src  = branches.current
+    dest = args.first
+  when 2
+    src, dest = args
+  end
+
+  if branches.local? src
+    puts "<grey>* <light_cyan>Renaming <light_yellow>#{src} <light_cyan>to <light_yellow>#{dest}".colorize
+  
+    # git branch -m old_branch new_branch         # Rename branch locally    
+    if system "git branch -m #{src} #{dest}"
+      puts "Success!"
+      # git push origin :old_branch                 # Delete the old branch    
+      # git push --set-upstream origin new_branch   # Push the new branch, set local branch to track the new remote
+    end
+  end
 
 elsif args.first.downcase == "-d"
   ## Delete
 
-  branches = get_branches
-
   args.shift
-  branch = args.shift
+  branches = get_branches
+  branch   = args.shift
   
   if branches.local? branch
     puts "<grey>* <light_cyan>Deleting <light_yellow>#{branch}".colorize
@@ -152,8 +178,7 @@ elsif args.first.downcase == "-p"
   ## Push
 
   args.shift
-  remote = args.shift || "origin"
-
+  remote  = args.shift || "origin"
   current = get_branches.current
 
   # Track if not already tracked
@@ -163,15 +188,16 @@ elsif args.first.downcase == "-p"
 
 elsif args.first.downcase == "-t"
   ## Track
-  branches = get_branches
-  current = branches.current
 
   args.shift
+  branches = get_branches
+  current  = branches.current
+
   remote = args.shift || "origin"
 
-  unless remote["/"]
-    remote = "#{remote}/#{current}"
-  end
+  # unless remote["/"]
+  #   remote = "#{remote}/#{current}"
+  # end
 
   # FIXME: Create remote branch (or "git push origin master" ) if branch doesn't exist
   # $ gb -t
@@ -180,7 +206,7 @@ elsif args.first.downcase == "-t"
 
 
   puts "<grey>* <light_yellow>#{current} <white>tracking <light_green>#{remote}".colorize
-  system("git branch --set-upstream-to=#{remote} #{current}")
+  system("git branch --set-upstream #{remote} #{current}")
 else
   ## Branch
   branches = get_branches
