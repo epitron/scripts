@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Cryptographically timestamp a SHA-256 hash of a set of specified files or a set of strings using OriginStamp.
+#
+# Each input is hashed and sent to OriginStamp, a Bitcoin-based timestamping service with a free API
+# (http://www.originstamp.org/developer), to cryptographically verify that the downloaded file was
+# created on or before the claimed day it was downloaded. This allows you to prove you did not later
+# alter it, which may be useful in disputes or for investigations.
+
+# Prerequisites: curl, sha256sum, valid OriginStamp API key
+
+# Usage: `$ timestamp ~/wiki/catnip.age ~/wiki/images/logo.png`
+#        `$ timestamp "Lyndon Johnson was behind the Kennedy assassination." "I ate the last cookie in the jar."`
+
+set -e
+
+API_KEY="7d6c80d29c63428cffff8cd760c37b0b"
+
+# loop over input targets, hash them whether file or string, and submit:
+for TARGET in "$@"; do
+
+    if [ -f "$TARGET" ]; then
+     # since it's a valid file, tell `sha256sum` to read it and hash it:
+     HASH=$(sha256sum "$TARGET" | cut --delimiter=' ' --field=1)
+    else
+      # if it's a string we're precommitting to instead, pipe it into `sha256sum`:
+      HASH=$(echo "$TARGET" | sha256sum | cut --delimiter=' ' --field=1)
+    fi
+
+     echo -n "$TARGET: "
+     curl --request POST --header "Content-Type: application/json" --header "Authorization: Token token=$API_KEY" \
+          --data "{\"hash_sha256\":\"$HASH\"}" 'http://www.originstamp.org/api/stamps'
+     # print newline to keep output tidier since curl doesn't add a final newline to the JSON output
+     echo ""
+done
