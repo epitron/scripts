@@ -27,8 +27,7 @@ echo "          MAKE=$MAKE"
 echo "        PARAMS=$PARAMS"
 echo ""
 
-if [ -f configure ]
-then
+if [ -f configure ]; then
    echo "============================ Configuring... ==============================="
    if ./configure $PARAMS
    then
@@ -38,8 +37,9 @@ then
    else
       echo "===================== Configure failed! ========================"
    fi
-elif [ -f Rakefile ]
-then
+elif [ -f Rakefile ]; then
    echo "========================= Raking Build =============================="
    rake build
+elif [ -f waf ]; then
+   ./waf configure && ./waf build -j${PROCESSORS}
 fi
