@@ -28,7 +28,8 @@ class Branches
   end
   
   def local?(branch); local.include? branch; end
-  def remote?(branch); remote.include? branch; end
+  def remote?(branch); remote.include? "origin/#{branch}"; end
+  def remote_for(branch); remote.find {|e| e == "origin/#{branch}" }; end
   def current?(branch); current == branch; end
 
   def print
@@ -211,14 +212,14 @@ else
   ## Branch
   branches = get_branches
   
-  branch = args.first
+  branch = args.first.downcase
 
   if branches.local? branch
     puts "<grey>* <light_white>Switching to <light_yellow>#{branch}".colorize
     system("git checkout #{branch}")
-  elsif branches.remote? branch
+  elsif remote_branch = branches.remote_for(branch)
     puts "<grey>* <light_white>Tracking <light_yellow>#{branch}".colorize
-    system("git checkout --track #{branch}")
+    system("git checkout -b #{branch} --track origin/#{branch}")
   else
     puts "* Creating new branch #{branch}"
     system("git branch #{branch}")
