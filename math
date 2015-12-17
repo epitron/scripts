@@ -91,7 +91,7 @@ class MathOTron
 
   def translate(expr)
     
-    expr = expr.gsub(/([\d_]+(?:\.\d+)?)([a-zA-Z]+)\b/) do |m|
+    expr = expr.gsub(/(\d[\d_]+(?:\.\d+)?)([a-zA-Z]+)\b/) do |m|
       # unless amount = UNITS[$2]
       #   return 
       # end
