@@ -10,7 +10,7 @@ require 'sinatra'
 require 'haml'
 # require 'tilt/haml'
 # require 'tilt/coffee'
-require 'puma'
+
 require 'socket'
 
 require 'epitools/core_ext'
@@ -52,7 +52,12 @@ end
 
 ###########################################################################
 
-set :server, :puma
+begin
+  require 'puma'
+  set :server, :puma
+rescue LoadError
+end
+
 set :machine_name, Socket.gethostname
 
 set :bind, host
