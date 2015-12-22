@@ -1,0 +1,2 @@
+alias clear='echo -ne "\e[2J\e[H"'
+alias open='cygstart'
