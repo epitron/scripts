@@ -6,7 +6,7 @@
   user = epitron
 
 [push]
-  default = matching
+  default = simple
 
 [alias]
   st = status
