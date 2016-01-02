@@ -75,6 +75,7 @@ alias rm='trsh'
 alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
+alias cls='clear'
 
 # text
 alias nano="nano -w"

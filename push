@@ -6,16 +6,20 @@ else
 fi
 
 for i in $DIRS; do
-echo
-echo -n "=== Updating $i "
-pushd $i > /dev/null
-if [ -d .git ]; then
-        echo "(git push) ==="
-        echo
-	git push
-else
-	echo "No repo found..."
-fi
-popd > /dev/null
-echo
+  echo
+  echo -n "=== Updating $i "
+  
+  pushd $i > /dev/null
+  
+  if [ -d .git ]; then
+    echo "(git push) ==="
+    echo
+  	git push
+  else
+  	echo "No repo found..."
+  fi
+  
+  popd > /dev/null
+  
+  echo
 done
