@@ -3,7 +3,7 @@
 # https://github.com/ytaka/ruby-wmctrl
 begin
   require 'wmctrl'
-rescue
+rescue LoadError
   $stderr.puts "Please install the ruby-wmctrl gem ('gem install ruby-wmctrl')"
   exit 1
 end
