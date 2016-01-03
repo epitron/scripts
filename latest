@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
+gem "slop", "~> 3.6"
+require 'slop'
 require 'rubygems'
 require 'epitools'
 require 'date'
-require 'slop'
 
 #
 # -n number

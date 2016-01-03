@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 if ARGV.any?
+  gem "slop", "~> 3.6"
   require 'slop'
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: sum [options]\n\nPurpose: Sum the values piped into STDIN and return their total\n"

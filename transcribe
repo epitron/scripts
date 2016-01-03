@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
-require 'google_speech'
+gem "slop", "~> 3.6"
 require 'slop'
+require 'google_speech'
 
 def wavify(arg)
   case File.extname arg

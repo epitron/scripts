@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
+gem "slop", "~> 3.6"
+require 'slop'
 require 'epitools'
 
 VIDEO_EXTS = %[mp4 mkv avi mov mpg mpeg m4v webm]
 AUDIO_EXTS = %[mp3 aac m4a]
 
 def parse_options
-  require 'slop' # lazy loaded
-
   #@opts ||= Slop.new
   @opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: clip [options] <videos...>'

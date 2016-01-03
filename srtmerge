@@ -12,9 +12,9 @@ require 'epitools'
 #####################################################################################
 
 def parse_options
-  require 'slop' # lazy loaded
+  gem "slop", "~> 3.6"
+  require 'slop'
 
-  #@opts ||= Slop.new
   @opts = Slop.parse(help: true, strict: true) do
     banner "\nUsage:\n\tsrtmerge [options] <sub file/video file...>\n\n(Note: .srt and video file (.mkv or .mp4) must both exist.)\n\nOptions:"
 

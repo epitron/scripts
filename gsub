@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
-require 'epitools'
+gem "slop", "~> 3.6"
 require 'slop'
+require 'epitools'
 
 opts = Slop.new :help => true do
   banner "Usage: gsub -f from -t to [files...]"

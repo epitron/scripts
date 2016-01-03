@@ -8,6 +8,7 @@
 # (In other words, it removes all the \n characters
 # that were inserted to wrap the lines of text.)
 #
+gem "slop", "~> 3.6"
 require 'slop'
 
 DEFAULT_WIDTH = 80
