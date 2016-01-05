@@ -121,6 +121,7 @@ alias mosh='msh'
 alias bmon='bwm-ng'
 alias whois='whois -H'
 alias geoip='geoiplookup'
+alias geoip6='geoiplookup6'
 alias iptraf='sudoifnotroot iptraf-ng'
 
 # disks
