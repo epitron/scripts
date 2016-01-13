@@ -82,6 +82,29 @@ end
 
 BEGIN {
 
+
+  # Excise Bundler!
+  if defined? Bundler
+    if Gem.post_reset_hooks.reject!{ |hook| hook.source_location.first =~ %r{/bundler/} }
+      Bundler.preserve_gem_path
+      Gem.clear_paths
+      Gem::Specification.reset
+
+      load 'rubygems/core_ext/kernel_require.rb'
+
+      Kernel.module_eval do
+        def gem(gem_name, *requirements) # :doc:
+          skip_list = (ENV['GEM_SKIP'] || "").split(/:/)
+          raise Gem::LoadError, "skipping #{gem_name}" if skip_list.include? gem_name
+          spec = Gem::Dependency.new(gem_name, *requirements).to_spec
+          spec.activate if spec
+        end
+      end
+    end
+  end
+
+
+
   require 'epitools/sys'
   require 'epitools/wm'
   require 'epitools/core_ext/misc'
