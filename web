@@ -82,9 +82,11 @@ end
 
 BEGIN {
 
-
-  # Excise Bundler!
+  # Escape from bundler's cage!
   if defined? Bundler
+    old_warn_level = $VERBOSE
+    $VERBOSE = nil
+
     if Gem.post_reset_hooks.reject!{ |hook| hook.source_location.first =~ %r{/bundler/} }
       Bundler.preserve_gem_path
       Gem.clear_paths
@@ -101,9 +103,9 @@ BEGIN {
         end
       end
     end
+
+    $VERBOSE = old_warn_level
   end
-
-
 
   require 'epitools/sys'
   require 'epitools/wm'
@@ -174,12 +176,13 @@ BEGIN {
       uri = URI.parse(url)
 
       # Make sure the default is set...
-      @default ||= proc.new { open_in_best_browser uri }
+      @default ||= proc.new { open_in_best_browser uri, BROWSERS }
+
+      # URI.parse doesn't handle file:/// urls properly, so we'll have to bypass it...
+      return @default.(url) if url[%r{^file://}i]
 
       # Try each of the matchers...
       @matchers.each do |args, block|
-
-
 
         matched = args.any? do |arg|
           case arg
@@ -392,7 +395,7 @@ if $0 == __FILE__
   ensure_required_binaries_are_in_the_path
 
   if url = ARGV.first
-    url = "http://#{url}" unless url[%r{^https?://}i] # slap an http:// on the argument if necessary
+    url = "http://#{url}" unless url[%r{^(https?|file)://}i] # slap an http:// on the argument if necessary
     route url
   else
     puts "usage: web <url>"
