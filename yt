@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'epitools'
-# require 'open-uri'
 require 'http'
 
 unless ARGV.any?
@@ -58,20 +57,22 @@ class Result
 
 end
 
+def youtube_search(query)
+  url = "https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=Search"
+  page = Nokogiri::HTML(HTTP.get(url).to_s)
+
+  lis = page.search("#results ol.section-list ol.item-section > li")
+  results = lis.map do |li|
+    next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
+    Result.new li
+  end.compact
+end
+
 query = ARGV.join(" ")
 
 puts "Searching for: <14>#{query}".colorize
 
-url = "https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=Search"
-# b = Browser.new url
-# page = Nokogiri::HTML(open(url))
-page = Nokogiri::HTML(HTTP.get(url).to_s)
-
-lis = page.search("#results ol.section-list ol.item-section > li")
-results = lis.map do |li|
-  next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
-  Result.new li
-end.compact
+results = youtube_search(query)
 
 puts "Results: #{results.size}"
 
