@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+require 'json'
+
+STARLOG = open(File.expand_path("~/elf-stars.json"))
+
+STARLOG.each_line do |line|
+  json = JSON.parse(line)
+  time = Time.at(json["date"]).strftime("%Y-%m-%d @ %H:%M")
+  puts "#{time} | #{json["name"]}"
+end
