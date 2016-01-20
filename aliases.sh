@@ -79,6 +79,7 @@ alias cls='clear'
 
 # text
 alias nano="nano -w"
+alias s.='s .'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'

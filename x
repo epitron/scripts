@@ -26,6 +26,7 @@ end
 # OPTION PARSER
 
 def parse_options
+  gem 'slop', '~> 3.6'
   require 'slop' # lazy loaded
   @opts = Slop.parse(help: true, strict: true) do
     banner "xattr editor\n\nUsage: x [options] <files...>"
