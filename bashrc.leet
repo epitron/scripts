@@ -117,5 +117,7 @@ case $(uname -o) in
 esac
 
 
-export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
-export MAKEOPTS="-j`expr $PROCESSORS + 1`"
+if [ -f /proc/cpuinfo ]; then
+  export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
+  export MAKEOPTS="-j`expr $PROCESSORS + 1`"
+fi
