@@ -2,24 +2,32 @@
 
 require 'rubygems'
 
-def spec(name)
-  specs = if Gem::Specification.respond_to?(:each)
-            Gem::Specification.find_all_by_name(name)
-          else
-            Gem.source_index.find_name(name)
-          end
-
-  first_spec = specs.sort_by{ |spec| Gem::Version.new(spec.version) }.last
-
-  unless first_spec 
-    STDERR.puts "ERROR: Gem `#{name}` not found"
-    exit 1
+def gem_specs(name)
+  if Gem::Specification.respond_to?(:each)
+    Gem::Specification.find_all_by_name(name)
+  else
+    Gem.source_index.find_name(name)
   end
-
-  first_spec
 end
+
+def bundler_specs(name)
+  if File.exists?("Gemfile")
+    require 'bundler'
+    Bundler.environment.specs.find_all { |s| s.name == name }
+  else
+    []
+  end
+end  
 
 raise "Error: must specify a gem" unless ARGV.size == 1
 
-gem = spec(ARGV.first)
-puts gem.full_gem_path
+gem_name = ARGV.first
+
+all_specs = gem_specs(gem_name) + bundler_specs(gem_name)
+
+if spec = all_specs.sort_by(&:version).last
+  puts spec.full_gem_path
+else
+  STDERR.puts "ERROR: Gem `#{gem_name}` not found"
+  exit 1
+end
