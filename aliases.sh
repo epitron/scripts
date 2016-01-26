@@ -185,7 +185,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch --all"
+alias gf="git fetch --all --prune"
 alias fetch="gf"
 
 # alias gc="git clone"
@@ -208,7 +208,11 @@ alias cr='crystal'
 alias rock='luarocks'
 
 gem-cd() { 
-  cd `gem-dir $@`
+  local gem_dir
+
+  if gem_dir="`gem-dir $@`"; then
+    cd "$dir"
+  fi
 }
 
 # 64/32bit specific aliases
