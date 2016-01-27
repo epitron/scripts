@@ -231,7 +231,7 @@ esac
 #alias gfv='noglob gfv'
 
 # arch
-alias pacman='sudo pacman'
+alias pacman='sudoifnotroot pacman'
 alias pacs='pacman -Ss'   # search for package
 alias pacg='pacman -Qg'   # show groups
 alias pacu='pacman -Syu'  # update packages
