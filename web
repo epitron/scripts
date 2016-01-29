@@ -179,7 +179,7 @@ BEGIN {
       @default ||= proc.new { open_in_best_browser uri, BROWSERS }
 
       # URI.parse doesn't handle file:/// urls properly, so we'll have to bypass it...
-      return @default.(url) if url[%r{^file://}i]
+      return @default.(url) if url.to_s[%r{^file://}i]
 
       # Try each of the matchers...
       @matchers.each do |args, block|
