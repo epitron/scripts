@@ -1,2 +1,2 @@
 #!/bin/bash
-sudoifnotroot apt-get -u $* dist-upgrade
+exec sudoifnotroot apt-get -u $* dist-upgrade
