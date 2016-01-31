@@ -1,2 +1,2 @@
 #!/bin/bash
-agu && agdu
+agu && exec agdu

@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ $UID == 0 ]; then
-  "$@"
+  exec "$@"
 else
-  sudo "$@"
+  exec sudo "$@"
 fi
