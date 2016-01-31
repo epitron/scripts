@@ -1,1 +1,1 @@
-HandBrakeCLI
+HandBrakeCLI "$@"
