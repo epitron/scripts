@@ -68,7 +68,7 @@ routes do
   play_video = proc { |uri| exec("play", uri) }
   match host: %w[youtube.com youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv], &play_video
   match host: "ted.com", path: "/talks/", &play_video
-  match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg|gifv)$/i, &play_video
+  match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
   match host: %w[imgur.com twitch.tv justin.tv infoq.com] do |uri|
@@ -81,6 +81,31 @@ end
 # Here's the actual program. (This gets executed before the "routes" command above.)
 
 BEGIN {
+
+  # Escape from bundler's cage!
+  if defined? Bundler
+    old_warn_level = $VERBOSE
+    $VERBOSE = nil
+
+    if Gem.post_reset_hooks.reject!{ |hook| hook.source_location.first =~ %r{/bundler/} }
+      Bundler.preserve_gem_path
+      Gem.clear_paths
+      Gem::Specification.reset
+
+      load 'rubygems/core_ext/kernel_require.rb'
+
+      Kernel.module_eval do
+        def gem(gem_name, *requirements) # :doc:
+          skip_list = (ENV['GEM_SKIP'] || "").split(/:/)
+          raise Gem::LoadError, "skipping #{gem_name}" if skip_list.include? gem_name
+          spec = Gem::Dependency.new(gem_name, *requirements).to_spec
+          spec.activate if spec
+        end
+      end
+    end
+
+    $VERBOSE = old_warn_level
+  end
 
   require 'epitools/sys'
   require 'epitools/wm'
@@ -151,12 +176,13 @@ BEGIN {
       uri = URI.parse(url)
 
       # Make sure the default is set...
-      @default ||= proc.new { open_in_best_browser uri }
+      @default ||= proc.new { open_in_best_browser uri, BROWSERS }
+
+      # URI.parse doesn't handle file:/// urls properly, so we'll have to bypass it...
+      return @default.(url) if url.to_s[%r{^file://}i]
 
       # Try each of the matchers...
       @matchers.each do |args, block|
-
-
 
         matched = args.any? do |arg|
           case arg
@@ -369,7 +395,7 @@ if $0 == __FILE__
   ensure_required_binaries_are_in_the_path
 
   if url = ARGV.first
-    url = "http://#{url}" unless url[%r{^https?://}i] # slap an http:// on the argument if necessary
+    url = "http://#{url}" unless url[%r{^(https?|file)://}i] # slap an http:// on the argument if necessary
     route url
   else
     puts "usage: web <url>"

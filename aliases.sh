@@ -75,9 +75,11 @@ alias rm='trsh'
 alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
+alias cls='clear'
 
 # text
 alias nano="nano -w"
+alias s.='s .'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
@@ -120,6 +122,7 @@ alias mosh='msh'
 alias bmon='bwm-ng'
 alias whois='whois -H'
 alias geoip='geoiplookup'
+alias geoip6='geoiplookup6'
 alias iptraf='sudoifnotroot iptraf-ng'
 
 # disks
@@ -182,7 +185,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch --all"
+alias gf="git fetch --all --prune"
 alias fetch="gf"
 
 # alias gc="git clone"
@@ -205,7 +208,11 @@ alias cr='crystal'
 alias rock='luarocks'
 
 gem-cd() { 
-  cd `gem-dir $@`
+  local gem_dir
+
+  if gem_dir="`gem-dir $@`"; then
+    cd "$dir"
+  fi
 }
 
 # 64/32bit specific aliases
@@ -224,7 +231,7 @@ esac
 #alias gfv='noglob gfv'
 
 # arch
-alias pacman='sudo pacman'
+alias pacman='sudoifnotroot pacman'
 alias pacs='pacman -Ss'   # search for package
 alias pacg='pacman -Qg'   # show groups
 alias pacu='pacman -Syu'  # update packages

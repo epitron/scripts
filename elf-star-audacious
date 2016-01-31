@@ -3,6 +3,13 @@ require 'json'
 
 STARLOG = open(File.expand_path("~/elf-stars.json"), "a")
 
+def which(bin)
+  ENV["PATH"].split(":").find do |path|
+    result = File.join(path, bin)
+    return result if File.exists? result
+  end
+  nil
+end
 
 def aud(command)
   `audtool #{command}`.strip
@@ -22,7 +29,7 @@ end
 
 def play_click_sound
   if which("mplayer")
-    run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
+    system("mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3"))
   end
 end
 

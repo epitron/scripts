@@ -20,6 +20,7 @@ INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
 ###################################################################
 
 def options
+  gem "slop", "~> 3.6"
   require 'slop' # lazy loaded
 
   @opts ||= Slop.parse(help: true, strict: true) do

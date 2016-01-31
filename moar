@@ -6,6 +6,7 @@
 #    TODOs:
 # -------------------------
 #
+# + "Log" mode (tail, and deduplicate lines)
 # + Wrap ANSI properly (strip ANSI codes)
 # + Search
 # + Mouse wheel

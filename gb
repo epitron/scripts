@@ -194,7 +194,7 @@ elsif args.first.downcase == "-t"
   branches = get_branches
   current  = branches.current
 
-  remote = args.shift || "origin"
+  remote = args.shift || "origin/#{current}"
 
   # unless remote["/"]
   #   remote = "#{remote}/#{current}"
@@ -207,7 +207,7 @@ elsif args.first.downcase == "-t"
 
 
   puts "<grey>* <light_yellow>#{current} <white>tracking <light_green>#{remote}".colorize
-  system("git branch --set-upstream #{remote} #{current}")
+  system("git branch --set-upstream-to #{remote} #{current}")
 else
   ## Branch
   branches = get_branches

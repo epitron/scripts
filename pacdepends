@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
-
-require 'epitools'
+gem "slop", "~> 3.6"
 require 'slop'
+require 'epitools'
 
 for arg in ARGV
   puts "<8>=== <14>#{arg} <8>============".colorize
