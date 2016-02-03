@@ -88,6 +88,8 @@ EXTRA_LANGS = {
   "Makefile"     => :bash,
   ".mk"          => :bash,
   "PKGBUILD"     => :bash,
+  "configure.in" => :bash,
+  "configure"    => :bash,
   ".install"     => :bash,
   ".desktop"     => :bash,
   "Gemfile.lock" => :yaml,
@@ -201,8 +203,6 @@ COMPRESSORS = {
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
 }
-
-ARCHIVES = 
 
 def convert(arg)
   arg = which(arg) unless File.exists? arg

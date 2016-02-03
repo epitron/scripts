@@ -11,7 +11,7 @@ Package = Struct.new(:root, :file, :desc, :date, :size)
 class Package
   include Comparable
 
-  ARM_ROOT="http://seblu.net/a/arm/packages/"
+  ARM_ROOT="http://ala.seblu.net/packages/"
 
   attr_reader :name, :ver, :rev, :arch, :sig
 
