@@ -39,7 +39,8 @@ end
 if args.delete("-a")
   cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
 elsif args.delete("-hq") or args.delete("-h")
-  cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
+  ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
+  #cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
 else
   cmd += %w[-f best --youtube-skip-dash-manifest]
 end
