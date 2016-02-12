@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
-require 'epitools'
+gem 'slop', "~> 3.6"
 require 'slop'
+require 'epitools'
 #require 'find'
 
 class DirLister
