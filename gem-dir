@@ -13,10 +13,13 @@ end
 def bundler_specs(name)
   if File.exists?("Gemfile")
     require 'bundler'
-    Bundler.environment.specs.find_all { |s| s.name == name }
+    Bundler.environment.specs.select { |s| s.name == name }
   else
     []
   end
+rescue Bundler::GemNotFound => e
+  puts e
+  []
 end  
 
 raise "Error: must specify a gem" unless ARGV.size == 1
