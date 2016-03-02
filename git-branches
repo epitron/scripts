@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+def title(text,color=36)
+  puts
+  puts "\e[0;#{color}m=== \e[1;#{color}m#{text} \e[0;#{color}m===================================\e[0m"
+  puts
+end
+
+## Remote
+
+{"Unmerged" => "--no-merged", "Merged" => "--merged"}.each do |type, option|
+
+  title "#{type} remote branches", 35
+
+  branches = `git branch -r #{option}`.each_line.reject { |line| line["HEAD"] }.map do |branch|
+    branch.strip!
+
+    date = `git show --format="%cr %an" #{branch}`.each_line.first.strip
+
+    [date, branch]
+  end.sort.reverse
+
+  width = branches.map { |_, branch| branch.size }.max
+
+  branches.each do |date, branch|
+    puts "#{branch.ljust(width)}  |  #{date}"
+  end
+end
+
+puts
+
+## Local
+
+title "Unmerged local branches:"
+system("git branch -v --no-merged")
+
+title "Merged local branches:"
+system("git branch -v --merged")
+
+puts
+
