@@ -211,7 +211,7 @@ gem-cd() {
   local gem_dir
 
   if gem_dir="`gem-dir $@`"; then
-    cd "$dir"
+    cd "$gem_dir"
   fi
 }
 
