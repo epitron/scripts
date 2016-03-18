@@ -9,7 +9,7 @@ class Mount
   end
 
   def system?
-    (path =~ %r{^/(sys|dev|proc|run|tmp)}) or dev == "systemd-1"
+    (path =~ %r{^/(sys|dev|proc|run/user|tmp)}) or dev == "systemd-1"
   end
   
   def inspect
