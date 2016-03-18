@@ -37,8 +37,8 @@ unless args.include?("-o")
 end
 
 if args.delete("-a")
-  # cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
-  cmd += %w[--extract-audio -f bestaudio]
+  cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
+  # cmd += %w[--extract-audio -f bestaudio]
 elsif args.delete("-hq") or args.delete("-h")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   #cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
