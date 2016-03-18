@@ -66,7 +66,8 @@ routes do
 
   # Open videos in mplayer
   play_video = proc { |uri| exec("play", uri) }
-  match host: %w[youtube.com youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv], &play_video
+  match host: %w[youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv], &play_video
+  match host: %w[youtube.com], path: "/watch", &play_video
   match host: "ted.com", path: "/talks/", &play_video
   match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg)$/i, &play_video
 
