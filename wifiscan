@@ -25,23 +25,23 @@ for dev in devs
     for line in ap
     
       case line
-        when /Address: (.+)/
-          result[:mac] = $1
-        when /Channel:(\d+)/
-          result[:channel] = $1.to_i
-        when /ESSID:"([^\"]+)"/
-          result[:name] = $1
-        # when /Cell (\d+)/
-        #   result[:cell] = $1.to_i
-        when /Quality=([\d\/]+)\s+Signal level=(.+)/
-          quality, signal = $1, $2
-          result[:quality] = Ratio[*quality.split('/').map(&:to_i)]
-          result[:signal] = signal.strip
-        when /(WPA|WPA2|TKIP|PSK)/
-          result[:protocols] ||= []
-          result[:protocols] << $1
-        when /Encryption key:(on|off)/
-          result[:encrypted] = ($1 == "on")
+      when /Address: (.+)/
+        result[:mac] = $1
+      when /Channel:(\d+)/
+        result[:channel] = $1.to_i
+      when /ESSID:"([^\"]+)"/
+        result[:name] = $1
+      # when /Cell (\d+)/
+      #   result[:cell] = $1.to_i
+      when /Quality=([\d\/]+)\s+Signal level=(.+)/
+        quality, signal = $1, $2
+        result[:quality] = Ratio[*quality.split('/').map(&:to_i)]
+        result[:signal] = signal.strip
+      when /(WPA|WPA2|TKIP|PSK)/
+        result[:protocols] ||= []
+        result[:protocols] << $1
+      when /Encryption key:(on|off)/
+        result[:encrypted] = ($1 == "on")
       end
       
     end
@@ -51,9 +51,22 @@ for dev in devs
     result
  
   end.select(&:any?)
-  
-  #pp results
-  
+
+  # Lookup MAC addresses  
+  if File.exist? "#{__dir__}/oui"
+    load "#{__dir__}/oui"
+
+    unless db_exists?
+      puts "NOTE: MAC address database doesn't exist. Please run 'oui -u'."
+      puts
+    else
+      macs = results.map { |r| r[:mac] }
+      lookup_macs(macs).zip(results).each do |oui, result|
+        result[:oui] = oui.first if oui
+      end
+    end
+  end
+
   for channel, results in results.group_by{|result| result[:channel]}.sort
     puts "Channel: #{channel}"
     
@@ -65,7 +78,10 @@ for dev in devs
         "sig:#{result[:signal]}", 
         result[:protocols] ? "crypto:#{result[:protocols].join('/')}" : nil 
       ].compact
+
       puts "  #{result[:quality].percent} #{result[:name]} (#{params.join(', ')})"
+      puts "        #{result[:oui]}" if result[:oui]
+
     end
     puts
   end

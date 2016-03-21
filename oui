@@ -28,6 +28,10 @@ def commatize(num)
   num.to_s.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
 end
 
+def db_exists?
+  Dir["#{DB_FILE}*"].any?
+end
+
 def db_open(flags=DBM::READER)
   db = DBM.open(DB_FILE, 0666, flags)
   
@@ -73,8 +77,10 @@ def update
     CSV.new(open(CSV_URL), :headers => :first_row).each.with_index do |row, n|
       # MA-L,34F968,"ATEK Products, LLC",210 NE 10th Avenue Brainerd MN US 56401
       type, hex, company, address = row.fields
+      company.strip! if company
+      address.strip! if address
 
-      db[hex] = "#{company} (#{address})"
+      db[hex] = "#{company}\n#{address}"
       
       print "\e[1G  |_ records imported: #{commatize(n)}\e[J" if n % 137 == 0
     end
@@ -88,18 +94,13 @@ end
 
 ###################################################################
 
-def lookup(args)
+def lookup_macs(args)
 
   db_open do |db|
-    args.each do |arg|
-      nicearg = arg.upcase.scan(/[0-9A-F\:\-]/).join
-      prefix  = arg.upcase.scan(/[0-9A-F]/).take(6).join
-
-      if result = db[prefix]
-        puts "#{nicearg} - #{result}"
-      else
-        puts "#{nicearg} - #{prefix.inspect} not found"
-      end
+    args.map do |arg|
+      prefix = arg.upcase.scan(/[0-9A-F]/).take(6).join
+      result = db[prefix]
+      result && result.split("\n")
     end
   end
 
@@ -112,18 +113,37 @@ if $0 == __FILE__
 
   Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
 
+  # Help
   if ARGV.include? "-h" or ARGV.include? "--help"
     help!
+
+  # Update
   elsif ARGV.include? "-u"
     update
-  elsif Dir["#{DB_FILE}*"].empty?
+
+  # No database
+  elsif not db_exists?
     puts "You must first download the OUI database. Run 'oui -u'."
     exit 1
+
+  # No arguments
   elsif ARGV.empty?
     help!
     db_open { |db| puts "(OUI database currently has #{db.size} entries)" }
+
+  # Display results
   else
-    lookup ARGV
+    results = lookup_macs(ARGV)
+    ARGV.zip(results).each do |arg, result|
+      nicearg = arg.upcase.scan(/[0-9A-F\:\-]/).join
+      if result
+        company, address = result
+        puts "#{nicearg} - #{company}"
+        puts (" " * (nicearg.size+3)) + address if address
+      else
+        puts "#{nicearg} - #{prefix.inspect} not found"
+      end
+    end
   end
 
 end
