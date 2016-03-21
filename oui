@@ -1,0 +1,129 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+require 'dbm'
+###################################################################
+
+CACHE_DIR = File.expand_path("~/.cache/oui")
+DB_FILE   = File.join CACHE_DIR, "oui-database"
+
+CSV_URL   = "http://standards-oui.ieee.org/oui/oui.csv"
+# CSV_URL   = "oui.csv"
+
+###################################################################
+
+def help!
+  puts
+  puts "Usage:"
+  puts "  oui [options] <mac address(es)...>"
+  puts
+  puts "Options:"
+  puts "  -u  Update the IEEE database of OUI MAC addresses"
+  puts "      (from: #{CSV_URL})"
+  puts
+end
+
+def commatize(num)
+  char = ","
+  num.to_s.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
+end
+
+def db_open(flags=DBM::READER)
+  db = DBM.open(DB_FILE, 0666, flags)
+  
+  if block_given?
+    result = yield db
+    db.close
+    result
+  else
+    db
+  end
+end
+
+def backup(src)
+  if File.exists? src
+    counter = 1
+    dest = "#{src}.bak"
+
+    while File.exists? dest
+      counter += 1
+      dest = "#{src}.bak#{counter}"
+    end
+
+    puts "  |_ database backed up to: #{dest.inspect}"
+
+    File.rename(src, dest)
+  end
+end
+
+###################################################################
+
+def update
+
+  require 'csv'
+  require 'open-uri'
+
+  puts "* Re-importing database..."
+  puts "  |_ source: #{CSV_URL.inspect}"
+
+  backup(DB_FILE)
+
+  db_open(DBM::NEWDB) do |db|
+
+    CSV.new(open(CSV_URL), :headers => :first_row).each.with_index do |row, n|
+      # MA-L,34F968,"ATEK Products, LLC",210 NE 10th Avenue Brainerd MN US 56401
+      type, hex, company, address = row.fields
+
+      db[hex] = "#{company} (#{address})"
+      
+      print "\e[1G  |_ records imported: #{commatize(n)}\e[J" if n % 137 == 0
+    end
+
+    puts
+    puts "* Done!"
+
+  end
+
+end  
+
+###################################################################
+
+def lookup(args)
+
+  db_open do |db|
+    args.each do |arg|
+      nicearg = arg.upcase.scan(/[0-9A-F\:\-]/).join
+      prefix  = arg.upcase.scan(/[0-9A-F]/).take(6).join
+
+      if result = db[prefix]
+        puts "#{nicearg} - #{result}"
+      else
+        puts "#{nicearg} - #{prefix.inspect} not found"
+      end
+    end
+  end
+
+end
+
+###################################################################
+
+
+if $0 == __FILE__
+
+  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+
+  if ARGV.include? "-h" or ARGV.include? "--help"
+    help!
+  elsif ARGV.include? "-u"
+    update
+  elsif Dir["#{DB_FILE}*"].empty?
+    puts "You must first download the OUI database. Run 'oui -u'."
+    exit 1
+  elsif ARGV.empty?
+    help!
+    db_open { |db| puts "(OUI database currently has #{db.size} entries)" }
+  else
+    lookup ARGV
+  end
+
+end
