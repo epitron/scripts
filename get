@@ -1,2 +1,32 @@
-#!/bin/bash
-curl --xattr -C - -# -L -O "$@"
+#!/usr/bin/env ruby
+
+def print_cmd(cmd)
+  puts cmd.map { |c| c[" "] ? "'#{c}'" : c }.join(" ")
+end
+
+args = ARGV
+
+cmd = ["curl"]
+
+# cmd << "-i" # print headers (doesn't work when writing to a file)
+# cmd << "-#" # progress bar
+# cmd << "-v" # verbosity
+cmd << "-L" # follow redirects
+cmd << "--xattr" # xattrs
+cmd += ["-C", "-"] # resume at whatever the output file size is
+
+case args.size 
+when 2
+  cmd += [args.first, "-o", args.last]
+else
+  if args.include? "-o"
+    cmd += args
+  else
+    cmd << "-O" # write to file named after remote name
+  end
+end
+
+puts
+print_cmd cmd
+puts
+system *cmd
