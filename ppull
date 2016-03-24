@@ -55,29 +55,25 @@ end
 
 repos = Path["*/.git"].map(&:parent)
 
-# puts "* pulling #{repos.size} git repos"
+puts "<8>* <11>Updating <15>#{repos.size} <11>repos".colorize
 
 results = repos.parallel_map(POOL_SIZE) do |repo|
-  # puts "  |_ #{repo}"
   result = Path.cd(repo) do
     IO.popen("git pull", err: [:child, :out]) { |io| io.read }
-    # result = IO.popen("git pull", err: [:child, :out]) { |io| io.read }
-    # puts "#{result.size} bytes"
-    # puts Dir.pwd
   end
 
-  [repo, result]
+  [repo, result, $?.success?]
 end
 
 updated = []
 errors  = []
 
-results.each do |repo, result|
+results.each do |repo, result, success|
   if result["Already up-to-date."]
     print ".".grey
-  elsif result[/^(fatal: .+)$/] || result[/^(error: Your local changes.+)$/]
+  elsif not success # result[/^(fatal: .+)$/] || result[/^(error: Your local changes.+)$/] || result[/no such ref was fetched./]
     print ".".light_red
-    errors << [repo, $1]
+    errors << [repo, result]
   else
     puts
     puts "<3>========== <11>#{repo} <3>===============".colorize
@@ -88,14 +84,16 @@ results.each do |repo, result|
   end
 end
 
-puts "----------------------------------------------------------------"
-puts " Errors:"
-puts "----------------------------------------------------------------"
-errors.each {|repo, error| puts "  #{repo}: #{error}" }
 puts
 
-puts "----------------------------------------------------------------"
-puts " Updated:"
-puts "----------------------------------------------------------------"
-updated.each {|repo| puts "  #{repo}" }
+puts "----------------------------------------------------------------".grey
+puts " Errors:".light_red
+puts "----------------------------------------------------------------".grey
+errors.each { |repo, error| puts "  #{repo}: #{error}" }
+puts
+
+puts "----------------------------------------------------------------".grey
+puts " Updated:".light_cyan
+puts "----------------------------------------------------------------".grey
+updated.each { |repo| puts "  #{repo}" }
 puts
