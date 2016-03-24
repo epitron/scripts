@@ -40,7 +40,7 @@ else
 end
 
 
-puts "<8>* <11>Updating <15>#{repos.size} <11>repos".colorize
+puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE} <9>parallel workers<8>)".colorize
 
 
 # Update all the repos and gather the results
