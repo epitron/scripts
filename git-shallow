@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ ! -d .git ]; then
+  echo "ERROR: Current directory is not a git repository..."
+  exit 1
+fi
+
+echo "Making current repository shallow..."
+echo
+
+git show-ref -s HEAD > .git/shallow
+git reflog expire --expire=now --all   
+git prune
+git prune-packed
+git gc
