@@ -1,29 +1,9 @@
 #!/usr/bin/env ruby
-
 require 'epitools'
 
+############################################################################
 POOL_SIZE=12
-
-# === Updating /home/epi/pacaur/libutvideo-git/ (git pull) ===
-
-# Already up-to-date.
-
-# === Updating /home/epi/pacaur/masterpdfeditor/ (git pull) ===
-
-# remote: Counting objects: 4, done.
-# remote: Compressing objects: 100% (4/4), done.
-# remote: Total 4 (delta 2), reused 0 (delta 0)
-# Unpacking objects: 100% (4/4), done.
-# From https://aur.archlinux.org/masterpdfeditor
-#    ae1a839..02fc034  master     -> origin/master
-# Updating ae1a839..02fc034
-# Fast-forward
-#  .SRCINFO | 12 ++++++------
-#  PKGBUILD |  6 +++---
-#  2 files changed, 9 insertions(+), 9 deletions(-)
-
-
-
+############################################################################
 
 module Enumerable
 
@@ -51,11 +31,19 @@ module Enumerable
 
 end
 
+############################################################################
 
+if ARGV.any?
+  repos = ARGV.map(&:to_Path)
+else
+  repos = Path["*/.git"].map(&:parent)
+end
 
-repos = Path["*/.git"].map(&:parent)
 
 puts "<8>* <11>Updating <15>#{repos.size} <11>repos".colorize
+
+
+# Update all the repos and gather the results
 
 results = repos.parallel_map(POOL_SIZE) do |repo|
   result = Path.cd(repo) do
@@ -64,6 +52,9 @@ results = repos.parallel_map(POOL_SIZE) do |repo|
 
   [repo, result, $?.success?]
 end
+
+
+# Summarize the results
 
 updated = []
 errors  = []
@@ -85,15 +76,18 @@ results.each do |repo, result, success|
 end
 
 puts
-
+puts
 puts "----------------------------------------------------------------".grey
 puts " Errors:".light_red
 puts "----------------------------------------------------------------".grey
-errors.each { |repo, error| puts "  #{repo}: #{error}" }
+errors.each do |repo, error|
+  puts "#{repo}".light_red
+  puts error.indent(4)
+end
 puts
 
 puts "----------------------------------------------------------------".grey
-puts " Updated:".light_cyan
+puts " Updated:".light_green
 puts "----------------------------------------------------------------".grey
-updated.each { |repo| puts "  #{repo}" }
+updated.each { |repo| puts "#{repo}".light_cyan }
 puts
