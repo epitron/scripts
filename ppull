@@ -57,7 +57,7 @@ repos = Path["*/.git"].map(&:parent)
 
 # puts "* pulling #{repos.size} git repos"
 
-results = repos.parallel_map do |repo|
+results = repos.parallel_map(POOL_SIZE) do |repo|
   # puts "  |_ #{repo}"
   result = Path.cd(repo) do
     IO.popen("git pull", err: [:child, :out]) { |io| io.read }
@@ -69,14 +69,33 @@ results = repos.parallel_map do |repo|
   [repo, result]
 end
 
+updated = []
+errors  = []
+
 results.each do |repo, result|
-  unless result["Already up-to-date."]
+  if result["Already up-to-date."]
+    print ".".grey
+  elsif result[/^(fatal: .+)$/] || result[/^(error: Your local changes.+)$/]
+    print ".".light_red
+    errors << [repo, $1]
+  else
     puts
-    puts "<8>========== <11>#{repo} <8>===============".colorize
+    puts "<3>========== <11>#{repo} <3>===============".colorize
     puts
     puts result
     puts
-  else
-    print "."
+    updated << repo
   end
 end
+
+puts "----------------------------------------------------------------"
+puts " Errors:"
+puts "----------------------------------------------------------------"
+errors.each {|repo, error| puts "  #{repo}: #{error}" }
+puts
+
+puts "----------------------------------------------------------------"
+puts " Updated:"
+puts "----------------------------------------------------------------"
+updated.each {|repo| puts "  #{repo}" }
+puts
