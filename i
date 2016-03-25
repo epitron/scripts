@@ -52,13 +52,13 @@ class Systemd
 
   # "command1>command2" means to call command2 whenever command1 is called
   # something starting with a ":" means to call a method
-  %w[start>status stop>status restart>status disable>stop enable>send:start].each do |command|
+  %w[start>status stop>status restart>status disable>stop enable>:start].each do |command|
     commands = command.split(">")
     
     define_method commands.first do |service|
       commands.each do |command|
         case command
-        when /^send:(.+)$/
+        when /^:(.+)$/
           send($1, service)
         else
           systemctl command, service
