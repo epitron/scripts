@@ -27,7 +27,7 @@ class Systemd
     if @user
       cmd = %w[systemctl --user]
     else
-      cmd = %w[sudoifnotroot systemctl]
+      cmd = (Process.uid == 0) ? %w[sudo systemctl] : %w[systemctl]
     end
     
     cmd += args
