@@ -7,7 +7,9 @@
 # - Fuzzy matching when script isn't found
 #######################################################################
 
-args = ARGV
+def root?
+  Process.uid == 0
+end
 
 #######################################################################
 
@@ -27,7 +29,7 @@ class Systemd
     if @user
       cmd = %w[systemctl --user]
     else
-      cmd = %w[sudoifnotroot systemctl]
+      cmd = root? ? %w[systemctl] : %w[sudo systemctl]
     end
     
     cmd += args
@@ -52,13 +54,13 @@ class Systemd
 
   # "command1>command2" means to call command2 whenever command1 is called
   # something starting with a ":" means to call a method
-  %w[start>status stop>status restart>status disable>stop enable>send:start].each do |command|
+  %w[start>status stop>status restart>status disable>stop enable>:start].each do |command|
     commands = command.split(">")
     
     define_method commands.first do |service|
       commands.each do |command|
         case command
-        when /^send:(.+)$/
+        when /^:(.+)$/
           send($1, service)
         else
           systemctl command, service
@@ -121,7 +123,9 @@ class Initd
   end
 
   def run(service, command)
-    system("sudoifnotroot", "#{@initdir}/#{service}", command)
+    cmd = ["#{@initdir}/#{service}", command]
+    cmd = ["sudo", *cmd] unless root?
+    system *cmd
   end
 
   def start(service)
@@ -164,14 +168,11 @@ end
 
 #######################################################################
 
-## Detection of systemd/init.d
+args = ARGV
+
+
 if Systemd.detected?
-  if ARGV.first == "--user"
-    ARGV.shift
-    manager = Systemd.new(true)
-  else
-    manager = Systemd.new
-  end
+  manager = Systemd.new( args.delete("--user") )
 else
   manager = Initd.new
 end

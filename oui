@@ -141,7 +141,7 @@ if $0 == __FILE__
         puts "#{nicearg} - #{company}"
         puts (" " * (nicearg.size+3)) + address if address
       else
-        puts "#{nicearg} - #{prefix.inspect} not found"
+        puts "#{nicearg} - not found"
       end
     end
   end
