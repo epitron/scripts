@@ -7,7 +7,9 @@
 # - Fuzzy matching when script isn't found
 #######################################################################
 
-args = ARGV
+def root?
+  Process.uid == 0
+end
 
 #######################################################################
 
@@ -27,7 +29,7 @@ class Systemd
     if @user
       cmd = %w[systemctl --user]
     else
-      cmd = (Process.uid == 0) ? %w[sudo systemctl] : %w[systemctl]
+      cmd = root? ? %w[systemctl] : %w[sudo systemctl]
     end
     
     cmd += args
@@ -121,7 +123,9 @@ class Initd
   end
 
   def run(service, command)
-    system("sudoifnotroot", "#{@initdir}/#{service}", command)
+    cmd = ["#{@initdir}/#{service}", command]
+    cmd = ["sudo", *cmd] unless root?
+    system *cmd
   end
 
   def start(service)
@@ -164,14 +168,11 @@ end
 
 #######################################################################
 
-## Detection of systemd/init.d
+args = ARGV
+
+
 if Systemd.detected?
-  if ARGV.first == "--user"
-    ARGV.shift
-    manager = Systemd.new(true)
-  else
-    manager = Systemd.new
-  end
+  manager = Systemd.new( args.delete("--user") )
 else
   manager = Initd.new
 end
