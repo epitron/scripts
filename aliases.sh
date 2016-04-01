@@ -245,6 +245,7 @@ alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias y='yaourt'
 alias abs='sudoifnotroot abs'
 alias pkgfile='sudoifnotroot pkgfile -r'
+alias mp='makepkg -s'
 
 # npm
 alias ni="sudoifnotroot npm install -g"
