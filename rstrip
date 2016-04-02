@@ -4,12 +4,16 @@ backup = true
 
 exts = %w[c h cpp hpp rb py sh].join(",")
 
+puts
 puts "* Recursively stripping trailing whitespace from *.{#{exts}} files..."
 
+total = 0
+strip_count = 0
 Dir["**/*.{#{exts}}"].each do |fn|
   print "  |_ #{fn}"
   
   data = File.read(fn)
+  total += 1
   count = 0
   
   stripped_lines = data.each_line.map do |line|
@@ -22,10 +26,15 @@ Dir["**/*.{#{exts}}"].each do |fn|
   stripped_data = stripped_lines.join("\n")
 
   if data != stripped_data
-    puts " (#{count} lines stripped)"
+    strip_count += 1
+    puts " (#{count} line#{"s" if count != 1})"
     File.rename(fn, "#{fn}~") if backup
     File.write(fn, stripped_data)
   else
     puts
   end
 end
+
+puts
+puts "* Done! (#{strip_count}/#{total} files modified)"
+puts
