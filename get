@@ -15,15 +15,14 @@ cmd << "-L" # follow redirects
 cmd << "--xattr" # xattrs
 cmd += ["-C", "-"] # resume at whatever the output file size is
 
-case args.size 
+case args.reject { |arg| arg[/^-\w/] }.size
 when 2
   cmd += [args.first, "-o", args.last]
 else
-  if args.include? "-o"
-    cmd += args
-  else
+  unless args.include? "-o"
     cmd << "-O" # write to file named after remote name
   end
+  cmd += args
 end
 
 puts
