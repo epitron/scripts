@@ -1,37 +1,215 @@
-# #!/usr/bin/ruby
-
-return if defined? Rails
-
-Bond.config[:debug] = true if defined? Bond
-
 # theme
+Pry.config.theme = "pry-siberia-16"
 # Pry.config.theme = "vim-detailed"
 # Pry.config.theme = "tomorrow"
 # Pry.config.theme = "solarized"
-Pry.config.theme = "pry-siberia-16"
-
 # Pry.config.theme = "zenburn"
 # Pry.config.theme = "pry-classic-256"
 # Pry.config.theme = "twilight"
 
-
 ###################################################################
-## Gem Loader
+## History
 
-puts "Loading gems..."
+PRY_CONFIG_DIR = File.expand_path("~/.pry")
 
-def req(mod)
-  puts "  |_ #{mod}"
-  require mod
-  yield if block_given?
-rescue Exception => e
-  p e
+Pry.history.loader = proc do |&block|
+  Dir["#{PRY_CONFIG_DIR}/history-*.log"].sort_by { |f| File.mtime f }.last(2).each do |fn|
+    File.foreach(fn) { |line| block.call(line) }
+  end
+end
+ 
+# history_file = nil
+ 
+Pry.history.saver = proc do |line|
+  if !@history_file
+    Dir.mkdir(PRY_CONFIG_DIR) unless File.exists?(PRY_CONFIG_DIR)
+    filename = "#{PRY_CONFIG_DIR}/history-#{Time.now.strftime('%Y-%m-%d')}.log"
+    @history_file = File.open(filename, 'a', 0600).tap { |f| f.sync = true }
+  end
+  @history_file.puts(line)
 end
 
-###################################################################
-## Misc Ruby libraries
 
-req 'epitools'
+
+#### RAILS STOPS HERE. ############################################
+unless defined? Rails
+
+  ###################################################################
+  ## Gem Loader
+
+  puts "Loading gems..."
+
+  def req(mod)
+    puts "  |_ #{mod}"
+    require mod
+    yield if block_given?
+  rescue Exception => e
+    p e
+  end
+
+  ###################################################################
+  ## Misc Ruby libraries
+
+  req 'epitools'
+
+  ###################################################################
+  # Colours
+
+  module Pry::Helpers::Text
+    class << self
+      alias_method :grey, :bright_black
+      alias_method :gray, :bright_black
+    end
+  end
+
+  ###################################################################
+  # Other stuff
+
+  Pry.commands.instance_eval do
+
+    # alias_command("@", "whereami")
+    alias_command("stack", "show-stack") rescue nil
+
+    command "gem-search" do |*args|
+      require 'open-uri'
+
+      query   = args.join ' '
+      results = open("http://rubygems.org/api/v1/search.json?query=#{query.urlencode}").read.from_json
+
+      if !results.is_a?(Array) || results.empty?
+        output.puts 'No results'
+      else
+        for result in results
+          output.puts "#{''.red}<11>#{result["name"]} <8>(<9>#{result["version"]}<8>)".colorize
+          output.puts "  <7>#{result["info"]}".colorize
+        end
+      end
+    end
+
+    # command "grep" do |*args|
+
+    #   queries = []
+    #   targets = []
+
+    #   args.each do |arg|
+
+    #     case arg
+    #     when %r{^/([^/]+)/$}
+    #       queries << Regexp.new($1)
+    #     when %r{^([A-Z]\w+)$}
+    #       targets << Object.const_get($1)
+    #     else
+    #     end
+
+    #   end
+
+    #   p [:queries, queries]
+    #   p [:targets, targets]
+    # end
+
+    #alias_command ">", "cd"
+    #alias_command "<", "cd .."
+    command("decode") { |uri| puts URI.decode(uri) }
+
+    command "lls", "List local files using 'ls'" do |*args|
+      cmd = ".ls"
+      cmd << " --color=always" if Pry.color
+      run cmd, *args
+    end
+
+    command "lcd", "Change the current (working) directory" do |*args|
+      run ".cd", *args
+      run "pwd"
+    end
+
+    command "pwd" do
+      puts Dir.pwd.split("/").map{|s| text.bright_green s}.join(text.grey "/")
+    end
+
+    #alias_command "gems", "gem-list"
+
+    command "gem", "rrrrrrrrrubygems!" do |*args|
+      gem_home = Gem.instance_variable_get(:@gem_home) || Gem.instance_variable_get(:@paths).home
+
+      cmd = ["gem"] + args
+      cmd.unshift "sudo" unless File.writable?(gem_home)
+
+      output.puts "Executing: #{text.bright_yellow cmd.join(' ')}"
+      if system(*cmd)
+        Gem.refresh
+        output.puts "Refreshed gem cache."
+      else
+        output.puts "Gem failed."
+      end
+    end
+
+
+    command "req-verbose", "Requires gem(s). No need for quotes! (If the gem isn't installed, it will ask if you want to install it.)" do |*gems|
+
+      def tree_to_array(hash, indent=0)
+        colors = [:light_white, :light_cyan, :light_blue]
+        result = []
+        dent = "  " * indent
+        hash.each do |key,val|
+          color = colors[indent] || :white
+          result << dent+key.send(color)
+          result += tree_to_array(val, indent+1) if val.any?
+        end
+        result
+      end
+
+      def print_module_tree mods
+        mods = mods.select  { |mod| not mod < Exception }
+        mods = mods.map     { |mod| mod.to_s.split("::") }
+
+        mod_tree = {}
+        mods.sort.each { |path| mod_tree.mkdir_p(path) }
+
+        results = tree_to_array(mod_tree)
+        table = Term::Table.new(results, :cols=>3, :vertically => true, :colored => true)
+        puts table
+      end
+
+      gems = gems.join(' ').gsub(',', '').split(/\s+/)
+      gems.each do |gem|
+        begin
+
+          before_modules = ObjectSpace.each_object(Module).to_a
+
+          if require gem
+            output.puts "#{text.bright_yellow(gem)} loaded"
+            loaded_modules = ObjectSpace.each_object(Module).to_a - before_modules
+            print_module_tree(loaded_modules)
+          else
+            output.puts "#{text.bright_white(gem)} already loaded"
+          end
+
+        # rescue LoadError => e
+
+        #   if gem_installed? gem
+        #     output.puts e.inspect
+        #   else
+        #     output.puts "#{gem.bright_red} not found"
+        #     if prompt("Install the gem?") == "y"
+        #       run "gem-install", gem
+        #       run "req", gem
+        #     end
+        #   end
+
+        end # rescue
+      end # gems
+    end
+
+    alias_command "require", "req-verbose"
+    alias_command "req", "req-verbose"
+
+
+  end
+
+end # no more rails!
+
+
+##### Scrap heap ###########################################
 
 # req 'awesome_print' do
 
@@ -69,29 +247,6 @@ req 'epitools'
 
 #   end
 # end
-
-###################################################################
-## History
-
-PRY_CONFIG_DIR = File.expand_path("~/.pry")
-
-Pry.history.loader = proc do |&block|
-  Dir["#{PRY_CONFIG_DIR}/history-*.log"].sort_by { |f| File.mtime f }.last(2).each do |fn|
-    File.foreach(fn) { |line| block.call(line) }
-  end
-end
- 
-# history_file = nil
- 
-Pry.history.saver = proc do |line|
-  if !@history_file
-    Dir.mkdir(PRY_CONFIG_DIR) unless File.exists?(PRY_CONFIG_DIR)
-    filename = "#{PRY_CONFIG_DIR}/history-#{Time.now.strftime('%Y-%m-%d')}.log"
-    @history_file = File.open(filename, 'a', 0600).tap { |f| f.sync = true }
-  end
-  @history_file.puts(line)
-end
-
 
 
 # friendly prompt
@@ -209,163 +364,6 @@ end
 
 # end
 
-
-###################################################################
-# Colours
-
-module Pry::Helpers::Text
-  class << self
-    alias_method :grey, :bright_black
-    alias_method :gray, :bright_black
-  end
-end
-
-
-
-###################################################################
-# Other stuff
-
-Pry.commands.instance_eval do
-
-  alias_command("@", "whereami")
-  alias_command("stack", "show-stack") rescue nil
-
-  command "gem-search" do |*args|
-    require 'open-uri'
-
-    query   = args.join ' '
-    results = open("http://rubygems.org/api/v1/search.json?query=#{query.urlencode}").read.from_json
-
-    if !results.is_a?(Array) || results.empty?
-      output.puts 'No results'
-    else
-      for result in results
-        output.puts "#{''.red}<11>#{result["name"]} <8>(<9>#{result["version"]}<8>)".colorize
-        output.puts "  <7>#{result["info"]}".colorize
-      end
-    end
-  end
-
-  command "grep" do |*args|
-
-    queries = []
-    targets = []
-
-    args.each do |arg|
-
-      case arg
-      when %r{^/([^/]+)/$}
-        queries << Regexp.new($1)
-      when %r{^([A-Z]\w+)$}
-        targets << Object.const_get($1)
-      else
-      end
-
-    end
-
-    p [:queries, queries]
-    p [:targets, targets]
-  end
-
-  #alias_command "?", "show-doc"
-  #alias_command ">", "cd"
-  #alias_command "<", "cd .."
-  command("decode") { |uri| puts URI.decode(uri) }
-
-  command "lls", "List local files using 'ls'" do |*args|
-    cmd = ".ls"
-    cmd << " --color=always" if Pry.color
-    run cmd, *args
-  end
-
-  command "lcd", "Change the current (working) directory" do |*args|
-    run ".cd", *args
-    run "pwd"
-  end
-
-  command "pwd" do
-    puts Dir.pwd.split("/").map{|s| text.bright_green s}.join(text.grey "/")
-  end
-
-  #alias_command "gems", "gem-list"
-
-  command "gem", "rrrrrrrrrubygems!" do |*args|
-    gem_home = Gem.instance_variable_get(:@gem_home) || Gem.instance_variable_get(:@paths).home
-
-    cmd = ["gem"] + args
-    cmd.unshift "sudo" unless File.writable?(gem_home)
-
-    output.puts "Executing: #{text.bright_yellow cmd.join(' ')}"
-    if system(*cmd)
-      Gem.refresh
-      output.puts "Refreshed gem cache."
-    else
-      output.puts "Gem failed."
-    end
-  end
-
-
-  command "req-verbose", "Requires gem(s). No need for quotes! (If the gem isn't installed, it will ask if you want to install it.)" do |*gems|
-
-    def tree_to_array(hash, indent=0)
-      colors = [:light_white, :light_cyan, :light_blue]
-      result = []
-      dent = "  " * indent
-      hash.each do |key,val|
-        color = colors[indent] || :white
-        result << dent+key.send(color)
-        result += tree_to_array(val, indent+1) if val.any?
-      end
-      result
-    end
-
-    def print_module_tree mods
-      mods = mods.select  { |mod| not mod < Exception }
-      mods = mods.map     { |mod| mod.to_s.split("::") }
-
-      mod_tree = {}
-      mods.sort.each { |path| mod_tree.mkdir_p(path) }
-
-      results = tree_to_array(mod_tree)
-      table = Term::Table.new(results, :cols=>3, :vertically => true, :colored => true)
-      puts table
-    end
-
-    gems = gems.join(' ').gsub(',', '').split(/\s+/)
-    gems.each do |gem|
-      begin
-
-        before_modules = ObjectSpace.each_object(Module).to_a
-
-        if require gem
-          output.puts "#{text.bright_yellow(gem)} loaded"
-          loaded_modules = ObjectSpace.each_object(Module).to_a - before_modules
-          print_module_tree(loaded_modules)
-        else
-          output.puts "#{text.bright_white(gem)} already loaded"
-        end
-
-      # rescue LoadError => e
-
-      #   if gem_installed? gem
-      #     output.puts e.inspect
-      #   else
-      #     output.puts "#{gem.bright_red} not found"
-      #     if prompt("Install the gem?") == "y"
-      #       run "gem-install", gem
-      #       run "req", gem
-      #     end
-      #   end
-
-      end # rescue
-    end # gems
-  end
-
-  alias_command "require", "req-verbose"
-  alias_command "req", "req-verbose"
-
-
-end
 
 
 ## Fancy Require w/ Modules
