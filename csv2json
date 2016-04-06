@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+def error(msg, code=1); puts msg; exit code; end
+
+error "usage: csv2json <csv file> [<json file>]" if ARGV.empty?
+
+input, output = ARGV.map(&:to_Path)
+output        = input.with(ext: "json") if output.nil?
+
+error "Error: #{input} not found." unless input.exists?
+error "Error: #{output} already exists." if output.exists?
+
+puts "* Converting #{input} to #{output}..."
+output.write input.read_csv(headers: true).map(&:to_h).to_json
+puts "  |_ done!"
