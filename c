@@ -196,6 +196,44 @@ def print_ssl_certificate(filename)
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
 
+def print_csv(filename)
+  require 'csv'
+
+  plain = "\e[0m"
+  grey  = "\e[30;1m"
+  red   = "\e[31;1m"
+  cyan  = "\e[36;1m"
+
+  rows   = CSV.open(filename).to_a
+
+  header = ["", *rows.first]
+  rows   = rows[1..-1].map.with_index { |row, n| [n.to_s, *row] }
+
+  col_maxes = rows.
+    map { |row| row.map { |cell| cell&.size } }.
+    transpose.
+    map {|col| col.compact.max }
+
+  render_row = proc do |row, textcolor|
+    cells = row.zip(col_maxes).map do |col, max|
+      padded = (col || "nil").ljust(max)
+      color = col ? textcolor : red
+      "#{color}#{padded}"
+    end
+
+    # padding ? cells.join(" #{grey} | ") : cells.join("#{grey}|")
+    cells.join("#{grey} | ")
+  end
+
+  sep = grey + col_maxes.map { |max| "-" * max }.join("-|-") + plain
+
+  [ 
+    render_row.call(header, cyan), 
+    sep,
+    *rows.map { |therow| render_row.call(therow, plain) }
+  ].join("\n")
+end
+
 ##############################################################################
 
 COMPRESSORS = {
@@ -225,6 +263,8 @@ def convert(arg)
       print_cp437(arg)
     elsif %w[.pem .crt].include? ext
       print_ssl_certificate(arg)
+    elsif ext == ".csv"
+      print_csv(arg)
     else
       format = run('file', arg).read
 
@@ -246,10 +286,14 @@ end
 
 args = ARGV
 
-lesspipe(:wrap=>true) do |less|
-  if args.size == 0
-    puts "usage: c <filename(s)>"
-  else # 1 or more args
+if args.size == 0
+  puts "usage: c <filename(s)>"
+else # 1 or more args
+
+  wrap = !args.any? { |arg| arg[/\.csv$/i] }
+
+  lesspipe(:wrap=>wrap) do |less|
+
     args.each do |arg|
       if args.size > 1
         less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
@@ -269,6 +313,7 @@ lesspipe(:wrap=>true) do |less|
       less.puts
     end
   end
+
 end
 
 
