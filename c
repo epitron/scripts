@@ -199,38 +199,48 @@ end
 def print_csv(filename)
   require 'csv'
 
-  plain = "\e[0m"
-  grey  = "\e[30;1m"
-  red   = "\e[31;1m"
-  cyan  = "\e[36;1m"
+  plain     = "\e[0m"
+  grey      = "\e[30;1m"
+  red       = "\e[31;1m"
+  cyan      = "\e[36;1m"
+  dark_cyan = "\e[36m"
 
-  rows   = CSV.open(filename).to_a
+  numbered_rows = CSV.open(filename).map.with_index do |row, n|
+    clean_row = row.map { |cell| cell&.strip } 
+    [n.to_s, *clean_row]
+  end
 
-  header = ["", *rows.first]
-  rows   = rows[1..-1].map.with_index { |row, n| [n.to_s, *row] }
-
-  col_maxes = rows.
+  col_maxes = numbered_rows.
     map { |row| row.map { |cell| cell&.size } }.
     transpose.
     map {|col| col.compact.max }
 
+  header    = numbered_rows.shift
+  header[0] = ""
+  sep       = grey + col_maxes.map { |max| "-" * max }.join("-|-") + plain
+
   render_row = proc do |row, textcolor|
-    cells = row.zip(col_maxes).map do |col, max|
+    cells = row.zip(col_maxes).map.with_index do |(col, max), i|
       padded = (col || "nil").ljust(max)
-      color = col ? textcolor : red
+      
+      color = if i == 0
+                dark_cyan
+              elsif col
+                textcolor
+              else
+                red
+              end
+
       "#{color}#{padded}"
     end
 
-    # padding ? cells.join(" #{grey} | ") : cells.join("#{grey}|")
     cells.join("#{grey} | ")
   end
-
-  sep = grey + col_maxes.map { |max| "-" * max }.join("-|-") + plain
 
   [ 
     render_row.call(header, cyan), 
     sep,
-    *rows.map { |therow| render_row.call(therow, plain) }
+    *numbered_rows.map { |therow| render_row.call(therow, plain) }
   ].join("\n")
 end
 
