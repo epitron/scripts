@@ -21,13 +21,14 @@ lesspipe do |less|
 
     command = smap.with(filename: "cmdline").read.gsub("\0", " ")
 
-    [total, command]
+    [total, pid, command]
   end.compact.sort_by { |total, _| -total }
 
   puts
 
-  results.each do |total, command|
-    indented = "#{total}k".rjust(8)
-    less.puts "<14>#{indented} <7>#{command}".colorize
+  results.each do |total, pid, command|
+    indented_size = "#{total}k".rjust(8)
+    indented_pid = "#{pid}".rjust(6)
+    less.puts "<14>#{indented_size} <9>#{indented_pid} <7>#{command}".colorize
   end
 end
