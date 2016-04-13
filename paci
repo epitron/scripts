@@ -1,5 +1,9 @@
 #!/bin/bash
 
 for arg in "$@"; do
-  pacman -Qi $arg || pacman -Si $arg
+  if [[ $arg =~ \.pkg\.tar\.(xz|gz|bz2)$ ]]; then
+    pacman -Qpi $arg
+  else
+    pacman -Qi $arg || pacman -Si $arg
+  fi
 done

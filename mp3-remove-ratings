@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$*" == "" ]; then
+  echo "usage: mp3-remove-ratings <mp3 files...>"
+  exit 1
+fi
+
+id3 -2 --remove=POPM "$@"
+ 

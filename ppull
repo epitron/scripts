@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+############################################################################
+POOL_SIZE=12
+############################################################################
+
+module Enumerable
+
+  def parallel_map(num_workers=8, &block)
+    require 'thread'
+
+    queue = Queue.new
+    each { |e| queue.push e }
+
+    Enumerator.new do |y|
+      workers = (0...num_workers).map do
+        Thread.new do
+          begin
+            while e = queue.pop(true)
+              y << block.call(e)
+            end
+          rescue ThreadError
+          end
+        end
+      end
+
+      workers.map(&:join)
+    end
+  end
+
+end
+
+############################################################################
+
+if ARGV.any?
+  repos = ARGV.map(&:to_Path)
+else
+  repos = Path["*/.git"].map(&:parent)
+end
+
+
+puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE} <9>parallel workers<8>)".colorize
+
+
+# Update all the repos and gather the results
+
+results = repos.parallel_map(POOL_SIZE) do |repo|
+  result = Path.cd(repo) do
+    IO.popen("git pull", err: [:child, :out]) { |io| io.read }
+  end
+
+  [repo, result, $?.success?]
+end
+
+
+# Summarize the results
+
+updated = []
+errors  = []
+
+results.each do |repo, result, success|
+  if result["Already up-to-date."]
+    print ".".grey
+  elsif not success # result[/^(fatal: .+)$/] || result[/^(error: Your local changes.+)$/] || result[/no such ref was fetched./]
+    print ".".light_red
+    errors << [repo, result]
+  else
+    puts
+    puts "<3>========== <11>#{repo} <3>===============".colorize
+    puts
+    puts result
+    puts
+    updated << repo
+  end
+end
+
+puts
+puts
+puts "----------------------------------------------------------------".grey
+puts " Errors:".light_red
+puts "----------------------------------------------------------------".grey
+errors.each do |repo, error|
+  puts "#{repo}".light_red
+  puts error.indent(4)
+end
+puts
+
+puts "----------------------------------------------------------------".grey
+puts " Updated:".light_green
+puts "----------------------------------------------------------------".grey
+updated.each { |repo| puts "#{repo}".light_cyan }
+puts

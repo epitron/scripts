@@ -8,6 +8,7 @@
 # (In other words, it removes all the \n characters
 # that were inserted to wrap the lines of text.)
 #
+gem "slop", "~> 3.6"
 require 'slop'
 
 DEFAULT_WIDTH = 80
@@ -18,13 +19,14 @@ def parse_options
     on :w=, :width,     "Width of the document (default: #{DEFAULT_WIDTH} characters)", as: Integer, default: DEFAULT_WIDTH
     on :s,  :stats,     "Statistics on line lengths"
     on :a,  :autowidth, "Guess the width of the document automatically."
+    on :m,  :merge,     "Merge paragraphs"
+    on :v,  :verbose,   "Increasify verbositiousness"
   end
 end
 
 
-def unwrap(lines, width)
+def unwrap(lines, width, verbose=false)
   # TODO: Unwrap lines which are close to line_width and don't end with ".", "!", "?"
-  # TODO: Unwrap "conti- nuations"
 
   i     = 0
   last  = lines.size-1
@@ -36,12 +38,15 @@ def unwrap(lines, width)
     line = lines[i]
     para << line
 
+    p line if verbose
+
     unless i == last
       next_words = lines[i+1].split(/\s+/)
       word_following_wrap = next_words[0]
       
       unless word_following_wrap and (line.size + word_following_wrap.size) >= width
         # new para!
+        # TODO: No space after "conti- nuations"
         doc << para.join(' ')
         para = []
       end
@@ -64,26 +69,63 @@ def display_statistics(lines)
 
   lengths = lines.map(&:size)
   n       = lengths.size
-  sum     = lengths.inject(0){|sum,len| sum + len}
+  sum     = lengths.inject(0) { |sum,len| sum + len }
 
   puts " lines: #{n}"
   puts "  mean: #{(sum.to_f / n).round(2)}"
   puts "median: #{lengths.sort[n / 2]}"
   puts "   min: #{lengths.reject{|l| l == 0}.min}"
   puts "   max: #{lengths.max}"
+
+  lengths.group_by(&:itself).each do |len, count|
+    puts "#{"%0.5d" % len}: #{count}"
+  end
 end
 
+
+def merge_paragraphs(pars)
+  end_punct       = /[\.\!\?]/
+  continued_punct = /[\,\-]/
+  quote           = /['"]/
+
+  merged = []
+  acc    = []
+
+  pars.each do |par|
+    break_here = [acc.last, par].compact.any? do |p|
+                    p.empty? or p.upcase == p
+                 end or
+                 (acc.last and acc.last[/#{end_punct}#{quote}?\s*$/])
+
+    if acc.empty?
+      acc << par
+    elsif break_here
+      acc << par
+      merged << acc.join(" ")
+      acc.clear
+    else
+      acc << par
+    end
+  end
+
+  merged
+end
 
 if $0 == __FILE__
 
   opts  = parse_options
-  lines = ARGF.readlines.map(&:rstrip)
+  lines = ARGF.read.gsub(/\n\s+\f/, "\n").lines.map(&:rstrip)
 
   if opts.stats?
     display_statistics(lines)
-  else
-    width = opts[:width]
-    unwrap(lines, width).each { |para| STDOUT.write "#{para}\n\n" }
+    exit
   end
+
+  width = opts[:width]
+
+  pars = unwrap(lines, width, opts.verbose?)
+  pars = merge_paragraphs(pars) if opts.merge?
+
+  pars.each { |para| STDOUT.write "#{para}\n\n" }
 
 end

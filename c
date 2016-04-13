@@ -88,9 +88,11 @@ EXTRA_LANGS = {
   "Makefile"     => :bash,
   ".mk"          => :bash,
   "PKGBUILD"     => :bash,
+  "configure.in" => :bash,
+  "configure"    => :bash,
   ".install"     => :bash,
   ".desktop"     => :bash,
-  "Gemfile.lock" => :yaml,
+  "Gemfile.lock" => :c,
   "database.yml" => :yaml,
   ".gradle"      => :groovy,
   ".sage"        => :python,
@@ -194,6 +196,54 @@ def print_ssl_certificate(filename)
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
 
+def print_csv(filename)
+  require 'csv'
+
+  plain     = "\e[0m"
+  grey      = "\e[30;1m"
+  red       = "\e[31;1m"
+  cyan      = "\e[36;1m"
+  dark_cyan = "\e[36m"
+
+  numbered_rows = CSV.open(filename).map.with_index do |row, n|
+    clean_row = row.map { |cell| cell&.strip } 
+    [n.to_s, *clean_row]
+  end
+
+  col_maxes = numbered_rows.
+    map { |row| row.map { |cell| cell&.size } }.
+    transpose.
+    map {|col| col.compact.max }
+
+  header    = numbered_rows.shift
+  header[0] = ""
+  sep       = grey + col_maxes.map { |max| "-" * max }.join("-|-") + plain
+
+  render_row = proc do |row, textcolor|
+    cells = row.zip(col_maxes).map.with_index do |(col, max), i|
+      padded = (col || "nil").ljust(max)
+      
+      color = if i == 0
+                dark_cyan
+              elsif col
+                textcolor
+              else
+                red
+              end
+
+      "#{color}#{padded}"
+    end
+
+    cells.join("#{grey} | ")
+  end
+
+  [ 
+    render_row.call(header, cyan), 
+    sep,
+    *numbered_rows.map { |therow| render_row.call(therow, plain) }
+  ].join("\n")
+end
+
 ##############################################################################
 
 COMPRESSORS = {
@@ -201,8 +251,6 @@ COMPRESSORS = {
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
 }
-
-ARCHIVES = 
 
 def convert(arg)
   arg = which(arg) unless File.exists? arg
@@ -225,6 +273,8 @@ def convert(arg)
       print_cp437(arg)
     elsif %w[.pem .crt].include? ext
       print_ssl_certificate(arg)
+    elsif ext == ".csv"
+      print_csv(arg)
     else
       format = run('file', arg).read
 
@@ -246,10 +296,14 @@ end
 
 args = ARGV
 
-lesspipe(:wrap=>true) do |less|
-  if args.size == 0
-    puts "usage: c <filename(s)>"
-  else # 1 or more args
+if args.size == 0
+  puts "usage: c <filename(s)>"
+else # 1 or more args
+
+  wrap = !args.any? { |arg| arg[/\.csv$/i] }
+
+  lesspipe(:wrap=>wrap) do |less|
+
     args.each do |arg|
       if args.size > 1
         less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
@@ -269,6 +323,7 @@ lesspipe(:wrap=>true) do |less|
       less.puts
     end
   end
+
 end
 
 

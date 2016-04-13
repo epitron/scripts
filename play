@@ -1,6 +1,4 @@
 #!/usr/bin/env ruby
-gem 'slop', "~> 3.6"
-require 'slop'
 
 ###########################################################
 
@@ -40,6 +38,8 @@ def player_proc(bin)
 end
 
 def parse_options
+  gem 'slop', "~> 3.6"
+  require 'slop'
 
   Slop.parse(help: true, strict: true) do
     banner 'Usage: play [options] <video URL, or history number>'
@@ -93,9 +93,9 @@ def run(*cmd)
 end
 
 def play_click_sound
-  if which("mplayer")
-    run "mplayer", "-really-quiet", File.expand_path("~/scripts/sounds/click.mp3")
-  end
+  file = File.expand_path("~/scripts/sounds/click.mp3")
+  # %w[mpg123 mplayer mpv].any? { |player| run(player, file).last.success? }
+  fork { run("mplayer", file) }
 end
 
 def xspf_file(title, media_url)
@@ -263,7 +263,13 @@ end
 
 
 if $0 == __FILE__
-  opts = parse_options
+
+  if ARGV.any? { |arg| arg[/^-\w/] }
+    opts = parse_options
+  else
+    opts = {player: PLAYER_NAMES.first}
+  end
+
   args = ARGV
 
   if opts[:all]
@@ -282,7 +288,7 @@ if $0 == __FILE__
     query = args
   end
 
-  if opts.list?
+  if opts[:list]
     if nums
       search(nil, nums.first)
       exit
@@ -298,7 +304,7 @@ if $0 == __FILE__
   elsif urls
 
     urls.each do |url|
-      if opts.download?
+      if opts[:download]
         download(url)
       else
         if opts[:player]

@@ -175,6 +175,8 @@ elsif args.first.downcase == "-d"
     puts "Unknown branch: #{branch}"
   end
 
+  exit
+
 elsif args.first.downcase == "-p"
   ## Push
 

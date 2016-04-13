@@ -10,3 +10,9 @@ alias al="apt list"
 alias agdu="au"
 
 alias agar="apt-get autoremove"
+
+fix() {
+cp `which $1` ~/bin
+termux-fix-shebang ~/bin/$1
+hash -r
+}
