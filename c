@@ -206,12 +206,12 @@ def print_csv(filename)
   dark_cyan = "\e[36m"
 
   numbered_rows = CSV.open(filename).map.with_index do |row, n|
-    clean_row = row.map { |cell| cell&.strip } 
+    clean_row = row.map { |cell| cell && cell.strip } 
     [n.to_s, *clean_row]
   end
 
   col_maxes = numbered_rows.
-    map { |row| row.map { |cell| cell&.size } }.
+    map { |row| row.map { |cell| cell && cell.size } }.
     transpose.
     map {|col| col.compact.max }
 
