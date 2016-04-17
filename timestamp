@@ -1,1 +1,18 @@
-date +%s
+#!/usr/bin/env ruby
+
+FORMAT="%Y-%m-%d %H:%M:%S"
+
+args = ARGV
+
+if STDIN.tty?
+  if args.delete("--help")
+    usage
+    exit
+  else
+    puts Time.now.to_i
+  end
+else
+  STDIN.each_line do |line|
+    puts "[#{Time.now.strftime(FORMAT)}] #{line}"
+  end
+end
