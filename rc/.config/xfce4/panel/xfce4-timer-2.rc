@@ -1,0 +1,16 @@
+[G0]
+timername=
+time=1200
+timercommand=
+timerinfo=20m 0s
+is_countdown=true
+
+[others]
+nowin_if_alarm=false
+selecting_starts=false
+use_global_command=false
+global_command=
+repeat_alarm=false
+repetitions=1
+repeat_interval=10
+

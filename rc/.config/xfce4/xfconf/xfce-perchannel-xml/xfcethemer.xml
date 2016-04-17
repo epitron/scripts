@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfcethemer" version="1.0">
+  <property name="MetaTheme" type="string" value="Zukitwo"/>
+  <property name="WindowWidth" type="int" value="752"/>
+  <property name="WindowHeight" type="int" value="678"/>
+  <property name="ThemesHash" type="string" value="75bf8e3370f7758d7b49050d8deed6c5"/>
+  <property name="PreveiwSize" type="int" value="256"/>
+</channel>

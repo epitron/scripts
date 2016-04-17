@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-panel" version="1.0">
+  <property name="configver" type="int" value="2"/>
+  <property name="panels" type="array">
+    <value type="int" value="1"/>
+    <property name="panel-1" type="empty">
+      <property name="position" type="string" value="p=8;x=960;y=1050"/>
+      <property name="length" type="uint" value="100"/>
+      <property name="position-locked" type="bool" value="false"/>
+      <property name="size" type="uint" value="28"/>
+      <property name="plugin-ids" type="array">
+        <value type="int" value="1"/>
+        <value type="int" value="3"/>
+        <value type="int" value="15"/>
+        <value type="int" value="5"/>
+        <value type="int" value="4"/>
+        <value type="int" value="7"/>
+        <value type="int" value="2"/>
+        <value type="int" value="6"/>
+        <value type="int" value="11"/>
+        <value type="int" value="9"/>
+      </property>
+      <property name="background-style" type="int" value="0"/>
+      <property name="background-image" type="string" value=""/>
+      <property name="background-alpha" type="int" value="100"/>
+      <property name="background-color" type="array">
+        <value type="uint" value="56540"/>
+        <value type="uint" value="56026"/>
+        <value type="uint" value="54741"/>
+        <value type="uint" value="65535"/>
+      </property>
+      <property name="nrows" type="uint" value="2"/>
+    </property>
+  </property>
+  <property name="plugins" type="empty">
+    <property name="plugin-1" type="string" value="applicationsmenu"/>
+    <property name="plugin-3" type="string" value="tasklist"/>
+    <property name="plugin-15" type="string" value="separator">
+      <property name="expand" type="bool" value="true"/>
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-4" type="string" value="pager">
+      <property name="rows" type="uint" value="2"/>
+      <property name="miniature-view" type="bool" value="true"/>
+    </property>
+    <property name="plugin-6" type="string" value="systray">
+      <property name="names-visible" type="array">
+        <value type="string" value="xfce terminal"/>
+        <value type="string" value="gpodder"/>
+        <value type="string" value="synapse"/>
+        <value type="string" value="quasselclient"/>
+        <value type="string" value="xpra"/>
+        <value type="string" value="networkmanager applet"/>
+        <value type="string" value="javaembeddedframe"/>
+        <value type="string" value="quassel"/>
+        <value type="string" value="umplayer"/>
+        <value type="string" value="blam"/>
+        <value type="string" value="litecoin-qt"/>
+        <value type="string" value="evolution-alarm-notify"/>
+        <value type="string" value="clementine"/>
+        <value type="string" value="deadbeef"/>
+        <value type="string" value="orage"/>
+        <value type="string" value="kaffeine"/>
+        <value type="string" value="variety"/>
+        <value type="string" value="simplescreenrecorder"/>
+        <value type="string" value="chromium"/>
+        <value type="string" value="fluxgui.py"/>
+        <value type="string" value="volumeicon"/>
+        <value type="string" value="gtk-redshift"/>
+        <value type="string" value="vlc"/>
+        <value type="string" value="qtadb"/>
+        <value type="string" value="desura"/>
+        <value type="string" value="korgac"/>
+        <value type="string" value="volwheel"/>
+        <value type="string" value="nepomukmigrator"/>
+        <value type="string" value="gnunet.conf"/>
+        <value type="string" value="baka"/>
+        <value type="string" value="dropbox"/>
+        <value type="string" value="syncthing-gtk"/>
+        <value type="string" value="app-time-tracker"/>
+        <value type="string" value="opera"/>
+        <value type="string" value="skype"/>
+        <value type="string" value="gmpc"/>
+        <value type="string" value="task manager"/>
+        <value type="string" value="stardict"/>
+        <value type="string" value="xfmpc"/>
+        <value type="string" value="zim.py"/>
+        <value type="string" value="guake"/>
+        <value type="string" value="sonata"/>
+        <value type="string" value="klondike"/>
+        <value type="string" value="tomahawk"/>
+        <value type="string" value="primecoin-qt"/>
+        <value type="string" value="hexchat"/>
+        <value type="string" value="miro"/>
+        <value type="string" value="redshift-gtk"/>
+        <value type="string" value="swt"/>
+        <value type="string" value="recoll"/>
+        <value type="string" value="clipit"/>
+        <value type="string" value="owncloud"/>
+        <value type="string" value="gnunet-gtk"/>
+        <value type="string" value="hipchat"/>
+        <value type="string" value="choqok"/>
+        <value type="string" value="pidgin"/>
+        <value type="string" value="vidalia"/>
+        <value type="string" value="ghb"/>
+        <value type="string" value="mumble"/>
+        <value type="string" value="secushare"/>
+        <value type="string" value="otter"/>
+        <value type="string" value="sylpheed"/>
+        <value type="string" value="goldendict"/>
+        <value type="string" value="ekiga softphone"/>
+        <value type="string" value="quassel irc"/>
+        <value type="string" value="deluge"/>
+        <value type="string" value="otter browser"/>
+        <value type="string" value="gnome desktop sharing"/>
+        <value type="string" value="licq"/>
+        <value type="string" value="qsynergy"/>
+        <value type="string" value="ario"/>
+        <value type="string" value="bangarang"/>
+        <value type="string" value="audacious"/>
+        <value type="string" value="solaar"/>
+        <value type="string" value="basket"/>
+        <value type="string" value="parole"/>
+        <value type="string" value="steam"/>
+        <value type="string" value="bitcoin-qt"/>
+        <value type="string" value="launchy"/>
+        <value type="string" value="smuxi-frontend-gnome"/>
+        <value type="string" value="retroshare"/>
+        <value type="string" value="mate-settings-daemon"/>
+        <value type="string" value="tulip"/>
+        <value type="string" value="notes"/>
+        <value type="string" value="zim"/>
+        <value type="string" value="thunar"/>
+        <value type="string" value="power manager"/>
+        <value type="string" value="xchat"/>
+        <value type="string" value="cantata"/>
+        <value type="string" value="time tracker"/>
+        <value type="string" value="parcellite"/>
+        <value type="string" value="qbittorrent"/>
+        <value type="string" value="systray icon"/>
+        <value type="string" value="akonaditray"/>
+        <value type="string" value="cmplayer"/>
+        <value type="string" value="baka-mplayer"/>
+        <value type="string" value="amarok"/>
+        <value type="string" value="caja"/>
+        <value type="string" value="pan"/>
+        <value type="string" value="ktorrent"/>
+        <value type="string" value="wicd-client.py"/>
+        <value type="string" value="fusion-icon"/>
+      </property>
+      <property name="show-frame" type="bool" value="true"/>
+    </property>
+    <property name="plugin-7" type="string" value="cpugraph"/>
+    <property name="plugin-9" type="string" value="xfce4-orageclock-plugin"/>
+    <property name="plugin-5" type="string" value="netload"/>
+    <property name="plugin-11" type="string" value="weather"/>
+    <property name="plugin-2" type="string" value="xfce4-timer"/>
+  </property>
+</channel>

@@ -1,0 +1,35 @@
+[Configuration]
+BackgroundMode=TERMINAL_BACKGROUND_TRANSPARENT
+CommandLoginShell=TRUE
+MiscAlwaysShowTabs=FALSE
+MiscBell=FALSE
+MiscBordersDefault=TRUE
+MiscCursorBlinks=FALSE
+MiscCursorShape=TERMINAL_CURSOR_SHAPE_BLOCK
+MiscDefaultGeometry=80x24
+MiscInheritGeometry=FALSE
+MiscMenubarDefault=FALSE
+MiscMouseAutohide=FALSE
+MiscToolbarDefault=FALSE
+MiscConfirmClose=FALSE
+MiscCycleTabs=TRUE
+MiscTabCloseButtons=TRUE
+MiscTabCloseMiddleClick=TRUE
+MiscTabPosition=GTK_POS_TOP
+MiscHighlightUrls=TRUE
+ScrollingLines=12000
+ScrollingOnOutput=FALSE
+TitleInitial=(term)
+TitleMode=TERMINAL_TITLE_REPLACE
+ShortcutsNoMnemonics=TRUE
+ShortcutsNoMenukey=TRUE
+DropdownKeepOpenDefault=TRUE
+DropdownKeepAbove=FALSE
+ColorPalette=#000000000000;#cccc00000000;#a18be5bc27d5;#c4c4a0a00000;#39e59091ffff;#d90f43b2ffff;#0000efb3f2fc;#d3d3d7d7cfcf;#555557575353;#efef29292929;#d7a0ffff500f;#fcfce9e94f4f;#9eafc714f7b5;#f340a83effff;#820cffffffff;#eeeeeeeeecec
+ColorForeground=#e318e318e318
+BackgroundImageFile=/home/epi/backup/docs/backgrounds/1680/1. purplesunrise.jpg
+BackgroundImageStyle=TERMINAL_BACKGROUND_STYLE_CENTERED
+FontName=Monospace 14
+BackgroundDarkness=0.660000
+ColorCursor=#492ee73282ee
+

@@ -1,0 +1,15 @@
+show_frame=false
+fg_set=true
+fg=0R 32680G 49296B
+bg_set=true
+bg=54227R 55255G 53199B
+timezone=
+width_set=false
+height_set=false
+lines_vertically=false
+rotation=0
+data0=%X%n%x
+font0=Cantarell Bold 13
+tooltip=%A %d %B %Y/%V
+hib_timing=false
+
