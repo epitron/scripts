@@ -11,7 +11,7 @@ gem_group :development, :test do
   gem 'quiet_assets'
   gem 'letter_opener'
   gem 'faker'
-  gem 'did_you_mean'
+  gem 'spring'
 end
 
 environment 'config.action_mailer.delivery_method = :letter_opener', env: 'development'
