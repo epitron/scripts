@@ -3,6 +3,10 @@
 #----------------------------------------------
 # TODOS:
 #----------------------------------------------
+# * Two-column view:
+#   - Left: Local branches, Right: remote branches
+#   - Line up matching branches, order by commit date
+# * Integrate git-branches functionality
 # * auto-stash uncommitted changes when switching branches, and auto-unstash when switching back
 # * rename branch also renames remote
 # * -D deletes local and remote branches
