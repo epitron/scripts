@@ -11,7 +11,7 @@ end
 
 # Find a terminal to use
 cmd = [ TERMS.find { |term| which(term) } ]
-cmd << "--geometry=90x43"
+cmd << "--geometry=90x42"
 
 # Hold terminal after command is finished
 cmd << ARGV.shift if ARGV.first == "-H" 
