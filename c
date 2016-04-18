@@ -92,6 +92,7 @@ EXTRA_LANGS = {
   "configure"    => :bash,
   ".install"     => :bash,
   ".desktop"     => :bash,
+  ".conf"        => :bash,
   "Gemfile.lock" => :c,
   "database.yml" => :yaml,
   ".gradle"      => :groovy,
