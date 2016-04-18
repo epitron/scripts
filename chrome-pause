@@ -1,1 +1,1 @@
-pkill -STOP chrom
+pkill -f -STOP usr/lib/chrom
