@@ -10,7 +10,7 @@ EXECUTABLES = %w[
   /Applications/Sublime\ Text\ 2.app/Contents/SharedSupport/bin/subl
 ]
 
-cmd = EXECUTABLES.map { |fn| File.expand_path fn }.find { |path| File.exists? path }
+bin = EXECUTABLES.map { |fn| File.expand_path fn }.find { |path| File.exists? path }
 
 def which_dir(dir)
   CODE_PATHS.map { |d| File.expand_path d }.each do |path|
@@ -28,8 +28,11 @@ def which_bin(bin)
   nil
 end
 
+def sublime_on_current_desktop?
+  WM.current_desktop.windows.find { |w| w.title["Sublime Text"] }
+end
 
-unless cmd
+unless bin
   puts "Error: Sublime Text executable not found."
   puts
   puts "Tried:"
@@ -37,7 +40,11 @@ unless cmd
   exit 1
 end
 
-files = ARGV.map do |arg|
+require 'epitools/wm'
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+files = args.map do |arg|
   if File.exists? arg
     arg
   else
@@ -45,4 +52,9 @@ files = ARGV.map do |arg|
   end
 end
 
-exec(cmd, *files)
+opts << "-n" unless opts.include?("-n") or sublime_on_current_desktop?
+
+# p bin: bin, opts: opts, files: files
+
+cmd = [bin, *opts, *files]
+exec *cmd
