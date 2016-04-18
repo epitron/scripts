@@ -233,15 +233,15 @@ alias yd='youtube-dl'
 
 # arch
 alias pacman='sudoifnotroot pacman'
-alias pacs='pacman -Ss'   # search for package
-alias pacg='pacman -Qg'   # show groups
+alias pacs='\pacman -Ss'   # search for package
+alias pacf='\pacman -Ql|grep' # which package contains this file?
+alias pacq='\pacman -Q|grep'  # find a package
+alias pacg='\pacman -Qg'   # show groups
 alias pacu='pacman -Syu'  # update packages
 alias pacd='pacman -Syuw' # only download updates (no install)
 alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
 alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
-alias pacf='pacman -Ql|grep' # which package contains this file?
-alias pacq='pacman -Q|grep'  # find a package
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias y='yaourt'
 alias abs='sudoifnotroot abs'
