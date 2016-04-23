@@ -120,4 +120,5 @@ esac
 if [ -f /proc/cpuinfo ]; then
   export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
   export MAKEOPTS="-j`expr $PROCESSORS + 1`"
+  export MAKEFLAGS="$MAKEOPTS"
 fi
