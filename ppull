@@ -47,7 +47,15 @@ puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE
 
 results = repos.parallel_map(POOL_SIZE) do |repo|
   result = Path.cd(repo) do
-    IO.popen("git pull", err: [:child, :out]) { |io| io.read }
+    if Path[".git"].dir?
+      cmd = "git pull"
+    elsif Path["HEAD"].exists?
+      cmd = "git fetch"
+    else
+      raise "I don't recognize this type of repo: #{repo}"
+    end
+
+    IO.popen(cmd, err: [:child, :out]) { |io| io.read }
   end
 
   [repo, result, $?.success?]
