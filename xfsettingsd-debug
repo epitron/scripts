@@ -1,0 +1,3 @@
+#!/bin/bash
+XFSETTINGSD_DEBUG=1 xfsettingsd --replace --no-daemon
+
