@@ -68,9 +68,9 @@ results = repos.parallel_map(POOL_SIZE) do |repo|
     else
       raise "I don't recognize this type of repo: #{repo}"
     end
-  end
 
-  [repo, result, success]
+    [repo, result, success]
+  end
 end
 
 
