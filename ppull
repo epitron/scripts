@@ -57,19 +57,19 @@ results = repos.parallel_map(POOL_SIZE) do |repo|
 
       # Regular repo
       result  = run "git pull"
-      success = $?.success?
+      updated = !result["Already up-to-date."]
 
     elsif Path["HEAD"].exists?
 
       # Bare repo
       result  = run "git fetch"
-      success = !result.blank?
+      updated = !result.blank?
 
     else
       raise "I don't recognize this type of repo: #{repo}"
     end
 
-    [repo, result, success]
+    [repo, updated, result, $?.success?]
   end
 end
 
@@ -80,8 +80,8 @@ end
 updated = []
 errors  = []
 
-results.each do |repo, result, success|
-  if result["Already up-to-date."]
+results.each do |repo, updated, result, success|
+  if !updated
     print ".".grey
   elsif not success # result[/^(fatal: .+)$/] || result[/^(error: Your local changes.+)$/] || result[/no such ref was fetched./]
     print ".".light_red
