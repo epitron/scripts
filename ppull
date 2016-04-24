@@ -52,6 +52,7 @@ puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE
 # Update all the repos and gather the results
 
 results = repos.parallel_map(POOL_SIZE) do |repo|
+begin
   Path.cd(repo) do
     if Path[".git"].dir?
 
@@ -71,6 +72,9 @@ results = repos.parallel_map(POOL_SIZE) do |repo|
 
     [repo, updated, output, $?.success?]
   end
+rescue => e
+  [repo, false, e.to_s, false]
+end
 end
 
 
