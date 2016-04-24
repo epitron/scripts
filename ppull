@@ -56,20 +56,20 @@ results = repos.parallel_map(POOL_SIZE) do |repo|
     if Path[".git"].dir?
 
       # Regular repo
-      result  = run "git pull"
-      updated = !result["Already up-to-date."]
+      output  = run "git pull"
+      updated = !output["Already up-to-date."]
 
     elsif Path["HEAD"].exists?
 
       # Bare repo
-      result  = run "git fetch"
-      updated = !result.blank?
+      output  = run "git fetch"
+      updated = !output.blank?
 
     else
       raise "I don't recognize this type of repo: #{repo}"
     end
 
-    [repo, updated, result, $?.success?]
+    [repo, updated, output, $?.success?]
   end
 end
 
@@ -77,22 +77,22 @@ end
 ############################################################################
 # Summarize the results
 
-updated = []
+updated_repos = []
 errors  = []
 
-results.each do |repo, updated, result, success|
-  if !updated
-    print ".".grey
-  elsif not success # result[/^(fatal: .+)$/] || result[/^(error: Your local changes.+)$/] || result[/no such ref was fetched./]
+results.each do |repo, updated, output, success|
+  if not success # output[/^(fatal: .+)$/] || output[/^(error: Your local changes.+)$/] || output[/no such ref was fetched./]
     print ".".light_red
-    errors << [repo, result]
-  else
+    errors << [repo, output]
+  elsif updated
     puts
     puts "<3>========== <11>#{repo} <3>===============".colorize
     puts
-    puts result
+    puts output
     puts
-    updated << repo
+    updated_repos << repo
+  else
+    print ".".grey
   end
 end
 
@@ -110,5 +110,5 @@ puts
 puts "----------------------------------------------------------------".grey
 puts " Updated:".light_green
 puts "----------------------------------------------------------------".grey
-updated.each { |repo| puts "#{repo}".light_cyan }
+updated_repos.each { |repo| puts "#{repo}".light_cyan }
 puts
