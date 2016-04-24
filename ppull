@@ -5,6 +5,13 @@ require 'epitools'
 POOL_SIZE=12
 ############################################################################
 
+def run(cmd)
+  IO.popen(cmd, err: [:child, :out]) { |io| io.read }
+end
+
+#
+# TODO: Move this to epitools
+#
 module Enumerable
 
   def parallel_map(num_workers=8, &block)
@@ -39,29 +46,35 @@ else
   repos = Path["*/.git"].map(&:parent)
 end
 
-
 puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE} <9>parallel workers<8>)".colorize
 
-
+############################################################################
 # Update all the repos and gather the results
 
 results = repos.parallel_map(POOL_SIZE) do |repo|
-  result = Path.cd(repo) do
+  Path.cd(repo) do
     if Path[".git"].dir?
-      cmd = "git pull"
+
+      # Regular repo
+      result  = run "git pull"
+      success = $?.success?
+
     elsif Path["HEAD"].exists?
-      cmd = "git fetch"
+
+      # Bare repo
+      result  = run "git fetch"
+      success = !result.blank?
+
     else
       raise "I don't recognize this type of repo: #{repo}"
     end
-
-    IO.popen(cmd, err: [:child, :out]) { |io| io.read }
   end
 
-  [repo, result, $?.success?]
+  [repo, result, success]
 end
 
 
+############################################################################
 # Summarize the results
 
 updated = []
