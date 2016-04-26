@@ -1,0 +1,1 @@
+winetricks ie8 wmp10 allcodecs d3dx11_43 dotnet40 vc2005 vc2008 dsound ogg allfonts hosts ddr=opengl fontsmooth=rgb videomemorysize=2048 win7 glsl=enabled ao=enabled rtlm=auto psm=enabled mwo=force fontsmooth=rgb vsm=hardware
