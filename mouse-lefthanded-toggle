@@ -1,1 +1,11 @@
 xfconf-query -c pointers -p /USB_Optical_Mouse/RightHanded -T
+
+right=`xfconf-query -c pointers -p /USB_Optical_Mouse/RightHanded`
+
+if [ "$right" == "true" ]; then
+  msg="Righthanded"
+else
+  msg="Lefthanded"
+fi
+
+notify-send "Mouse toggle" "$msg"
