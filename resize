@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if (( $# != 3 )); then
+  echo "usage: resize infile.jpg 100x100 outfile.jpg"
+  exit
+fi
+
+INFILE="$1"
+SIZE="$2"
+OUTFILE="$3"
+
+convert "$INFILE" -filter Lanczos -distort Resize "$SIZE" -quality 95 "$OUTFILE"
