@@ -1,0 +1,20 @@
+#!/bin/bash
+if (( $# != 2 )); then
+  echo "usage: qemu-create-overlay-image <base image (read only)> <overlay image>"
+  exit 1
+fi
+
+BASE="$1"
+OVERLAY="$2"
+
+if [ -f "$OVERLAY" ]; then
+  echo "Error: overlay image ($OVERLAY) already exists."
+  exit 2
+fi
+
+if [ ! -f "$BASE" ]; then
+  echo "Error: base image ($BASE) does not exist."
+  exit 3
+fi
+
+qemu-img create -f qcow2 -b "$BASE" "$OVERLAY"
