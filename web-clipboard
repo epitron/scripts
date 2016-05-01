@@ -1,2 +1,2 @@
-#!/bin/bash
-exec web "`xclip -o`"
+#!/usr/bin/env ruby
+exec("#{__dir__}/web", `xclip -o`)

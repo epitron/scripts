@@ -48,8 +48,9 @@
 ######################################################################################
 
 # A list of browsers, which will be tried in order.
-BROWSERS         = %w[opera vivaldi-bin chrome chromium xombrero midori firefox jumanji]
-VIDEO_BROWSERS   = %w[chrome chromium firefox opera]
+PLAY           = "#{__dir__}/play"
+BROWSERS       = %w[opera vivaldi-bin chrome chromium xombrero midori firefox jumanji]
+VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 routes do
 
@@ -65,8 +66,8 @@ routes do
   match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirects }
 
   # Open videos in mplayer
-  play_video = proc { |uri| exec("play", uri) }
-  match host: %w[youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org], &play_video
+  play_video = proc { |uri| exec(PLAY, uri) }
+  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed)}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
   match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg)$/i, &play_video
