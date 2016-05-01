@@ -10,17 +10,23 @@ PROTOCOLS = {
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print "Usage: fixport <port>"
+        print "Usage: fixport [<hostname>:]<port>"
         sys.exit()
 
-    for port in sys.argv[1:]:
+    for arg in sys.argv[1:]:
+        if arg.rfind(":") >= 0:
+            host, port = arg.split(":")
+        else:
+            host, port = '', arg
+
         port = int(port)
+
         for proto_name, protocol in PROTOCOLS.items():
             print "* Unborking %s/%s..." % (port, proto_name)
 
             s = socket(AF_INET, SOCK_STREAM)
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.bind(('', port))
+            s.bind((host, port))
             s.close()
 
     
