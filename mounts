@@ -4,7 +4,7 @@ class Mount
   attr_accessor :dev, :path, :type, :options
 
   def initialize(line)
-    @path, @dev, @type, @options = line.strip.split
+    @path, @dev, @type, @options = line.strip.split(' ')
     @options = @options.split(",")
   end
 
@@ -21,7 +21,7 @@ class Mount
   end
 end
 
-mounts = IO.popen(["findmnt", "-l"]) { |io| io.drop(1).map { |line| Mount.new line } }
+mounts = IO.popen(["findmnt", "--raw"]) { |io| io.drop(1).map { |line| Mount.new line } }
 
 puts
 mounts.reject(&:system?).group_by(&:type).each do |type, mounts|
