@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+unless ARGV.any?
+  puts "usage: parseuri <url> [<url>...]"
+  exit 1
+end
+
+ARGV.each do |arg|
+  u = URI.parse(arg)
+  pp(
+    scheme: u.scheme,
+    host: u.host,
+    path: u.path,
+    port: u.port,
+    params: u.query.to_params
+  )
+end
