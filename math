@@ -62,15 +62,6 @@ class MathOTron
 
   #############################################################################
 
-  # UNITS = Rash.new(
-  #   /kb?/i       => 1_000,
-  #   /(m|mb|mm)/i => 1_000_000,
-  #   /(g|bn|gb)/i => 1_000_000_000,
-  #   /(t|tb)/i    => 1_000_000_000_000,
-  #   "q"          => 1_000_000_000_000_000,
-  #   "Q"          => 1_000_000_000_000_000_000,
-  # )
-
   REWRITE_RULES = {
     ## NICE MATH
     # x (turn "5 x 3" into "5 * 3")
@@ -90,16 +81,14 @@ class MathOTron
   }
 
   def translate(expr)
-    
-    expr = expr.gsub(/(\d[\d_]+(?:\.\d+)?)([a-zA-Z]+)\b/) do |m|
-      # unless amount = UNITS[$2]
-      #   return 
-      # end
-      # $1.to_f * amount
+    # Translate suffix units (like 25k, or 15%) into plain numbers
+    expr = expr.gsub /(\d[\d_]+(?:\.\d+)?)([a-zA-Z]+\b|%( ?= \s|$))/ do |m|
       units = $2
       num   = $1.to_f
 
       zeroes = case units.downcase
+      when "%"
+        0.01
       when "k", "kb"
         10**3
       when "m", "mb", "mm"
@@ -110,6 +99,8 @@ class MathOTron
         10**12
       when "q"
         10**15
+      when "Q"
+        10**18
       else
         return error("Invalid units: <15>#{units.inspect}</15>, in: <15>#{m.inspect}</15>")
       end
@@ -117,18 +108,11 @@ class MathOTron
       num * zeroes
     end
 
-
+    # Apply rewrite rules (converting bash-friendly operators into ruby operators, and more...)
     REWRITE_RULES.each do |regexp, replacement|
-      # p expr
       loop do
         last_expr = expr
-        # if replacement.is_a?(Proc)
-        #   expr = expr.gsub(regexp, &replacement)
-        # else
           expr = expr.gsub(regexp, replacement)
-        # end
-
-        # p expr
         break if expr == last_expr
       end
     end
@@ -217,7 +201,13 @@ Basic math:
   6.48074069840786
   (six)
 
-The colon operator lets you group things without using brackets:
+Units:
+  > 35k x 17%                                                                               
+  => 35000.0 * 0.17
+  5,950.0 (5.95e+03)
+  (five thousand, nine-hundred and fifty)
+
+The colon operator (lets you group things without using parentheses):
   > (5 + 10) / 5                                                                                        
   3
   (three)
@@ -227,7 +217,7 @@ The colon operator lets you group things without using brackets:
   3
   (three)
 
-You can also run it from the commandline (with bash-friendly operators):
+Bash-friendly operators (for commandline arguments):
   $ math 2 x 5
   => 2 * 5
   10
@@ -239,6 +229,7 @@ You can also run it from the commandline (with bash-friendly operators):
   (four trillion, three-hundred and ninety-eight billion, ...)
 
 
-It's also a Ruby interpreter!
+It's also a Ruby interpreter, with the power of epitools!
   > (1..42).select &:prime?
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
+
