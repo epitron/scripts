@@ -1,6 +1,12 @@
-#!/bin/bash
-for board in primary secondary clipboard; do
-  echo -n "$board: "
-  xclip -o -selection $board
-  echo
-done
+#!/usr/bin/env ruby
+
+def print_clipboard(name, title)
+  puts "== #{title} ================="
+  result = `xclip -o -selection #{name}`
+  p result
+  puts
+end
+
+print_clipboard("primary", "Primary clipboard (XA_PRIMARY)")
+print_clipboard("secondary", "Secondary clipboard (XA_SECONDARY)")
+print_clipboard("clipboard", "'Clipboard' clipboard (XA_CLIPBOARD)")
