@@ -1,31 +1,38 @@
 #!/usr/bin/env ruby
 
-def print_cmd(cmd)
+def run(*cmd)
+  puts
   puts cmd.map { |c| c[" "] ? "'#{c}'" : c }.join(" ")
+  system *cmd
+  puts
 end
 
-args = ARGV
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
 
-cmd = ["curl"]
+cmd = [
+  "curl",
+  "-L",       # follow redirects
+  "--xattr",  # xattrs
+  "-C", "-",  # resume at whatever the output file size is
+  "-O",       # write to file named after remote name
+]
+
+args.each do |arg|
+  run *cmd, arg
+end
+
+
 
 # cmd << "-i" # print headers (doesn't work when writing to a file)
 # cmd << "-#" # progress bar
 # cmd << "-v" # verbosity
-cmd << "-L" # follow redirects
-cmd << "--xattr" # xattrs
-cmd += ["-C", "-"] # resume at whatever the output file size is
 
-case args.reject { |arg| arg[/^-\w/] }.size
-when 2
-  cmd += [args.first, "-o", args.last]
-else
-  unless args.include? "-o"
-    cmd << "-O" # write to file named after remote name
-  end
-  cmd += args
-end
-
-puts
-print_cmd cmd
-puts
-system *cmd
+# case args.size
+# when 2
+#   cmd += [args.first, "-o", args.last]
+# else
+#   unless args.include? "-o"
+#     cmd << "-O" # write to file named after remote name
+#   end
+#   cmd += args
+# end
