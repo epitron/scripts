@@ -188,7 +188,7 @@ def highlight_lines_with_colons(enum)
   end
 end
 
-def print_elf(filename)
+def print_obj(filename)
   highlight_lines_with_colons(run("objdump", "-x", filename))
 end
 
@@ -280,8 +280,8 @@ def convert(arg)
       format = run('file', arg).read
 
       case format
-      when /ELF\b.+\b(executable|shared object)/
-        print_elf(arg)
+      when /(executable|shared object)/
+        print_obj(arg)
       when /(image,|image data)/
         show_image(arg)
       else
