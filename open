@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+ARGV.each do |arg|
+  fork { exec("xdg-open", arg, out: File::NULL) }
+end

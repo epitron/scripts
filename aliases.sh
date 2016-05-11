@@ -4,12 +4,14 @@
 # if [ "$OSTYPE" == "cygwin" ]; then
 #   alias open='cygstart'
 # elif [ -f /usr/bin/xdg-open ]; then
-alias open='xdg-open "$@" 2>/dev/null'
+#   alias open='xdg-open "$@" 2>/dev/null'
 # elif [ -f /usr/bin/exo-open ]; then
 #   alias open='exo-open "$@" 2>/dev/null'
 # elif [ -f /usr/bin/gnome-open ]; then
 #   alias open='gnome-open "$@" 2>/dev/null'
 # fi
+
+# alias open='xdg-open "$@" 2>/dev/null'
 
 function alias_all_as_sudo() {
   for var in "$@"
