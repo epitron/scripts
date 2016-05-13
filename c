@@ -280,7 +280,7 @@ def convert(arg)
       format = run('file', arg).read
 
       case format
-      when /(executable|shared object)/
+      when /:.+?(executable|shared object)[^,]*,/
         print_obj(arg)
       when /(image,|image data)/
         show_image(arg)
