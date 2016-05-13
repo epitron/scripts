@@ -20,6 +20,7 @@ opts = Slop.parse(help: true, strict: true) do
   on 'd=', 'outdir',   'Output directory'
   on 'o=', 'outfile',  'Output file'
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
+  on 'm',  'mute',     'No audio'
   on 'v=', 'vcodec',   'Output video codec (eg: h264, hevc, nvenc_h264)', default: "h264"
   on 'N',  'nvidia',   'Use nvidia-accelerated encoder'
   on 'c=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
@@ -78,11 +79,15 @@ files.each do |inp|
   vcodec = opts[:vcodec]
   vcodec = "nvenc_#{vcodec}" if opts.nvidia? and vcodec != "copy"
 
-  acodec = opts[:acodec]
-  acodec = "libfdk_aac" if acodec == "aac"
-
   # cmd += %w[-crf 20] if opts.hq?
-  cmd += ["-c:v", vcodec, "-c:a", acodec]
+  cmd += ["-c:v", vcodec]
+
+  unless opts.mute?
+    acodec = opts[:acodec]
+    acodec = "libfdk_aac" if acodec == "aac"
+    cmd += ["-c:a", acodec]
+  end
+      
   cmd += ["-qp", opts[:quality]] if opts.quality?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
