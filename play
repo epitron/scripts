@@ -226,7 +226,7 @@ def write_to_log(url, json)
   end
 
   open(JSON_LOGFILE, "a") do |f|
-    exclude_keys = %w[formats requested_formats]
+    exclude_keys = %w[formats requested_formats requested_subtitles]
 
     filtered_json = {
       timestamp:   timestamp,
@@ -246,7 +246,14 @@ def download(*urls)
   urls << log_entries.first if urls.empty?
 
   urls.each do |url|
-    system YOUTUBE_DL, "--no-mtime", "--xattrs", "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]", "--no-playlist", "-o", "%(title)s.%(ext)s", url.to_s
+    system YOUTUBE_DL,
+      "--no-mtime",
+      "--xattrs",
+      "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
+      "--sub-format", "srt/ass/vtt/best",
+      "--no-playlist",
+      "-o", "%(title)s.%(ext)s",
+      url.to_s
   end
 end
 
@@ -264,7 +271,14 @@ end
 # end
 
 def youtube_json(url)
-  out, err, status = run YOUTUBE_DL, "-j", "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best", "--no-playlist", url
+  out, err, status = run YOUTUBE_DL,
+    "-j",
+    "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+    "--sub-format", "srt/ass/vtt/best",
+    "--sub-lang", "en",
+    "--write-sub",
+    "--no-playlist",
+    url
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
@@ -273,6 +287,7 @@ def youtube_json(url)
 
   JSON.parse(out)
 end
+
 
 def play(url, player=nil)
   if url.is_a? LogEntry
@@ -283,16 +298,14 @@ def play(url, player=nil)
 
   play_click_sound
 
-  # media_url, title = youtube_dl(url.to_s)
   json = youtube_json(url.to_s)
-
+  # media_url, title = youtube_dl(url.to_s)
   write_to_log(url, json) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
 
-  notify(:video, "Playing:", json["title"], time: 4)
-
-  # cmd = player_proc(player).call(media_url, title)
   cmd = ["mpv", "--force-media-title", "#{json["title"]} (#{json["upload_date"]})"]
+  # cmd = player_proc(player).call(media_url, title)
 
+  # Video/Audio URLs
   if rf = json["requested_formats"]
     video, audio = rf
     cmd += [video["url"], "--audio-file", audio["url"]]
@@ -302,6 +315,19 @@ def play(url, player=nil)
     raise "Dunno!"
   end
 
+  # Subtitles
+  if subs = json["requested_subtitles"] || json["subtitles"]
+    subs.each do |lang, sub_info|
+      # "en" => [{"ext"=>"vtt","url"=>"https://vimeo.com/texttrack/4085370.vtt"}],
+      sub_info = sub_info.first if sub_info.is_a? Array
+      if lang[/^en/]
+        cmd += ["--sub-file", sub_info["url"]]
+      end
+    end
+  end
+
+  # Run mpv
+  notify(:video, "Playing:", json["title"], time: 4)
   system(*cmd)
 end
 

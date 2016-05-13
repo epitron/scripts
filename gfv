@@ -22,7 +22,7 @@ cmd = %w[
   youtube-dl
   --no-mtime
   --xattrs
-  --sub-format=srt --sub-lang=en --write-sub 
+  --sub-format=srt/ass/vtt/best --sub-lang=en --write-sub 
 ]
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
