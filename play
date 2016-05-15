@@ -74,6 +74,33 @@ end
 
 ###########################################################
 
+require 'uri'
+require 'cgi'
+
+module URI
+  #
+  # Convert a query string to a hash of params
+  #
+  def params
+    params = {}
+
+    if query
+      query.split(/[&;]/).each do |pairs|
+        key, value = pairs.split('=',2).collect { |v| CGI.unescape(v) }
+
+        if key and value
+          params[key] ||= []
+          params[key] << value
+        end
+      end
+    end
+
+    params.map { |k,v| [k, v.size > 1 ? v : v.first] }.to_h
+  end
+end
+
+###########################################################
+
 def notify(type, title, body, time: 5)
   require 'cgi'
 
@@ -288,7 +315,6 @@ def youtube_json(url)
   JSON.parse(out)
 end
 
-
 def play(url, player=nil)
   if url.is_a? LogEntry
     notify(:info, "Loading:", url.title, time: 4)
@@ -325,6 +351,20 @@ def play(url, player=nil)
       end
     end
   end
+
+  # Seek to time
+  uri = URI.parse(url.to_s)
+
+  case uri.params["t"]
+  when /^(\d+)$/ # t=#
+    seek = $1.to_i
+  when /^(\d+)m(\d+)s$/ # ?t=#m#s
+    seek = ($1.to_i * 60) + $2.to_i
+  when /^(\d+)h(\d+)m(\d+)s$/ # ?t=#h#m#s
+    seek = ($1.to_i * 60 * 60) + ($2.to_i * 60) + $3.to_i
+  end
+
+  cmd += ["--start", seek.to_s] if seek
 
   # Run mpv
   notify(:video, "Playing:", json["title"], time: 4)
