@@ -1,7 +1,10 @@
-#!/bin/bash
-if [ "$1" == "" ]; then
-  echo "usage: git-meld <other branch>"
+#!/usr/bin/env ruby
+if ARGV.empty?
+  puts "usage: git-meld <other branch>"
   exit 1
-fi
+end
 
-git difftool --dir-diff $1
+pwd = Dir.pwd
+Process.daemon
+Dir.chdir pwd
+exec "git", "difftool", "--dir-diff", ARGV.first
