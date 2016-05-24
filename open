@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 
 ARGV.each do |arg|
-  fork { exec("xdg-open", arg, out: File::NULL) }
+  fork do
+    # This nonsense is needed to totally squelch the STDOUT of the launched process.
+    the_pwd = Dir.pwd
+    Process.daemon
+    Dir.chdir(the_pwd)
+    exec("xdg-open", arg)
+  end
 end
