@@ -101,6 +101,7 @@ EXTRA_LANGS = {
   ".qml"         => :php,
   ".pro"         => :sql,
   ".service"     => :ini,
+  ".ws"          => :xml,
 }
 
 def print_source(filename)
@@ -189,7 +190,7 @@ def highlight_lines_with_colons(enum)
 end
 
 def print_obj(filename)
-  highlight_lines_with_colons(run("objdump", "-x", filename))
+  highlight_lines_with_colons(run("objdump", "-xT", filename))
 end
 
 def print_ssl_certificate(filename)
