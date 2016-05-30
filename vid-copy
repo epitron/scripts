@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+def help!
+  puts "usage: <input video>[ <input video> [...]] <output video extension>"
+  exit 1
+end  
+
+args = ARGV
+
+help! if args.size < 2
+
+ext = args.pop
+
+help! unless ext =~ /^\.?[^\.]{3,5}$/
+
+args.each do |arg|
+  input  = arg.to_Path
+  output = input.with(ext: ext)
+
+  puts
+  puts "* Copying: #{input.filename}"
+  puts "       to: #{output.filename}"
+
+  system "ffmpeg", "-v", "16", "-i", input, "-c", "copy", output
+end
