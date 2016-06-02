@@ -53,7 +53,7 @@ def parse_options
     on 'l',  'list',      "List <n> previously viewed videos"
     on 'a',  'all',       "List all videos (piped to less)"
     on 'd',  'download',  "Download video <n>"
-    # on 'p=', 'player',    "Video player to use: #{PLAYER_NAMES.join(", ")}", default: best_player
+    on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
   end
 end
 
@@ -298,7 +298,12 @@ end
 # end
 
 def youtube_json(url)
-  out, err, status = run YOUTUBE_DL,
+
+  # FIXME: Proxy when this happens:
+  # ERROR: kK1E2nB_Nu4: YouTube said: This video contains content from WMG, who has blocked it in your country on copyright grounds.
+  # ( https://www.youtube.com/watch?v=kK1E2nB_Nu4 )
+
+  cmd = YOUTUBE_DL,
     "-j",
     "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
     "--sub-format", "srt/ass/vtt/best",
@@ -306,6 +311,8 @@ def youtube_json(url)
     "--write-sub",
     "--no-playlist",
     url
+
+  out, err, status = run *cmd
 
   if not status.success? or out.empty?
     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
@@ -315,7 +322,7 @@ def youtube_json(url)
   JSON.parse(out)
 end
 
-def play(url, player=nil)
+def play(url, foreground=false)
   if url.is_a? LogEntry
     notify(:info, "Loading:", url.title, time: 4)
   else
@@ -324,7 +331,7 @@ def play(url, player=nil)
 
   play_click_sound
 
-  Process.daemon(true)
+  Process.daemon(true) unless foreground
 
   json = youtube_json(url.to_s)
   # media_url, title = youtube_dl(url.to_s)
@@ -435,7 +442,7 @@ if $0 == __FILE__
         # end
 
         if which("mpv")
-          play(url, opts[:player])
+          play(url, opts["no-daemon"])
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
         end
