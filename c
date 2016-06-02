@@ -198,7 +198,7 @@ def print_ssl_certificate(filename)
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
 
-def print_csv(filename)
+def print_csv(filename, separator=",")
   require 'csv'
 
   plain     = "\e[0m"
@@ -207,7 +207,7 @@ def print_csv(filename)
   cyan      = "\e[36;1m"
   dark_cyan = "\e[36m"
 
-  numbered_rows = CSV.open(filename).map.with_index do |row, n|
+  numbered_rows = CSV.open(filename, "rb", col_sep: separator).map.with_index do |row, n|
     clean_row = row.map { |cell| cell && cell.strip } 
     [n.to_s, *clean_row]
   end
@@ -277,6 +277,8 @@ def convert(arg)
       print_ssl_certificate(arg)
     elsif ext == ".csv"
       print_csv(arg)
+    elsif ext == ".tsv"
+      print_csv(arg, "\t")
     else
       format = run('file', arg).read
 
