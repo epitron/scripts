@@ -1,2 +1,6 @@
 #!/bin/bash
-exec sudoifnotroot apt-get -u $* dist-upgrade
+if [ "$*" == "" ]; then
+  exec sudoifnotroot apt-get dist-upgrade
+else
+  exec sudoifnotroot apt-get -u $* dist-upgrade
+fi
