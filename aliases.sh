@@ -105,11 +105,12 @@ alias less='less -X -F -i'
 alias diff='diff -u'
 
 # media
+alias o="open"
+alias o.="open ."
 alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias baka="baka-mplayer"
-
 #if [ "$TERM" == "xterm" ]
 #then
 #  alias ssh='ssh-termtitle'
