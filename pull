@@ -28,16 +28,16 @@ def pull(path)
 
   if path.dir?
 
-    if path.in_tree?(".git")
+    if (path/".svn").dir?
+      cmd = "svn update"
+    elsif (path/"CVS").dir?
+      cmd = "cvs update -dP"
+    elsif path.in_tree?(".git")
       cmd = "git pull"
     elsif path.in_tree?(".hg")
       cmd = "hg pull -u"
     elsif path.in_tree?(".bzr")
       cmd = "bzr pull"
-    elsif (path/".svn").dir?
-      cmd = "svn update"
-    elsif (path/"CVS").dir?
-      cmd = "cvs update -dP"
     elsif (path/"pull").exists?
       cmd = "./pull"
     elsif false #bzr
