@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if (( $# < 1 )); then
+  echo "usage: tomkv <files...>"
+else
+  vid-copy "$@" .mkv
+fi
