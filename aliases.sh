@@ -110,7 +110,7 @@ alias o.="open ."
 alias a="audacious"
 alias ae="a -e"
 alias a2="a"
-alias baka="baka-mplayer"
+alias ch="chromium"
 #if [ "$TERM" == "xterm" ]
 #then
 #  alias ssh='ssh-termtitle'
