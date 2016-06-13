@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+gem 'charlock_holmes'
+require 'charlock_holmes'
+require 'epitools'
+
+if ARGV.empty?
+  puts "Usage: fixutf8 <files...>"
+  exit 1
+end
+
+paths = ARGV.map(&:to_Path)
+
+paths.each do |input|
+
+  print "* #{input.filename}... "
+
+  data = input.read
+  encoding = CharlockHolmes::EncodingDetector.detect(data)[:encoding]
+
+  if encoding == "UTF-8"
+    puts "UTF-8".light_green
+  else
+    output = input.dup
+    input.rename!(filename: input.filename + ".bak")
+    data_utf8 = CharlockHolmes::Converter.convert data, encoding, 'UTF-8'
+    output.write(data_utf8)
+    puts "#{encoding} => UTF-8".light_red
+  end
+end
