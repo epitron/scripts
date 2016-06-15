@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+require 'io/console'
+
+chars = []
+start = nil
+
+puts "Type some stuff, then press enter, and the program will report your speed."
+puts
+
+loop do
+  c = $stdin.getch
+  start ||= Time.now
+
+  break if c.ord == 27
+  
+  if c.ord == 13
+    break unless start
+    elapsed = Time.now - start
+    puts
+    puts "Speed: #{(chars.size / elapsed).round 2} chars per second"
+    break
+  end
+
+  chars << c
+  print c
+end
