@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: stripcomments <file>"
+  exit 1
+fi
+
+sed -i.bak "/^#/d;/^ *$/d" "$1"
