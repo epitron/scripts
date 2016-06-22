@@ -367,7 +367,7 @@ def play(url, foreground=false)
   case uri.params["t"]
   when /^(\d+)$/ # t=#
     seek = $1.to_i
-  when /^(\d+)m(\d+)s$/ # ?t=#m#s
+  when /^(\d+)m(?:(\d+)s)?$/ # ?t=#m#s
     seek = ($1.to_i * 60) + $2.to_i
   when /^(\d+)h(\d+)m(\d+)s$/ # ?t=#h#m#s
     seek = ($1.to_i * 60 * 60) + ($2.to_i * 60) + $3.to_i
