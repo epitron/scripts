@@ -215,7 +215,7 @@ def print_csv(filename, separator=",")
   col_maxes = numbered_rows.
     map { |row| row.map { |cell| cell && cell.size } }.
     transpose.
-    map {|col| col.compact.max }
+    map {|col| col.compact.max.to_i }
 
   header    = numbered_rows.shift
   header[0] = ""
