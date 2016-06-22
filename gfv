@@ -9,7 +9,7 @@ if args.empty? or args.delete("--help")
   puts "  gfv [options] <youtube url(s)>"
   puts
   puts "Options:"
-  puts "  -h     High quality mode (often has to remux)"
+  puts "  -l     Low quality mode"
   puts "  -n     Number the files when downloading playlists"
   puts "  -a     Extract audio only"
   puts
@@ -39,11 +39,11 @@ end
 if args.delete("-a")
   cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
   # cmd += %w[--extract-audio -f bestaudio]
-elsif args.delete("-hq") or args.delete("-h")
+elsif args.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
-  cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
-else
   cmd += %w[-f best --youtube-skip-dash-manifest]
+else
+  cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
 end
 
 urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
