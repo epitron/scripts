@@ -19,6 +19,7 @@ def parse_options
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
     on 'u=', 'use',      'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+    on 't=', 'tracks',   'Which tracks to copy (comma-separated, eg: "-t 0,3" or "-t a:0,v:2")'
   end
 end
 
@@ -117,6 +118,10 @@ if $0 == __FILE__
       cmd += ["-codec:a", opts[:acodec]]
       cmd += ["-ss", start]
       cmd += ["-t", length] if length
+
+      if tracks = opts[:tracks]
+        cmd += tracks.split(",").map {|t| ["-map", "0:#{t}"] }.flatten
+      end
 
       cmd << outfile
 
