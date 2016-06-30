@@ -11,7 +11,8 @@ if args.empty? or args.delete("--help")
   puts "Options:"
   puts "  -l     Low quality mode"
   puts "  -n     Number the files when downloading playlists"
-  puts "  -a     Extract audio only"
+  puts "  -a     Download audio only"
+  puts "  -s     Download subtitles only"
   puts
   puts "(any other options will be passed directly to youtube-dl)"
   puts
@@ -22,7 +23,7 @@ cmd = %w[
   youtube-dl
   --no-mtime
   --xattrs
-  --sub-format=srt/ass/vtt/best --sub-lang=en --write-sub 
+  --sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub 
 ]
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
@@ -39,6 +40,8 @@ end
 if args.delete("-a")
   cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
   # cmd += %w[--extract-audio -f bestaudio]
+elsif args.delete("-s")
+  cmd << "--skip-download"
 elsif args.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]
