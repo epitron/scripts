@@ -127,7 +127,7 @@ end
 
 def play_click_sound
   file = File.expand_path("~/scripts/sounds/click.mp3")
-  fork { %w[mpg123 mplayer mpv].any? { |player| run(player, file).last.success? } }
+  fork { %w[mplayer mpg123 mpv].any? { |player| run(player, file).last.success? } }
   # fork { run("mplayer", file) }
 end
 
