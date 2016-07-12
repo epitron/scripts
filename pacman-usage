@@ -56,7 +56,7 @@ class Package
     end
 
     DATE_FIELDS.each do |field|
-      hash.alter!(field) { |v| DateTime.parse v }
+      hash.alter!(field) { |v| DateTime.parse(v) rescue nil }
     end
 
     hash.alter!("Installed Size") { |v| parse_size v }
