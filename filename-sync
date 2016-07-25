@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+BLOCKSIZE=2**14 # 16k read size
+
+args = ARGV.map &:to_Path
+
+if args.count != 1
+  puts DATA.read
+  exit 1
+end
+
+manifest = args.first
+
+unless manifest.exists?
+  puts "Error: #{manifest} not found"
+  exit 1
+end
+
+hashes   = manifest.each_line.map { |line| line.strip.split }.to_h
+
+raise "Manifest is empty" unless hashes.any?
+raise "Manifest hashes aren't all the same" unless hashes.keys.map(&:size).uniq.size == 1
+
+digest_class = case manifest.ext
+  when "sha256"
+    Digest::SHA256
+  when "sha1"
+    Digest::SHA1
+  when "md5"
+    Digest::MD5
+  else
+    # guess!
+    case hashes.keys.first.size 
+    when "7ad80868ed54389b12b7378a9159afa4".size
+      Digest::MD5
+    when "0310c3720f2cd815d388fea8eb199b34ca9b8a5f".size
+      Digest::SHA1
+    when "375db95cf5804eb2420e7e9b0c16130b234c2e94bfafb676477eb784e07b7302".size
+      Digest::SHA256
+    else
+      raise "I dunno what kind of manifest this is!"
+    end
+end
+
+Path["**/*"].each do |path|
+  next if path == manifest
+
+  puts "* #{path}"
+  
+  digest = digest_class.new
+  
+  path.open do |io|
+    while data = io.read(BLOCKSIZE)
+      digest << data
+    end
+  end
+
+  if new_filename = hashes[digest.hexdigest]
+    puts "  |_ renaming to #{new_filename}"
+    target = path.with(filename: new_filename)
+    if target.exists?
+      puts "ERROR! #{target} already exists!".bright_red
+    else
+      path.rename(filename: new_filename)
+    end
+  end
+end
+
+
+__END__
+Usage:
+  filename-sync <manifest>
+
+Purpose:
+  Renames files based on the files' hashes and a supplied manifest.
+
+Manifest:
+  A file containing hash/filename pairs, eg:
+
+  714h32314029378f9872890awe90f87209734  file.txt
+  239889gfjrh23f79sdsdlhjawmnv7yz89awj2  otherfile.txt
