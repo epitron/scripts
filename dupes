@@ -11,9 +11,22 @@ def parse_options
     banner 'Usage: dupes [options] <files or dirs...>'
 
     on 'd',  'delete',      'Delete dupes'
-    on 'v',  'verbose',     'with verbosity'
+    # on 'v',  'verbose',     'with verbosity'
+    on 'i',  'interactive', 'Delete with interactivity'
   end
 end
+
+def without_common_prefix(files)
+  x, *xs = files.map &:to_s
+
+  x.each_char.with_index do |c, i|
+    unless xs.all? { |s| s[i] == c }
+      return [x, *xs].map { |s| s[i..-1] }
+    end
+  end
+
+  [x, *xs]
+end  
 
 ###
 
@@ -25,28 +38,54 @@ end
 
 ### 
 
-cache   = {}
-matches = []
-
 files = ARGV.map do |arg|
   path = Path[arg]
   path.dir? ? path.ls_r.select(&:file?) : path 
 end.flatten
 
-$stderr.puts "* Comparing #{files.size} files..."
+$stderr.puts "* MD5ing #{files.size} files..."
 
-files.shuffle.combination(2).each do |a,b|
-  # p [a,b]
-  cache[a] ||= a.md5
-  cache[b] ||= b.md5
-  
-  if cache[a] == cache[b] and a.size > 0
-    puts "#{a}    |    #{b}"
-    matches << [a,b]
-  end
+sets_of_dupes = files.
+  group_by(&:md5).
+  values.
+  map { |fs| fs.sort_by { |f| f.to_s.size } }.
+  select { |files| files.size > 1 }
+
+if sets_of_dupes.empty?
+  puts "No dupes!"
+  exit
 end
 
+if opts.interactive?
+  deleter = Path.which("trsh", "rm").compact.first
+  
+  sets_of_dupes.each do |dupes|
 
+    without_common_prefix(dupes).each_with_index do |name, i|
+      puts "#{i+1}) #{name}"
+    end
+
+    print "delete> "
+
+    unless choice = $stdin.gets.strip
+      puts "Skipping"
+      next
+    end
+
+    unless file_to_delete = dupes[choice.to_i-1]
+      puts "Invalid choice."
+      redo
+    end
+
+    cmd = [deleter, file_to_delete]
+    p cmd.map(&:to_s)
+    system *cmd
+
+    puts
+  end
+else
+  sets_of_dupes.each { |dupes| puts dupes.join(" | ") }
+end
 
 # grouped_dupes = ARGV.map(&:to_Path).
 #       map { |path| path.dir? ? path.ls_r : path }.
