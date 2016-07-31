@@ -15,7 +15,7 @@ def parse_options
     on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
     on 'v=', 'vcodec',   'Output video codec', default: "copy"
     on 'c',  'codecs',   'List the availiable codecs'
-    on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)'
+    on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)', default: "00:00"
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
     on 'u=', 'use',      'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
