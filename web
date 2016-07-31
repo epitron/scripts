@@ -63,11 +63,11 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirects }
+  match(host: %w[t.co bit.ly is.gd ill-logic.com]) { |uri| route uri.chase_redirects }
 
   # Open videos in mplayer
   play_video = proc { |uri| exec(PLAY, uri) }
-  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org], &play_video
+  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed)}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
   match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg)$/i, &play_video
@@ -132,21 +132,36 @@ BEGIN {
     # if there were no redirects to follow.)
     # NOTE: Requires curl
     #
-    def follow_redirects(all: true)
-      output   = IO.popen(["curl", "-sLI", to_s]) { |io| io.read }
-      uri      = self
+    # def follow_redirects(all: true)
+    #   # output   = IO.popen(["curl", "-sLI", to_s]) { |io| io.read }
+    #   output   = IO.popen(["curl", "-si", to_s]) { |io| io.read }
+    #   uri      = self
 
-      output.each_line do |line|
-        if line.strip =~ /^location: (.+)$/i
-          # p line: line, match: $1
-          uri = uri + $1
-          break unless all
-        end
+    #   output.each_line do |line|
+    #     if line.strip =~ /^location: (.+)$/i
+    #       # p line: line, match: $1
+    #       uri = uri + $1
+    #       break unless all
+    #     end
+    #   end
+
+    #   uri
+    # end
+    # alias_method :follow_redirect, :follow_redirects
+
+    def chase_redirects
+      require 'http'
+
+      current_url = self
+
+      loop do
+        response = ::HTTP.get(current_url)
+        break unless redirect = response.headers["Location"]
+        current_url = redirect
       end
 
-      uri
+      current_url
     end
-    alias_method :follow_redirect, :follow_redirects
 
   end
 
