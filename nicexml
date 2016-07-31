@@ -1,6 +1,9 @@
 #!/usr/bin/ruby
-require 'rubygems'
-require 'nokogiri'
+require "rexml/document" 
 
-fragment = Nokogiri::XML.fragment($<.read)
-puts fragment
+doc       = REXML::Document.new($<)
+formatter = REXML::Formatters::Pretty.new
+
+formatter.compact = true # use as little whitespace as possible
+formatter.write(doc, $stdout)
+$stdout.puts
