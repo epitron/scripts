@@ -3,6 +3,7 @@
 #----------------------------------------------
 # TODOS:
 #----------------------------------------------
+# * Only show recently active (within 7 days) branches by default (optional: -a to show all branches)
 # * Two-column view:
 #   - Left: Local branches, Right: remote branches
 #   - Line up matching branches, order by commit date
