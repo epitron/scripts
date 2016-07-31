@@ -7,6 +7,7 @@
 #     (eg: special rules for when a shebang starts the file)
 #
 ##############################################################################
+require 'pathname'
 require 'coderay'
 require 'coderay_bash'
 ##############################################################################
@@ -98,6 +99,7 @@ EXTRA_LANGS = {
   ".gradle"      => :groovy,
   ".sage"        => :python,
   ".lisp"        => :clojure,
+  ".scm"         => :clojure,
   ".qml"         => :php,
   ".pro"         => :sql,
   ".service"     => :ini,
@@ -160,9 +162,31 @@ end
 
 ##############################################################################
 
+def pretty_xml(data)
+  require "rexml/document" 
+
+  result    = ""
+  doc       = REXML::Document.new(data)
+  formatter = REXML::Formatters::Pretty.new
+
+  formatter.compact = true # use as little whitespace as possible
+  formatter.write(doc, result)
+
+  result
+end
+
+
 def print_archive(filename)
-  raise "butts"
   run("atool", "-l", filename)
+end
+
+def print_archived_file(archive, internal_file)
+  # internal_ext = File.extname(internal_file)
+  case archive.extname
+  when ".k3b"
+    data = IO.popen(["unzip", "-p", archive.to_s, internal_file], "r") { |io| io.read }
+    CodeRay.scan(pretty_xml(data), :xml).term
+  end
 end
 
 ##############################################################################
@@ -260,10 +284,12 @@ def convert(arg)
   if arg
     return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
 
+    path = Pathname.new(arg)
+
     # TODO: Fix relative symlinks
     # arg = File.readlink(arg) if File.symlink?(arg)
 
-    ext = File.extname(arg).downcase
+    ext = path.extname.downcase
 
     if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
       print_archive(arg)
@@ -279,6 +305,8 @@ def convert(arg)
       print_csv(arg)
     elsif ext == ".tsv"
       print_csv(arg, "\t")
+    elsif ext == ".k3b"
+      print_archived_file(path, "maindata.xml")
     else
       format = run('file', arg).read
 
@@ -295,6 +323,7 @@ def convert(arg)
     "\e[31m\e[1mFile not found.\e[0m"
   end
 end
+
 
 ### MAIN #####################################################################
 
