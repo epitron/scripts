@@ -1,7 +1,13 @@
 #!/bin/bash
 BIN="`which redshift-gtk gtk-redshift`"
 
-$BIN -t 6300:3400 -l 42.8142432:-73.9395687
+
+# LOC="42.8142432:-73.9395687" # Toronto
+# LOC="37.7576171,-122.5776844" # SF
+LOC="42.8142432:-110.9395687" # Wyoming
+
+# $BIN -t 6300:3400 -l 
+$BIN -t 6300:3400 -l $LOC
 # -t DAY:NIGHT	Color temperature to set at daytime/night
 #
 # The neutral temperature is 6500K. Using this value will not
