@@ -112,13 +112,14 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
+alias cr="chromium"
 #if [ "$TERM" == "xterm" ]
 #then
 #  alias ssh='ssh-termtitle'
 #fi
 
 # net
-alias_all_as_sudo iptables ifconfig route netctl ufw dhcpcd ip nethogs bwm-ng listening
+alias_all_as_sudo iptables route netctl ufw dhcpcd ip nethogs bwm-ng listening
 alias ssh='ssh -2'
 alias scpfast='scp -c arcfour128'
 alias sshfast='ssh -c arcfour128'
@@ -134,6 +135,7 @@ alias_all_as_sudo fdisk blkid
 alias fatrace="sudoifnotroot fatrace | grep -v xfce4-terminal"
 alias md='mdadm'
 alias df='df -h'
+alias df.='df .'
 alias screen='screen -U'
 alias dd='dcfldd'
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
@@ -208,7 +210,7 @@ alias gcs="gc --depth=1"
 alias r="ren"
 alias be="bundle exec"
 alias pad="padrino"
-alias cr='crystal'
+# alias cr='crystal'
 alias rock='luarocks'
 
 gem-cd() { 
@@ -249,7 +251,7 @@ alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias y='yaourt'
 alias abs='sudoifnotroot abs'
-alias pkgfile='sudoifnotroot pkgfile -r'
+# alias pkgfile='sudoifnotroot pkgfile -r'
 alias mp='makepkg -s'
 
 # npm
