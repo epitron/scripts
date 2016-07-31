@@ -383,7 +383,7 @@ class TarballExtractor(FileExtractor):
                 
     
 class ZipExtractor(FileExtractor):
-    exts            = ['.zip', '.pk3', '.jar', '.war', '.xpi', '.epub', '.apk']
+    exts            = ['.zip', '.pk3', '.jar', '.war', '.xpi', '.epub', '.apk', '.k3b']
     streamable      = False
     desc            = "ZIP file"
     binary          = "unzip"
