@@ -10,7 +10,7 @@ cmd = ["heroku"]
 
 if args.empty?
   cmd << "--help"
-elseif args.include? "--help"
+elsif args.include? "--help"
   cmd += args
 else
   if args.first == "-p"
