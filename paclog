@@ -61,21 +61,14 @@ def all_events(direction=:reverse)
   end
 end
 
-def grouped_selections
-  pkgs = all_events(:forward)
-
-  groups = pkgs.each_cons(2).
-    split_at { |a,b| b.date.to_i - a.date.to_i > 60 }.
-    map { |group| group.map(&:first) }
-end  
-
-
 if $0 == __FILE__
   opts, args = ARGV.partition { |arg| arg[/^-\w/] }
   query = /#{args.join ".+"}/ if args.any?
 
   lesspipe(tail: true) do |less|
-    grouped_selections.each do |group|
+    groups = all_events(:forward).split_between { |a,b| b.date.to_i - a.date.to_i > 60 }
+
+    groups.each do |group|
       first, last = group.first.date, group.last.date
       elapsed     = (last.to_i - first.to_i) / 60
       
