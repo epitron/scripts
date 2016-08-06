@@ -52,7 +52,6 @@ def all_events(direction=:reverse)
   logs.each do |log|
     open(log, 'r') do |io|
       lines = (direction == :reverse) ? io.reverse_each : io.each
-      p [log, direction]
       lines.each do |line|
         if e = Event.from_line(line.strip)
           yield e 
@@ -63,16 +62,10 @@ def all_events(direction=:reverse)
 end
 
 def grouped_selections
-  states = {}
-  all_events(:forward).each { |ev| states[ev.name] = ev }
-
-  pkgs = states.values.
-    reject { |ev| ev.cmd == "removed" }.
-    select { |ev| ev.cmd == "installed" }
+  pkgs = all_events(:forward)
 
   groups = pkgs.each_cons(2).
     split_at { |a,b| b.date.to_i - a.date.to_i > 60 }.
-    # [ [[a,b], ...], [[a,b], ...], ... ]
     map { |group| group.map(&:first) }
 end  
 
@@ -81,23 +74,28 @@ if $0 == __FILE__
   opts, args = ARGV.partition { |arg| arg[/^-\w/] }
   query = /#{args.join ".+"}/ if args.any?
 
-  lesspipe do |less|
-    if (opts & ["-g", "-s"]).any?
-      grouped_selections.each do |group|
-        first, last = group.first.date, group.last.date
-        elapsed     = (last.to_i - first.to_i) / 60
-        
-        less.puts "<8>== <11>#{first} <7>(<15>over <9>#{elapsed} <15>minutes<7>) <8>========".colorize
-        group.each { |ev| less.puts "#{ev}" }
-        less.puts
+  lesspipe(tail: true) do |less|
+    grouped_selections.each do |group|
+      first, last = group.first.date, group.last.date
+      elapsed     = (last.to_i - first.to_i) / 60
+      
+      empty_group = true
+
+      group.each do |ev| 
+        if query
+          next unless ev.name =~ query
+          ev.name.gsub!(query) { |m| m.light_yellow.on_blue }
+        end
+
+        # Print the header only if the query matched something in this group
+        if empty_group
+          empty_group = false
+          less.puts
+          less.puts "<8>== <11>#{first.strftime("<10>%Y-%M-%d <7>at <2>%l:%M %p")} <7>(<9>#{elapsed} <7>minute session) <8>========".colorize
+        end
+
+        less.puts ev
       end
-    elsif query
-      all_events.select { |e| e.name =~ query }.each do |e|
-        e.name = e.name.gsub(query) { |m| m.light_yellow.on_blue }
-        less.puts e
-      end
-    else
-      all_events.each { |e| less.puts e }
     end
   end
 end
