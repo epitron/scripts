@@ -99,6 +99,12 @@ def lookup_macs(args)
   db_open do |db|
     args.map do |arg|
       prefix = arg.upcase.scan(/[0-9A-F]/).take(6).join
+
+      if prefix.size < 6
+        $stderr.puts "* Error: #{arg} is too short -- must be at least 6 chars (3 hex bytes)"
+        next
+      end
+
       result = db[prefix]
       result && result.split("\n")
     end
