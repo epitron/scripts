@@ -91,7 +91,7 @@ if $0 == __FILE__
         if empty_group
           empty_group = false
           less.puts
-          less.puts "<8>== <11>#{first.strftime("<10>%Y-%M-%d <7>at <2>%l:%M %p")} <7>(<9>#{elapsed} <7>minute session) <8>========".colorize
+          less.puts "<8>== <11>#{first.strftime("<10>%Y-%m-%d <7>at <2>%l:%M %p")} <7>(<9>#{elapsed} <7>minute session) <8>========".colorize
         end
 
         less.puts ev
