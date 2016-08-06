@@ -32,12 +32,6 @@ if action == "windowraise"
   cmd += ["windowactivate", current_window.id.to_s]
 end
 
-system *cmd
-
-
-
-# action_window(w.id, :change_state, "add", ...?)
-# :state=>["_NET_WM_STATE_HIDDEN"]
-# state_name = XGetAtomName(disp, window_state[j]);
-# xcb_atom_t _NET_WM_STATE_HIDDEN;
-
+unless system *cmd
+  $stderr.puts "Command failed: #{cmd.inspect}"
+end
