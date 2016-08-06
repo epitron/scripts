@@ -44,25 +44,54 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
  
 end
 
-def all_events
-  return to_enum(:all_events) unless block_given?
+def all_events(direction=:reverse)
+  return to_enum(:all_events, direction) unless block_given?
 
   logs = Path["/var/log/pacman.log*"].sort_by(&:mtime)
 
   logs.each do |log|
-    open(log, 'r').reverse_each do |line|
-      if e = Event.from_line(line.strip)
-        yield e 
+    open(log, 'r') do |io|
+      lines = (direction == :reverse) ? io.reverse_each : io.each
+      p [log, direction]
+      lines.each do |line|
+        if e = Event.from_line(line.strip)
+          yield e 
+        end
       end
     end
   end
 end
 
+def grouped_selections
+  states = {}
+  all_events(:forward).each { |ev| states[ev.name] = ev }
+
+  pkgs = states.values.
+    reject { |ev| ev.cmd == "removed" }.
+    select { |ev| ev.cmd == "installed" }
+
+  groups = pkgs.each_cons(2).
+    split_at { |a,b| b.date.to_i - a.date.to_i > 60 }.
+    # [ [[a,b], ...], [[a,b], ...], ... ]
+    map { |group| group.map(&:first) }
+end  
+
+
 if $0 == __FILE__
-  query = /#{ARGV.join ".+"}/ if ARGV.any?
+  opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+  query = /#{args.join ".+"}/ if args.any?
 
   lesspipe do |less|
-    if query
+    if (opts & ["-g", "-s"]).any?
+      grouped_selections.each do |group|
+        first, last = group.first.date, group.last.date
+        elapsed     = (last.to_i - first.to_i) / 60
+        
+        less.puts "<8>== <11>#{first} <7>(<15>over <9>#{elapsed} <15>minutes<7>) <8>========".colorize
+        group.each { |ev| less.puts "#{ev}" }
+        less.puts
+      end
+    elsif query
       all_events.select { |e| e.name =~ query }.each do |e|
         e.name = e.name.gsub(query) { |m| m.light_yellow.on_blue }
         less.puts e
