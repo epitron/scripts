@@ -4,42 +4,71 @@ require 'epitools'
 
 #VALID_EXTS = %w[avi asf wmv mp4 ogm mkv flv]
 
+def audio_format(infile)
+  format = nil
+  cmd    = ["ffprobe", "-hide_banner", infile]
+  
+  IO.popen(cmd, "rb", :err=>[:child, :out]) do |io| 
+    io.each_line do |line|
+      # Stream #0:1: Audio: aac (LC), 22050 Hz, stereo, fltp
+      # Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 95 kb/s
+      # Stream #0:0: Audio: mp3, 22050 Hz, mono, s16p, 67 kb/s
+      # Stream #0:1: Audio: mp3 (U[0][0][0] / 0x0055), 44100 Hz, stereo, s16p, 310 kb/s
+      if line =~ /Stream.+Audio.+(aac|mp3)/
+        format = $1
+        break
+      end
+    end
+  end
+
+  case format
+  when nil
+    ""
+  when "aac" 
+    "m4a"
+  else
+    format
+  end
+end  
+
 def extract_audio(infile)
 
   infile = Path[infile]
-  
-  p infile
   
   unless infile.exists?
     STDERR.puts "Couldn't find #{infile}"
     return
   end
 
-  #unless VALID_EXTS.include? infile.ext
-  #  STDERR.puts "Unrecognized video format: #{infile.ext}"
-  #  return
-  #end
-  
-  if infile =~ %r{^/dev/fd/}
-    outfile = Path.pwd/"#{infile.filename}.mp3" 
-  else    
-    outfile = infile.with(:ext=>"mp3")
-  end
+  # Check format
+  format = audio_format(infile)
+  outfile = infile.with(:ext=>format)
 
-  if outfile.exists?
-    puts "Error: #{outfile} exists!"
-    return
-  end    
-  
   puts
   puts "Input:  #{infile}"
   puts "Output: #{outfile}"
   puts
+
+  if outfile.exists?
+    puts "Error: output file already exists! Aborting"
+    puts
+    return
+  end    
+
+  # cmd = %w[mencoder -of rawaudio -oac mp3lame -ovc copy -o] + [outfile.to_s, infile.to_s]
+  cmd = [
+    "ffmpeg",
+    "-hide_banner",
+    "-loglevel", "error",
+    "-i", infile,
+    "-vn", "-acodec", "copy",
+    outfile
+  ]
   
-  # -lameopts q=5
-  cmd = %w[mencoder -of rawaudio -oac mp3lame -ovc copy -o] + [outfile.to_s, infile.to_s]
   system(*cmd)
-  
+
+  puts "* Done! (#{outfile.size.commatize} bytes)"
+  puts
 end
 
 if ARGV.empty?
