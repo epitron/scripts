@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+DISCS_DIR = Path["~/archive/discs"]
+
+class Mount
+  attr_accessor :dev, :type, :options
+
+  def initialize(line)
+    @path, @dev, @type, @options = line.strip.split(' ')
+    @options = @options.split(",")
+  end
+
+  def system?
+    (path =~ %r{^/(sys|dev|proc|run/user|tmp)}) or dev == "systemd-1"
+  end
+  
+  def inspect
+    "#{type}: #{path} (#{dev})"
+  end
+  
+  def to_s
+    "  #{path} (#{dev})"
+  end
+
+  def path
+    # Unescape findmnt's hex codes
+    Path.new "#{eval %{"#{@path}"}}/"
+  end
+
+  def dirname
+    path.dirs.last
+  end
+end
+
+mounts = IO.popen(["findmnt", "--raw"]) { |io| io.drop(1).map { |line| Mount.new line } }
+
+discs = mounts.select { |m| m.type.in? %w[udf iso9660] }
+
+discs.each do |m|
+  if prompt("* Import '#{m.dirname}'?") == "y"
+    outfile = DISCS_DIR / "#{m.dirname}.txt"
+    puts "  |_ writing to #{outfile}"
+
+    # raise "#{outfile} already exists" if outfile.exists?
+    puts
+    
+    outfile.open("w") do |io|
+      files = m.path.ls_R
+      widest = files.max_by(&:size).size.to_s.size
+
+      files.each do |f|
+        name = f.relative_to(m.path)
+        s    = "#{f.mtime} | #{f.size.to_s.rjust(widest)} | #{name}"
+        io.puts s
+        puts s
+      end
+    end
+
+    puts
+
+    if prompt("Eject?") == "y"
+      system("eject", m.path)
+    end
+  end
+end
+
