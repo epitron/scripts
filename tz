@@ -15,6 +15,15 @@ MAX_RESULTS = 20
 ###########################################################
 
 TRACKERS = %w[
+  udp://tracker.coppersurfer.tk:6969/announce
+  udp://tracker.leechers-paradise.org:6969/announce
+  udp://zer0day.ch:1337/announce
+  http://tracker.opentrackr.org:1337/announce
+  http://www.opentrackr.org/announce
+  udp://opentrackr.org:1337/announce
+  http://5.79.83.193:2710/announce
+  udp://mgtracker.org:6969/announce
+  udp://tracker.mg64.net:6969/announce
   http://tracker.best-torrents.net:6969/announce
   http://tracker.ccc.de:80/
   udp://tracker.ccc.de:80/
@@ -30,12 +39,9 @@ TRACKERS = %w[
   udp://tracker.prq.to/announce
   udp://tracker.publicbt.com:80/
   http://tracker.publicbt.com:80/
-  udp://11.rarbg.com/announce
-  http://9.rarbg.com:2710/announce
   http://bt1.the9.com:6969/announce
   http://tracker.torrent.to:2710/announce
   http://tracker.xpear.de:6969/announce
-  http://tracker.yify-torrents.com/announce
 ]
 
 ###########################################################
@@ -56,12 +62,15 @@ class Result
 
     dd = dl.at("dd")
 
-    @votes = dd.at(".v").text.strip
-    @age   = dd.at(".a").text
-    @date  = DateTime.parse dd.at(".a span")["title"]
-    @size  = dd.at(".s").text
-    @seeds = dd.at(".u").text
-    @peers = dd.at(".d").text
+    # @votes = dd.at(".v").text.strip
+    # @age   = dd.at(".a").text
+    # @size  = dd.at(".s").text
+    # @seeds = dd.at(".u").text
+    # @peers = dd.at(".d").text
+
+    #["<span>✓</span>", "<span title=\"1444063087\">10 months</span>", "<span>2288 MB</span>", "<span>857</span>", "<span>162</span>"]
+    @verified, @age, @size, @seeds, @peers = dd.search("span").map(&:text)
+    @date = Time.at dd.at("span[title]")["title"].to_i
   end
 
   def datestamp
@@ -87,7 +96,7 @@ end
 # end
 
 def search(query, page=nil)
-  url = "https://torrentz.eu/search"
+  url = "https://torrentz2.eu/search"
 
   opts = {}
   opts["f"] = URI.escape(query) unless query.empty?
@@ -96,9 +105,10 @@ def search(query, page=nil)
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
   page = Nokogiri::HTML(open(url))
+  # page.pry
   page.search(".results dl").
        take(MAX_RESULTS).
-       map { |dl| Result.new(dl) rescue nil }.
+       map { |dl| Result.new(dl) }.
        compact
 end
 
