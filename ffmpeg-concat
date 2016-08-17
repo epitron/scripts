@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+gem "slop", "~> 3.6"
+require 'slop'
+require 'epitools'
+
+def parse_options
+  @opts = Slop.parse(help: true, strict: true) do
+    banner 'Usage: ffmpeg-concat [options] <input videos...> [-o <output file>]'
+
+    on 'o=', 'output',   'The file to write the concatenated videos to.'
+    on 'v',  'verbose',  'Show verbose output (ie: ffmpeg commandline)'
+  end
+end
+
+opts    = parse_options
+infiles = ARGV.map(&:to_Path)
+
+if opts[:output]
+  outfile = opts[:output].to_Path
+else
+  outfile = infiles.map(&:basename).join("+").to_Path.with(ext: infiles.first.ext)
+end
+
+if outfile.exists?
+  if prompt("Overwrite #{outfile}?", "yN") == "n"
+    puts "Aborting..."
+    exit
+  end
+end
+
+## Rip it!
+
+Path.tmpfile do |tmp|
+  tmp.open("w") do |io|
+    # io.puts "-safe 0"
+    infiles.each { |infile| io.puts "file '#{infile}'" }
+  end
+
+  puts "Concatenating input files:"
+  infiles.each { |infile| puts "  #{infile}" }
+  puts
+  puts "Output file:"
+  puts "  #{outfile}"
+  puts
+
+  cmd = [
+    "ffmpeg",
+    "-y",
+    "-hide_banner", "-loglevel", "error",
+    "-f", "concat",
+    "-safe", "0",
+    "-i", tmp,
+    "-c", "copy",
+    outfile
+  ]
+
+  p cmd if opts.verbose?
+
+  system(*cmd)
+  puts "Done!"
+end
