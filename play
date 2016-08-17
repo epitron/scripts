@@ -115,7 +115,7 @@ def notify(type, title, body, time: 5)
   cmd << "--icon=#{type}"
   cmd += [title, body].map {|s| CGI.escapeHTML s }
 
-  system *cmd
+  fork { system *cmd }
 end
 
 def run(*cmd)
