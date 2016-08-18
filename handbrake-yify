@@ -3,4 +3,9 @@ if [ "$#" -ne 2 ]; then
   exit 1
 fi
 
-handbrake -i "$1" -o "$2" -e x264 --encoder-profile high -q 27 -O
+
+#QUALITY=30 # ~1.1 gigs
+#QUALITY=27 # ~1.7 gigs
+QUALITY=25 # ~2.3 gigs
+
+exec handbrake -i "$1" -o "$2" -e x264 --encoder-profile high -q $QUALITY -O
