@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+args = ARGV
+
+if args.empty?
+  puts "usage: rtspdump rtsp://<stuff>"
+  exit 1
+end
+
+args.each do |arg|
+  url = URI.parse(arg)
+  outfile = url.path.split("/").last
+
+  cmd = [
+    "ffmpeg",
+    "-use_wallclock_as_timestamps", "1",
+    "-i", url,
+    "-c", "copy",
+    outfile
+  ]
+
+  p cmd
+  raise "Error" unless system *cmd
+end
