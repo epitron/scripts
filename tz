@@ -15,7 +15,11 @@ MAX_RESULTS = 20
 ###########################################################
 
 TRACKERS = %w[
+  http://opentrackr.org/announce
+  http://tracker.opentrackr.org:1337/announce
   udp://tracker.coppersurfer.tk:6969/announce
+  http://109.121.134.121:1337/announce
+  http://p4p.arenabg.ch:1337/announce
   udp://tracker.leechers-paradise.org:6969/announce
   udp://zer0day.ch:1337/announce
   http://tracker.opentrackr.org:1337/announce
@@ -189,10 +193,10 @@ end
 
 def display(results)
   results.each_with_index do |r, n|
-    line = "<13>#{(n+1).to_s.rjust(3)}. "
+    number = "<13>#{(n+1).to_s.rjust(3)}. "
     # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
     # line += " <14>#{r.size} <7>(#{r.age})"
-    line += "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(9)} <8>| <14>#{r.title}"
+    line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(9)} <8>| #{number} <8>| <14>#{r.title}"
     # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
 
     puts line.colorize
