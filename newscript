@@ -1,18 +1,67 @@
 #!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
 require 'epitools'
 
-src = Path["~/scripts/newscript-template.rb"]
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner 'Usage: newscript [options] <script name>'
 
-for arg in ARGV
+    on 'b',  'bash',  'Bash script'
+    on 'r',  'ruby',  'Ruby script'
+  end
+
+  [opts, ARGV]
+end
+
+
+opts, args = parse_options
+
+
+if opts.bash?
+  body = <<~BODY
+    #!/bin/bash
+
+    if [ "$1" == "" ]; then
+      echo "usage: <<scriptname>>"
+      exit 1
+    end
+
+  BODY
+elsif opts.ruby?
+  body = <<~BODY
+    #!/usr/bin/env ruby
+    gem 'slop', "~> 3.6"
+    require 'slop'
+    require 'epitools'
+
+    def parse_options
+      opts = Slop.parse(help: true, strict: true) do
+        banner "Usage: <<scriptname>> [options]"
+
+        # on 'c',  'codecs',  'List the availiable codecs'
+        # on 'u=', 'use',     'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+      end
+
+      [opts, ARGV]
+    end
+
+    opts, args = parse_options
+
+    # Do stuff here
+  BODY
+else
+  body = ""
+end
+
+for arg in args
   dest = Path["~/scripts/#{arg}"]
   if dest.exists?
     puts "* #{dest.to_s.light_red} already exists!"
   else
-    dest.write src.read.gsub("<<scriptname>>", arg)
+    dest << body.gsub("<<scriptname>>", arg)
     cmd ["chmod +x ?", dest]
     puts "* #{dest.to_s.bright_green} created..."
+    system("s", arg)
   end
 end
-
-  
-
