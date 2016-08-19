@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ -f PKGBUILD ]; then
+  makepkg --printsrcinfo > .SRCINFO
+else
+  echo "Error: PKGBUILD not found"
+fi
