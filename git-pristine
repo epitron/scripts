@@ -1,4 +1,9 @@
 #!/bin/bash
+echo "============== Cleaning ================================"
+echo
+git submodule foreach "git reset --hard; git clean -dfx ."
 git reset --hard
 git clean -dfx .
-
+echo
+echo "============== git status =============================="
+git status
