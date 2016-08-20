@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+require 'http'
+require 'coderay'
+require 'epitools'
+
+TD_FX_URL = "https://www.tdcanadatrust.com/fx/rates_tdct.html"
+
+
+CHAR_TRANSLATE = { "\\'" => "'" }
+
+def extract_data_from_javascript(js)
+  toks = CodeRay::Scanners::JavaScript.new.tokenize(js).each_slice(2)
+  parse_toks(toks)
+end
+
+def parse_toks(toks)
+  result = []
+  current = []
+  toks.each do |tok, type|
+    # p [tok, type]
+
+    case type
+    when :integer
+      result << tok.to_i
+    when :float
+      result << tok.to_f
+    else
+
+      if (tok == :begin_group and type == :string) .. (tok == :end_group and type == :string)
+        case type
+        when :content
+          current << tok
+        when :char
+          current << CHAR_TRANSLATE[tok] || tok
+        when :delimiter, :string
+          # skip
+        else
+          puts "Unknown token type: #{type}"
+        end
+
+        if tok == :end_group
+          result << current.join
+          current.clear
+        end
+      end
+    end
+  
+  end
+
+  result
+end  
+
+if __FILE__ == $0
+  html = HTTP.get(TD_FX_URL).to_s
+
+  currency, toCAD, fromCAD = %w[nations sellToCAD buyFromCAD].map do |var|
+    str = html.each_line.grep(/#{var}\s*=/).first
+    extract_data_from_javascript(str)
+  end
+
+  # ex1 = "toggle('clue_DJ_6_5', 'clue_DJ_6_5_stuck', 'After the physicist who discovered X-rays, it\\'s another name for a doctor who interprets X-rays')"
+  # ex2 = "toggle('clue_DJ_6_5', 'clue_DJ_6_5_stuck', '<em class=\"correct_response\">a roentgenologist</em><br /><br /><table width=\"100%\"><tr><td class=\"right\">Justin</td></tr></table>')"
+
+  # ex1 = "nations = new Array('US DOLLAR','CANADIAN DOLLAR','US BORDERLESS PLAN','POUND STERLING','AUSTRALIAN DOLLAR','BARBADOS DOLLAR','CZECH KORUNA','DANISH KRONER','EAST CARIBBEAN DOLLAR','EURO','HONG KONG DOLLAR','INDIAN RUPEE','JAPANESE YEN','MEXICAN PESO','NEW ZEALAND DOLLAR','NORWEGIAN KRONE','PAKISTAN RUPEE','PHILIPPINE PESO','SAUDI RIYAL','SINGAPORE DOLLAR','S. AFRICAN RAND','SWEDISH KRONA','SWISS FRANC','UAE DIRHAM','POLISH ZLOTY','HUNGARIAN FORINT');"
+  # ex2 = %{sellToCAD = new Array( 1.2500, 1.0000, 1.2561, 1.6295, 0.9450, "N/A", "N/A", 0.1886, "N/A", 1.4089, 0.1608, "N/A", 0.012436, "N/A", 0.8992, 0.1505, "N/A", "N/A", 0.3270, 0.9272, "N/A", 0.1478, 1.3007, "N/A", "N/A", "N/A");}
+
+  table = currency.zip([toCAD, fromCAD].transpose).to_h
+  # currencies = table.select { |curr, vals| curr =~ /US DOLLAR|EURO/i }.to_h
+
+  Path["~/currencies.json"] << [Time.now.to_s, table].to_json
+
+  pp table["US DOLLAR"]
+end
