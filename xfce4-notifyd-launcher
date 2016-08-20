@@ -1,0 +1,6 @@
+#!/bin/bash
+while true; do
+  /usr/lib/xfce4/notifyd/xfce4-notifyd
+  echo "[`timestamp`] xfce4 notifyd crashed"
+  sleep 1
+done
