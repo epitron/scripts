@@ -110,4 +110,4 @@ function do_crop()
     timer=nil
 end
 
-mp.add_key_binding("c", "auto_crop", autocrop_start)
+mp.add_key_binding("C", "auto_crop", autocrop_start)
