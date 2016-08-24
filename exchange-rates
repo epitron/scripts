@@ -67,7 +67,7 @@ if __FILE__ == $0
   table = currency.zip([toCAD, fromCAD].transpose).to_h
   # currencies = table.select { |curr, vals| curr =~ /US DOLLAR|EURO/i }.to_h
 
-  Path["~/currencies.json"] << [Time.now.to_s, table].to_json
+  Path["~/currencies.json"].puts [Time.now.to_s, table].to_json
 
   pp table["US DOLLAR"]
 end
