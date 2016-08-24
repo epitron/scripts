@@ -1,1 +1,34 @@
-fortune
+#!/usr/bin/env ruby
+################################################
+
+def quotes
+  open("#{__dir__}/fortunes/quotes") do |f|
+    f.read.split("\n%\n")
+  end
+end
+
+################################################
+
+args = ARGV
+
+if args.any?
+
+  # Search quotes
+  require 'epitools'
+
+  matchers = args.map { |arg| /#{Regexp.escape(arg)}/i }
+
+  quotes.select do |quote|
+    if matchers.any? { |m| m =~ quote }
+      h = quote.dup
+      # h.gsub!(/^\s+-- .+$/) { |s| "<9>#{s}</9>"} # highlight author name
+      matchers.each {|m| h.gsub!(m) { |s| "<14>#{s}</14>" } }
+      h += "\n<8>----</8>"
+      puts h.colorize
+    end
+  end
+
+else
+  # Show random quote
+  puts quotes.sample
+end
