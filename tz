@@ -1,17 +1,16 @@
 #!/usr/bin/env ruby
 
-require 'nokogiri'
-require 'open-uri'
-require 'epitools/colored'
-
-### Settings ##############################################
-
-CLIENT      = "deluge"
-MAX_RESULTS = 20
-
 ###########################################################
 # TODO:
 # * Fix Term::Table API
+###########################################################
+
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'nokogiri'
+require 'open-uri'
+require 'epitools'
+
 ###########################################################
 
 TRACKERS = %w[
@@ -50,6 +49,30 @@ TRACKERS = %w[
 
 ###########################################################
 
+module Settings
+  extend self
+
+  def rc
+    path = Path["~/.tzrc"]
+    path.exists? ? path.parse_json : {}
+  end
+
+  def client
+    rc["client"] || 'deluge'
+  end
+
+  def page_size
+    rc["page_size"] || 20
+  end
+
+  def order 
+    rc["order"]&.to_sym
+  end
+end
+
+
+###########################################################
+
 class Result
   attr_accessor :title, :hash, :votes, :age, :date, :size, :seeds, :peers # :tags
 
@@ -81,6 +104,10 @@ class Result
     @date.strftime("%Y-%m-%d")
   end
 
+  def age
+    @age.gsub(/(day|month|week)s?/) { |m| m[0..1] }
+  end
+
   def magnet_url
     tracker_params = TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
     "magnet:?xt=urn:btih:#{hash}&dn=#{title}#{tracker_params}"
@@ -99,8 +126,20 @@ end
 #   IO.popen(cmd, "r") { |f| f.read }
 # end
 
-def search(query, page=nil)
-  url = "https://torrentz2.eu/search"
+def search(query, page_size, page=nil, order=nil)
+
+  case order
+  when :peers, nil
+    action = 'search'
+  when :date
+    action = 'searchA'
+  when :rating
+    action = 'searchN'
+  else
+    raise 'Unknown ordering'
+  end
+
+  url = "https://torrentz2.eu/#{action}"
 
   opts = {}
   opts["f"] = URI.escape(query) unless query.empty?
@@ -109,9 +148,9 @@ def search(query, page=nil)
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
   page = Nokogiri::HTML(open(url))
-  # page.pry
+
   page.search(".results dl").
-       take(MAX_RESULTS).
+       take(page_size).
        map { |dl| Result.new(dl) }.
        compact
 end
@@ -196,7 +235,7 @@ def display(results)
     number = "<13>#{(n+1).to_s.rjust(3)}. "
     # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
     # line += " <14>#{r.size} <7>(#{r.age})"
-    line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(9)} <8>| #{number} <8>| <14>#{r.title}"
+    line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(5)} <8>| #{number} <8>| <14>#{r.title}"
     # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
 
     puts line.colorize
@@ -205,19 +244,46 @@ end
 
 ###########################################################
 
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: tz [options] <query>"
+
+    on 'd',  'date',   'Sort by date'
+    on 'r',  'rating', 'Sort by rating'
+    on 'm',  'mirror', 'Retrieve all torrents'
+    on 'n=', 'num',    'Number of results (default: #{Settings.page_size})'
+  end
+
+  [opts, ARGV]
+end
+
+###########################################################
+
 if __FILE__ == $0
-  opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+  opts, args = parse_options
 
   query = args.join(" ")
 
-  if opts.delete("-m")
+  if opts.mirror?
     mirror(query)
   else
-    results = search(query)
+    order = 
+    if opts.date? 
+      order = :date
+    elsif opts.rating?
+      order = :rating
+    else
+      order = Settings.order
+    end
+
+    page_size = opts[:num]&.to_i || Settings.page_size
+    results   = search(query, page_size, nil, order)
+
     display(results)
+
     chosen = choose_torrents(results)
     chosen.each do |t|
-      system(CLIENT, t.magnet_url)
+      system(Settings.client, t.magnet_url)
     end
   end
 end
