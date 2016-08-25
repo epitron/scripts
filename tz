@@ -112,6 +112,12 @@ class Result
     tracker_params = TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
     "magnet:?xt=urn:btih:#{hash}&dn=#{title}#{tracker_params}"
   end
+
+  def self.magnet_url_for_hash(hash)
+    tracker_params = TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
+    "magnet:?xt=urn:btih:#{hash}#{tracker_params}"
+  end
+
 end
 
 ###########################################################
@@ -252,6 +258,7 @@ def parse_options
     on 'r',  'rating', 'Sort by rating'
     on 'm',  'mirror', 'Retrieve all torrents'
     on 'n=', 'num',    'Number of results (default: #{Settings.page_size})'
+    on 'a=', 'add',    'Add MD5 hash'
   end
 
   [opts, ARGV]
@@ -266,6 +273,9 @@ if __FILE__ == $0
 
   if opts.mirror?
     mirror(query)
+  elsif opts[:add]
+    url = Result.magnet_url_for_hash(opts[:add])
+    system(Settings.client, url)
   else
     order = 
     if opts.date? 
