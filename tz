@@ -8,10 +8,11 @@
 gem 'slop', "~> 3.6"
 require 'slop'
 require 'nokogiri'
-require 'open-uri'
 require 'epitools'
 
 ###########################################################
+
+ROOT_URL = "https://torrentz2.eu/"
 
 TRACKERS = %w[
   http://opentrackr.org/announce
@@ -122,15 +123,20 @@ end
 
 ###########################################################
 
-# def curl_get(url)
-#   cmd = [
-#     "curl",
-#     "-A", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.81 Safari/537.36",
-#     "-e", "http://torrentz.eu/",
-#     url
-#   ]
-#   IO.popen(cmd, "r") { |f| f.read }
-# end
+def read_url(url)
+  begin
+    cmd = [
+      "curl",
+      "-A", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.81 Safari/537.36",
+      "-e", ROOT_URL,
+      url
+    ]
+    IO.popen(cmd, "r") { |io| io.read }
+  rescue Errno::ENOENT
+    require 'open-uri'
+    open(url).read
+  end
+end
 
 def search(query, page_size, page=nil, order=nil)
 
@@ -145,7 +151,7 @@ def search(query, page_size, page=nil, order=nil)
     raise 'Unknown ordering'
   end
 
-  url = "https://torrentz2.eu/#{action}"
+  url = "#{ROOT_URL}#{action}"
 
   opts = {}
   opts["f"] = URI.escape(query) unless query.empty?
@@ -153,7 +159,7 @@ def search(query, page_size, page=nil, order=nil)
 
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
-  page = Nokogiri::HTML(open(url))
+  page = Nokogiri::HTML(read_url(url))
 
   page.search(".results dl").
        take(page_size).
