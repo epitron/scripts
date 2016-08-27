@@ -106,7 +106,7 @@ class Result
   end
 
   def age
-    @age.gsub(/(day|month|week)s?/) { |m| m[0..1] }
+    @age.gsub(/ (day|month|week|hour|year)s?/) { |m| m[1] }
   end
 
   def magnet_url
@@ -128,6 +128,7 @@ def read_url(url)
     cmd = [
       "curl",
       "-A", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.81 Safari/537.36",
+      "--silent",
       "-e", ROOT_URL,
       url
     ]
@@ -247,7 +248,7 @@ def display(results)
     number = "<13>#{(n+1).to_s.rjust(3)}. "
     # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
     # line += " <14>#{r.size} <7>(#{r.age})"
-    line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(5)} <8>| #{number} <8>| <14>#{r.title}"
+    line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(4)} <8>| #{number} <8>| <14>#{r.title}"
     # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
 
     puts line.colorize
