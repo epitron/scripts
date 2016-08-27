@@ -5,6 +5,8 @@ require 'epitools'
 
 if ARGV.empty?
   puts "Usage: fixutf8 <files...>"
+  puts
+  puts "(note: preserves the original files by adding .bak to the filename)"
   exit 1
 end
 
