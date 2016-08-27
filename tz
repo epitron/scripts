@@ -80,7 +80,15 @@ class Result
   def initialize(dl)
     link = dl.at("dt a")
 
-    raise if link.nil?
+    if link.nil?
+      if dt = dl.at("dt")
+        @title = dt.text
+        @verified, @age, @size, @seeds, @peers, @date = [""] * 6
+        return
+      else
+        raise "Bad dl:\n#{dl}"
+      end
+    end
 
     @title = link.text
 
