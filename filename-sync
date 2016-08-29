@@ -17,7 +17,7 @@ unless manifest.exists?
   exit 1
 end
 
-hashes   = manifest.each_line.map { |line| line.strip.split }.to_h
+hashes = manifest.each_line.map { |line| line.strip.split(/\s+/,2) }.select { |a| a.size == 2 }.to_h
 
 raise "Manifest is empty" unless hashes.any?
 raise "Manifest hashes aren't all the same" unless hashes.keys.map(&:size).uniq.size == 1
