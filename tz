@@ -55,7 +55,7 @@ module Settings
 
   def rc
     path = Path["~/.tzrc"]
-    path.exists? ? path.parse_json : {}
+    path.exists? ? path.read_json : {}
   end
 
   def client
@@ -114,7 +114,9 @@ class Result
   end
 
   def age
-    @age.gsub(/ (day|month|week|hour|year)s?/) { |m| m[1] }
+    @age.gsub(/ (day|month|week|hour|year|min)s?/) do |m|
+      ($1 == "month") ? "mo" : m[1]
+    end
   end
 
   def magnet_url
