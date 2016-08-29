@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+for arg in ARGV
+  cmd = ["ffmpeg", "-v", "error", "-i", arg, "-f", "null", "-"]
+
+  puts "========== #{arg} ================================="
+  system(*cmd)
+
+  #output = IO.popen(cmd, err: [:child, :out]) { |io| io.read }
+  #if output[/Error/]
+  #  puts "========== #{arg} ================================="
+  #  puts "Error: #{output}"
+  #end
+end
