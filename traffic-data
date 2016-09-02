@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+data = Path["~/dl/traffdata.bak"].lines.drop(1).map do |l|
+  n, data = l.strip.split("=")
+  [n.split("-")[1..-1].reverse, data.split]
+end.sort
+
+data.each do |(year, month), days|
+  total = days.pop
+
+  puts "=== #{year}-#{month} =============================="
+  puts days.join ' '
+  puts total
+  puts
+end
