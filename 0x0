@@ -1,16 +1,30 @@
-#!/bin/bash
-if [ "$1" == "" ]; then
-  echo "usage: 0x0 <file or url>"
-  exit
-fi
+#!/usr/bin/env ruby
 
-echo "* Uploading: $1"
+args = ARGV
 
-if [[ $1 =~ ^https?:// ]]
-then
-  form="url=$1"
-else
-  form="file=@$1"
-fi
+if args.empty?
+  puts "usage: 0x0 <file or url>"
+  exit 1
+end
 
-curl --compressed --progress-bar -F"$form" https://0x0.st | cat
+args.each do |arg|
+
+  puts "* Uploading: #{arg}"
+
+  if arg =~ %r{^https?://.+}
+    form = "url=#{arg}"
+  else
+    form = "file=@#{arg}"
+  end
+
+  cmd = [
+    "curl",
+    "--compressed",
+    "--progress-bar",
+    %{-F#{form}},
+    "https://0x0.st"
+  ]
+
+  IO.popen(cmd, "r") {|io| puts io.read }
+  puts
+end
