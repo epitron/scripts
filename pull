@@ -33,7 +33,7 @@ def pull(path)
     elsif (path/"CVS").dir?
       cmd = "cvs update -dP"
     elsif path.in_tree?(".git")
-      cmd = "git pull"
+      cmd = "git pull; git submodule update"
     elsif path.in_tree?(".hg")
       cmd = "hg pull -u"
     elsif path.in_tree?(".bzr")
