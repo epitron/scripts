@@ -124,9 +124,9 @@ class Result
     "magnet:?xt=urn:btih:#{hash}&dn=#{title}#{tracker_params}"
   end
 
-  def self.magnet_url_for_hash(hash)
+  def self.md5_to_magnet_url(md5)
     tracker_params = TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
-    "magnet:?xt=urn:btih:#{hash}#{tracker_params}"
+    "magnet:?xt=urn:btih:#{md5}#{tracker_params}"
   end
 
 end
@@ -288,11 +288,17 @@ if __FILE__ == $0
 
   query = args.join(" ")
 
-  if opts.mirror?
-    mirror(query)
-  elsif opts[:add]
-    url = Result.magnet_url_for_hash(opts[:add])
+  if query =~ %r{https?://torrentz2.eu/(\w{40})}
+    md5 = $1
+  else
+    md5 = opts[:add]
+  end
+
+  if md5
+    url = Result.md5_to_magnet_url(md5)
     system(Settings.client, url)
+  elsif opts.mirror?
+    mirror(query)
   else
     order = 
     if opts.date? 
