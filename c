@@ -105,6 +105,7 @@ EXTRA_LANGS = {
   ".pro"         => :sql,
   ".service"     => :ini,
   ".ws"          => :xml,
+  ".opml"        => :xml,
 }
 
 def print_source(filename)
@@ -344,7 +345,12 @@ else # 1 or more args
         less.puts
       end
 
-      result = convert(arg)
+      begin
+        result = convert(arg)
+      rescue Errno::EACCES
+        puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+        next
+      end
 
       case result
       when Enumerable
