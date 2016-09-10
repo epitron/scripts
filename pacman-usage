@@ -38,7 +38,7 @@ class Package
 
     IO.popen("pacman -Qi", "r") do |io|
       io.each_line.split_at("\n").map do |lines|
-        hash = lines.map { |l| l.split(": ", 2).map(&:strip) }.to_h
+        hash = lines.map { |l| l.split(": ", 2).map(&:strip) rescue nil }.reject {|a| a.size != 2 }.to_h
         yield new(hash)
       end
     end
