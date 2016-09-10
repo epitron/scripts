@@ -180,7 +180,6 @@ alias ac="apack"
 alias al="als"
 
 # git
-alias git="hub"
 alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
@@ -221,16 +220,20 @@ gem-cd() {
   fi
 }
 
-# # 64/32bit specific aliases
-# case `uname -m` in
-#   x86_64)
-#     # it's all good.
-#     ;;
-#   *)
-#     # use the ruby version on non-64-bit machines
-#     alias f="f2"
-#     ;;
-# esac
+# 64/32bit specific aliases
+case `uname -m` in
+  x86_64)
+    # it's all good.
+    alias caddy='caddy-64'
+    alias git='hub-64'
+    ;;
+  *)
+    # use the ruby version on non-64-bit machines
+    alias caddy='caddy-32'
+    alias git='hub-32'
+    # alias f="f2"
+    ;;
+esac
 
 # Things with literal arguments!
 #alias math='noglob math'
