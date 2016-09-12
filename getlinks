@@ -80,7 +80,7 @@ def get_links(url)
 
   result.map_values! { |links| 
     links.map { |linkurl|
-      absolute_uri(pageurl, linkurl)
+      absolute_uri(url, linkurl)
     }
   } unless root_is_relative
 
