@@ -1,8 +1,14 @@
 #!/usr/bin/env ruby
 
-# todo: add a clipboard option which automatically checks BOTH
-# primary and secondary clipboards for urls (preferring route matches if both
-# clipboards contain an url).
+## TODOs:
+# * Add a clipboard option which automatically checks BOTH
+#   primary and secondary clipboards for urls (preferring route matches if both
+#   clipboards contain an url).
+# * Redirects/shorteners
+#   |_ Log target of shortener, not shortener
+#   |_ Notify user immediately, since they can be slow (via click noise or notify-send)
+#   |_ Enhancement: Routing rules for shorteners which automatically does the above
+# * Config file
 
 ######################################################################################
 # "web" by Chris Gahan (chris@ill-logic.com)
