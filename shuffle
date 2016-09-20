@@ -84,6 +84,6 @@ random_files = all_files.shuffle[0...opts[:num]]
 
 puts
 puts "+ Sticking #{random_files.size} random #{opts[:desc]} into #{opts[:player]}..."
-system(opts[:player], *random_files) 
 
-
+Process.daemon(true)
+exec(opts[:player], *random_files)
