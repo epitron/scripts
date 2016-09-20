@@ -101,6 +101,10 @@ class MathOTron
         10**15
       when "Q"
         10**18
+      when "min"
+        1.minute
+      when "hours", "h", "hr"
+        1.hour
       else
         return error("Invalid units: <15>#{units.inspect}</15>, in: <15>#{m.inspect}</15>")
       end
