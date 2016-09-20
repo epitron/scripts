@@ -1,8 +1,12 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+###########################################################################
+gem 'slop', "~> 3.6"
+require 'slop'
 require 'epitools'
 require 'date'
-
+###########################################################################
 Colored.force!
+###########################################################################
 
 class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
 
@@ -44,10 +48,12 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
  
 end
 
-def all_events(direction=:reverse)
-  return to_enum(:all_events, direction) unless block_given?
+###########################################################################
 
-  logs = Path["/var/log/pacman.log*"].sort_by(&:mtime)
+def log_events(log_glob, direction=:forward)
+  return to_enum(:log_events, log_glob, direction) unless block_given?
+
+  logs = Path[log_glob].sort_by(&:mtime)
 
   logs.each do |log|
     open(log, 'r') do |io|
@@ -61,34 +67,52 @@ def all_events(direction=:reverse)
   end
 end
 
-if $0 == __FILE__
-  opts, args = ARGV.partition { |arg| arg[/^-\w/] }
-  query = /#{args.join ".+"}/ if args.any?
 
-  lesspipe(tail: true) do |less|
-    groups = all_events(:forward).split_between { |a,b| b.date.to_i - a.date.to_i > 60 }
+###########################################################################
 
-    groups.each do |group|
-      first, last = group.first.date, group.last.date
-      elapsed     = (last.to_i - first.to_i) / 60
-      
-      empty_group = true
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: test [options]"
 
-      group.each do |ev| 
-        if query
-          next unless ev.name =~ query
-          ev.name.gsub!(query) { |m| m.light_yellow.on_blue }
-        end
+    on 'r=',  'root',    'Root of arch filesystem', default: "/"
+    on 'l=',  'logfile', 'Which logfile(s) to use', default: "/var/log/pacman.log*"
+    # on 'u=', 'use',     'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+  end
 
-        # Print the header only if the query matched something in this group
-        if empty_group
-          empty_group = false
-          less.puts
-          less.puts "<8>== <11>#{first.strftime("<10>%Y-%m-%d <7>at <2>%l:%M %p")} <7>(<9>#{elapsed} <7>minute session) <8>========".colorize
-        end
+  [opts, ARGV]
+end
 
-        less.puts ev
+###########################################################################
+
+opts, args = parse_options
+
+query = /#{args.join ".+"}/ if args.any?
+
+lesspipe(tail: true) do |less|
+  log_glob = "#{opts[:root]}/#{opts[:logfile]}"
+  groups = log_events(log_glob).split_between { |a,b| b.date.to_i - a.date.to_i > 60 }
+
+  groups.each do |group|
+    first, last = group.first.date, group.last.date
+    elapsed     = (last.to_i - first.to_i) / 60
+    
+    empty_group = true
+
+    group.each do |ev| 
+      if query
+        next unless ev.name =~ query
+        ev.name.gsub!(query) { |m| m.light_yellow.on_blue }
       end
+
+      # Print the header only if the query matched something in this group
+      if empty_group
+        empty_group = false
+        less.puts
+        less.puts "<8>== <11>#{first.strftime("<10>%Y-%m-%d <7>at <2>%l:%M %p")} <7>(<9>#{elapsed} <7>minute session) <8>========".colorize
+      end
+
+      less.puts ev
     end
   end
+
 end
