@@ -283,6 +283,18 @@ end
 
 ###########################################################
 
+def open_url(url)
+  # Make sure the torrent client exists
+  unless which(Settings.client).any?
+    $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
+    exit 1
+  end
+
+  # Fork into the background before running the client
+  Process.daemon(true)
+  exec(Settings.client, url)
+end
+
 if __FILE__ == $0
   opts, args = parse_options
 
@@ -296,7 +308,7 @@ if __FILE__ == $0
 
   if md5
     url = Result.md5_to_magnet_url(md5)
-    system(Settings.client, url)
+    open_url(url)
   elsif opts.mirror?
     mirror(query)
   else
@@ -316,7 +328,7 @@ if __FILE__ == $0
 
     chosen = choose_torrents(results)
     chosen.each do |t|
-      system(Settings.client, t.magnet_url)
+      open_url(t.magnet_url)
     end
   end
 end
