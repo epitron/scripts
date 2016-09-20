@@ -238,7 +238,7 @@ esac
 # Things with literal arguments!
 #alias math='noglob math'
 #alias gfv='noglob gfv'
-alias yd='youtube-dl'
+alias yd='youtube-dl --xattrs --no-mtime'
 
 # arch
 alias pacman='sudoifnotroot pacman'
