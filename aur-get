@@ -2,7 +2,9 @@
 if [ "$1" == "" ]; then
   echo "usage: aur-get <package name>"
 else
-  repo=$1
-  shift
-  git clone https://aur.archlinux.org/$repo.git $*
+  while [ "$1" != "" ]; do
+    repo=$1
+    shift
+    git clone https://aur.archlinux.org/$repo.git
+  done
 fi
