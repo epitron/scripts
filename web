@@ -69,7 +69,7 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd ill-logic.com]) { |uri| route uri.chase_redirects }
+  match(host: %w[t.co bit.ly is.gd ill-logic.com]) { |uri| route uri.follow_redirect }
 
   # Open videos in mplayer
   play_video = proc { |uri| exec(PLAY, uri) }
@@ -133,6 +133,13 @@ BEGIN {
       old_params.delete_if { |k,v| v.blank? }
     end
 
+    def follow_redirect
+      require 'http'
+
+      response = ::HTTP.get(self)
+      response.headers["Location"] || self
+    end
+
     #
     # Follow an URI's redirects and return the new URI (or the same URI,
     # if there were no redirects to follow.)
@@ -155,19 +162,20 @@ BEGIN {
     # end
     # alias_method :follow_redirect, :follow_redirects
 
-    def chase_redirects
-      require 'http'
 
-      current_url = self
+    # def chase_redirects
+    #   require 'http'
 
-      loop do
-        response = ::HTTP.get(current_url)
-        break unless redirect = response.headers["Location"]
-        current_url = redirect
-      end
+    #   current_url = self
 
-      current_url
-    end
+    #   loop do
+    #     response = ::HTTP.get(current_url)
+    #     break unless redirect = response.headers["Location"]
+    #     current_url = redirect
+    #   end
+
+    #   current_url
+    # end
 
   end
 
