@@ -285,7 +285,7 @@ end
 
 def open_url(url)
   # Make sure the torrent client exists
-  unless which(Settings.client).any?
+  unless Path.which(Settings.client)
     $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
     exit 1
   end
