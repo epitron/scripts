@@ -7,13 +7,10 @@
 #   shuffle <mediatype (eg: images, videos, music, etc.)> <number of files, defaults to 100>
 #
 
-require 'rubygems'
 require 'epitools'
-require 'pp'
-require 'slop'
 
 MEDIA_DEFS = [
-  #  type of thing                     players                      exts
+  #  type of thing                     players                            exts
   [  [/^image/, /^pic/, /^photo/],     ["gthumb","ristretto","shotwell"], %w[jpg jpeg png gif],                    ],
   [  [/^mov/, /^vid/],                 ["m", "mplayer", "totem"],         %w[avi mov mpg mpeg flv wmv asf m4v ogm],],
   [  [/^mus/, /^aud/, /^song/],        ["audacious", "audacious2", 
@@ -22,11 +19,8 @@ MEDIA_DEFS = [
 
 opts = {
   :num => 69,
+  :latest => false,
 }
-
-def which(*args)
-  args.map { |arg| Dir.glob( "{#{ENV["PATH"].split(':').join(',')}}/#{arg}" ) }.squash
-end
 
 ARGV.each do |arg|
   
@@ -34,10 +28,12 @@ ARGV.each do |arg|
   when /^(\d+)$/
     num = $1.to_i
     opts[:num] = (num <= 0) ? -1 : num  # <-- for picking 0..num from the shuffled aray
+  when "latest", "last"
+    opts[:latest] = true
   when /^\w+$/
     for labels, players, exts, desc in MEDIA_DEFS
       if labels.any? { |pattern| pattern.match(arg) }
-        opts[:player] = which(*players).first
+        opts[:player] = Path.which(*players).first
         opts[:exts]   = exts  
         opts[:desc]   = arg
       end
@@ -62,10 +58,10 @@ puts "+ Shuffling #{opts[:desc]}..."
 puts "  |_ searching for: #{Dir.pwd}/#{glob_pattern}"
 
 # GLOB IT
-all_files = Dir.glob(glob_pattern, File::FNM_CASEFOLD)
+all_files = Path.glob(glob_pattern, File::FNM_CASEFOLD)
 
 # GROUP IT
-grouped   = all_files.group_by { |filename| File.extname(filename)[1..-1].upcase }.sort_by{|k,v| -v.size}
+grouped = all_files.group_by { |filename| File.extname(filename)[1..-1].upcase }.sort_by{|k,v| -v.size}
 
 puts "  |_ #{all_files.size} files found"
 
@@ -74,16 +70,19 @@ for group, files in grouped
 end
 ####
 
-#randomfiles = []
-#num.times do
-#    break if files.empty?
-#    randomfiles << files.delete_at(rand(files.size))
-#end
+if opts[:latest]
+  # Show the latest :num files
+  selected_files = all_files.sort_by { |f| File.mtime(f) }.last(opts[:num])
+else
+  # Show :num random files
+  selected_files = all_files.shuffle[0...opts[:num]]
+end
 
-random_files = all_files.shuffle[0...opts[:num]]
+p selected_files.select { |f| f["0609141127"]}
 
 puts
-puts "+ Sticking #{random_files.size} random #{opts[:desc]} into #{opts[:player]}..."
+puts "+ Sticking #{selected_files.size} random #{opts[:desc]} into #{opts[:player]}..."
 
-Process.daemon(true)
-exec(opts[:player], *random_files)
+# # Fork viewer into the background
+# Process.daemon(true)
+# exec(opts[:player], *selected_files)
