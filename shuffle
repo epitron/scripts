@@ -78,11 +78,9 @@ else
   selected_files = all_files.shuffle[0...opts[:num]]
 end
 
-p selected_files.select { |f| f["0609141127"]}
-
 puts
 puts "+ Sticking #{selected_files.size} random #{opts[:desc]} into #{opts[:player]}..."
 
-# # Fork viewer into the background
-# Process.daemon(true)
-# exec(opts[:player], *selected_files)
+# Fork viewer into the background
+Process.daemon(true)
+exec(opts[:player], *selected_files)
