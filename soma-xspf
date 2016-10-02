@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+require 'open-uri'
+require 'json'
+
+def pls_urls(pls)
+  open(pls).read.scan(/^File\d+=(.+)$/).flatten
+end
+
+puts "========================================="
+puts " SomaFM Playlist Generator"
+puts "========================================="
+puts
+puts "* Connecting to API..."
+
+json = JSON.parse(open("https://api.somafm.com/channels.json").read)
+puts "  |_ #{json["channels"].size} stations found"
+puts
+puts "* Writing stations to 'somafm.xspf'..."
+
+outfile = open("somafm.xspf", "w")
+
+outfile << %{
+<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/">
+  <title>Now Playing</title>
+  <trackList>
+}
+
+json["channels"].map do |ch|
+  pls   = ch["playlists"].first["url"]
+  url   = pls_urls(pls).first
+  title = ch["title"]
+
+  puts "  |_ #{title} (#{url})"
+
+  outfile << %{
+    <track>
+      <location>#{url}</location>
+      <creator>#{title}</creator>
+    </track>
+  }
+end
+
+outfile << %{
+  </trackList>
+</playlist>
+}
+
+outfile.close
+puts
+puts "* Done!"
