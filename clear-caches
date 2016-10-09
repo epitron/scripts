@@ -1,3 +1,20 @@
 #!/bin/bash
-echo 3 > /proc/sys/vm/drop_caches
+#
+# VM proc control docs:
+#   https://www.kernel.org/doc/Documentation/sysctl/vm.txt
+#
+# To free pagecache:
+# echo 1 > /proc/sys/vm/drop_caches
+#
+# To free dentries and inodes:
+# echo 2 > /proc/sys/vm/drop_caches
+#
+# To free pagecache, dentries and inodes:
+# echo 3 > /proc/sys/vm/drop_caches
+#
+# As this is a non-destructive operation, and dirty objects are not freeable,
+# the user should run "sync" first in order to make sure all cached objects
+# are freed.
+#
 
+echo 3 > /proc/sys/vm/drop_caches
