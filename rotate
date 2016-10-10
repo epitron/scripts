@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: rotate [options]"
+
+    on 'l',  'left',  'Rotate left'
+    on 'r',  'right',  'Rotate right'
+    on 'n',  'normal',  'Normal rotation'
+    on 'u',  'upside-down',  'Upside-down rotation'
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+# "DVI-D-0 connected primary 1920x1080+0+0 (normal left inverted right x axis y axis) 598mm x 336mm"
+# "DVI-D-0 connected primary 1080x1920+0+0 left (normal left inverted right x axis y axis) 598mm x 336mm"
+# "DVI-D-0 connected primary 1920x1080+0+0 inverted (normal left inverted right x axis y axis) 598mm x 336mm"
+
+devs = `xrandr`.scan /^(\S+) connected .+ (\d+x\d+)\+(\d+\+\d+) (left|right|inverted|) ?\(/
+
+unless devs.any?
+  raise "Error: Couldn't find any connected devices, or couldn't parse the xrandr output"
+end
+
+devs.each do |output, res, offset, rotation|
+  # p [output, res, offset, rotation]
+
+  rotation = "normal" if rotation == ""
+
+  new_rotation  = if opts.left?
+                    "left"
+                  elsif opts.right?
+                    "right"
+                  elsif opts.normal?
+                    "normal"
+                  elsif opts[:u]
+                    "inverted"
+                  elsif rotation == "normal"
+                    "right"
+                  elsif rotation == "right"
+                    "normal"
+                  end
+
+  puts "* Rotating #{output} from '#{rotation}' to '#{new_rotation}'"
+
+  cmd = ["xrandr", "--output", output, "--rotate", new_rotation]
+  # p cmd
+  system *cmd
+end
+
+
