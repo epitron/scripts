@@ -2,6 +2,7 @@
 ##############################################################################
 #
 # TODOs:
+#   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
 #   * Refactor into "filters" and "renderers", with one core loop to dispatch
 #     (eg: special rules for when a shebang starts the file)
@@ -26,20 +27,23 @@ def lesspipe(*args)
   else
     options = {}
   end
-  
+
   output = args.first if args.any?
-  
+
   params = []
   params << "-i"
   params << "-R" unless options[:color] == false
   params << "-S" unless options[:wrap] == true
-  params << "-F" unless options[:always] == true
   if options[:tail] == true
     params << "+\\>"
     $stderr.puts "Seeking to end of stream..."
   end
-  params << "-X"
-  
+
+  if options[:clear]
+    params << "-X"
+    params << "-F" unless options[:always] == true
+  end
+
   IO.popen("less #{params * ' '}", "w") do |less|
     if output
       less.puts output
@@ -47,7 +51,7 @@ def lesspipe(*args)
       yield less
     end
   end
-  
+
 rescue Errno::EPIPE, Interrupt
   # less just quit -- eat the exception.
 end
@@ -131,7 +135,7 @@ def print_source(filename)
       # p lang: lang
       CodeRay.scan_file(filename, lang).term
     else
-      CodeRay.scan_file(filename).term 
+      CodeRay.scan_file(filename).term
     end
   end
 rescue ArgumentError
@@ -165,7 +169,7 @@ end
 ##############################################################################
 
 def pretty_xml(data)
-  require "rexml/document" 
+  require "rexml/document"
 
   result    = ""
   doc       = REXML::Document.new(data)
@@ -195,7 +199,7 @@ end
 
 def run(*args)
   IO.popen(args, "r")
-end  
+end
 
 def highlight(enum, &block)
   Enumerator.new do |y|
@@ -234,7 +238,7 @@ def print_csv(filename, separator=",")
   dark_cyan = "\e[36m"
 
   numbered_rows = CSV.open(filename, "rb", col_sep: separator).map.with_index do |row, n|
-    clean_row = row.map { |cell| cell && cell.strip } 
+    clean_row = row.map { |cell| cell && cell.strip }
     [n.to_s, *clean_row]
   end
 
@@ -250,7 +254,7 @@ def print_csv(filename, separator=",")
   render_row = proc do |row, textcolor|
     cells = row.zip(col_maxes).map.with_index do |(col, max), i|
       padded = (col || "nil").ljust(max)
-      
+
       color = if i == 0
                 dark_cyan
               elsif col
@@ -265,8 +269,8 @@ def print_csv(filename, separator=",")
     cells.join("#{grey} | ")
   end
 
-  [ 
-    render_row.call(header, cyan), 
+  [
+    render_row.call(header, cyan),
     sep,
     *numbered_rows.map { |therow| render_row.call(therow, plain) }
   ].join("\n")
@@ -336,8 +340,9 @@ if args.size == 0
 else # 1 or more args
 
   wrap = !args.any? { |arg| arg[/\.csv$/i] }
+  scrollable = args.delete("-s")
 
-  lesspipe(:wrap=>wrap) do |less|
+  lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
     args.each do |arg|
       if args.size > 1
@@ -359,7 +364,7 @@ else # 1 or more args
         result.each_line { |line| less.puts line }
       end
 
-      less.puts 
+      less.puts
       less.puts
     end
   end
@@ -375,7 +380,7 @@ __END__
 
 def indented?(text)
   indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
-  indent_sizes.all? {|dent| dent > 0 }  
+  indent_sizes.all? {|dent| dent > 0 }
 end
 
 def unwrap(text)
@@ -396,19 +401,20 @@ class BlackCarpet < Redcarpet::Render::Base
   def raw_html(html)
     ''
   end
-  
+
   def link(link, title, content)
     unless content[/^Back /]
       "<15>#{content}</15> <8>(</8><9>#{link}</9><8>)</8>".colorize
     end
   end
-  
+
   def block_code(code, language)
     language ||= :ruby
+    language = :cpp if language == "C++"
     require 'coderay'
     "#{indent CodeRay.scan(code, language).term, 4}\n"
   end
-  
+
   def block_quote(text)
     indent paragraph(text)
   end
@@ -424,10 +430,10 @@ class BlackCarpet < Redcarpet::Render::Base
       when 3 then :light_blue
       else :purple
     end
-    
+
     bar = ("-"*(title.size+4)).grey
-    
-    "#{bar}\n  #{title.send(color)}\n#{bar}\n\n"    
+
+    "#{bar}\n  #{title.send(color)}\n#{bar}\n\n"
   end
 
   def double_emphasis(text)
