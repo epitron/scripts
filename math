@@ -66,6 +66,8 @@ class MathOTron
     ## NICE MATH
     # x (turn "5 x 3" into "5 * 3")
     /([\d\):]+\s*)(?:x|×)(\s*[\d\(]+)/ => "\\1*\\2",
+    # x (turn "expr x expr" into "expr * expr")
+    /(\S\s+)(?:x|×)(\s+\S)/            => "\\1*\\2",
 
     # ^ (turns "5^2" into "5**2")
     /([\d\):]+\s*)\^(\s*[\d\(]+)/ => "\\1**\\2",
@@ -115,8 +117,10 @@ class MathOTron
     # Apply rewrite rules (converting bash-friendly operators into ruby operators, and more...)
     REWRITE_RULES.each do |regexp, replacement|
       loop do
+        p expr
         last_expr = expr
-          expr = expr.gsub(regexp, replacement)
+        expr = expr.gsub(regexp, replacement)
+        p expr
         break if expr == last_expr
       end
     end
@@ -132,7 +136,7 @@ class MathOTron
     end
 
     if expr != translated_expr
-      puts "=> #{translated_expr}".grey 
+      puts "=> #{translated_expr}".grey
     end
 
     begin
@@ -143,7 +147,7 @@ class MathOTron
         puts "<13>#{result.commatize} <4>(<12>#{"%.2e" % result}<4>)".colorize
 
         unless (words = result.to_words).blank?
-          puts "<8>(<7>#{words}<8>)".colorize 
+          puts "<8>(<7>#{words}<8>)".colorize
         end
       else
         p result
@@ -206,17 +210,17 @@ Basic math:
   (six)
 
 Units:
-  > 35k x 17%                                                                               
+  > 35k x 17%
   => 35000.0 * 0.17
   5,950.0 (5.95e+03)
   (five thousand, nine-hundred and fifty)
 
 The colon operator (lets you group things without using parentheses):
-  > (5 + 10) / 5                                                                                        
+  > (5 + 10) / 5
   3
   (three)
 
-  > 5 + 10: / 5                                                                                         
+  > 5 + 10: / 5
   => (5 + 10) / 5
   3
   (three)
