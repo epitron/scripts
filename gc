@@ -14,17 +14,17 @@ if ARGV.empty?
   exit
 end
 
-def which(*args)
-  args.map { |arg| Dir.glob( "{#{ENV["PATH"].split(':').join(',')}}/#{arg}" ) }.flatten.compact.uniq
-end
-
 opts, args = ARGV.partition { |arg| arg[/^-\w/] }
 
-unless git_command = which("hub", "git").first
-  raise "Couldn't find 'git' or 'hub'" 
+args.map! do |arg|
+  if arg =~ /^[\w\-]+\/[\w\-]+$/ and not File.exists? arg
+    "https://github.com/#{arg}"
+  else
+    arg
+  end
 end
 
-cmd = [git_command, "clone", "--recursive"]
+cmd = ["git", "clone", "--recursive"]
 cmd << "--depth=1" if opts.delete("-s")
 
 cmd += args
