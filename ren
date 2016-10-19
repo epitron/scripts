@@ -24,6 +24,14 @@ class String
   end
 
   #
+  # Switch left and right sides of the -
+  #
+  def swap_segments
+    segs = split(" - ")
+    [segs[1], segs[0], *segs[2..-1]].join(" - ")
+  end
+
+  #
   # Puts parens around years
   #
   def bracket_years
@@ -60,7 +68,9 @@ def edit_filename(prompt, filename)
     c.word_boundaries = [" ", "\t", ".", ",", ";", '"', "'", "`", "<", ">",
                          "=", ";", "|", "{", "}", "(", ")", "-", "/"]
 
-    # Alt-u capitalizes everything
+    #
+    # Alt-u: capitalize everything
+    #
     c.bind "\eu" do |inst|
       dir, basename, ext = inst.line.path_parts
       pos                = inst.pos
@@ -73,7 +83,20 @@ def edit_filename(prompt, filename)
       inst.menu.string = "(Capitalized)"
     end
 
-    # ^u removes underscores and stuff
+    #
+    # ^s: Swap the left and right sides of the "-"
+    #
+    c.bind "\x13" do |inst|
+      dir, basename, ext = inst.line.path_parts
+
+      inst.line          = "#{dir}#{basename.swap_segments}#{ext}"
+
+      inst.menu.string = "(Swapped left/right side of the '-')"
+    end
+
+    #
+    # ^u: remove underscores and stuff
+    #
     c.bind "\x15" do |inst|
       dir, basename, ext = inst.line.path_parts
       pos                = inst.pos
@@ -86,7 +109,9 @@ def edit_filename(prompt, filename)
       inst.menu.string   = "(Underscores removed)"
     end
 
-    # ^d deletes to the extension
+    #
+    # ^d: delete everything from the cursor to the file extension
+    #
     c.bind "\x04" do |inst|
       start  = inst.pos
       finish = inst.line.rindex(".") || inst.line.size
