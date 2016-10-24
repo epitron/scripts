@@ -23,7 +23,7 @@
 ######################################################################################
 # ROUTING RULES
 ######################################################################################
-# 
+#
 # The behaviour of this script can be easily customized by editing the "routes" below.
 #
 # Each match is tried in order, and the first matching one will be executed.
@@ -95,6 +95,8 @@ BEGIN {
     old_warn_level = $VERBOSE
     $VERBOSE = nil
 
+    # /usr/scripts/web:99:in `<main>': undefined method `preserve_gem_path' for Bundler:Module (NoMethodError)
+
     if Gem.post_reset_hooks.reject!{ |hook| hook.source_location.first =~ %r{/bundler/} }
       Bundler.preserve_gem_path
       Gem.clear_paths
@@ -128,7 +130,7 @@ BEGIN {
     # Strip out params with blank values.
     #
     alias_method :old_params, :params
-    
+
     def params
       old_params.delete_if { |k,v| v.blank? }
     end
@@ -315,9 +317,9 @@ BEGIN {
         binary = w.command.split.first
         binary[browser_name]
       end
-      
+
       [ browser_name, browser_window ] if browser_window
-    
+
     end.compact
   end
 
@@ -328,7 +330,7 @@ BEGIN {
     if browsers_on_current_desktop.any?
       browser_name, win = browsers_on_current_desktop.first
       # p [:activating_browser_on_current_desktop, win]
-    elsif 
+    elsif
       browsers_on_all_desktops = find_browsers(WM.windows, browsers)
       if browsers_on_all_desktops.any?
         browser_name, win  = browsers_on_all_desktops.first
