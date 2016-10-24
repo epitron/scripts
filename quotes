@@ -19,7 +19,7 @@ if args.any?
   matchers = args.map { |arg| /#{Regexp.escape(arg)}/i }
 
   quotes.select do |quote|
-    if matchers.any? { |m| m =~ quote }
+    if matchers.all? { |m| m =~ quote }
       h = quote.dup
       # h.gsub!(/^\s+-- .+$/) { |s| "<9>#{s}</9>"} # highlight author name
       matchers.each {|m| h.gsub!(m) { |s| "<14>#{s}</14>" } }
