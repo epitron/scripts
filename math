@@ -117,10 +117,8 @@ class MathOTron
     # Apply rewrite rules (converting bash-friendly operators into ruby operators, and more...)
     REWRITE_RULES.each do |regexp, replacement|
       loop do
-        p expr
         last_expr = expr
         expr = expr.gsub(regexp, replacement)
-        p expr
         break if expr == last_expr
       end
     end
