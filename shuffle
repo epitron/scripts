@@ -12,8 +12,8 @@ require 'epitools'
 MEDIA_DEFS = [
   #  type of thing                     players                            exts
   [  [/^image/, /^pic/, /^photo/],     ["gthumb","ristretto","shotwell"], %w[jpg jpeg png gif],                    ],
-  [  [/^mov/, /^vid/],                 ["m", "mplayer", "totem"],         %w[avi mov mpg mpeg flv wmv asf m4v ogm],],
-  [  [/^mus/, /^aud/, /^song/],        ["audacious", "audacious2", 
+  [  [/^mov/, /^vid/],                 ["mpv", "mplayer", "totem"],         %w[mp4 avi mov mpg mpeg flv wmv asf m4v ogm],],
+  [  [/^mus/, /^aud/, /^song/],        ["audacious", "audacious2",
                                         "amarok -e"],                     %w[mp3 flac mp4 aac ogg],                ],
 ]
 
@@ -23,7 +23,7 @@ opts = {
 }
 
 ARGV.each do |arg|
-  
+
   case arg
   when /^(\d+)$/
     num = $1.to_i
@@ -34,12 +34,12 @@ ARGV.each do |arg|
     for labels, players, exts, desc in MEDIA_DEFS
       if labels.any? { |pattern| pattern.match(arg) }
         opts[:player] = Path.which(*players).first
-        opts[:exts]   = exts  
+        opts[:exts]   = exts
         opts[:desc]   = arg
       end
     end
   end
-  
+
 end
 
 ####
