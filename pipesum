@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
-
+################################################################
 require 'digest'
-
 ################################################################
 
 HASHERS = {
@@ -18,11 +17,11 @@ BLOCKSIZE=2**14 # 16k read size
 def usage
   puts "Usage:"
   puts "  pipesum [options...]"
-  puts 
+  puts
   puts "Purpose:"
   puts "  Insert this into a pipeline to hash data on the fly, and output"
   puts "  the computed hash(es) to STDERR."
-  puts 
+  puts
   puts "Options:"
   puts "  --all     => Compute all hash functions"
   HASHERS.each do |opt, klass|
@@ -30,7 +29,7 @@ def usage
   end
   puts
   puts "(Note: Defaults to --sha1 if no options specified)"
-  puts 
+  puts
   puts "Example:"
   puts "  curl http://hostname.website/file.iso | pipesum --sha1 > file.iso"
   puts
@@ -45,7 +44,7 @@ if opts.delete("--help") or opts.delete("-h")
   exit
 end
 
-opts << "--sha1" if opts.empty?
+opts += ["--md5", "--sha1", "--sha256"] if opts.empty?
 
 if opts.delete("--all")
   opts += HASHERS.keys
@@ -66,13 +65,32 @@ end
 
 ################################################################
 
-while data = $stdin.read(BLOCKSIZE)
-  digests.each {|digest| digest << data }
-  $stdout.write(data)
+def sum(digests, input, output=nil, messages=$stderr)
+  while data = input.read(BLOCKSIZE)
+    digests.each {|digest| digest << data }
+    output.write(data) if output
+  end
+
+  digests.each do |digest|
+    algo = digest.class.to_s.split("::").last
+    messages.puts "#{algo.rjust(9)}: #{digest}"
+  end
+  output.close if output
 end
 
-digests.each do |digest|
-  $stderr.puts "#{digest.class}: [#{digest}]"
-end
+if args.any?
+  args.each do |arg|
+    # puts "=== #{arg} ========================================="
+    puts arg
 
-$stdout.close
+    begin
+      open(arg, "rb") { |f| sum(digests, f, nil, $stdout) }
+    rescue => e
+      puts "   #{e.inspect}"
+    end
+
+    puts
+  end
+else
+  sum(digests, $stdin, $stdout)
+end
