@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+gem 'charlock_holmes'
+require 'charlock_holmes'
+
+args = ARGV
+
+if args.empty?
+  puts "usage: guess-encoding <files...>"
+  exit 1
+end
+
+args.each do |arg|
+  begin
+    if File.directory? arg
+      puts "Error: #{arg} is a directory"
+    else
+      data = File.read(arg)
+      encoding = CharlockHolmes::EncodingDetector.detect(data)[:encoding]
+      puts "#{arg}: #{encoding}"
+    end
+  rescue => e
+    puts "#{arg}: #{e.inspect}"
+  end
+end
