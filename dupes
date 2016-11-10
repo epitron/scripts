@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
+################################################################
 require 'epitools'
 require 'slop'
+################################################################
 
 class FakeOptions
   def method_missing(*args); nil; end
@@ -10,94 +12,118 @@ def parse_options
   Slop.parse(help: true, strict: true) do
     banner 'Usage: dupes [options] <files or dirs...>'
 
-    on 'd',  'delete',      'Delete dupes'
-    # on 'v',  'verbose',     'with verbosity'
-    on 'i',  'interactive', 'Delete with interactivity'
+    on 'd',  'delete',      'Delete dupes (interactive by default)'
+    on 'i',  'interactive', 'Interactively delete dupes'
+    on 'e=', 'exclude',     'Exclude a path'
   end
 end
 
-def without_common_prefix(files)
+################################################################
+
+def common_prefix(files)
   x, *xs = files.map &:to_s
 
   x.each_char.with_index do |c, i|
     unless xs.all? { |s| s[i] == c }
-      return [x, *xs].map { |s| s[i..-1] }
+      return x[0...i]
     end
   end
 
-  [x, *xs]
-end  
+  ""
+end
 
-###
+################################################################
 
-if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
+args = ARGV
+
+if args.empty? or args.any? { |opt| opt[/^-/] }
   opts = parse_options
 else
   opts = FakeOptions.new
 end
 
-### 
+################################################################
 
-files = ARGV.map do |arg|
+args << "." if args.empty?  # Default is current dir
+
+# Gather files
+files = args.map do |arg|
   path = Path[arg]
-  path.dir? ? path.ls_r.select(&:file?) : path 
+  path.dir? ? path.ls_r.select(&:file?) : path
 end.flatten
 
-$stderr.puts "* MD5ing #{files.size} files..."
-
-sets_of_dupes = files.
-  group_by(&:md5).
-  values.
-  map { |fs| fs.sort_by { |f| f.to_s.size } }.
-  select { |files| files.size > 1 }
-
-if sets_of_dupes.empty?
-  puts "No dupes!"
-  exit
+# Exclude patterns
+if opts[:exclude]
+  pattern = /#{Regexp.escape opts[:exclude]}/i
+  files.reject! { |f| f =~ pattern }
 end
 
-if opts.interactive?
-  deleter = Path.which("trsh", "rm").compact.first
-  
-  sets_of_dupes.each do |dupes|
+# Get file sizes
+sized_files = files.map { |f| [f.size, f] }.sort
 
-    without_common_prefix(dupes).each_with_index do |name, i|
-      puts "#{i+1}) #{name}"
+$stderr.puts "* Found #{files.size} files..."
+
+# Find duplicates
+dupes = []
+sized_files.each_cons(2) do |(s1,f1), (s2,f2)|
+  if s1 == s2
+    if f1.sha256 == f2.sha256
+      dupes << [[s1,f1], [s2, f2]]
+    end
+  end
+end
+
+# That was easy!
+if dupes.empty?
+  $stdout.puts "No dupes!"
+  exit 1
+end
+
+if opts.delete? or opts.interactive?
+  # Interactively delete files
+  deleter = Path.which("trsh", "rm").compact.first
+
+  dupes.each do |(a,b)|
+
+    prefix = common_prefix([a.last, b.last])
+
+    [a,b].each_with_index do |(size, file), i|
+      puts "<7>#{i+1}<8>) <9>#{size.commatize} <8>| <11>#{file.relative_to(prefix)}".colorize
     end
 
-    print "delete> "
+    # without_common_prefix([f1, f2]).each_with_index do |name, i|
+    #   puts "#{i+1}) #{name}"
+    # end
 
-    unless choice = $stdin.gets.strip
+    print "which to delete? > "
+
+    if (choice = $stdin.gets.strip).blank?
       puts "Skipping"
+      puts
       next
     end
 
-    unless file_to_delete = dupes[choice.to_i-1]
+    unless file_to_delete = [a,b][choice.to_i-1]
       puts "Invalid choice."
+      puts
       redo
     end
 
-    cmd = [deleter, file_to_delete]
+    cmd = [deleter, file_to_delete.last]
     p cmd.map(&:to_s)
     system *cmd
 
     puts
   end
 else
-  sets_of_dupes.each { |dupes| puts dupes.join(" | ") }
+  # Display dupes
+  dupes.each do |a,b|
+    [a,b].each do |size, file|
+      puts "<9>#{size.commatize} <8>| <11>#{file.relative_to(Path.pwd)}".colorize
+    end
+    puts
+  end
 end
-
-# grouped_dupes = ARGV.map(&:to_Path).
-#       map { |path| path.dir? ? path.ls_r : path }.
-#       flatten.
-#       select(&:file?).
-#       group_by(&:md5).
-#       select {|k, v| v.size > 1}.
-#       map_values{|v| v.map(&:path) }
-
-# puts "* Found #{grouped_dupes.size} dupes..."
-
-###
 
 # if opts.delete?
 #   puts "* Deleting dupes:"
@@ -109,4 +135,4 @@ end
 #       File.unlink dupe
 #     end
 #   end
-# end   
+# end
