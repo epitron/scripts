@@ -1,0 +1,14 @@
+#!/bin/bash
+
+SECONDS=30
+IMAGE=bufferbloat-test.png
+SERVER=netperf.bufferbloat.net
+
+echo "* Running bufferbloat (realtime response under load) test..."
+echo "  |_ duration: $SECONDS seconds"
+echo "  |_ server: $SERVER"
+
+flent rrul -p all_scaled -l $SECONDS -H $SERVER -t bufferbloat-test -o $IMAGE
+
+echo "Graph of performance written to ./$IMAGE"
+feh $IMAGE &
