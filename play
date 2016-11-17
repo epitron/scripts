@@ -6,8 +6,6 @@ require 'json'
 
 LOGFILE      = File.expand_path("~/play.log")
 JSON_LOGFILE = File.expand_path("~/play.json")
-CACHEDIR     = File.expand_path("~/play")
-YOUTUBE_DL   = "#{__dir__}/youtube-dl"
 
 # PLAYERS  = [
 #   [          "mpv", proc { |url, title| ["mpv", "--force-media-title", title, url] } ],
@@ -27,7 +25,12 @@ def which(bin)
     return full_path if File.exists? full_path
   end
   nil
-end  
+end
+
+unless YOUTUBE_DL = which("youtube-dl")
+  puts "Error: youtube-dl not found in the path; please install it."
+  exit 1
+end
 
 # def best_player
 #   PLAYERS.each do |bin, command|
@@ -120,7 +123,7 @@ end
 
 def run(*cmd)
   require 'open3'
-  # stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])  
+  # stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
   out, err, status = Open3.capture3(*cmd)
   [out.strip, err.strip, status]
 end
@@ -185,7 +188,7 @@ def search(query=nil, n=10, reverse=true, paged=false)
   if query
     if query.is_a? Array
       if query.any?
-        query = query.join(" ") 
+        query = query.join(" ")
       else
         query = nil
       end
@@ -201,7 +204,7 @@ def search(query=nil, n=10, reverse=true, paged=false)
   end
 
   ## Header
-  
+
   output.puts "----------------------------------".grey
   if query
     output.puts " <15>Searching for: <14>#{query.inspect}".colorize
