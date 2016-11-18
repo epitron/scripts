@@ -1,0 +1,6 @@
+if egrep -q '^flags.*(svm|vmx)' /proc/cpuinfo; then
+  echo Virtualization extensions available
+  find /sys/kernel/iommu_groups/ -type l | sort
+else
+  echo VT-d not enabled
+fi
