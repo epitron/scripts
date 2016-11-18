@@ -23,7 +23,7 @@ cmd = %w[
   youtube-dl
   --no-mtime
   --xattrs
-  --sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub 
+  --sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub
 ]
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
@@ -45,8 +45,6 @@ elsif args.delete("-s")
 elsif args.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]
-else
-  cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
 end
 
 urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
@@ -54,6 +52,10 @@ urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
 cmd += args
 
 urls.each do |url|
+  if url =~ /(youtu\.be|youtube\.com)/
+    cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
+  end
+
   onecmd = cmd.dup
   onecmd << url
 
