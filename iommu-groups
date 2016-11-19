@@ -1,6 +1,41 @@
-if egrep -q '^flags.*(svm|vmx)' /proc/cpuinfo; then
-  echo Virtualization extensions available
-  find /sys/kernel/iommu_groups/ -type l | sort
-else
-  echo VT-d not enabled
-fi
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+class Dev < Struct.new(:addr, :type, :name, :id)
+  include Comparable
+
+  def <=>(other)
+    addr <=> other.addr
+  end
+
+  def to_s
+    "#{addr} - #{name} (#{type})"
+  end
+end
+
+
+unless File.read("/proc/cpuinfo")[/^flags.*\b(svm|vmx)\b/]
+  puts "ERROR: Virtualization extensions not enabled."
+  puts
+  puts "Please turn on VT-d or AMD-whatever in your BIOS."
+  exit 1
+end
+
+devs = `lspci -nn`.each_line.map do |line|
+  if line =~ /^(\S+) ([^:]+): ([^\[]+) \[([^\]]+)\]/
+    [$1, Dev.new($1, $2, $3, $4)]
+  end
+end.compact.to_h
+
+groups = Path["/sys/kernel/iommu_groups/*"].map do |path|
+  group = path.dirs.last.to_i
+  addrs = (path/"devices").ls.map {|f| f.filename.split(":",2).last }
+  [ group, addrs.map {|addr| devs[addr]}.sort ]
+end.to_h
+
+groups.sort.each do |g,devs|
+  puts "=== Group #{g}: ========================="
+  devs.each { |dev| puts dev }
+  puts
+end
