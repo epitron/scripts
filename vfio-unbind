@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+VFIO = "/sys/bus/pci/drivers/vfio-pci"
+DEVS = "/sys/bus/pci/devices"
+
+
+Path["#{VFIO}/0*"].each do |path|
+  dev = path.dirs.last
+  puts "* Unbinding #{dev}..."
+
+  open("#{DEVS}/#{dev}/driver/unbind", "w") { |f| f.puts dev }
+end
