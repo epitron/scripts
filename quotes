@@ -11,7 +11,12 @@ end
 
 args = ARGV
 
-if args.any?
+if args == ["-s"] or ["--stats"] or ["--stat"]
+
+  # Show statistics
+  puts "#{quotes.count} quotes"
+
+elsif args.any?
 
   # Search quotes
   require 'epitools'
