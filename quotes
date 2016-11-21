@@ -11,7 +11,7 @@ end
 
 args = ARGV
 
-if args == ["-s"] or ["--stats"] or ["--stat"]
+if args.any? { |arg| ["-c", "--count", "-s", "--stats", "--stat"].include? arg }
 
   # Show statistics
   puts "#{quotes.count} quotes"
