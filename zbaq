@@ -1,36 +1,76 @@
 #!/usr/bin/env ruby
+###########################################################################
+# TODOs:
+# => Add file extensions if they're missing
+# => Reformat ugly output
+# => Read key from a file (or gpg/ssh)
+###########################################################################
+
 gem 'slop', "~> 3.6"
 require 'slop'
 require 'epitools'
 
+###########################################################################
+
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
-    banner "Usage: zbaq [options] <destination> <dirs>"
+    banner "Usage: zbaq [options] <archive> <dirs/files>"
 
-    # on 'c',  'codecs',  'List the availiable codecs'
-    # on 'u=', 'use',     'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+    on 'r=',  'repack',    'Repack the archive set to a single file'
+    on 'a',   'all',       'List all incremental updates'
+    on 'c',   'checksums', 'Only checksums are used to figure out what needs updating'
+    on 'k=',  'key',       'Password for AES256 encryption'
   end
 
   [opts, ARGV]
 end
 
-opts, args = parse_options
-
-# Do stuff here
-destination, *sources = args
-
-unless destination and sources.any?
-  puts opts
-  exit 1
-else
-  puts "* Writing BAQUP to #{destination} using #{sources}"
-
-  cmd = ["zpaq", "add" , "#{destination}???", *sources, "-index", "#{destination}.zpaq"]
+def run(cmd)
   p cmd
   if system *cmd
-    system "ls", "-lhv", *Dir["#{destination}*"]
+    # system "ls", "-lhv", *Dir["#{destination}*"]
   else
     puts "ERRORN!!!!!!!!!!!!!!!!".light_red
     exit 1
   end
+end
+
+###########################################################################
+
+opts, args = parse_options
+
+archive, *sources = args
+
+if new_archive = opts[:repack]
+
+  # Repack
+  puts "* Repacking #{args} to #{new_archive}"
+  run ["zpaq", "extract", *args, "-repack", new_archive]
+
+elsif archive and sources.empty?
+
+  # List
+  puts "* Listing #{archive}"
+
+  cmd = ["zpaq", "list", archive]
+  cmd << "-all" if opts.all?
+
+  run cmd
+
+elsif archive and sources.any?
+
+  # Incremental backup
+  puts "* Writing BAQUP to #{destination} using #{sources}"
+
+  cmd = ["zpaq", "add" , "#{destination}???", *sources, "-index", "#{destination}.zpaq"]
+  cmd << "-force" if opts.checksums?
+
+  run cmd
+
+else
+
+  # Help
+  puts opts
+  exit 1
+
 end
