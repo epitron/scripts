@@ -8,7 +8,7 @@
 
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'epitools'
+require 'epitools/colored'
 
 ###########################################################################
 
@@ -16,7 +16,7 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: zbaq [options] <archive> <dirs/files>"
 
-    on 'r=',  'repack',    'Repack the archive set to a single file'
+    on 'r=',  'repack',    'Repack a set of archives to a single file'
     on 'a',   'all',       'List all incremental updates'
     on 'c',   'checksums', 'Only checksums are used to figure out what needs updating'
     on 'k=',  'key',       'Password for AES256 encryption'
@@ -26,12 +26,17 @@ def parse_options
 end
 
 def run(cmd)
-  p cmd
+  puts
+  puts "Running: #{cmd}"
+  puts
   if system *cmd
-    # system "ls", "-lhv", *Dir["#{destination}*"]
+    puts
+    puts "Success!".light_green
+    true
   else
-    puts "ERRORN!!!!!!!!!!!!!!!!".light_red
-    exit 1
+    puts
+    puts "ERRORN!".light_red
+    false
   end
 end
 
