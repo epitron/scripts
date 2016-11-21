@@ -58,7 +58,7 @@ elsif archive and sources.empty?
   puts "* Listing #{archive}"
 
   cmd = ["zpaq", "list", archive]
-  cmd << "-all" if opts.all?
+  cmd << "-all" if opts[:a]
 
   run cmd
 
