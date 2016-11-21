@@ -60,9 +60,9 @@ elsif archive and sources.empty?
 elsif archive and sources.any?
 
   # Incremental backup
-  puts "* Writing BAQUP to #{destination} using #{sources}"
+  puts "* Writing BAQUP to #{archive} using #{sources}"
 
-  cmd = ["zpaq", "add" , "#{destination}???", *sources, "-index", "#{destination}.zpaq"]
+  cmd = ["zpaq", "add" , "#{archive}???", *sources, "-index", "#{archive}.zpaq"]
   cmd << "-force" if opts.checksums?
 
   run cmd
