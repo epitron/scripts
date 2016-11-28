@@ -52,19 +52,6 @@ end
 
 ################################################################
 
-digests = []
-
-opts.uniq.each do |opt|
-  if klass = HASHERS[opt]
-    digests << klass.new
-  else
-    puts "Unrecognized option: #{opt}"
-    exit 1
-  end
-end
-
-################################################################
-
 def sum(digests, input, output=nil, messages=$stderr)
   while data = input.read(BLOCKSIZE)
     digests.each {|digest| digest << data }
@@ -78,10 +65,23 @@ def sum(digests, input, output=nil, messages=$stderr)
   output.close if output
 end
 
+def create_digests(opts)
+  opts.uniq.map do |opt|
+    if klass = HASHERS[opt]
+      klass.new
+    else
+      puts "Unrecognized option: #{opt}"
+      exit 1
+    end
+  end
+end
+
 if args.any?
   args.each do |arg|
     # puts "=== #{arg} ========================================="
     puts arg
+
+    digests = create_digests(opts)
 
     begin
       open(arg, "rb") { |f| sum(digests, f, nil, $stdout) }
@@ -92,5 +92,5 @@ if args.any?
     puts
   end
 else
-  sum(digests, $stdin, $stdout)
+  sum(create_digests(opts), $stdin, $stdout)
 end
