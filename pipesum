@@ -1,16 +1,42 @@
 #!/usr/bin/env ruby
 ################################################################
 require 'digest'
+require 'zlib'
+################################################################
+
+module Digest
+  class CRC32 < Digest::Class
+    def initialize
+      reset
+    end
+
+    def reset
+      @crc = 0
+    end
+
+    def update(str)
+      @crc = Zlib::crc32_combine(@crc, Zlib::crc32(str), str.size)
+    end
+    alias << update
+
+    def digest_length; 4; end
+    def finish; [@crc].pack("N"); end
+  end
+end
+
 ################################################################
 
 HASHERS = {
+  "--crc"    => Digest::CRC32,
   "--md5"    => Digest::MD5,
   "--sha1"   => Digest::SHA1,
   "--sha256" => Digest::SHA256,
   "--sha512" => Digest::SHA512,
 }
 
-BLOCKSIZE=2**14 # 16k read size
+################################################################
+
+BLOCKSIZE=2**16 # 64k read size
 
 ################################################################
 
@@ -62,6 +88,7 @@ def sum(digests, input, output=nil, messages=$stderr)
     algo = digest.class.to_s.split("::").last
     messages.puts "#{algo.rjust(9)}: #{digest}"
   end
+
   output.close if output
 end
 
@@ -75,6 +102,8 @@ def create_digests(opts)
     end
   end
 end
+
+require 'epitools'
 
 if args.any?
   args.each do |arg|
