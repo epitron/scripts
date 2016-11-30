@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 ###########################################################################
+
 if ARGV.any? { |arg| ["-h", "--help"].include? arg }
   puts
   puts "usage:"
@@ -8,7 +9,7 @@ if ARGV.any? { |arg| ["-h", "--help"].include? arg }
   exit
 end
 
-
+###########################################################################
 
 if __FILE__[/serve-dev\.rb$/]
   require 'sinatra/reloader'
@@ -129,7 +130,6 @@ class Pathname
   end
 
 
-
   TYPES = Rash.new(
     /\.(avi|ogm|webm|mpv|mp4|m4v|mkv|mj?pe?g|flv|mov|wmv)$/ => "video",
     /(^README|\.(pdf|doc|txt|srt|sub|nfo)$)/                => "doc",
@@ -185,6 +185,34 @@ class Pathname
     [dir? ? 0 : 1, to_s.downcase]
   end
 
+
+  #
+  # Read xattrs from file (requires "getfattr" to be in the path)
+  #
+  def getxattrs
+    # # file: Scissor_Sisters_-_Invisible_Light.flv
+    # user.m.options="-c"
+
+    cmd = %w[getfattr -d -m - -e base64] + [realpath.to_s]
+
+    attrs = {}
+
+    IO.popen(cmd, "rb", :err=>[:child, :out]) do |io|
+      io.each_line do |line|
+        if line =~ /^([^=]+)=0s(.+)/
+          key   = $1
+          value = $2.from_base64 # unpack base64 string
+          # value = value.encode("UTF-8", "UTF-8") # set string's encoding to UTF-8
+          value = value.force_encoding("UTF-8").scrub  # set string's encoding to UTF-8
+          # value = value.encode("UTF-8", "UTF-8")  # set string's encoding to UTF-8
+
+          attrs[key] = value
+        end
+      end
+    end
+
+    attrs
+  end
 
 end
 
@@ -249,6 +277,9 @@ get '/*' do |path|
 
   return not_found unless @path.exists?
 
+  #
+  # Serve a file
+  #
   unless @path.directory?
     return \
       case @path.extname
@@ -263,10 +294,18 @@ get '/*' do |path|
           haml :swf, layout: false
         end
       else
-        send_file @path
+        case request.env["HTTP_ACCEPT"]
+        when "metadata", "application/metadata+json"
+          @path.getxattrs.to_json
+        else
+          send_file @path
+        end
       end
   end
 
+  #
+  # Everything that's not a file
+  #
   if params[:search]
     # TODO: link to directories
 
@@ -304,6 +343,7 @@ get '/*' do |path|
     @grouped = @matches.group_by { |file| file.dirname }
 
     haml :search
+
   elsif feedtype = params[:rss]
     # RSS
 
