@@ -28,10 +28,10 @@ lesspipe(tail: true) do |less|
   for date, paths in paths_grouped_by_date
 
     less.puts DateTime.parse(date).strftime("%b %d, %Y").light_blue
-    
+
     time_dir_file                = paths.map { |time, path| [time] + File.split(path) }
     time_dir_file_grouped_by_dir = time_dir_file.group_by { |time, dir, file| dir }.sort
-    
+
     ## put "." files last
     #tmp = time_dir_file_grouped_by_dir.remove_if { |e| e.first == "." }
     #time_dir_file_grouped_by_dir += tmp
@@ -40,11 +40,11 @@ lesspipe(tail: true) do |less|
       less.puts "  #{dir.light_cyan}/" unless dir == '.'
 
       for time, dir, file in time_dir_file
-        print "  " unless dir == "."
+        less.print "  " unless dir == "."
         less.puts "  " + file
       end
     end
-    
+
     less.puts
 
   end
