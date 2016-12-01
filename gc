@@ -17,7 +17,7 @@ end
 opts, args = ARGV.partition { |arg| arg[/^-\w/] }
 
 args.map! do |arg|
-  if arg =~ /^[\w\-]+\/[\w\-]+$/ and not File.exists? arg
+  if arg =~ /^[\w\-]+\/[\w\-\.]+$/ and not File.exists? arg
     "https://github.com/#{arg}"
   else
     arg
