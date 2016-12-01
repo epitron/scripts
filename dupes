@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 ################################################################
-require 'epitools'
+gem 'slop', "~> 3.6"
 require 'slop'
+require 'epitools'
 ################################################################
 
 class FakeOptions
@@ -59,35 +60,46 @@ if opts[:exclude]
 end
 
 # Get file sizes
-sized_files = files.map { |f| [f.size, f] }.sort
+sized_files = files.map { |f| [f.size, f] }
 
-$stderr.puts "* Found #{files.size} files..."
+puts "* Found #{files.size} files..."
 
-# Find duplicates
-dupes = []
-sized_files.each_cons(2) do |(s1,f1), (s2,f2)|
-  if s1 == s2
-    if f1.sha256 == f2.sha256
-      dupes << [[s1,f1], [s2, f2]]
+#
+# Find duplicates by first grouping by file size,
+# then grouping those groups by the file's SHA256 hash.
+#
+grouped_dupes = sized_files.group_by(&:first). # group by file size
+  flat_map do |filesize, group|
+    if group.size > 1
+      group.group_by { |s,f| f.sha256 }.
+      map { |sha,subgroup| subgroup.size > 1 ? subgroup : nil }.compact
+    else
+      nil
     end
-  end
-end
+  end.compact.sort
 
-# That was easy!
-if dupes.empty?
-  $stdout.puts "No dupes!"
+
+if grouped_dupes.empty?
+  puts "  |_ no duplicates"
   exit 1
 end
 
+puts "  |_ #{grouped_dupes.size} duplicates"
+puts
+
 if opts.delete? or opts.interactive?
-  # Interactively delete files
+
+  #
+  # Interactively delete duplicates
+  #
+
   deleter = Path.which("trsh", "rm").compact.first
 
-  dupes.each do |(a,b)|
+  grouped_dupes.each do |group|
 
-    prefix = common_prefix([a.last, b.last])
+    prefix = common_prefix(group.map(&:last))
 
-    [a,b].each_with_index do |(size, file), i|
+    group.each_with_index do |(size, file), i|
       puts "<7>#{i+1}<8>) <9>#{size.commatize} <8>| <11>#{file.relative_to(prefix)}".colorize
     end
 
@@ -103,36 +115,29 @@ if opts.delete? or opts.interactive?
       next
     end
 
-    unless file_to_delete = [a,b][choice.to_i-1]
+    unless file_to_delete = group[choice.to_i-1]&.last
       puts "Invalid choice."
       puts
       redo
     end
 
-    cmd = [deleter, file_to_delete.last]
+    cmd = [deleter, file_to_delete]
     p cmd.map(&:to_s)
     system *cmd
 
     puts
   end
+
 else
-  # Display dupes
-  dupes.each do |a,b|
-    [a,b].each do |size, file|
+
+  #
+  # Display duplciates
+  #
+  grouped_dupes.each do |group|
+    group.each do |size, file|
       puts "<9>#{size.commatize} <8>| <11>#{file.relative_to(Path.pwd)}".colorize
     end
     puts
   end
-end
 
-# if opts.delete?
-#   puts "* Deleting dupes:"
-#   grouped_dupes.each do |hash, dupes|
-#     orig = dupes.pop
-#     puts "* #{orig}"
-#     dupes.each do |dupe|
-#       puts "  |_ DELETE: #{dupe}"
-#       File.unlink dupe
-#     end
-#   end
-# end
+end
