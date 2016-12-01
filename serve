@@ -606,7 +606,16 @@ var init = function() {
             html = "<dl>\n"
 
             for (var key in json) {
-              html += "<dt>"+key.replace(/^user\.(dublincore\.)?/, '')+"</dt>\n<dd><pre>"+json[key]+"</pre></dd>\n"
+              html += "<dt>"+key.replace(/^user\.(dublincore\.)?/, '')+"</dt>\n"
+              var val = json[key]
+              console.log(key)
+
+              if (key.match(/\.url$/)) {
+                val = '<a href="'+val+'">'+val+'</a>'
+              } else {
+                val = "<pre>"+val+"</pre>"
+              }
+              html += "<dd>"+val+"</dd>\n"
             }
             html += "</dl>\n"
 
