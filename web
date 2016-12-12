@@ -69,7 +69,7 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd ill-logic.com]) { |uri| route uri.follow_redirect }
+  match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirect }
 
   # Open videos in mplayer
   play_video = proc { |uri| exec(PLAY, uri) }
@@ -182,17 +182,14 @@ BEGIN {
   end
 
   ####################################################################################
-  # Router DSL lets you do arbitrary things for certain websites.
-
+  #
+  # Router DSL (rules in the "routes do" block are evaluated against this class instance)
+  #
   class Router
-    #
-    # Magically load rules from DATA (everything in __END__)
-    #
-    def initialize(&block)
+
+    def initialize
       @matchers = []
       @default  = nil
-
-      instance_eval &block
     end
 
     def match(*args, &block)
@@ -260,7 +257,8 @@ BEGIN {
   end
 
   def routes(&block)
-    $router = Router.new(&block)
+    $router ||= Router.new
+    $router.instance_eval &block
   end
 
   ######################################################################################
@@ -407,6 +405,10 @@ BEGIN {
 
 }
 
+def load_rc_file
+  rc = File.expand_path("~/.web-rules")
+  eval File.read(rc) if File.exists? rc
+end
 
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }
@@ -426,6 +428,8 @@ if $0 == __FILE__
   end
 
   ensure_required_binaries_are_in_the_path
+
+  load_rc_file
 
   if url = ARGV.first
     url = "http://#{url}" unless url[%r{^(https?|file)://}i] # slap an http:// on the argument if necessary
