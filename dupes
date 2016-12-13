@@ -15,6 +15,7 @@ def parse_options
 
     on 'd',  'delete',      'Delete dupes (interactive by default)'
     on 'i',  'interactive', 'Interactively delete dupes'
+    on 'a',  'all',         "Process all files (don't ignore .git)"
     on 'e=', 'exclude',     'Exclude a path'
   end
 end
@@ -54,10 +55,10 @@ files = args.map do |arg|
 end.flatten
 
 # Exclude patterns
-if opts[:exclude]
-  pattern = /#{Regexp.escape opts[:exclude]}/i
-  files.reject! { |f| f =~ pattern }
-end
+excludes = []
+excludes << %r{/\.git/} unless opts[:all]
+excludes << /#{Regexp.escape opts[:exclude]}/i if opts[:exclude]
+excludes.each { |regex| files.reject! { |f| f =~ regex } }
 
 # Get file sizes
 sized_files = files.map { |f| [f.size, f] }
