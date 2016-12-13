@@ -142,6 +142,10 @@ BEGIN {
       response.headers["Location"] || self
     end
 
+    def escaped
+      CGI.escape to_s
+    end
+
     #
     # Follow an URI's redirects and return the new URI (or the same URI,
     # if there were no redirects to follow.)
