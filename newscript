@@ -39,8 +39,8 @@ elsif opts.ruby?
       opts = Slop.parse(help: true, strict: true) do
         banner "Usage: <<scriptname>> [options]"
 
-        # on 'c',  'codecs',  'List the availiable codecs'
-        # on 'u=', 'use',     'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+        # on "a",  "along",  "desc"
+        # on "b=", "blong",  "desc", default: ""
       end
 
       [opts, ARGV]
