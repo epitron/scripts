@@ -7,7 +7,7 @@ require 'epitools'
 
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
-    banner "Usage: hex [options] <filename>"
+    banner "Usage: hex [options] <filename(s)...>"
 
     on 's',  'sectors',  'Highlight sectors (512-byte chunks)'
     on 'a',  'all',      "Show all chars (don't skip NULLs)"
@@ -128,18 +128,18 @@ lesspipe do |less|
     less.puts "#{a} #{b.join} <8>|<7>#{c.join}</7><8>|".colorize
   end
 
-  ##################################################################################
+  #-----------------------------------------------------------------------------------
 
   args.each do |arg|
-    less.puts "<8>=== <11>#{arg} <8>============".colorize
-    less.puts
-
     skip_begins_at = nil
 
+    less.puts "<8>=== <11>#{arg} <8>============".colorize
     open(arg, "rb") do |io|
       io.each_char.each_slice(bytes_per_line).with_index(&print_line)
+      less.puts
     end
   end
+
 end
 
 ##################################################################################
