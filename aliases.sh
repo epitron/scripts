@@ -96,7 +96,7 @@ rgrep() {
 }
 
 if which ag > /dev/null 2>&1
-then 
+then
   alias ag='ag --pager "less -RSFXi"'
 else
   alias ag='ack --pager "less -RSFXi"'
@@ -212,7 +212,7 @@ alias pad="padrino"
 # alias cr='crystal'
 alias rock='luarocks'
 
-gem-cd() { 
+gem-cd() {
   local gem_dir
 
   if gem_dir="`gem-dir $@`"; then
@@ -253,10 +253,6 @@ alias mp='makepkg -s'
 # npm
 alias ni="sudoifnotroot npm install -g"
 alias nl="npm list -g --color=always |& less -S"
-
-# pip
-alias_all_as_sudo pip pip2
-
 
 #
 # Usage:

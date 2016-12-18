@@ -9,7 +9,7 @@ def torrent_info(path)
   data = path.read.bdecode
   data && data["info"]
 rescue BEncode::DecodeError
-  nil  
+  nil
 end
 
 def matching_files(files, pattern)
@@ -34,7 +34,7 @@ def print_tree(hash, level=0, &block)
 
     print_tree(val, level+1, &block) unless leaf
   end
-end  
+end
 
 
 ##################################################################

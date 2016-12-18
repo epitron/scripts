@@ -1,5 +1,5 @@
 #!/bin/bash
-SCRIPTS=$(dirname `which bashrc.leet`)
+SCRIPTS=$(dirname `which sup`)
 
 echo "--------------------------------"
 echo "Updating $SCRIPTS"

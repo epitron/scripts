@@ -7,7 +7,8 @@ def parse_options
   @opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: ffmpeg-concat [options] <input videos...> [-o <output file>]'
 
-    on 'o=', 'output',   'The file to write the concatenated videos to.'
+    on 'o=', 'output',   "The filename to write the concatenated videos to.\n                         (default: the input filenames joined with a '+')"
+    on 's',  'sort',     "Sort the input filenames (with proper numerical ordering)"
     on 'v',  'verbose',  'Show verbose output (ie: ffmpeg commandline)'
   end
 end
@@ -31,22 +32,29 @@ end
 ## Rip it!
 
 Path.tmpfile do |tmp|
-  tmp.open("w") do |io|
-    # io.puts "-safe 0"
-    infiles.each { |infile| io.puts "file '#{infile}'" }
+  if opts.sort?
+    infiles = infiles.sort_numerically
   end
 
-  puts "Concatenating input files:"
-  infiles.each { |infile| puts "  #{infile}" }
+  tmp.open("w") do |io|
+    lines = infiles.map { |infile| "file '#{infile}'\n" }
+    io.write lines.join
+  end
+
+  puts "Input files:"
+  # infiles.each { |infile| puts "  #{infile}" }
+  puts File.read tmp
   puts
   puts "Output file:"
   puts "  #{outfile}"
   puts
 
+
   cmd = [
     "ffmpeg",
     "-y",
-    "-hide_banner", "-loglevel", "error",
+    "-hide_banner",
+    # "-loglevel", "error",
     "-f", "concat",
     "-safe", "0",
     "-i", tmp,

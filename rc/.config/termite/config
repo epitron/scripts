@@ -1,0 +1,111 @@
+[options]
+    resize_grip = false
+    scroll_on_output = false
+    scroll_on_keystroke = true
+    audible_bell = true
+    visible_bell = false
+    mouse_autohide = true
+    allow_bold = true
+    dynamic_title = true
+    urgent_on_bell = true
+    clickable_url = true
+    font = Terminus (TTF) 12
+    scrollback_lines = 1000
+    search_wrap = true
+    icon_name = terminal
+
+    #icon_name = terminal
+    #geometry = 640x480
+
+    # "system", "on" or "off"
+    cursor_blink = system
+
+    # "block", "underline" or "ibeam"
+    cursor_shape = block
+
+    # $BROWSER is used by default
+    # browser = firefox
+
+    # word characters used for word selection
+    # (default if unset: all graphic non-punctuation/space characters)
+    #word_chars = -A-Za-z0-9,./?%&#:_=+@~
+
+[colors]
+  ## Theme: Splurge
+  ##     https://terminal.sexy/#AAAA____SktK12magNRo16FpaYXXyGrUb8zR29zcaWlp9aK1o_Kg9c2iosH10qL1oOny_f39
+
+  # special
+  foreground      = #ffffff
+  foreground_bold = #ffffff
+  cursor          = #ffffff
+  background      = #000000
+
+  # black
+  color0  = #4a4b4a
+  color8  = #696969
+
+  # red
+  color1  = #d7699a
+  color9  = #f5a2b5
+
+  # green
+  color2  = #80d468
+  color10 = #a3f2a0
+
+  # yellow
+  color3  = #d7a169
+  color11 = #f5cda2
+
+  # blue
+  color4  = #6985d7
+  color12 = #a2c1f5
+
+  # magenta
+  color5  = #c86ad4
+  color13 = #d2a2f5
+
+  # cyan
+  color6  = #6fccd1
+  color14 = #a0e9f2
+
+  # white
+  color7  = #dbdcdc
+  color15 = #fdfdfd
+
+
+  ### Original author's
+  # foreground = #FFFFFF
+  # #foreground_bold = #ffffff
+  # #foreground_dim = #888888
+  # background = #000000
+  # cursor = #1FEE1F
+
+  # # if unset, will reverse foreground and background
+  # highlight = #2f2f2f
+
+  # color0 = #000000
+  # color1 = #AA0000
+  # color2 = #00AA00
+  # color3 = #AA5500
+  # color4 = #0000AA
+  # color5 = #AA00AA
+  # color6 = #00AAAA
+  # color7 = #AAAAAA
+  # color8 = #555555
+  # color9 = #FF5555
+  # color10 = #55FF55
+  # color11 = #FFFF55
+  # color12 = #5555FF
+  # color13 = #FF55FF
+  # color14 = #55FFFF
+  # color15 = #FFFFFF
+
+[hints]
+    foreground = #dcdccc
+    background = #3f3f3f
+    # foreground = #55FFFF
+    #font = Monospace 12
+    #padding = 2
+    #border = #3f3f3f
+    #border_width = 0.5
+    #roundness = 2.0

@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+############################################################################################################
+
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+############################################################################################################
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: chrome-extensions [options] [search terms]"
+
+    on "v",  "verbose",  "Show extra information (ie: permissions and domains the extension runs on)"
+    # on "b=", "blong",  "desc", default: ""
+  end
+
+  [opts, ARGV]
+end
+
+############################################################################################################
+
+class Extension
+  attr_accessor :name, :version, :id, :json, :dir, :perms, :reldir, :content_scripts
+
+  def self.all
+    Path["~/.config/chromium/Default/Extensions/**/manifest.json"].map { |mf| new mf }
+  end
+
+  def initialize(mf)
+    @json   = mf.parse
+    @id     = mf.dirs[-2]
+    @dir    = mf.with(filename: nil)
+    @perms  = json["permissions"]
+    @reldir = "~/#{dir.relative_to(Path['~'])}"
+    if cs   = json["content_scripts"]
+      @content_scripts = cs.map { |c| c["matches"] }.flatten.sort.uniq
+    end
+    @version = json["version"]
+  end
+
+  def msgs
+    @msgs ||= begin
+      file = (@dir/"_locales/en/messages.json")
+      file.exists? ? file.parse : nil
+    end
+  end
+
+  def name
+    @name ||= begin
+      name = json["name"]
+      if name =~ /^__MSG_(.+)__$/ and msgs
+        varname = $1
+        name    = msgs.dig(varname, "message") || msgs.dig(varname.downcase, "message")
+      end
+      name
+    end
+  end
+end
+
+############################################################################################################
+
+opts, args = parse_options
+
+exts = Extension.all.sort_by(&:name)
+
+if args.any?
+  queries = args.map { |arg| /#{Regexp.escape arg}/i }
+  exts = exts.select { |ext| queries.all? { |q| ext.name =~ q } }
+end
+
+exts.each do |ext|
+  puts "<11>#{ext.name} <8>(<1>v<9>#{ext.version.gsub(".", "<1>.</1>")}<8>) - #{ext.id}".colorize
+  puts "  <3>location: <7>#{ext.reldir}".colorize
+
+  if opts.verbose?
+    if ext.perms
+      puts "  <3>perms: <7>#{ext.perms.join(", ")}".colorize
+    end
+
+    if ext.content_scripts
+      puts "  <3>content scripts:".colorize
+      puts Term::Table.new(ext.content_scripts, indent: 4)
+    end
+  end
+
+  puts
+end
