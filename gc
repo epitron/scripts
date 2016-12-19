@@ -1,33 +1,60 @@
 #!/usr/bin/env ruby
+########################################################################
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################################
 
-# TODO:
-# - combine this with a shell script that 'cd's into the directory
-# - list the directory after the clone
+def parse_options
+  opts = Slop.parse(strict: true) do
+    banner "Usage: gc [options] <git-url or github-user/repo> [<destination directory>]"
 
-if ARGV.empty?
-  puts "Usage:"
-  puts "  gc [options] <git repo url>"
-  puts
-  puts "Options:"
-  puts "  -s   Shallow clone (no history, much faster)"
-  puts
-  exit
-end
-
-opts, args = ARGV.partition { |arg| arg[/^-\w/] }
-
-args.map! do |arg|
-  if arg =~ /^[\w\-]+\/[\w\-\.]+$/ and not File.exists? arg
-    "https://github.com/#{arg}"
-  else
-    arg
+    on "s",  "shallow",      "Shallow clone (without history)"
+    on "r",  "no-recursion", "Don't automatically clone submodules"
+    on "e",  "edit",         "Open cloned repo in editor (hardwired to 'subl')"
+    on "b=", "branch",       "Clone a specific branch"
+    on "h",  "help",         "What you're looking at right now!"
   end
+
+  [opts, ARGV]
 end
 
-cmd = ["git", "clone", "--recursive"]
-cmd << "--depth=1" if opts.delete("-s")
+class Object
+  def in?(a); a.include? self; end
+  def not_in?(a); not self.in? a; end
+end
 
-cmd += args
+########################################################################
+# Option handling
+
+opts, args = parse_options
+
+if opts[:help] or args.size.not_in? 1..2
+  puts opts
+  exit 1
+end
+
+repo, dest = args
+
+if repo =~ /^[\w\-]+\/[\w\-\.]+$/ and not File.exists? repo
+  "https://github.com/#{repo}"
+else
+  repo
+end
+
+if File.exists?(dest)
+  puts "Error: destination #{dest.inspect} already exists"
+  exit 1
+end
+
+cmd = ["git", "clone"]
+cmd << "--depth=1" if opts.shallow?
+cmd << "--recursive" if opts[:r]
+cmd += ["-b", opts[:branch]] if opts[:branch]
+cmd << repo
+cmd << dest if dest
+
+########################################################################
+# Clone it
 
 reponame = nil
 
@@ -48,8 +75,11 @@ PTY.spawn(*cmd) do |r, w, pid|
   end
 end
 
+########################################################################
+# Open editor, show README
+
 if reponame
-  # system("subl", reponame)
+  fork { exec("subl", reponame) } if opts.edit?
   readmes = Dir.foreach(reponame).select { |f| f[/^readme/i] }.sort_by(&:size)
   if readme = readmes.first
     Dir.chdir(reponame)
