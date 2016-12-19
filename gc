@@ -41,7 +41,7 @@ else
   repo
 end
 
-if File.exists?(dest)
+if dest and File.exists?(dest)
   puts "Error: destination #{dest.inspect} already exists"
   exit 1
 end
