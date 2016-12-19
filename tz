@@ -272,11 +272,12 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: tz [options] <query>"
 
-    on 'd',  'date',   'Sort by date'
-    on 'r',  'rating', 'Sort by rating'
-    on 'm',  'mirror', 'Retrieve all torrents'
-    on 'n=', 'num',    'Number of results (default: #{Settings.page_size})'
-    on 'a=', 'add',    'Add MD5 hash'
+    on 'd',  'date',    'Sort by date'
+    on 'r',  'rating',  'Sort by rating'
+    on 'm',  'mirror',  'Retrieve all torrents'
+    on 'n=', 'num',     'Number of results (default: #{Settings.page_size})'
+    on 'a=', 'add',     'Add MD5 hash'
+    on 'v',  'verbose', 'Show details and stuff'
   end
 
   [opts, ARGV]
@@ -284,12 +285,14 @@ end
 
 ###########################################################
 
-def open_url(url)
+def open_url(url, verbose=false)
   # Make sure the torrent client exists
   unless Path.which(Settings.client)
     $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
     exit 1
   end
+
+  puts url if verbose
 
   # Fork into the background before running the client
   Process.daemon(true)
@@ -309,7 +312,7 @@ if __FILE__ == $0
 
   if md5
     url = Result.md5_to_magnet_url(md5)
-    open_url(url)
+    open_url(url, opts.verbose?)
   elsif opts.mirror?
     mirror(query)
   else
@@ -328,7 +331,7 @@ if __FILE__ == $0
 
     chosen = choose_torrents(results)
     chosen.each do |t|
-      open_url(t.magnet_url)
+      open_url(t.magnet_url, opts.verbose?)
     end
   end
 end
