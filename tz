@@ -293,10 +293,9 @@ def open_url(url, verbose=false)
   end
 
   puts url if verbose
-
+  puts
   # Fork into the background before running the client
-  Process.daemon(true)
-  exec(Settings.client, url)
+  fork { exec(Settings.client, url) }
 end
 
 if __FILE__ == $0
@@ -304,15 +303,20 @@ if __FILE__ == $0
 
   query = args.join(" ")
 
-  if query =~ %r{https?://torrentz2.eu/(\w{40})}
-    md5 = $1
-  else
-    md5 = opts[:add]
-  end
+  md5s = args.map do |arg|
+    if arg.strip =~ %r{^https?://torrentz2.eu/(\w{40})}
+      $1
+    end
+  end + [opts[:add]]
 
-  if md5
-    url = Result.md5_to_magnet_url(md5)
-    open_url(url, opts.verbose?)
+  md5s.compact!
+
+  if md5s.any?
+    Process.daemon(true)
+    md5s.each do |md5| 
+      url = Result.md5_to_magnet_url(md5)
+      open_url(url)
+    end
   elsif opts.mirror?
     mirror(query)
   else
