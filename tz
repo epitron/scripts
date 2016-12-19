@@ -64,7 +64,7 @@ module Settings
   end
 
   def page_size
-    rc["page_size"] || 20
+    rc["page_size"] || 25
   end
 
   def order
@@ -313,7 +313,7 @@ if __FILE__ == $0
 
   if md5s.any?
     Process.daemon(true)
-    md5s.each do |md5| 
+    md5s.each do |md5|
       url = Result.md5_to_magnet_url(md5)
       open_url(url)
     end
