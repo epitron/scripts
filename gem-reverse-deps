@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: gem-reverse-deps [options] <gem-name>"
+
+    on "i",  "info",     "Display info about each gem"
+    on "v",  "verbose",  "Display lots of info about each gem"
+    on "s",  "sort",     "Sort by downloads"
+    # on "b=", "blong",  "desc", default: ""
+  end
+
+  [opts, ARGV]
+end
+
+def get(url)
+  cmd = ["curl", "--silent", url]
+  IO.popen(cmd, "rb") { |io| JSON.load(io) }
+end
+
+opts, args = parse_options
+
+args.each do |arg|
+  $stderr.puts "<8>==== <14>#{arg} <8>==============================".colorize
+  $stderr.puts
+
+  names = get "https://rubygems.org/api/v1/gems/#{arg}/reverse_dependencies.json"
+  # names = names.take(3)
+
+  if opts[:info]
+
+    infos = Enumerator.new do |y|
+      names.map do |name|
+        result = get("https://rubygems.org/api/v1/gems/#{name}.json")
+        y << result
+        result
+      end
+    end
+
+    if opts[:sort]
+      $stderr.puts "* Fetching info for #{names.size} gems..."
+      pb = ProgressBar.new("  |_ progress", names.size)
+      infos = infos.each { pb.inc }.sort_by { |j| -j["downloads"] }
+      $stderr.puts
+      $stderr.puts
+    end
+
+    if opts[:verbose]
+      infos.each do |info|
+        pp info
+        puts
+      end
+    else
+      lesspipe do |less|
+        infos.each do |info|
+          less.puts "<11>#{info["name"]} <8>(<7>v<15>#{info["version"]}<8>)".colorize
+
+          deets         = info.slice("info", "downloads", "version_downloads", "homepage_uri", "project_uri", "source_code_uri")
+          deets["deps"] = info["dependencies"]["runtime"].
+            map { |dep| "#{dep["name"]} <9>#{dep["requirements"]}</9>" }.
+            join(", ")
+
+          deets.each do |k,v|
+            less.puts "  <1>#{k}<8>: <7>#{v.is_a?(Integer) ? v.commatize : v}".colorize
+          end
+
+          less.puts
+        end
+      end
+    end
+
+  else
+    names.each { |name| puts name }
+  end
+end
