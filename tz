@@ -64,7 +64,7 @@ module Settings
   end
 
   def page_size
-    rc["page_size"] || 25
+    rc["page_size"]
   end
 
   def order
@@ -150,7 +150,7 @@ def read_url(url)
   end
 end
 
-def search(query, page_size, page=nil, order=nil)
+def search(query, page_size=nil, page=nil, order=nil)
 
   case order
   when :peers, nil
@@ -173,10 +173,9 @@ def search(query, page_size, page=nil, order=nil)
 
   page = Nokogiri::HTML(read_url(url))
 
-  page.search(".results dl").
-       take(page_size).
-       map { |dl| Result.new(dl) }.
-       compact
+  dls = page.search(".results dl")
+  dls = dls.take(page_size) if page_size
+  dls.map { |dl| Result.new(dl) }.compact
 end
 
 def cleanup(title)
@@ -205,7 +204,7 @@ end
 
 def mirror(query, pages=10)
   (0..pages).each do |page|
-    results = search(query, page)
+    results = search(query, nil, page)
 
     break if results.empty?
 
@@ -255,11 +254,14 @@ def choose_torrents(results)
 end
 
 def display(results)
-  results.each_with_index do |r, n|
-    number = "<13>#{(n+1).to_s.rjust(3)}. "
+  results.each_with_index.to_a.reverse_each do |r, n|
+    number = "<15>#{(n+1).to_s.rjust(3)}."
+    # seedpeers = "<10>#{r.seeds}<7>/<2>#{r.peers}"
+    seedpeers = "#{r.seeds}/#{r.peers}"
     # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
     # line += " <14>#{r.size} <7>(#{r.age})"
-    line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(4)} <8>| #{number} <8>| <14>#{r.title}"
+    # line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(4)} <8>| #{number} <8>| <14>#{r.title}"
+    line = "<11>#{r.age.rjust(4)} <8>| <12>#{r.size.rjust(8)} <8>| <10>#{seedpeers.rjust(8)} <8>| #{number} <14>#{r.title}"
     # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
 
     puts line.colorize
