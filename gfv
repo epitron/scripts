@@ -10,6 +10,7 @@ if args.empty? or args.delete("--help")
   puts
   puts "Options:"
   puts "  -l     Low quality mode"
+  puts "  -h     High quality mode"
   puts "  -n     Number the files when downloading playlists"
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
@@ -38,7 +39,8 @@ unless args.include?("-o")
 end
 
 if args.delete("-a")
-  cmd += %w[--extract-audio -f bestaudio[ext=m4a]]
+  cmd << "--extract-audio"
+  cmd += ["-f", "bestaudio[ext=m4a]"] unless args.include?("-f")
   # cmd += %w[--extract-audio -f bestaudio]
 elsif args.delete("-s")
   cmd << "--skip-download"
@@ -53,7 +55,10 @@ cmd += args
 
 urls.each do |url|
   if url =~ /(youtu\.be|youtube\.com)/
-    cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
+    unless args.include?("-f") or args.delete("-h")
+      cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
+      # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
+    end
   end
 
   onecmd = cmd.dup
