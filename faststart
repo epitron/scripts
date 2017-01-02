@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
+require 'epitools'
+
+unless bin = Path.which("ffmpeg", "avconv").compact.first
+  puts "Error: Can't find ffmpeg or avconv. Please install one of them."
+  exit 1
+end
 
 unless ARGV.any?
   puts "usage: faststart <file.m4a>"
@@ -15,7 +21,7 @@ ARGV.each do |arg|
   fixed = "faststarted-#{arg}"
 
   puts "* Faststarting #{arg.inspect}"
-  cmd = ["ffmpeg", "-i", arg, "-c:v", "copy", "-c:a", "copy", "-movflags", "faststart", fixed]
+  cmd = [bin, "-i", arg, "-c:v", "copy", "-c:a", "copy", "-movflags", "faststart", fixed]
 
   unless system(*cmd)
     puts "Error faststarting file."
