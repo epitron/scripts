@@ -1,14 +1,42 @@
-#!/bin/bash
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
 
-if [ "$*" == "" ]; then
-  echo "usage: downcase <filenames>"
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: downcase [options] [<file(s)...>]"
+
+    on "i",  "inline",  "Replace source files"
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+if args.empty?
+  inputs = [STDIN]
 else
-  files="$@"
-fi
+  inputs = args.map { |fn| open(fn) }
+end
 
-for i in $files; do
-  downcased="`echo $i | tr '[A-Z]' '[a-z]'`"
-  if [ ! "$downcased" == "$i" ]; then
-    mv -v "$i" "$downcased"
-  fi
-done
+
+if opts.inline?
+  if args.empty?
+    $stderr.puts "Error: Must supply a filename in --inline mode"
+    exit 1
+  end
+
+  inputs.each do |input|
+    puts "[*] #{input.path}"
+    downcased = input.read.downcase
+    outfile   = input.path
+    input.close
+    open(outfile, "wb") { |output| output.puts downcased }
+  end
+else
+  inputs.each do |input|
+    input.each_line { |line| puts line.downcase }
+  end
+end
