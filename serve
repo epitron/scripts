@@ -55,11 +55,11 @@ end
 
 ###########################################################################
 
-begin
-  require 'puma'
-  set :server, :puma
-rescue LoadError
-end
+# begin
+#   require 'puma'
+#   set :server, :puma
+# rescue LoadError
+# end
 
 set :machine_name, Socket.gethostname
 
@@ -252,7 +252,6 @@ end
 
 ###########################################################################
 ###########################################################################
-
 #
 # Secret assets directory
 #
