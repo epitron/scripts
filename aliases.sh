@@ -220,6 +220,10 @@ gem-cd() {
   fi
 }
 
+functions() {
+  declare -f | less
+}
+
 # # 64/32bit specific aliases
 # case `uname -m` in
 #   x86_64)
