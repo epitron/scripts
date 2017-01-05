@@ -72,7 +72,6 @@ routes do
   match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirect }
 
   # Open videos in mplayer
-  play_video = proc { |uri| exec(PLAY, uri) }
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed)}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
@@ -198,6 +197,10 @@ BEGIN {
 
     def match(*args, &block)
       @matchers << [args, block]
+    end
+
+    def play_video
+      proc { |uri| exec(PLAY, uri) }
     end
 
     def default(&block)
