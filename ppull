@@ -52,29 +52,41 @@ puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE
 # Update all the repos and gather the results
 
 results = repos.parallel_map(POOL_SIZE) do |repo|
-begin
-  Path.cd(repo) do
-    if Path[".git"].dir?
-
-      # Regular repo
-      output  = run "git pull"
-      updated = !output["Already up-to-date."]
-
-    elsif Path["HEAD"].exists?
-
-      # Bare repo
-      output  = run "git fetch"
-      updated = !output.blank?
-
+  begin
+    if not repo.exists?
+      [repo, false, "Error: path does not exist", false]
+    elsif repo.file?
+      [repo, false, "Error: repo must be a directory", false]
     else
-      raise "I don't recognize this type of repo: #{repo}"
-    end
+      Path.cd(repo) do
+        if Path[".git"].dir?
 
-    [repo, updated, output, $?.success?]
+          # Regular repo
+          output  = run "git pull"
+          updated = !output["Already up-to-date."]
+
+        elsif Path["HEAD"].exists?
+
+          # Bare repo
+          output  = run "git fetch"
+          updated = !output.blank?
+
+        elsif (pull_script = Path["pull"]).exists? and pull_script.executable?
+
+          # ./pull script
+          output = run "./pull"
+          updated = !output.blank?
+
+        else
+          raise "I don't recognize this type of repo: #{repo}"
+        end
+
+        [repo, updated, output, $?.success?]
+      end
+    end
+  rescue => e
+    [repo, false, e.to_s, false]
   end
-rescue => e
-  [repo, false, e.to_s, false]
-end
 end
 
 
