@@ -36,9 +36,7 @@ end
 repo, dest = args
 
 if repo =~ /^[\w\-]+\/[\w\-\.]+$/ and not File.exists? repo
-  "https://github.com/#{repo}"
-else
-  repo
+  repo = "https://github.com/#{repo}"
 end
 
 if dest and File.exists?(dest)
