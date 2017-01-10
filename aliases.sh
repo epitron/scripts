@@ -193,6 +193,11 @@ alias gr="git remote -v"
 alias gf="git fetch --prune"
 alias fetch="gf"
 
+# functions
+functions() {
+  declare -f | less
+}
+
 # alias gc="git clone"
 gc() {
   # Cloning into 'reponame'...
@@ -220,9 +225,8 @@ gem-cd() {
   fi
 }
 
-functions() {
-  declare -f | less
-}
+# python
+alias py=python2
 
 # # 64/32bit specific aliases
 # case `uname -m` in
