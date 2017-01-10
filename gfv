@@ -55,7 +55,7 @@ cmd += args
 
 urls.each do |url|
   if url =~ /(youtu\.be|youtube\.com)/
-    unless args.include?("-f") or args.delete("-h")
+    unless cmd.include?("-f") or args.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end
