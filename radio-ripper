@@ -9,27 +9,30 @@ streams = %w[
   http://radio.108.pl:8002/
 ]
 
-stream_info = {}
+histories = {}
 
 # Spawn the threads!
-threads = streams.map{|u| URI(u) }.map do |uri|
+threads = streams.map { |u| URI(u) }.map do |uri|
   Thread.new do
+    histories[uri] = (history = [])
     IO.popen(["streamripper", uri, "-o", "larger"], "rb") do |io|
-    # IO.popen(["cat", "/etc/passwd"], "rb") do |io|
       io.each_line do |line|
-        stream_info[uri] ||= []
-        stream_info[uri] << line
+        history << line
+        history.shift 20 if history.size > 50
       end
     end
   end
 end
 
+start_time = Time.now
 loop do
+  elapsed = Time.now - start_time
+
   print "\e[H\e[J"
-  puts "#{threads.select(&:alive?).size} threads still running!"
+  puts "[#{elapsed.to_i.to_hms}] #{threads.select(&:alive?).size} threads"
   puts
 
-  stream_info.each do |uri, history|
+  histories.each do |uri, history|
     puts "== [#{uri.host}#{uri.path}] ==="
     puts
     history.last(5).each { |h| puts "  #{h}" }
