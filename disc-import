@@ -14,13 +14,13 @@ class Mount
   def system?
     (path =~ %r{^/(sys|dev|proc|run/user|tmp)}) or dev == "systemd-1"
   end
-  
+
   def inspect
     "#{type}: #{path} (#{dev})"
   end
-  
+
   def to_s
-    "  #{path} (#{dev})"
+    "#{path} (#{dev})"
   end
 
   def path
@@ -38,20 +38,37 @@ mounts = IO.popen(["findmnt", "--raw"]) { |io| io.drop(1).map { |line| Mount.new
 discs = mounts.select { |m| m.type.in? %w[udf iso9660] }
 
 discs.each do |m|
-  if prompt("* Import '#{m.dirname}'?") == "y"
-    outfile = DISCS_DIR / "#{m.dirname}.txt"
+  filename = "#{ARGV.first || m.dirname}.txt"
+
+  if prompt("* Import #{m.inspect} as #{filename.inspect}?") == "y"
+    outfile = DISCS_DIR / filename
     puts "  |_ writing to #{outfile}"
 
-    # raise "#{outfile} already exists" if outfile.exists?
+    if outfile.exists?
+      if prompt("  |_ #{outfile} already exists.. Overwrite?", "Yn") == "y"
+        puts "  |_ Overwriting!"
+      else
+        puts "  |_ Skipt"
+        exit 1
+      end
+    end
+
     puts
-    
+
     outfile.open("w") do |io|
-      files = m.path.ls_R
-      widest = files.max_by(&:size).size.to_s.size
+      files = m.path.ls_R.sort_by {|f| f.path.downcase }
+      widest = files.max_by { |f| f.symlink? ? 0 : f.size }.size.to_s.size
 
       files.each do |f|
         name = f.relative_to(m.path)
-        s    = "#{f.mtime} | #{f.size.to_s.rjust(widest)} | #{name}"
+
+        if f.symlink?
+          target = f.target.relative_to(m.path)
+          s = "#{f.mtime} | #{"symlink".rjust(widest)} | #{name} -> #{target}"
+        else
+          s = "#{f.mtime} | #{f.size.to_s.rjust(widest)} | #{name}"
+        end
+
         io.puts s
         puts s
       end
