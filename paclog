@@ -24,15 +24,15 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
     'upgraded' => :light_green,
     nil => :white,
   }
-  
+
   def self.from_line(line)
     if line =~ LINE_RE
       new($1, parse_date($1), $2, $3, $4, $5)
     else
       nil
     end
-  end    
-  
+  end
+
   def cmd_color
     CMD_COLORS[cmd]
   end
@@ -40,12 +40,12 @@ class Event < Struct.new(:datestr, :date, :cmd, :name, :v1, :v2)
   def to_s
     date, time = datestr.split
     "<grey>[<white>#{date} #{time}<grey>] <#{cmd_color}>#{cmd} <light_cyan>#{name} #{"<light_white>#{v2} " if v2}<white>(#{v1})".colorize
-  end  
+  end
 
   def self.parse_date(date)
     DateTime.strptime(date, "%Y-%m-%d %H:%M")
   end
- 
+
 end
 
 ###########################################################################
@@ -60,7 +60,7 @@ def log_events(log_glob, direction=:forward)
       lines = (direction == :reverse) ? io.reverse_each : io.each
       lines.each do |line|
         if e = Event.from_line(line.strip)
-          yield e 
+          yield e
         end
       end
     end
@@ -72,7 +72,7 @@ end
 
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
-    banner "Usage: test [options]"
+    banner "Usage: paclog [options]"
 
     on 'r=',  'root',    'Root of arch filesystem', default: "/"
     on 'l=',  'logfile', 'Which logfile(s) to use', default: "/var/log/pacman.log*"
@@ -95,10 +95,10 @@ lesspipe(tail: true) do |less|
   groups.each do |group|
     first, last = group.first.date, group.last.date
     elapsed     = (last.to_i - first.to_i) / 60
-    
+
     empty_group = true
 
-    group.each do |ev| 
+    group.each do |ev|
       if query
         next unless ev.name =~ query
         ev.name.gsub!(query) { |m| m.light_yellow.on_blue }
