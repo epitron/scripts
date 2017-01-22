@@ -172,7 +172,6 @@ alias detach='bg; disown'
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
-alias qemu='qemu-system-x86_64 -enable-kvm'
 
 # archives
 alias ax="aunpack"
