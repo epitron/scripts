@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: unpax <problematic binary>"
+  exit 1
+fi
+
+setfattr -n user.pax.flags -v "emr" "$1"
