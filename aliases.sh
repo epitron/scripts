@@ -113,6 +113,7 @@ alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
 alias cr="chromium"
+alias b="chromium"
 #if [ "$TERM" == "xterm" ]
 #then
 #  alias ssh='ssh-termtitle'
@@ -151,7 +152,7 @@ alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
 alias sus='ssu'
 
 # systemd
-alias_all_as_sudo systemctl journalctl
+alias_all_as_sudo systemctl
 alias jc='journalctl'
 alias jt='journalctl -f'
 alias sys='systemctl'
@@ -171,7 +172,6 @@ alias psx='pcsxr'
 alias detach='bg; disown'
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
-alias b='chromium'
 alias qemu='qemu-system-x86_64 -enable-kvm'
 
 # archives
