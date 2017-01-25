@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: unpax <binary>"
+  echo "effect: sets some xattrs that allow the binary to do dangerous (unsafe!) mmap operations"
+  exit 1
+fi
+
+setfattr -n user.pax.flags -v "emr" "$1"

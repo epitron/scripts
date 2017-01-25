@@ -182,7 +182,7 @@ if args.empty? # No args
 
   manager.default
 
-elsif args == ["reload"]
+elsif args.any? { |arg| ["reload", "daemon-reload"].include? arg }
 
   manager.reload
 

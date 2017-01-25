@@ -229,7 +229,7 @@ def print_ssl_certificate(filename)
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
 
-def print_csv(filename, separator=",")
+def print_csv(filename)
   require 'csv'
 
   plain     = "\e[0m"
@@ -237,6 +237,10 @@ def print_csv(filename, separator=",")
   red       = "\e[31;1m"
   cyan      = "\e[36;1m"
   dark_cyan = "\e[36m"
+
+  tabs, commas = open(filename, "rb") { |f| f.each_line.take(5) }.map(&:chomp).map { |l| l.scan(%r{(,|\t)})}.flatten.partition { |e| e == "\t" }
+
+  separator = tabs.size > commas.size ? "\t" : ","
 
   numbered_rows = CSV.open(filename, "rb", col_sep: separator).map.with_index do |row, n|
     clean_row = row.map { |cell| cell && cell.strip }

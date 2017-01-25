@@ -112,7 +112,6 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-alias cr="chromium"
 
 # net
 alias_all_as_sudo iptables netctl ufw dhcpcd nethogs bwm-ng
