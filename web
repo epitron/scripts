@@ -210,7 +210,7 @@ BEGIN {
     def route!(url)
       # TODO: Avoid infinite routing loops
 
-      uri = URI.parse(url)
+      uri = URI.parse(url.gsub("[", "%5B").gsub("]", "%5D"))
 
       # Make sure the default is set...
       @default ||= proc.new { open_in_best_browser uri, BROWSERS }
