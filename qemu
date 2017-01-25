@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
+
+    on "m=", "memory",  "How much memory to use?", default: "2G"
+    # on "d=", "disk",    "Disk image to use (extension defaults to qcow2)"
+    on "s=", "size",    "Disk size", default: "5G"
+    # on "b=", "backing-file",    "Use this as the backing file"
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+isos, disks = args.map(&:to_Path).partition { |arg| arg.ext == "iso" }
+isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
+exit 1 unless isos.all? &:exist?
+
+memory = opts[:memory]
+
+cmd = ["qemu-system-x86_64", "-enable-kvm", "-vga", "std", "-m", memory]
+
+disks.each do |disk|
+  unless disk.exists?
+    # if bf = opts[:"backing-file"]
+    #   if disks.size > 1
+    #     puts "Error: Can't use more than one disk image when specifying a backing file"
+    #   else
+    #     system("qemu-img", "-f", "qcow2", "-b", bf, disk)
+
+    case disk.ext
+    when "qcow2"
+      system("qemu-img", "create", "-f", "qcow2", disk, opts[:size])
+    else
+      puts "I don't know how to make a #{disk} image"
+    end
+  end
+
+  cmd += ["-drive", "file=#{disk}"]
+end
+
+isos.each  { |iso| cmd += ["-cdrom", iso] }
+
+exec *cmd

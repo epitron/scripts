@@ -1,0 +1,2 @@
+#!/usr/bin/env ruby
+%w[\\ | / -].cycle.each { |c| print "\b#{c}"; sleep 1.0/20 }

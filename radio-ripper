@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+streams = %w[
+  http://ice2.somafm.com/groovesalad-128-aac
+  http://ice1.somafm.com/poptron-128-mp3
+  http://ice1.somafm.com/u80s-128-aac
+  http://stream.friskyradio.com:8000/frisky_aac_hi
+  http://radio.108.pl:8002/
+]
+
+histories = {}
+
+# Spawn the threads!
+threads = streams.map { |u| URI(u) }.map do |uri|
+  Thread.new do
+    histories[uri] = (history = [])
+    IO.popen(["streamripper", uri, "-o", "larger"], "rb") do |io|
+      io.each_line do |line|
+        history << line
+        history.shift 20 if history.size > 50
+      end
+    end
+  end
+end
+
+start_time = Time.now
+loop do
+  elapsed = Time.now - start_time
+
+  print "\e[H\e[J"
+  puts "[#{elapsed.to_i.to_hms}] #{threads.select(&:alive?).size} threads"
+  puts
+
+  histories.each do |uri, history|
+    puts "== [#{uri.host}#{uri.path}] ==="
+    puts
+    history.last(5).each { |h| puts "  #{h}" }
+    puts
+  end
+
+  sleep 1
+end

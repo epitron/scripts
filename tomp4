@@ -1,35 +1,50 @@
 #!/usr/bin/env ruby
+########################################################################################
+
 gem 'slop', "~> 3.6"
 require 'slop'
 require 'epitools'
 
+########################################################################################
+
 def error(msg)
   $stderr.puts "ERROR: #{msg}".light_red
 end
+
+########################################################################################
 
 opts = Slop.parse(help: true, strict: true) do
   banner 'Usage: tomp4 [options] <file(s)...>'
 
   on 'y',  'yes',      'Overwrite existing'
   on 'n',  'no',       'Skip existing'
+  on 'i',  'images',   'Encode a set of images'
   on 's=', 'scale',    'Scale to resolution (eg: 1024x768, 1024:-1, 1024, -1:720)'
   on 'q=', 'quality',  'Quantization Parameter (eg: 22)'
   on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
   on 'b',  'bob',      'Bob deinterlace (using yadif)'
   on "r=", "aspect",   'Aspect ratio (eg: 4:3, 1.6666)'
   on 'd=', 'outdir',   'Output directory'
-  on 'o=', 'outfile',  'Output file'
+  on 'o=', 'output',   'Output file'
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
   on 'm',  'mute',     'No audio'
   on 'v=', 'vcodec',   'Output video codec (eg: h264, hevc, nvenc_h264)', default: "h264"
   on 'N',  'nvidia',   'Use nvidia-accelerated encoder'
   on 'c=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
+  on 'f=', 'framerate','Alter framerate (can have decimals or be a fraction)', default: nil
 end
 
-files = ARGV.map(&:to_Path)
+########################################################################################
+
+files = ARGV.map {|file| Path.new(file) }
 
 if files.empty?
   puts opts
+  exit 1
+end
+
+if files.size > 1 and opts.images?
+  puts "Error: You must specify a single glob pattern as input"
   exit 1
 end
 
@@ -37,43 +52,57 @@ end
 # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 1 -pre medium_firstpass -an "$OUT"
 # ffmpeg -y -i "$IN" -b 2M -bt 4M -c:v h264 -pass 2 -pre medium -c:a aac -ab 192k "$OUT"
 
+# Get output directory
 if dir = opts[:outdir]
   dir = dir.to_Path
   unless dir.dir?
     error "#{dir} is not a directory"
     exit 1
   end
-else 
+else
   dir = nil
 end
 
+
+# Process each file
 files.each do |inp|
   puts "----------------------------------------------------------------"
   puts " Encoding:"
   puts "    in: #{inp}"
 
-  unless inp.exists?
+  unless inp.exists? or opts.images?
     error "File doesn't exist."
     next
   end
 
-  if inp.ext == "mp4"
-    error "Input file is already a .mp4 -- skipping"
-    next
-  end
+  # if inp.ext == "mp4"
+  #   error "Input file is already a .mp4 -- skipping"
+  #   next
+  # end
 
-  if opts[:outfile]
-    out = Path[opts[:outfile]]
+  # Output filename (from options, or auto-generated)
+  if opts[:output]
+    out = Path.new opts[:output]
   else
     out = inp.with(ext: "mp4")
+    out = out.with(filename: out.filename.gsub(/[\*\?]+/, "-") ) if opts.images?
     out.dir = dir.dir if dir
   end
 
   cmd = %w[ffmpeg -hide_banner]
 
+  # Courageous or wimpy
   cmd << "-y" if opts.yes?
   cmd << "-n" if opts.no?
 
+  # Set framerate
+  cmd += ["-framerate", opts[:framerate]] if opts[:framerate]
+
+  # Set input
+  if opts.images?
+    # cmd += ["-f", "image2"]
+    cmd += ["-pattern_type", "glob"]
+  end
   cmd += ["-i", inp]
 
   vcodec = opts[:vcodec]
@@ -87,7 +116,7 @@ files.each do |inp|
     acodec = "libfdk_aac" if acodec == "aac"
     cmd += ["-c:a", acodec]
   end
-      
+
   cmd += ["-qp", opts[:quality]] if opts.quality?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
@@ -98,7 +127,7 @@ files.each do |inp|
   vfilters << "yadif=1"           if opts.bob?
 
   if scale = opts[:scale]
-    case scale 
+    case scale
     when /^(\d+)x(\d+)$/
       scale = "#{$1}:#{$2}"
     when /^(\d+)$/
@@ -128,9 +157,11 @@ files.each do |inp|
       next
     end
 
-    unless system("x", "--copy", inp, out)
-      error "Copying metadata failed."
-      next
+    unless opts.images?
+      if system("x", "--copy", inp, out)
+        error "Copying metadata failed."
+        next
+      end
     end
   rescue Interrupt
     puts

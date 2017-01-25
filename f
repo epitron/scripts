@@ -1,17 +1,24 @@
-#!/bin/bash
-if [ "$1" == "--help" ]; then
-  echo "usage: f <expr> [dirs...]"
-  exit
-fi
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
 
-expr="$1"
-shift
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: f [options]"
 
-if [ "$#" == "0" ]; then
-  find -L . -xdev | grep -Ei --color=always "$expr"
+    # on "a",  "along",  "desc"
+    # on "b=", "blong",  "desc", default: ""
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+if bin = which("bfs", "find")
+  query = args.join(" ")
+  system("#{bin} | grep --color=always -Ei '#{query}'")
 else
-  while (( "$#" )); do
-    find -L "$1" -xdev | grep -Ei --color=always "$expr"
-    shift
-  done
-fi
+  puts "Couldn't find 'bfs' or 'find'"
+end
