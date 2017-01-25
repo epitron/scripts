@@ -1,2 +1,3 @@
 #!/bin/bash
 echo -n "$*" | xclip -selection clipboard
+echo "args copied to clipboard"
