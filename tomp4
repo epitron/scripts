@@ -36,6 +36,11 @@ end
 
 ########################################################################################
 
+unless bin = Path.which("ffmpeg", "avconv").compact.first
+  puts "Error: Can't find ffmpeg or avconv. Please install one of them."
+  exit 1
+end
+
 files = ARGV.map {|file| Path.new(file) }
 
 if files.empty?
@@ -89,7 +94,7 @@ files.each do |inp|
     out.dir = dir.dir if dir
   end
 
-  cmd = %w[ffmpeg -hide_banner]
+  cmd = [bin, "-hide_banner"]
 
   # Courageous or wimpy
   cmd << "-y" if opts.yes?

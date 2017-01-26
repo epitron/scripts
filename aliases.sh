@@ -112,13 +112,9 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-#if [ "$TERM" == "xterm" ]
-#then
-#  alias ssh='ssh-termtitle'
-#fi
 
 # net
-alias_all_as_sudo iptables route netctl ufw dhcpcd ip nethogs bwm-ng listening
+alias_all_as_sudo iptables netctl ufw dhcpcd nethogs bwm-ng
 alias ssh='ssh -2'
 alias scpfast='scp -c arcfour128'
 alias sshfast='ssh -c arcfour128'
@@ -171,7 +167,6 @@ alias detach='bg; disown'
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
-alias qemu='qemu-system-x86_64 -enable-kvm'
 
 # archives
 alias ax="aunpack"
