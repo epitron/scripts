@@ -91,6 +91,7 @@ EXTRA_LANGS = {
   "Rakefile"     => :ruby,
   "Gemfile"      => :ruby,
   "Makefile"     => :bash,
+  "makefile"     => :bash,
   ".mk"          => :bash,
   "PKGBUILD"     => :bash,
   "configure.in" => :bash,
