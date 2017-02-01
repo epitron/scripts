@@ -3,20 +3,21 @@
 require 'shellwords'
 
 # Array of [ [dirname, path], ... ]
-paths = Dir["#{ENV["HOME"]}/mp3*/*"].
+raw_mp3s = Dir["#{ENV["HOME"]}/mp3*/*"] + Dir["#{ENV["HOME"]}/mp3*/\\[offline*\\]/*"]
+paths = raw_mp3s.
           reject { |e| e =~ /\.\w{1,4}$/ unless e =~ /\.(xspf|m3u8?)$/ }.
           map {|path| [path.split("/").last, path] }.
           sort_by {|path| path.first.downcase }
 
 
-paths = 
+paths =
   paths.sample(10) +  # Random albums
   [["-"*50,nil]] +    # ASCII horizontal line
   paths
 
-names = Hash[paths]
+names = paths.to_h
 
-path = 
+path =
   IO.popen(%w[dmenu -l 40 -i -b -p Album:], "r+") do |f|
     f.puts names.keys.join("\n")
     f.close_write
@@ -31,7 +32,7 @@ EXTS = %w[
 
 AUDIO_RE = /\.#{Regexp.union EXTS}$/
 
-# expanded = 
+# expanded =
 #   Dir.open(path).
 #   drop(2).
 #   map { |filename| File.join(path, filename) }.
