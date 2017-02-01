@@ -10,6 +10,7 @@ def parse_options
     on "m=", "memory",  "How much memory to use?", default: "2G"
     # on "d=", "disk",    "Disk image to use (extension defaults to qcow2)"
     on "s=", "size",    "Disk size", default: "5G"
+    on "n",  "nbd",     "Attach image to a block device (for mounting filesystems)"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
 
@@ -22,6 +23,54 @@ isos, disks = args.map(&:to_Path).partition { |arg| arg.ext == "iso" }
 isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
 exit 1 unless isos.all? &:exist?
 
+###############################
+# Attach NBD
+###############################
+if opts.nbd?
+
+  if Process.uid != 0
+    puts "Error: You must run this as root."
+    # exec("sudo", "ruby", __FILE__)
+  else
+    # TODO: Detect if an image (this image?) is already mounted
+    # TODO: Prompt the user to disconnect a device if they're all full
+    disks.each do |disk|
+      dev = "/dev/nbd0"
+      mnt = "/mnt"
+
+      puts "[-] loading nbd kernel module"
+      system("modprobe", "nbd", "max_part=8")
+
+      puts "[-] connecting #{disk} to #{dev}"
+      system("qemu-nbd", "--connect=#{dev}", disk)
+
+      puts "[-] creating /devs #{disk} to #{dev}"
+      system("partx", "-a", dev)
+
+      puts "[!] done!"
+      puts
+      puts
+
+      system("fdisk", "-l", dev)
+
+      puts
+      puts "(NOTE: You can run 'qemu-nbd --disconnect #{dev}' to disconnect the nbd from the disk image)"
+      puts
+      # p system("qemu-nbd", "--disconnect", dev)
+    end
+
+    isos.each do |iso|
+      puts "Can't mount isos yet. Sorry!"
+    end
+  end
+
+  exit
+end
+
+
+###############################
+# Run QEMU
+###############################
 memory = opts[:memory]
 
 cmd = ["qemu-system-x86_64", "-enable-kvm", "-vga", "std", "-m", memory]
