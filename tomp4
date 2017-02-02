@@ -94,7 +94,7 @@ files.each do |inp|
     out.dir = dir.dir if dir
   end
 
-  cmd = [bin, "-hide_banner"]
+  cmd = [bin]
 
   # Courageous or wimpy
   cmd << "-y" if opts.yes?

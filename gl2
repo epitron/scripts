@@ -1,7 +1,13 @@
 #!/bin/bash
 if [[ "$1" == "-v" ]]; then
+  shift
   git log
+elif [[ "$1" == "-d" ]]; then
+  # real date
+  shift
+  git log --graph --date=format:'%Y-%m-%d %H:%M:%S' --format='%ad %C(blue bold)%h %C(cyan bold)%aN%Cblue%d %Creset%s' "$@"
 else
+  # short date
   git log --graph --format='%C(blue bold)%h %C(cyan bold)%aN%Cblue%d %Creset%s %C(black bold)(%cr)%Creset' "$@"
 fi
 
