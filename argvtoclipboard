@@ -1,3 +1,12 @@
-#!/bin/bash
-echo -n "$*" | xclip -selection clipboard
-echo "args copied to clipboard"
+#!/usr/bin/env ruby
+require 'epitools'
+
+payload = ARGV.join(" ")
+
+%w[clipboard primary].each do |type|
+  IO.popen(["xclip", "-selection", type], "w") do |io|
+    io.print(payload)
+  end
+end
+
+notify_send("Pasted to clipboards:", payload)
