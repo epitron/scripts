@@ -10,4 +10,11 @@ if [ "$1" == "" ]; then
   exit 1
 fi
 
-ssh "$1" -C -L 5900:localhost:5900 "x11vnc -display :0 -ncache_cr -ncache 10 -noxdamage"
+USERHOST="$1"
+
+ssh -C -t -L5900:localhost:5900 $USERHOST "x11vnc -display :0.0 -localhost -ncache_cr -ncache 10 -noxdamage" &
+sleep 2
+vncviewer -encodings 'copyrect tight zrle hextile' localhost:0
+
+# # in case x11vnc doesn't shut down automatically
+# kill `jobs -p`

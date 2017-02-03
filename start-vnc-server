@@ -5,5 +5,5 @@ while [ ! -f ~/.vnc/passwd ]; do
   x11vnc -storepasswd
 done
 
-# x11vnc -ncache 10 -ncache_cr -display :0 -usepw
-x11vnc -display :0 -usepw
+x11vnc -ncache 10 -ncache_cr -display :0 -usepw
+# x11vnc -display :0 -usepw
