@@ -300,13 +300,19 @@ def open_url(url, verbose=false)
   fork { exec(Settings.client, url) }
 end
 
+
 if __FILE__ == $0
   opts, args = parse_options
 
   query = args.join(" ")
 
   md5s = args.map do |arg|
-    if arg.strip =~ %r{^https?://torrentz2.eu/(\w{40})}
+    case arg.strip
+    when %r{^https?://torrentz2\.eu/(\w{40})}
+      $1
+    when %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}
+      $1
+    when %r{^https?://torrentproject\.se/(\w{40})/}
       $1
     end
   end + [opts[:add]]
