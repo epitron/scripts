@@ -1,0 +1,124 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'nokogiri'
+require 'open-uri'
+require 'uri'
+require 'epitools'
+
+
+module URI
+  #
+  # Strip out params with blank values.
+  #
+  alias_method :old_params, :params
+  
+  def params
+    old_params.delete_if { |k,v| v.blank? }
+  end
+end
+
+
+def strip_trackers(url)
+  uri = URI.parse(url)
+  if uri.host =~ /google.\w{2,3}$/ and uri.path == "/url"
+    uri.params["url"] || uri.params["q"]
+  elsif uri.host =~ /facebook\.com$/ and uri.path == "/l.php"
+    uri.params["u"]
+  elsif uri.host =~ /evernote\.com$/ and uri.path == "/OutboundRedirect.action"
+    uri.params["dest"]
+  else
+    uri
+  end.to_s
+end
+
+
+def absolute_uri(root, url)
+  #pp [:url_join, root, url]
+  URI.join(root, URI.escape(url)).to_s
+end
+
+
+def get_page(url)
+  #$stderr.puts "Loading #{url.inspect}..."
+  Nokogiri::HTML(open(url))
+end
+
+
+def relative_url?(url)
+  URI.join(url, url)
+  false
+rescue URI::BadURIError
+  true
+end
+
+
+def get_links(url)
+
+  page = get_page(url)
+  root_is_relative = relative_url?(url)
+
+  result = {
+
+    :links => page.search("a").map { |a|
+      linkurl = a["href"]
+    }.squash,
+    
+    :embeds => page.search("embed").map { |embed|
+      linkurl = embed["src"]
+      #if embed["type"].in? %w(application/x-mplayer2)
+    }.squash,
+    
+    :images => page.search("img").map { |img|
+      linkurl = img["src"]
+    }.squash,
+    
+    :enclosures => page.search("enclosure").map { |e|
+      linkurl = e["url"]
+    }.squash,
+
+  }
+
+  result.map_values! { |links| 
+    links.map { |linkurl|
+      absolute_uri(url, linkurl)
+    }
+  } unless root_is_relative
+
+  result.map_values! { |links| links.map { |link| strip_trackers link } }
+
+  result[:emails] = result[:links].select{|v| v["mailto:"]}
+  result[:links] -= result[:emails]
+  
+  result
+
+end
+
+
+if ARGV.empty?
+
+  puts
+  puts "Usage: getlinks <url1|file1> [<url2|file2>, ...]"
+  puts
+  puts "Purpose:"
+  puts "  Returns all the HREFs from the <a href=\"\"> tags in the specificed"
+  puts "  url(s). The links are output to STDOUT, while the status information"
+  puts "  is output to STDERR, so you can pipe the links to 'grep' and/or"
+  puts "  'xargs wget'."
+  puts
+  puts "Example:"
+  puts "  getlinks http://something.com/stuff.html | egrep '\.zip$' | xargs wget"
+  puts
+
+else
+
+  ARGV.each do |arg|
+    $stdout.puts "### #{arg}"
+    for category, links in get_links(arg)
+      next if links.empty?
+      $stdout.puts "# #{category}"
+      links.each { |link| puts link }
+      puts
+    end
+  end
+
+end
