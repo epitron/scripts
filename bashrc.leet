@@ -95,6 +95,7 @@ shopt -s histverify
 #fi
 # mkdir and cd, all in one!
 
+export XZ_OPT="--threads=0"
 
 case $(uname -s) in
   Darwin|FreeBSD)
