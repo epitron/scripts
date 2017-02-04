@@ -16,6 +16,11 @@ end
 opts    = parse_options
 infiles = ARGV.map(&:to_Path)
 
+if infiles.empty?
+  puts opts
+  exit 1
+end
+
 if opts[:output]
   outfile = opts[:output].to_Path
 else
