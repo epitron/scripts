@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
+########################################################################################
 require 'epitools'
-
-#########################################################
+########################################################################################
 # TODOs:
-#########################################################
+########################################################################################
 #
 # * Spawn rippers in a tmux with splits
 #
@@ -20,9 +20,12 @@ require 'epitools'
 #     selectp -t 1 # select the new, second (1) pane
 #     splitw -v -p 50 # split it into two halves
 #     selectp -t 0 # go back to the first pane
+########################################################################################
 
+NAME = "radio-ripper"
 
-streams = %w[
+STREAMS = %w[
+  http://ice1.somafm.com/secretagent-128-aac
   http://ice2.somafm.com/groovesalad-128-aac
   http://ice1.somafm.com/poptron-128-mp3
   http://ice1.somafm.com/u80s-128-aac
@@ -30,35 +33,87 @@ streams = %w[
   http://radio.108.pl:8002/
 ]
 
-histories = {}
+########################################################################################
 
-# Spawn the threads!
-threads = streams.map { |u| URI(u) }.map do |uri|
-  Thread.new do
-    histories[uri] = (history = [])
-    IO.popen(["streamripper", uri, "-o", "larger"], "rb") do |io|
-      io.each_line do |line|
-        history << line
-        history.shift 20 if history.size > 50
+def tmux(*a)
+  cmd = ["tmux",*a]
+  p cmd
+  system *cmd
+end
+
+########################################################################################
+
+def tmux_mode!
+  if `tmux ls`[NAME]
+    exec("tmux", "attach")
+  end
+
+  tmux "new-session", "-d", "-s", NAME
+
+  # # 2 columns
+  # tmux "split-window -h"
+
+  # enum = STREAMS.lazy.map { |uri| ["streamripper", uri, "-o", "larger"] }
+
+  # # 3 rows on the left
+  # tmux "selectp -t 0"
+  # tmux "split-window", "-p", "33", *enum.next
+  # tmux "selectp -t 0"
+  # tmux "split-window", "-p", "50", *enum.next
+
+  # # 3 rows on the right
+  # tmux "selectp -t 3"
+  # tmux "split-window", "-p", "33", *enum.next
+  # tmux "selectp -t 3"
+  # tmux "split-window", "-p", "50", *enum.next
+
+  STREAMS.each do |uri|
+    tmux "neww", "streamripper", uri, "-o", "larger"
+  end
+
+  exec "tmux", "attach", "-t", NAME
+end
+
+########################################################################################
+
+def thread_mode!
+  histories = {}
+
+  # Spawn the threads!
+  threads = STREAMS.map { |u| URI(u) }.map do |uri|
+    Thread.new do
+      histories[uri] = (history = [])
+      IO.popen(["streamripper", uri, "-o", "larger"], "rb") do |io|
+        io.each_line do |line|
+          history << line
+          history.shift 20 if history.size > 50
+        end
       end
     end
   end
+
+  start_time = Time.now
+  loop do
+    elapsed = Time.now - start_time
+
+    print "\e[H\e[J"
+    puts "[#{elapsed.to_i.to_hms}] #{threads.select(&:alive?).size} threads"
+    puts
+
+    histories.each do |uri, history|
+      puts "== [#{uri.host}#{uri.path}] ==="
+      puts
+      history.last(5).each { |h| puts "  #{h}" }
+      puts
+    end
+
+    sleep 1
+  end
 end
 
-start_time = Time.now
-loop do
-  elapsed = Time.now - start_time
 
-  print "\e[H\e[J"
-  puts "[#{elapsed.to_i.to_hms}] #{threads.select(&:alive?).size} threads"
-  puts
-
-  histories.each do |uri, history|
-    puts "== [#{uri.host}#{uri.path}] ==="
-    puts
-    history.last(5).each { |h| puts "  #{h}" }
-    puts
-  end
-
-  sleep 1
+if ARGV.any? { |arg| arg == "-t" }
+  thread_mode!
+else
+  tmux_mode!
 end
