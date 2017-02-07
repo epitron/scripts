@@ -289,7 +289,9 @@ end
 
 def open_url(url, verbose=false)
   # Make sure the torrent client exists
-  unless Path.which(Settings.client)
+  cmd = Settings.client.split
+
+  unless Path.which(cmd.first)
     $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
     exit 1
   end
@@ -297,7 +299,7 @@ def open_url(url, verbose=false)
   puts url if verbose
   puts
   # Fork into the background before running the client
-  fork { exec(Settings.client, url) }
+  fork { exec(*cmd, url) }
 end
 
 
