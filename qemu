@@ -7,10 +7,12 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
 
-    on "m=", "memory",  "How much memory to use?", default: "2G"
-    # on "d=", "disk",    "Disk image to use (extension defaults to qcow2)"
-    on "s=", "size",    "Disk size", default: "5G"
-    on "n",  "nbd",     "Attach image to a block device (for mounting filesystems)"
+    on "m=", "memory",   "How much memory to use?", default: "2G"
+    on "s=", "size",     "Disk size", default: "5G"
+    on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
+    on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
+    on "r",  "restrict", "Restrict the network (firewall)"
+    on "v",  "verbose",  "Show (a little) more information"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
 
@@ -95,5 +97,20 @@ disks.each do |disk|
 end
 
 isos.each  { |iso| cmd += ["-cdrom", iso] }
+
+# Networking
+netopts = "user"
+
+netops += ",restrict=on" if opts.restrict?
+
+if port = opts[:port]
+  src, dest = port.split(":")
+  dest ||= src
+  netopts += ",hostfwd=tcp::#{src}-:#{dest}"
+end
+
+cmd += ["-net", netopts]
+
+p cmd if opts.verbose?
 
 exec *cmd
