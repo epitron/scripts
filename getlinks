@@ -78,7 +78,8 @@ end
 
 def absolute_uri(root, url)
   #pp [:url_join, root, url]
-  URI.join(root, URI.escape(url)).to_s
+  # URI.join(root, URI.escape(url)).to_s
+  URI.join(root, url).to_s
 end
 
 def relative_url?(url)
@@ -94,8 +95,7 @@ end
 def get_links(url, types=TYPES, regexp=nil)
   page             = Nokogiri::HTML(open(url))
   root_is_relative = relative_url?(url)
-
-  types = types.uniq
+  types            = types.uniq
 
   result =
     types.map do |type|
