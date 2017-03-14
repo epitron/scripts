@@ -28,8 +28,10 @@ opts = Slop.parse(help: true, strict: true) do
   on 'o=', 'output',   'Output file'
   on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
   on 'm',  'mute',     'No audio'
-  on 'v=', 'vcodec',   'Output video codec (eg: h264, hevc, nvenc_h264)', default: "h264"
-  on 'N',  'nvidia',   'Use nvidia-accelerated encoder'
+  # DEV.LS h264                 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (decoders: h264 h264_vdpau ) (encoders: libx264 libx264rgb h264_nvenc h264_vaapi nvenc nvenc_h264 )
+  # DEV.L. hevc                 H.265 / HEVC (High Efficiency Video Coding) (encoders: libx265 nvenc_hevc hevc_nvenc hevc_vaapi )
+  on 'v=', 'vcodec',   "Output video codec\n\t\t\t\t (eg: h264, h264_nvenc, hevc, hevc_nvenc, hevc_vaapi)\n\t\t\t\t", default: "h264"
+  on 'N',  'nvidia',   'Use nvidia-accelerated version of vcodec'
   on 'c=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
   on 'f=', 'framerate','Alter framerate (can have decimals or be a fraction)', default: nil
 end
@@ -111,7 +113,7 @@ files.each do |inp|
   cmd += ["-i", inp]
 
   vcodec = opts[:vcodec]
-  vcodec = "nvenc_#{vcodec}" if opts.nvidia? and vcodec != "copy"
+  vcodec = "#{vcodec}_nvenc" if opts.nvidia? and vcodec != "copy" and not vcodec["nvenc"]
 
   # cmd += %w[-crf 20] if opts.hq?
   cmd += ["-c:v", vcodec]

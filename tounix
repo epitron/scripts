@@ -5,23 +5,23 @@
  -------------------------------------------------
  by Chris Gahan (chris@ill-logic.com)
  =================================================
- 
+
  This is a batch converter for fixing DOS line-endings in text files
- (by making them UNIX line-endings!). It'll recursively chew through 
- a tree of files (or a list you supply it with) and convert all files 
+ (by making them UNIX line-endings!). It'll recursively chew through
+ a tree of files (or a list you supply it with) and convert all files
  that have the right filename extension (i.e. .py, .txt, .c, .cpp, etc.)
- 
+
  Edit the "validtypes" definition if you want to make it convert different
  types of files.
- 
+
  Also, it converts \t's to spaces (if you add the -t <size> option).
- 
+
 '''
 
 __version__ = '0.3'
 
 import os, sys
-from os.path import join, splitext, isfile, isdir
+from os.path import join, splitext, isfile, isdir, islink
 
 validtypes = ['.py', '.txt', '.c', '.cpp', '.h', '.hpp', '.sh', '.js', '.htm', '.html', '.rb', '.rhtml', '.rjs']
 ignoredirs = ['CVS', '.svn']
@@ -38,7 +38,7 @@ def getValidFiles(directory):
         for ignoredir in ignoredirs:
             if ignoredir in dirs:
                 dirs.remove(ignoredir)
-    
+
     return filter(isValidFile, results)
 
 def fixLineEnding(string):
@@ -54,17 +54,17 @@ def convertFile(filename, tabsize=None):
     try:
         infile = open(filename, 'r')
         fixedlinegenerator = ( fixLineEndingAndTabs(line, tabsize) for line in infile )
-        
+
 	tmpfilename = filename+".being-tounixed"
-	
+
         outfile = open(tmpfilename, 'w')
         outfile.writelines(fixedlinegenerator)
-	
+
         outfile.close()
 	infile.close()
-	
+
 	os.rename(tmpfilename, filename)
-        
+
     except Exception, e:
         print "* WHUZZUH?! %s *" % e
 
@@ -84,26 +84,26 @@ def howToUseMe():
     print 'its subdirectories will be converted.'
     print
     print '(Filetypes to scan: %s)\n' % ', '.join(validtypes)
-    
+
 
 if __name__ == '__main__':
     madProps()
 
     if len(sys.argv) >= 2:
         args = sys.argv[1:]
-        
+
         convertme = []
-        
+
         # parse get the -t option
         if args[0] == '-t':
             tabsize = int(args[1])
             args = args[2:]
         else:
             tabsize = None
-        
+
         # parse all the filenames on the commandline
         for arg in args:
-            if isfile(arg):
+            if isfile(arg) and not islink(arg):
                 convertme.append(arg)
             elif isdir(arg):
                 convertme.extend(getValidFiles(arg))
@@ -117,7 +117,7 @@ if __name__ == '__main__':
             convertFile(filename, tabsize)
 
         print "------------------------------------------"
-        print "* Done!\n" 
+        print "* Done!\n"
 
     else:
         howToUseMe()
