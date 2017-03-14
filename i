@@ -2,6 +2,7 @@
 
 #######################################################################
 # TODOs:
+# - after starting the service, tail the status log (through less (until the user hits "q"))
 # - "start" => start + status
 # - "enable" => enable + start
 # - Fuzzy matching when script isn't found
