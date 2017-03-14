@@ -50,11 +50,13 @@ def usage
   puts "  Hashes data streamed through a pipe to STDIN, or files specified on the command line."
   puts "  The computed hash(es) are output to STDERR."
   puts
-  puts "Hashers:"
+  puts "Options/Hashers:"
   HASHERS.each do |opt, klass|
-    puts "  #{opt.ljust(9)} => #{klass}"
+    puts "  #{opt.ljust(10)} => #{klass}"
   end
-  puts "  --all     => All of the above!"
+  puts "  --all      => All of the above!"
+  puts
+  puts "  --parallel => Compute each hash in its own process (uses multiple CPUs)"
   puts
   puts "(Note: Defaults to #{DEFAULTS.join(", ")} if no hashers specified)"
   puts
@@ -80,7 +82,12 @@ end
 
 ################################################################
 
-def sum(digests, input, output=nil, messages=$stderr)
+def sum(digests, input, output=nil, messages=$stderr, parallel=false)
+  if parallel
+    puts "ERROR: Parallel mode not yet implemented."
+    exit 1
+  end
+
   while data = input.read(BLOCKSIZE)
     digests.each {|digest| digest << data }
     output.write(data) if output
@@ -123,5 +130,6 @@ if args.any?
     puts
   end
 else
-  sum(create_digests(opts), $stdin, $stdout)
+  parallel = opts.delete("--parallel")
+  sum(create_digests(opts), $stdin, $stdout, $stderr, parallel)
 end
