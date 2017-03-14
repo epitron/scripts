@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: fixexts [options]"
+
+    # on 'c',  'codecs',  'List the availiable codecs'
+    # on 'u=', 'use',     'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+###################################################
+
+def walk(paths, &block)
+  paths.each do |path|
+    if path.dir?
+      walk(path.ls, &block)
+    else
+      yield path
+    end
+  end
+end
+
+paths = args.map(&:to_Path)
+
+walk(paths) do |path|
+  ext = path.mimetype_from_ext 
+  magic = path.magic
+
+  if ext != magic
+    puts "* #{path}"
+    puts "  - ext: #{ext}"
+    puts "  - magic: #{magic}"
+  end
+end
