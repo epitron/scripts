@@ -104,6 +104,7 @@ EXTRA_LANGS = {
   ".ini"         => :bash,
   ".service"     => :bash,
   "Gemfile.lock" => :c,
+  ".cl"          => :c,
   "database.yml" => :yaml,
   ".gradle"      => :groovy,
   ".sage"        => :python,

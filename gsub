@@ -3,42 +3,65 @@ gem "slop", "~> 3.6"
 require 'slop'
 require 'epitools'
 
-opts = Slop.new :help => true do
-  banner "Usage: gsub -f from -t to [files...]"
-  
-  on :v, :verbose, 'Enable verbose mode'           
-  on :n, :dryrun, 'Dry-run', false                  
-  on :f, :from, 'From', :optional => false      
-  on :t, :to, 'To', :optional => false  
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: gsub -f from -t to [files...]"
+
+    on :v,  :verbose, 'Enable verbose mode'
+    on :n,  :dryrun, 'Dry-run', false
+    on :b,  :"no-backup", "Don't do backups"
+    # on :r,  :regexp, "Regexp mode"
+    on :f=, :from, 'From regexp', :optional => false
+    on :t=, :to, 'To regexp', :optional => false
+  end
+
+  [opts, ARGV]
 end
 
-opts.parse do |arg|
-  path = Path[arg]
+opts, args = parse_options
 
+paths = args.map &:to_Path
+
+if paths.empty?
+  puts "Error: Must supply at least one filename"
+  puts
+  puts opts
+  exit 1
+end
+
+paths.each do |path|
   puts "* gsubbing: #{path}"
 
   unless path.exists?
     puts "  |_ NOT FOUND."
     next
   end
-  
+
   if path.size > 1.million
     answer = prompt("You sure you want to gsub a #{path.size.commatize}-byte file?")
     next unless answer == "y"
   end
-  
-  data = path.read
 
-  puts data.gsub(opts[:from]) { |match| opts[:to].light_yellow } if opts.verbose?
-
+  data    = path.read
+  matcher = Regexp.new(opts[:from])
   changes = 0
-  data.gsub! opts[:from] do |match|
+
+  data.gsub(matcher) do |match|
+    puts "  |_ <11>#{match.inspect} <8>=> <14>#{opts[:to].inspect}".colorize if opts.verbose?
     changes += 1
-    opts[:to]
   end
-  
-  puts "  |_ #{changes} changes#{" would be" if opts.dryrun?} made"
-  
-  path.write(data) unless opts.dryrun?
+
+  if opts.dryrun?
+    puts "  |_ #{changes} changes would've been made (if this wasn't a dry run)"
+  else
+    data.gsub!(matcher, opts[:to])
+
+    puts "  |_ #{changes} changes were made!"
+    puts "  |_ writing to #{path}..."
+
+    path.backup!
+    path.write(data)
+  end
 end
 

@@ -3,7 +3,7 @@
 require 'shellwords'
 
 # Array of [ [dirname, path], ... ]
-raw_mp3s = Dir["#{ENV["HOME"]}/mp3*/*"] + Dir["#{ENV["HOME"]}/mp3*/\\[offline*\\]/*"]
+raw_mp3s = Dir["#{ENV["HOME"]}/mp3*/*"] + Dir["#{ENV["HOME"]}/mp3*/\\[offline\\]/MUSIC-*/*"] + Dir["#{ENV["HOME"]}/mp3*/\\[radio\\]/*"]
 paths = raw_mp3s.
           reject { |e| e =~ /\.\w{1,4}$/ unless e =~ /\.(xspf|m3u8?)$/ }.
           map {|path| [path.split("/").last, path] }.
