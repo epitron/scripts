@@ -317,7 +317,7 @@ if __FILE__ == $0
 
   md5s = args.map do |arg|
     case arg.strip
-    when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
+    when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}, %r{^https?://yts\.ag/torrent/download/(\w{40})$}
       $1
     else
       nil
