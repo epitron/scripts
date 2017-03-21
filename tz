@@ -15,6 +15,7 @@ require 'epitools'
 ROOT_URL = "https://torrentz2.eu/"
 
 TRACKERS = %w[
+  udp://tracker.pirateparty.gr:6969/announce
   udp://tracker.coppersurfer.tk:6969/announce
   udp://tracker.openbittorrent.com:80/
   http://tracker.openbittorrent.com:80/
