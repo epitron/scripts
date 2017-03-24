@@ -316,14 +316,9 @@ if __FILE__ == $0
 
   query = args.join(" ")
 
-  md5s = args.map do |arg|
-    case arg.strip
-    when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
-      $1
-    else
-      nil
-    end
-  end.compact + [opts[:add]]
+  # when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
+  # Detect
+  md5s = args.map { |arg| arg.strip =~ %r{^https?://[^/]+/([a-f0-9]{40})}i ? $1 : nil }.compact + [opts[:add]]
 
   md5s.compact!
 
