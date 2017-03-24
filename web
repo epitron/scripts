@@ -75,7 +75,7 @@ routes do
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed)}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
-  match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg|vob)$/i, &play_video
+  match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
   match host: %w[imgur.com twitch.tv justin.tv infoq.com] do |uri|
