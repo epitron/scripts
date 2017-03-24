@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for i in "$@"; do
+  x "$i"
+  ren "$i"
+done
+
