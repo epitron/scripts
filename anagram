@@ -2,6 +2,7 @@
 
 require 'set'
 
+
 class Array
 
   #
@@ -38,12 +39,12 @@ class Anagrammer
   ]
 
   def initialize(wordlist="/usr/share/dict/words")
-    @words = Set.new open(wordlist).
-                map { |w| w.chomp.chomp("'s") }.
-                select { |w| w.size > 2 and w.upcase != w }.
-                map { |l| l.downcase }
+    cleaned_words = open(wordlist).
+      map    { |w| w.chomp.chomp("'s") }.
+      select { |w| w.size > 2 and w.upcase != w }.
+      map    { |l| l.downcase }
 
-    @words += SHORTWORDS
+    @words = Set.new(cleaned_words + SHORTWORDS)
   end
 
   def words_from(letters)
@@ -58,7 +59,7 @@ class Anagrammer
 
         if @words.include? word
           remaining = letters.without(perm)
-          
+
           if remaining.any?
             words_from(remaining).map { |subword| yield "#{word} #{subword}" }
           else
@@ -68,12 +69,6 @@ class Anagrammer
 
       end
     end
-  end
-
-  def solve(phrase)
-    puts "# Searching for anagrams of #{phrase.inspect}..."
-    letters = phrase.downcase.scan(/\w/)
-    words_from(letters)
   end
 
 end
@@ -87,9 +82,18 @@ if $0 == __FILE__
     end
 
     phrase = ARGV.join(" ")
+    found  = Set.new
+    anagrammer = Anagrammer.new
 
-    Anagrammer.new.solve(phrase).each do |word|
-      puts word
+    puts "# Searching for anagrams of #{phrase.inspect}..."
+    letters = phrase.downcase.scan(/\w/)
+
+    anagrammer.words_from(letters).each do |solution|
+      words = solution.split.sort
+      unless found.include? words
+        found.add(words)
+        puts solution
+      end
     end
 
   rescue Interrupt

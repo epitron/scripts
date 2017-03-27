@@ -16,9 +16,10 @@ def parse_options
   require 'slop'
 
   @opts = Slop.parse(help: true, strict: true) do
-    banner "\nUsage:\n\tsrtmerge [options] <sub file/video file...>\n\n(Note: .srt and video file (.mkv or .mp4) must both exist.)\n\nOptions:"
+    banner "\nUsage:\n    srtmerge [options] <sub file/video file...>\n\n(Note: .srt and video file (.mkv or .mp4) must both exist.)\n\nOptions:"
 
     on 'd=',  'dest',  'Destination directory'
+    on 's=',  'srt',   'SRT file'
     # on 'o=', 'outfile',     'Output file (for MP3 and WAV commands)'
     on 'v',  'verbose',     'Show all mplayer output spam'
   end
@@ -28,12 +29,11 @@ end
 
 VID_EXTS = ["mkv", "mp4"]
 
-def merge(f, destdir=nil)
-
-  f    = Path[f]
+def merge(f, destdir=nil, srt=nil)
+  f = Path[f]
 
   if destdir
-    destdir = Path[destdir] 
+    destdir = Path[destdir]
     raise "Error: destination dir #{destdir} doesn't exist" unless destdir.exists?
     raise "Error: destination dir #{destdir} isn't a dir" unless destdir.dir?
   end
@@ -49,9 +49,9 @@ def merge(f, destdir=nil)
 
   elsif f.ext.in? VID_EXTS
     vid = f
-    srt = vid.with(ext: "srt")
+    srt = srt ? Path[srt] : vid.with(ext: "srt")
 
-    raise "Couldn't find .srt file for #{vid}"
+    raise "Couldn't find .srt file for #{vid}" unless srt.exists?
   end
 
   outfile = vid.with(ext: "mkv")
@@ -59,11 +59,12 @@ def merge(f, destdir=nil)
 
   if outfile.exists?
     backup = outfile.numbered_backup_file
-    puts " => WARNING: #{outfile} exists, moving to #{backup}"
+    puts "WARNING: outfile exists: #{outfile}"
+    puts "            renaming to: #{backup}"
     outfile.mv backup # TODO: this should change destdir.
     vid = backup # source video is now the backed up file
   end
-  
+
   cmd = ["mkvmerge", "-o", outfile, vid, "--language", "0:eng", srt]
 
   puts
@@ -73,7 +74,16 @@ def merge(f, destdir=nil)
   puts "    Output video: #{outfile}"
   puts "         Command: #{cmd.join(" ")}"
   puts
-  system *cmd
+
+  if system *cmd
+    # Copy modification time
+    puts
+    puts "* Updating timestamp of output file to: #{vid.mtime}"
+    outfile.mtime = vid.mtime
+    puts "* Done!"
+  else
+    puts "There was some kind of error. SHRUG!!!!!!"
+  end
 
 end
 
@@ -87,14 +97,13 @@ if $0 == __FILE__
 
   unless files.any?
     puts "Error: Must supply at least one video file."
-    puts
-    puts parse_options
+    puts opts
     exit 1
   end
 
   for arg in ARGV
     # begin
-      merge(arg, opts[:dest])
+      merge(arg, opts[:dest], opts[:srt])
     # rescue => e
       # p e
     # end
