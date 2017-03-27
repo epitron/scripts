@@ -12,10 +12,11 @@ def parse_options
     on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "r",  "restrict", "Restrict the network (firewall)"
+    on "c",  "console",  "Output serial to the console"
     on "v",  "verbose",  "Show (a little) more information"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
-
+  
   [opts, ARGV]
 end
 
@@ -75,7 +76,17 @@ end
 ###############################
 memory = opts[:memory]
 
-cmd = ["qemu-system-x86_64", "-enable-kvm", "-vga", "std", "-m", memory]
+cmd = ["qemu-system-x86_64", "-enable-kvm", "-m", memory]
+
+if opts.console?
+  # cmd += %w[-nographic -serial mon:stdio -append 'console=ttyS0']
+  # cmd += %w[-nographic -serial mon:stdio]
+  # cmd += %w[-nographic -device sga -serial mon:stdio]
+  cmd += %w[-device sga -nographic -serial mon:stdio]
+  # cmd += %w[-nographic -curses]
+else
+  cmd += ["-vga", "std"]
+end
 
 disks.each do |disk|
   unless disk.exists?
