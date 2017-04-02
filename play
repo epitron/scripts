@@ -215,7 +215,7 @@ def search(query=nil, n=10, reverse=true, paged=false)
   output.puts
 
   entries = log_entries
-  entries = entries.select { |entry| entry.title =~ regexp } if query
+  entries = entries.select { |entry| entry.title =~ regexp || entry.url =~ regexp } if query
   entries = entries.take(n) unless n == 0
 
   if reverse
@@ -237,8 +237,8 @@ def search(query=nil, n=10, reverse=true, paged=false)
     output.print "#{pos.to_s.rjust(max_pos_width)}. ".bright_yellow
     indent += " " * (max_pos_width + 2)
 
-    output.puts "<10>#{result.date} <12>| <11>#{title}".colorize
-    output.puts "<2>#{indent}#{result.time} <4>| <9>#{result.url}".colorize
+    output.puts "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}".colorize
+    output.puts "<2>#{indent}#{result.time} <4>| <9>#{regexp ? result.url.gsub(regexp, &:on_blue) : result.url}".colorize
     output.puts
   end
 
@@ -393,7 +393,7 @@ end
 
 if $0 == __FILE__
 
-  if ARGV.any? { |arg| arg[/^-\w/] }
+  if ARGV.any? { |arg| arg[/^--?\w/] }
     opts = parse_options
   else
     # opts = {player: PLAYER_NAMES.first}
@@ -420,7 +420,7 @@ if $0 == __FILE__
 
   if opts[:list]
     if nums
-      search(nil, nums.first)
+      search(nil, nums.first, false, true)
       exit
     end
   end
