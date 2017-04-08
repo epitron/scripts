@@ -4,8 +4,8 @@
 gem 'slop', "~> 3.6"
 require 'slop'
 require 'nokogiri'
-require 'open-uri'
 require 'epitools'
+require 'http'
 
 #########################################################################
 
@@ -77,9 +77,7 @@ def strip_trackers(url)
 end
 
 def absolute_uri(root, url)
-  #pp [:url_join, root, url]
-  # URI.join(root, URI.escape(url)).to_s
-  URI.join(root, url).to_s
+  URI.join( root, url ).to_s
 end
 
 def relative_url?(url)
@@ -93,7 +91,7 @@ end
 #########################################################################
 
 def get_links(url, types=TYPES, regexp=nil)
-  page             = Nokogiri::HTML(open(url))
+  page             = Nokogiri::HTML(HTTP.get(url).body.to_s)
   root_is_relative = relative_url?(url)
   types            = types.uniq
 
