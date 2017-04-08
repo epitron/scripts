@@ -74,7 +74,7 @@ sub set_config_option($$$);
 
 $::SYSCONFDIR = '/usr/etc'; # This line is automatically updated by make
 $::PACKAGE = 'atool'; # This line is automatically updated by make
-$::VERSION = '0.39.0'; # This line is automatically updated by make
+$::VERSION = '0.39.0-epihax'; # This line is automatically updated by make
 $::BUG_EMAIL = 'oskar@osk.mine.nu'; # This line is automatically updated by make
 $::PROGRAM = $::PACKAGE;
 
@@ -408,7 +408,7 @@ else {
 # Execute an atool command. This is where it all happens.
 # If mode is 'extract', returns the directory (or only file)
 # which was extracted.
-# If forceformat is undef, the format will be detected from 
+# If forceformat is undef, the format will be detected from
 # $::opt_format or the filename.
 sub runcmds($$$;@) {
   my ($mode, $format, $archive, @args) = @_;
@@ -898,7 +898,7 @@ sub getmode() {
   if (de($::opt_cmd_list)
       + de($::opt_cmd_cat)
       + de($::opt_cmd_extract)
-      + de($::opt_cmd_add) 
+      + de($::opt_cmd_add)
       + de($::opt_cmd_extract_to)
       + de($::opt_cmd_diff)
       + de($::opt_cmd_repack) > 1) {
@@ -1051,7 +1051,7 @@ sub maketarcmd($$$$@) {
 # be quoted.
 sub cmdexec($@) {
   my ($ignret, @cmd) = @_;
-  
+
   if ($::opt_explain || $::opt_simulate) {
     my $spec = join(' ', map { ref $_ ? @{$_} : shquotemeta $_ } @cmd);
     explain quote($spec)."\n";
@@ -1068,7 +1068,7 @@ sub cmdexec($@) {
     warn "$::basename: ".quote($cmds).": abnormal exit (exit code $?)\n";
     return 0;
   }
-  
+
   if (!$ignret && $? >> 8 != 0) {
     warn "$::basename: ".quote($cmds).": non-zero return-code\n";
     return 0;
@@ -1476,7 +1476,7 @@ sub findformat($$) {
     ['rzip',           qr/\.rz$/],
     ['tar',            qr/\.tar$/],
     ['xz',             qr/\.xz$/],
-    ['zip',            qr/\.zip$/],
+    ['zip',            qr/\.(zip|pk3|epub)$/],
   );
 
   if ($manual) {
