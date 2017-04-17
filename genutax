@@ -1,0 +1,1 @@
+WINEARCH=win32 WINEPREFIX=~/.wine-genutax wine ~/.wine-genutax/drive_c/Program\ Files/GenuSource\ Consulting/GenuTax\ Standard/GenuTax.exe
