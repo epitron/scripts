@@ -124,7 +124,7 @@ files.each do |inp|
     cmd += ["-c:a", acodec]
   end
 
-  cmd += ["-qp", opts[:quality]] if opts.quality?
+  cmd += ["-crf", opts[:quality]] if opts.quality?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
 
