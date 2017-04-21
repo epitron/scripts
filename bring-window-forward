@@ -11,8 +11,8 @@ end
 case wins.size
 when 0
   notify_send "No windows found"
-when 1
-  wins.first.activate!
+# when 1
 else
-  notify_send "Found too many windows"
+  wins.each {|w| p w; w.activate! }
+  # notify_send "Found too many windows"
 end 
