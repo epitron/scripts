@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "* Removing Wine file associations and mimetypes and whatnot..."
+echo
+rm -vf ~/.local/share/mime/packages/x-wine*
+rm -vf ~/.local/share/applications/wine-extension*
+rm -vf ~/.local/share/icons/hicolor/*/*/application-x-wine-extension*
+rm -vf ~/.local/share/mime/application/x-wine-extension*
+echo
+echo "* Done!"
+echo

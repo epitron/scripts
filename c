@@ -101,6 +101,7 @@ EXTRA_LANGS = {
   ".desktop"     => :bash,
   ".conf"        => :bash,
   ".prf"         => :bash,
+  ".hs"          => :text,
   ".ini"         => :bash,
   ".service"     => :bash,
   "Gemfile.lock" => :c,
@@ -122,7 +123,7 @@ def print_source(filename)
   if File.read(filename, 256) =~ /\A#!(.+)/
     # Shebang!
     lang = case $1
-      when /\b(bash|zsh|sh)\b/ then :bash
+      when /\b(bash|zsh|sh|make|expect)\b/ then :bash
       when /ruby/   then :ruby
       when /python/ then :python
       when /perl/   then :ruby
@@ -167,7 +168,7 @@ end
 ##############################################################################
 
 def print_cp437(filename)
-  open(filename, "r:cp437:utf-8", &:read)
+  open(filename, "r:cp437:utf-8", &:read).gsub("\r", "")
 end
 
 ##############################################################################
@@ -325,6 +326,8 @@ def convert(arg)
       format = run('file', arg).read
 
       case format
+      when /POSIX shell script/
+        print_source(arg)
       when /:.+?(executable|shared object)[^,]*,/
         print_obj(arg)
       when /(image,|image data)/
