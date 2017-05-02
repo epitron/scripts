@@ -3,5 +3,5 @@ if [ "$1" == "" ]; then
   echo "usage: pacf <regexp>"
   echo "Finds packages that contain files matching <regexp>."
 else
-  pacman -Ql | grep -Ei --color=always "$*" | less -RS
+  pacman -Ql | grep -Ei --color=always "$@" | less -RS
 fi
