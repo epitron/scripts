@@ -55,7 +55,7 @@
 
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
-BROWSERS       = %w[opera vivaldi-bin chromium chrome xombrero midori firefox jumanji]
+BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 routes do
@@ -235,12 +235,12 @@ BEGIN {
               when Array
                 if key == :host
                   # match the end of the domain
-                  val.any? { |v| uri.host[/(^|\.)#{v}$/] }
+                  val.any? { |v| uri.host&.[](/(^|\.)#{v}$/) }
                 else
                   val.any? { |v| uri.send(key)[v] }
                 end
               when String, Regexp
-                uri.send(key)[val]
+                uri.send(key)&.[](val)
               else
                 raise "Unknown match value: #{val.inspect}"
               end
@@ -444,7 +444,7 @@ if $0 == __FILE__
   load_rc_file
 
   if url = ARGV.first
-    url = "http://#{url}" unless url[%r{^(https?|file)://}i] # slap an http:// on the argument if necessary
+    # url = "http://#{url}" unless url[%r{^(https?|file|magnet)://}i] # slap an http:// on the argument if necessary
     route url
   else
     puts "usage: web <url>"
