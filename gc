@@ -46,7 +46,7 @@ end
 
 cmd = ["git", "clone"]
 cmd << "--depth=1" if opts.shallow?
-cmd << "--recursive" if opts[:r]
+cmd << "--recursive" unless opts[:r]
 cmd += ["-b", opts[:branch]] if opts[:branch]
 cmd << repo
 cmd << dest if dest
