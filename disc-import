@@ -77,7 +77,7 @@ discs.each do |m|
     puts
 
     if prompt("Eject?") == "y"
-      system("eject", m.path)
+      fork { system("eject", m.path) }
     end
   end
 end

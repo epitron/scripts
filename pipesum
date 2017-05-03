@@ -54,9 +54,9 @@ def usage
   HASHERS.each do |opt, klass|
     puts "  #{opt.ljust(10)} => #{klass}"
   end
-  puts "  --all      => All of the above!"
+  puts "  -a / --all      => All of the above!"
   puts
-  puts "  --parallel => Compute each hash in its own process (uses multiple CPUs)"
+  puts "  -p / --parallel => Compute each hash in its own process (uses multiple CPUs)"
   puts
   puts "(Note: Defaults to #{DEFAULTS.join(", ")} if no hashers specified)"
   puts
@@ -76,7 +76,7 @@ end
 
 opts += DEFAULTS if opts.empty?
 
-if opts.delete("--all")
+if opts.delete("--all") or opts.delete("-a")
   opts += HASHERS.keys
 end
 
@@ -130,6 +130,6 @@ if args.any?
     puts
   end
 else
-  parallel = opts.delete("--parallel")
+  parallel = (opts.delete("--parallel") or opts.delete("-p"))
   sum(create_digests(opts), $stdin, $stdout, $stderr, parallel)
 end

@@ -6,5 +6,5 @@ if [ "$1" == "" ]; then
 elif [ "$1" == "-a" ]; then
   c *.txt
 else
-  ag --color -i "$@" | less -RSF
+  ag --color -i "$@" | less -RSFX
 fi

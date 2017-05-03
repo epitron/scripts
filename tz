@@ -304,9 +304,13 @@ def open_url(url, verbose=false)
 
   puts url if verbose
   puts
-  # Fork into the background before running the client
-  fork { exec(*cmd, url) }
-  # system(*cmd, url)
+
+  # # Fork into the background before running the client
+  # fork { exec(*cmd, url) }
+  
+  # Daemonize to kill the console spam
+  Process.daemon(true)
+  system(*cmd, url)
 end
 
 ###########################################################
@@ -318,7 +322,7 @@ if __FILE__ == $0
 
   # when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
   # Detect
-  md5s = args.map { |arg| arg.strip =~ %r{^https?://[^/]+/([a-f0-9]{40})}i ? $1 : nil }.compact + [opts[:add]]
+  md5s = args.map { |arg| arg.strip =~ %r{^https?://.+/([a-f0-9]{40})}i ? $1 : nil }.compact + [opts[:add]]
 
   md5s.compact!
 

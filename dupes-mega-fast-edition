@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+PWD = Path.pwd
+
+def formatted(f, s, color=7)
+  puts "<7>#{s.commatize} <8>| <#{color}>#{Shellwords.escape f.relative_to(PWD)}".colorize
+end
+
+files = Path["**/*"].
+  select(&:file?).
+  map { |f| [f.size, f] }.
+  sort
+
+
+files.each_cons(2) do |(s1,f1), (s2,f2)|
+  # if (s2 - s1) < 1024 # fuzzy match
+  if s1 == s2
+    # red == same md5, blue == similar sizes
+    color = (f1.md5 == f2.md5) ? 12 : 9
+    [[f1,s1],[f2,s2]].each { |f,s| formatted(f, s, color) }
+    puts
+  end
+end
+
+

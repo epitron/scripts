@@ -1,0 +1,961 @@
+#!/usr/bin/perl -w
+#
+#    Copyright 2008, Alexey Biznya (c) All rights reserved.
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of either:
+#
+#    a) the GNU General Public License as published by the Free Software
+#    Foundation; either version 1, or (at your option) any later
+#       version, or
+#
+#    b) the "Artistic License" which comes with Perl.
+#
+#    On Debian GNU/Linux systems, the complete text of the GNU General
+#    Public License can be found in `/usr/share/common-licenses/GPL' and
+#    the Artistic Licence in `/usr/share/common-licenses/Artistic'.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+#########################################################################
+#
+# LftpFS is FUSE filesystem for smart mirror of sites. It's based on LFTP
+# client, which provides the best features as file transfer program and
+# supports FTP, HTTP, FISH, SFTP, HTTPS and FTPS protocols. LftpFS is
+# fork from unmaintained FuseFTP.
+#
+# Usage: lftpfs [--help] [mountpoint cachepoint lftpscript [remotedir]]
+#
+#
+#########################################################################
+use 5.008;
+use strict;
+use warnings;
+
+use threads;
+use threads::shared;
+
+#core
+use POSIX qw(:errno_h :fcntl_h SIGALRM sigaction );
+use File::Spec::Functions;
+use locale;
+use constant DEBUG => 0;
+
+#preregs
+use Fuse;
+use File::Path;
+use Time::HiRes qw ( sleep setitimer getitimer ITIMER_REAL time);
+use IPC::Run qw(start timeout pump finish pumpable);
+use Time::Local;
+use Thread::Semaphore;
+
+our $VERSION;
+
+$VERSION = '0.4.3';
+
+#$|=1;
+#initial stuff
+my $lftp = "/usr/bin/lftp";
+
+#get command line arguments
+my @opts  = grep /^-/,    @ARGV;
+my @other = grep /^[^-]/, @ARGV;
+map { $_ =~ s|/$|| } @other;
+my $mountpoint = shift @other;
+my $cache      = shift @other;    #cachepoint
+my $lscript    = shift @other;    #lftp script for connection to site
+my $basedir    = shift @other;    #remotedir
+
+my @arg_opts = map { split( /=/, $_ ) } grep( /=/, @opts );
+my %arg_opts = (
+    "--timeout"          => "600",
+    "--use-mdtm"         => "no",
+    "--use-cache"        => "yes",
+    "--fs-cache-timeout" => "1800",
+    "--threaded"         => "yes",
+    @arg_opts,
+);
+map { $arg_opts{$_}++ } grep /^[^=]+$/, @opts;
+
+my $tout = $arg_opts{"--timeout"};
+my $incf =
+  exists $arg_opts{"--include"}
+  ? "| egrep '" . $arg_opts{"--include"} . "'"
+  : '';
+my $excf =
+  exists $arg_opts{"--exclude"}
+  ? "| egrep -v '" . $arg_opts{"--exclude"} . "'"
+  : '';
+my $limit;
+share($limit);
+$limit = $arg_opts{"--download-limit"} || 0;
+my $threaded = 0;
+
+if ( $arg_opts{"-h"} || $arg_opts{"--help"} ) {
+    print join "", <DATA>;
+    exit(0);
+}
+
+if ( $arg_opts{"-v"} || $arg_opts{"--version"} ) {
+    print "LftpFS " . $VERSION . "\n";
+    exit(0);
+}
+
+if ( $arg_opts{"--threaded"} eq "yes" || $arg_opts{"--threaded"} eq "1" ) {
+    $threaded = 1;
+    print "LftpFS run in threaded mode!\n" if DEBUG;
+}
+
+unless ( defined $mountpoint && defined $cache && defined $lscript ) {
+    print(
+        "$0 [--help] [[options] mountpoint cachepoint lftpscript [remotedir]]\n"
+    );
+    exit 1;
+}
+
+print "\nLftpFS $VERSION - 2011 (c) by Alexey Biznya\n";
+
+$basedir = '/' unless defined $basedir;
+
+#make the connection
+my ( $lw, $lr, $le );
+share($lw);
+share($lr);
+share($le);
+my $t = timeout 3200;
+my $h = start( [$lftp], \$lw, \$lr, \$le );
+
+if ($le) { die "Can't open $lftp: $le\n"; }
+$lscript =~ s/'/\\'/g;
+$lw =
+    "source '$lscript'; set cmd:time-style +%Y%m%d%H%M%S; set ftp:use-mdtm "
+  . $arg_opts{"--use-mdtm"}
+  . "; set ftp:timezone ''; dir; echo cmd_ok\n";
+
+until ( $lr =~ /cmd_ok$/ ) {
+    { pump_nb $h; }
+    sleep(0.1);
+}
+
+die "Can't exec $lscript: $le\n" if length($le);
+$lr = '';
+
+print "\nMounting Ok\n";
+
+my %attr_cache;
+share(%attr_cache);
+my %type_cache;
+share(%type_cache);
+%type_cache = ( $basedir => 'd' );
+my %file_obj;    #  share(%file_obj);
+my %file_no;
+share(%file_no);
+my %link_cache;
+share(%link_cache);
+my %dir_cache;
+share(%dir_cache);
+my %ls_cache;
+share(%ls_cache);
+my %file_from_net;
+share(%file_from_net);
+my %file_open_cnt;
+share(%file_open_cnt);
+
+my $s_getattr  = new Thread::Semaphore;
+my $s_open     = new Thread::Semaphore;
+my $s_read     = new Thread::Semaphore;
+my $s_release  = new Thread::Semaphore;
+my $s_readlink = new Thread::Semaphore;
+my $s_dir      = new Thread::Semaphore;
+my $s_ls       = new Thread::Semaphore;
+
+#my $s_getdir = new Thread::Semaphore;
+
+sub lftp_getdir {
+
+    #    print "TIME: ".getitimer(ITIMER_REAL)."\n" if DEBUG;
+    my $dir = shift;
+    if ( length($basedir) > 1 ) { $dir =~ s/^$basedir//; }
+    $dir = catdir( $basedir, $dir );
+    print "called getdir for '$dir'\n" if DEBUG;
+    my @files = lftp_ls($dir);
+
+    map { $_ =~ s|@.*$|| } @files;
+    map { $_ =~ s|/$|| } @files;
+    return ( @files, 0 );
+}
+
+sub lftp_ls {
+
+    my $dir = shift;
+    $dir =~ s/'/\\'/g;
+
+    print "called CLS for '$dir'\n" if DEBUG;
+
+    if ( defined $ls_cache{$dir} ) {
+
+        #     print "returning list for '$dir' \n" if DEBUG;
+        my @files = split "\n", $ls_cache{$dir};
+        pop @files;
+        return (@files);
+    }
+    else {
+        $s_ls->down();
+        lock($lw);
+        lock($lr);
+        lock($le);
+        $lw = "cd '$dir'; echo dir-empty\n";
+        $lr = '';
+        until ( $lr =~ /dir-empty$/ ) {
+            if ( pumpable($h) ) { pump_nb $h; }
+            sleep(0.1);
+        }
+        $lr = '';
+        if ($le) { print "error:\n$le" if DEBUG; $le = ''; }
+
+        $lw = "(cls -1q $excf $incf ; echo dir-empty)&\n";
+        $lr = '';
+        $t->start($tout);
+        until ( $lr =~ /dir-empty$/ ) {
+            if ( pumpable($h) ) { pump_nb $h; }
+            sleep(0.1);
+        }
+        if ($le) {
+            print "error:\n$le" if DEBUG;
+            if ( $le =~ m/550\s+/ ) { $le = ''; $s_ls->up(); return -ENOENT(); }
+        }
+
+        my @files = split "\n", $lr;
+        lock(%ls_cache);
+        $ls_cache{$dir} = $lr;
+        $lr = '';
+        pop @files;
+
+        #    print "\nLS: ".join("\n",@files)."\n" if DEBUG;
+        $s_ls->up();
+        return (@files);
+    }    #else
+}
+
+sub lftp_dir {
+
+    my $dir = shift;
+    print "called DIR for '$dir'\n" if DEBUG;
+    $dir =~ s/'/\\'/g;
+
+    if ( defined $dir_cache{$dir} ) {
+
+        #     print "returning list for '$dir' \n" if DEBUG;
+        my @entries = split "\n", $dir_cache{$dir};
+        pop @entries;
+        return (@entries);
+    }
+    else {
+        $s_dir->down();
+        lock($lw);
+        lock($lr);
+        lock($le);
+
+        $lw = "cd '$dir'; echo dir-empty\n";
+        $lr = '';
+        until ( $lr =~ /dir-empty$/ ) {
+            if ( pumpable($h) ) { pump_nb $h; }
+            sleep(0.1);
+        }
+        if ($le) { print "error:\n$le" if DEBUG; $le = ''; }
+        $lr = '';
+        $lw = "(cls -lq $excf $incf ; echo dir-empty)&\n";
+
+        $t->start($tout);
+        until ( $lr =~ /dir-empty$/ ) {
+            if ( pumpable($h) ) { pump_nb $h; }
+            sleep(0.1);
+        }
+
+        if ($le) {
+            print "error:\n$le" if DEBUG;
+            if ( $le =~ m/550\s+/ ) {
+                $le = '';
+                $s_dir->up();
+                return -ENOENT();
+            }
+        }
+        lock(%dir_cache);
+        $dir_cache{$dir} = $lr;
+        my @entries = split "\n", $lr;
+        $lr = '';
+        pop @entries;
+        $s_dir->up();
+        return (@entries);
+    }    #else
+
+    # print "\nDIR: ".join("\n",@entries)."\n" if DEBUG;
+}
+
+sub lftp_size {
+
+    my $file = shift;
+    $file =~ s/'/\\'/g;
+    lock($lw);
+    lock($lr);
+    lock($le);
+    $lw = "quote size '$file'; echo cmd_ok\n";
+    $lr = '';
+    until ( $lr =~ /cmd_ok$/ ) {
+        if ( pumpable($h) ) { pump_nb $h; }
+        sleep(0.1);
+    }
+
+    if ($le) { print "error:\n$le" if DEBUG; $le = ''; }
+
+    my $msg = $lr;
+    $lr = '';
+    return $msg ? ( $msg =~ /\d+\s+(\d+)/ )[0] : undef;
+}
+
+sub lftp_mdtm {
+
+    my $file = shift;
+    $file =~ s/'/\\'/g;
+    lock($lw);
+    lock($lr);
+    lock($le);
+    $lw = "quote mdtm '$file'; echo cmd_ok\n";
+    $lr = '';
+    until ( $lr =~ /cmd_ok$/ ) {
+        if ( pumpable($h) ) { pump_nb $h; }
+        sleep(0.1);
+    }
+    if ($le) { print "error:\n$le" if DEBUG; $le = ''; }
+    my $msg = $lr;
+    $lr = '';
+
+    return $msg && $msg =~ /(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/
+      ? timegm( $6, $5, $4, $3, $2 - 1, $1 )
+      : undef;
+}
+
+sub lftp_getattr {
+
+    my $filename = shift;
+
+    my $base = $basedir;
+    my (
+        $dev,  $ino,   $mode,  $nlink, $uid,     $gid, $rdev,
+        $size, $atime, $mtime, $ctime, $blksize, $blocks
+    );
+
+    if ( length($basedir) > 1 ) { $filename =~ s/^$basedir//; }
+
+    if ( $filename =~ m|(.+)/[^/]+| ) {
+        $base = catdir( $basedir, $1 );
+    }
+
+    $filename = catdir( $basedir, $filename );
+    print "called getattr for '$filename' \n" if DEBUG;
+
+    if ( defined $attr_cache{$filename} ) {
+
+        #     print "returning attr for $filename (cached 1)\n" if DEBUG;
+        return @{ $attr_cache{$filename} };
+    }
+    else {
+
+        $s_getattr->down();
+        my @entries = lftp_dir($base);
+        map { $_ =~ s|/$|| } @entries;
+        my @files = map ( /.*\d{14}\s+(.*)$/, @entries );
+        map { $_ =~ s|@.*$|| } @files;
+
+        #print "\nDIR: ".join(" ",@files)."\n" if DEBUG;
+        foreach my $file (@files) {
+            next if $file eq ".";
+
+            my $fileregexp = $file;
+
+          # escape special chars that would otherwise be evaluated in the regexp
+            $fileregexp =~ s/(\[|\]|[+*.\$^(){}?])/\\$1/gsi;
+            my $i = 0;
+            my $entry;
+            foreach my $ent (@entries) {
+
+                if ( $ent =~ /\s+$fileregexp(@\s+->.+)?$/ ) {
+                    $entry = $ent;
+                    splice @entries, $i, 1;
+                    last;
+                }
+                $i++;
+            }
+
+            lock(%type_cache);
+
+            if ($entry) {
+                $type_cache{ catdir( $base, $file ) } = substr $entry, 0, 1;
+
+#       print("type for $file is " . $type_cache{catdir($base,$file)} . "\n")  if DEBUG;
+# make attr cache start
+                my $type     = 0100;
+                my $modebits = 0444;
+                if ( $type_cache{ catdir( $base, $file ) } eq 'd' ) {
+                    $type     = 0040;
+                    $modebits = 0755;
+                }
+                if ( $type_cache{ catdir( $base, $file ) } eq 'l' ) {
+                    $type = 0120;
+                    my ( $link, $target ) = split /@\s+->\s+/, $entry;
+                    $target =~ s|@.*$||;
+                    lock(%link_cache);
+                    $link_cache{ catdir( $base, $file ) } = $target;
+
+                }
+
+                $mode = ( $type << 9 ) + $modebits;
+
+                $nlink = 1;
+                $uid   = $<;
+                ($gid) = split / /, $(;
+                $rdev = 0;
+
+                $atime =
+                  $entry && $entry =~ /(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/
+                  ? timelocal( $6, $5, $4, $3, $2 - 1, $1 )
+                  : undef;
+
+                $atime = time unless defined $atime;
+
+                $size = ( split( /\s+/, $entry ) )[4] || undef;
+                $size = 0 unless defined $size;
+
+                $mtime   = $atime;
+                $ctime   = $atime;
+                $blksize = 1024;
+                $blocks  = 1;
+
+                $dev = 0;
+                $ino = 0;
+
+#       print "caching attr for ".catdir($base,$file)." ($atime , $size)\n" if DEBUG;
+                my @attrs;
+                share(@attrs);
+                @attrs = (
+                    $dev,   $ino,     $mode, $nlink, $uid,
+                    $gid,   $rdev,    $size, $atime, $mtime,
+                    $ctime, $blksize, $blocks
+                );
+
+                #       print "\n".join(" ",@attrs)."\n"  if DEBUG;
+                lock(%attr_cache);
+                $attr_cache{ catdir( $base, $file ) } = \@attrs;
+
+#       $attr_cache{catdir($base,$file)} =  [$dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks];
+#       print "\n".join(" ",@{$attr_cache{catdir($base,$file)}})."\n"  if DEBUG;
+
+                # make attr cache end
+            }
+            $s_getattr->up();
+        }
+
+        if ( ( !exists $type_cache{$filename} ) && $filename ne $base ) {
+            $attr_cache{$filename} = undef;
+            print "returning ENOENT for $filename\n" if DEBUG;
+            return -ENOENT();
+        }
+
+        unless ( exists $attr_cache{$filename} ) {
+
+            $s_getattr->down();
+            lock(%type_cache);
+            my $type     = 0100;
+            my $modebits = 0444;
+            if ( $type_cache{$filename} eq 'd' ) {
+                $type     = 0040;
+                $modebits = 0755;
+            }
+            if ( $type_cache{$filename} eq 'l' ) {
+                $type = 0120;
+            }
+
+            $mode = ( $type << 9 ) + $modebits;
+
+            $nlink = 1;
+            $uid   = $<;
+
+            ($gid) = split / /, $(;
+
+            $rdev = 0;
+
+            if ( $filename ne $base ) {
+                $atime = lftp_mdtm($filename);
+                $atime = time unless defined $atime;
+
+                $size = lftp_size($filename);
+                $size = 0 unless defined $size;
+            }
+            else { $atime = time; $size = 0; }
+
+            $mtime   = $atime;
+            $ctime   = $atime;
+            $blksize = 1024;
+            $blocks  = 1;
+
+            $dev = 0;
+            $ino = 0;
+
+            print "***returning attr for $filename ($atime , $size)\n" if DEBUG;
+            my @attrs;
+            share(@attrs);
+            @attrs = (
+                $dev,   $ino,     $mode, $nlink, $uid,
+                $gid,   $rdev,    $size, $atime, $mtime,
+                $ctime, $blksize, $blocks
+            );
+
+            #     print "\n".join(" ",@attrs)."\n"  if DEBUG;
+            lock(%attr_cache);
+            $attr_cache{$filename} = \@attrs;
+
+            $s_getattr->up();
+        }
+
+    }
+
+    if ( defined $attr_cache{$filename} ) {
+        return @{ $attr_cache{$filename} };
+    }
+    else {
+        return -ENOENT();
+    }
+
+}
+
+sub lftp_readlink {
+    my $file = shift;
+    my $dir;
+
+    $file = catdir( $basedir, $file );
+
+    $file =~ s|@.*$||;
+
+    if ( !exists $link_cache{$file} ) {
+        print "readlink: $file\n" if DEBUG;
+
+        if ( $file =~ m|(^/.+)/.+| ) {
+            $dir = $1;
+        }
+        $dir = '/' unless $dir;
+        $s_readlink->down();
+        lock(%link_cache);
+        my @lines = lftp_dir($dir);
+
+        my $cfile = $file;
+        $cfile =~ s|.*/||;
+
+        foreach my $line (@lines) {
+
+            #     print $line . "\n" if DEBUG;
+            if ( $line =~ $cfile ) {
+                my ( $link, $target ) = split /\s*->\s*/, $line;
+                $target =~ s|^$basedir||;
+                $target =~ s|@.*$||;
+                $link_cache{$file} = $target;
+
+                #   return $target;
+            }
+        }
+        $s_readlink->up();
+        if ( defined $link_cache{$file} ) { return $link_cache{$file}; }
+        return -EIO();
+    }
+    else {
+        return $link_cache{$file};
+    }
+}
+
+sub lftp_open {
+    my $file  = shift;
+    my $flags = shift;
+    print "called open: $file ($flags)\n" if DEBUG;
+    my $fh;
+    my $lf = $cache . $file;
+    $file = catdir( $basedir, $file );
+
+    if ( defined $file_no{$file} ) {
+
+        # if($lsize == $size)
+        #     {
+        $file_open_cnt{$file}++;
+        print("Already open Ok ($file_open_cnt{$file})\n") if DEBUG;
+        return 0;
+
+        #     }
+        # else
+        #     {
+        #         print("Open failed: download in progress.\n") if DEBUG;
+        #   return -ENOENT();
+        #     }
+    }
+    else { $file_open_cnt{$file} = 0; }
+
+    $s_open->down();
+
+    my $size = 0
+      ; #(lftp_getattr($file))[7] || 0; #print "Can`t get size of $file" if DEBUG;
+    my $mdtm = 0
+      ; #(lftp_getattr($file))[9] || 0; #print "Can`t get mtime of $file" if DEBUG;
+    my $lsize = ( -s $lf ) || 0;
+
+    if ( defined $attr_cache{$file} ) {
+        my @attr = @{ $attr_cache{$file} };
+        $size = $attr[7];
+        $mdtm = $attr[9];
+
+    }
+    else {
+        $size = ( lftp_getattr($file) )[7];
+        $mdtm = ( lftp_getattr($file) )[9];
+    }
+
+#if(-e $lf) {
+#    print "\nMDTM: ".scalar localtime ($mdtm)." == ".scalar localtime ((stat $lf)[9])."\n";
+#    print "\nquite MDTM: ".scalar gmtime (lftp_mdtm($file))."\n";
+#    print "\nSIZE: $size == ".(stat $lf)[7]."\n";
+#}
+
+    unless ( exists $arg_opts{"--ignore-mtime"} ) {
+        if ( -e $lf && ( stat $lf )[9] != $mdtm ) {
+            print( "\ndelete old file:" . $lf . "\n" ) if DEBUG;
+            unless ( unlink($lf) ) {
+                warn "\nCan't unlink " . $lf . ": " . $! if DEBUG;
+            }
+        }
+    }
+
+    if ( $limit - $size < 0 && exists $arg_opts{"--download-limit"} ) {
+        print("\nopening failed due to limit exceeded ! \n") if DEBUG;
+        return -ENOENT();
+    }
+
+    if ( !-e $lf || ( -e $lf && $size != ( stat $lf )[7] ) ) {
+        print( "lftp reget " . $file . "\n" ) if DEBUG;
+        my $lpath = $lf;
+        $lpath =~ s|(.*)\/.*$|$1|;
+        if ( !-e $lpath ) { mkpath($lpath) || warn "can't create $lpath: $!"; }
+        my $efile = $file;
+        $efile =~ s/'/\\'/g;
+        my $elf = $lf;
+        $elf =~ s/'/\\'/g;
+        lock($lw);
+        lock($lr);
+        lock($le);
+        $lw = "get1 -c '$efile' -o '$elf' &; echo cmd_ok\n";
+        $lr = '';
+
+        until ( $lr =~ /cmd_ok$/ ) {
+            if ( pumpable($h) ) { pump_nb $h; }
+            sleep(0.1);
+        }
+        if ($le) {
+            print "error:\n$le" if DEBUG;
+            if ( $le =~ m/550\s+/ ) { $le = ''; return -ENOENT(); }
+        }
+        my $msg = $lr;
+        $lr = '';
+        $le = '';
+
+        print("opening $file for read from $lf\n") if DEBUG;
+        my $count = 0;
+        while ( !-e $lf ) {
+            if ( $count++ > 100 ) {
+                print("opening failed due to lftp can`t get file: $file\n")
+                  if DEBUG;
+                return -ENOENT();
+            }
+            print "File not exists!\n" if DEBUG;
+            sleep(0.2);
+        }
+
+        $file_from_net{$file} = "1";    #for utime mdtm
+        $limit -= $size;
+    }
+
+    unless ( open( $fh, "<$lf" ) ) {
+        warn "$lf : $!"
+          if DEBUG;
+        return -ENOENT();
+    }
+    binmode $fh;
+    lock(%file_no);
+    $file_no{$file}  = fileno($fh);
+    $file_obj{$file} = $fh;
+
+    $s_open->up();
+
+    if ( $file_obj{$file} ) {
+        lock(%file_open_cnt);
+        $file_open_cnt{$file}++;
+        print("opening Ok ($file_open_cnt{$file})\n") if DEBUG;
+        return 0;
+    }
+    else {
+        print("opening failed\n") if DEBUG;
+        return -ENOENT();
+    }
+
+    return -ENOENT();
+}
+
+sub lftp_read {
+
+    my ( $filename, $bufsize, $off ) = @_;
+    my ($rv) = -ENOSYS();
+    my $lf = $cache . $filename;
+    my $file = catdir( $basedir, $filename );
+
+    my $size  = 0;            #(lftp_getattr($file))[7] || 0;
+    my $lsize = ( -s $lf );
+
+    unless ( defined $lsize ) { return $rv; }
+
+    $s_read->down();
+
+    if ( defined $attr_cache{$file} ) {
+        my @attr = @{ $attr_cache{$file} };
+        $size = $attr[7];
+
+    }
+    else {
+        $size = ( lftp_getattr($file) )[7];
+    }
+
+    my $fh;
+
+    if ( defined $file_obj{$file} ) { $fh = $file_obj{$file}; }
+    else {
+        if ( defined $file_no{$file} ) {
+            open( $fh, "<&=" . $file_no{$file} ) or warn "$!\n";
+        }
+    }
+
+    if ($fh) {
+        if ( seek( $fh, $off, SEEK_SET ) ) {
+            my $rb = read( $fh, $rv, $bufsize );
+
+            #   warn "read bytes: ".$rb." - $bufsize\n";
+            if (   ( $off + $bufsize > $lsize && $size > $bufsize + $off )
+                || ( $bufsize + $off > $size && $off + $rb < $size ) )
+            {
+                $s_read->up();
+                sleep(0.1);
+                return -EINTR();
+            }
+
+        }
+    }
+    $s_read->up();
+    return $rv;
+}
+
+sub lftp_release {
+    my $file = shift;
+    my $lf   = $cache . $file;
+    my $fh;
+    $file = catdir( $basedir, $file );
+
+    print("release $file\n") if DEBUG;
+
+    if ( $file_open_cnt{$file} > 1 ) {
+        lock(%file_open_cnt);
+        $file_open_cnt{$file}--;
+        print(
+"release failed due to file open other thread! ($file_open_cnt{$file})\n"
+        ) if DEBUG;
+        return 0;
+    }
+
+    my $mdtm  = 0;            # (lftp_getattr($file))[9] || 0;
+    my $size  = 0;            #(lftp_getattr($file))[7] || 0;
+    my $lsize = ( -s $lf );
+    unless ( defined $lsize ) { return -EIO(); }
+
+    $s_release->down();
+
+    if ( defined $attr_cache{$file} ) {
+        my @attr = @{ $attr_cache{$file} };
+        $size = $attr[7];
+        $mdtm = $attr[9];
+
+    }
+    else {
+        $size = ( lftp_getattr($file) )[7];
+    }
+
+    if ( $file_obj{$file} ) { $fh = $file_obj{$file}; }
+    else {
+        if ( $file_no{$file} ) {
+            open( $fh, "<&=" . $file_no{$file} ) or warn "$!\n";
+        }
+    }
+
+    if ($fh) {
+
+        # delete $attr_cache{"$file"};
+        # $type_cache{$file} = 'f';
+        my ($dir) = $file =~ m|(.+)/.+|;
+
+        delete $file_no{$file};
+        close $fh;
+        delete $file_obj{$file};
+
+        if ( $file_from_net{$file} ) {
+            my $count = 0;
+            while ( ( -s $lf ) != $size ) {
+                if ( $count++ > 1000 ) {
+                    print(
+"release failed due to lftp in progress for file: $file\n"
+                    ) if DEBUG;
+                    return -EIO();
+                }
+                print "Download in progress!\n" if DEBUG;
+                sleep(1);
+            }
+
+            unless ( utime( time, $mdtm, $lf ) ) {
+                print( "\nutime failed for " . $lf . ": " . $! ) if DEBUG;
+            }
+            lock(%file_from_net);
+            delete $file_from_net{$file};
+            print "Download ok!\n" if DEBUG;
+        }
+
+#if(-e $lf) {
+#    print "\nMDTM release: ".scalar localtime ($mdtm)." == ".scalar localtime ((stat $lf)[9])."\n";
+#    print "\nSIZE: $size == ".(stat $lf)[7]."\n";
+#}
+
+        if ( -e $lf && $arg_opts{"--use-cache"} eq 'no' ) {
+            print "\n unlink temp file: " . $lf if DEBUG;
+            unlink $lf or warn "\nCan't unlink $lf: $!";
+        }
+        lock(%file_open_cnt);
+        $file_open_cnt{$file} = 0;
+        print("release Ok\n") if DEBUG;
+        $s_release->up();
+        return 0;
+
+    }
+    else {
+        print "Trying to close not open file $file\n" if DEBUG;
+        $s_release->up();
+        return -EIO();
+    }
+}
+
+sub my_statfs { return 255, 0, 0, 0, 0, 0 }
+
+#run fuse
+my @extraargs;
+push @extraargs, ( "debug", 1 ) if ( exists $arg_opts{"--debug"} );
+push @extraargs, ( "mountopts", "ro," . $arg_opts{"--options"} )
+  if ( $arg_opts{"--options"} );
+
+unless ( DEBUG || $arg_opts{'--foreground'} || $arg_opts{"--debug"} ) {
+
+    # fork and exit parent process to put it into background
+    print "Backgrounding...\n";
+    fork() and exit(0);
+}
+
+POSIX::sigaction( SIGALRM,
+    POSIX::SigAction->new(
+        sub {
+            #       open(LOG,">>/tmp/lftpfs.log") or print $!;
+            print "Reset lftpfs cache! [" . scalar localtime(time) . "]\n"
+              if DEBUG;
+
+            #                    close(LOG);
+            %attr_cache = ();
+            %type_cache = ( $basedir => 'd' );
+            %link_cache = ();
+            %dir_cache  = ();
+            %ls_cache   = ();
+        }
+    )
+) or warn "Error setting SIGALRM handler: $!\n";
+
+setitimer( ITIMER_REAL, 0.1, $arg_opts{"--fs-cache-timeout"} );
+
+Fuse::main(
+    mountpoint => $mountpoint,
+
+    getdir   => "main::lftp_getdir",
+    getattr  => "main::lftp_getattr",
+    open     => "main::lftp_open",
+    read     => "main::lftp_read",
+    readlink => "main::lftp_readlink",
+    release  => "main::lftp_release",
+
+    #    statfs => "main::my_statfs",
+    debug    => 0,
+    threaded => $threaded,
+    @extraargs,
+);
+
+__DATA__
+
+Usage: lftpfs [options] mountpoint cachepoint lftpscript [remotedir]
+
+where options is one of:
+
+  --debug             Enable FUSE debugging messages
+                      (implies --foreground)
+
+  --foreground        Don't put process into background
+
+  --options=opt[,opt] Pass options to FUSE
+                      allow_other: allow access by other users
+
+  --use-mdtm=yes|no   Then no (default), lftp uses LIST command to determine 
+          file modification time. It`s faster. Then yes, lftp uses 
+          MDTM command for each file - right, but very slow.
+
+  --use-cache=yes|no  Then yes (default), will be used persistent cache at 
+          defined cachepoint. Else after reading files 
+          it`s will be removed.
+  --fs-cache-timeout= Timeout of caching structure of filesystem in seconds. 
+          By default 1800s (60m). As lftp parameter cache:expire
+          
+  --include=PATTERN   Include matching files/dirs, where PATTERN is an extended 
+          regular expression, just like in egrep(1).
+
+  --exclude=PATTERN   Exclude matching files/dirs, where PATTERN is an extended 
+          regular expression, just like in egrep(1).
+
+  --download-limit=   Limit to download files in bytes. By default 0, unlimit.
+          After exceeding limit LftpFS block reading of files.
+
+  --ignore-mtime      Ignore modification time of local files in cache at 
+          download. By default download files newer then in cache 
+          and replace its.
+
+  --threaded=yes|no   Then yes (default), LftpFS works in multithreaded mode.
+                    
+
+Examples:
+ 
+   Mounts the directory /pub/fedora/linux/updates of download.fedora.redhat.com
+   to ~/updates:
+
+    $ cat > ~/.lftp/download.fedora.redhat.com
+    set ftp:proxy ftp://user:pass@proxy-host:2121
+    set cache:expire 60m
+    open ftp://download.fedora.redhat.com
+    ^C
+    
+    $ lftpfs --fs-cache-timeout=3600 ~/updates ~/.updates-cache ~/.lftp/download.fedora.redhat.com /pub/fedora/linux/updates
+    
+    
+
+   
+
