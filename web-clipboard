@@ -1,2 +1,10 @@
 #!/usr/bin/env ruby
-exec("#{__dir__}/web", `xclip -o`)
+clips = %w[primary clipboard].map { |type| `xclip -o -selection #{type}` }
+
+if clip = clips.find { |c| c[%r{^(https?|magnet):}] }
+  exec("#{__dir__}/web", clip)
+else
+  error_message = "Error: Couldn't find an URL in the clipboard"
+  $stderr.puts error_message
+  exec("notify-send", error_message)
+end
