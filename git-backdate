@@ -5,7 +5,7 @@ if [ "$1" == "--help" ]; then
   echo "    $ cd some-git-repo"
   echo "    $ git-backdate"
   echo
-  echo "purpose:" 
+  echo "purpose:"
   echo "    git-backdate sets the mtime of each file based on its most recent commit date"
   echo
   exit
@@ -15,6 +15,11 @@ if [ ! "$1" == "" ]; then
   pushd "$1"
 fi
 
-for i in **/*; do l -d "$i"; touch -d "`git log "$i" | head -n3 | tail -n1 | fields 3-6`" "$i"; l -d "$i"; echo; done
+for i in **/*; do
+  ls -ld "$i"
+  touch -d "`git log "$i" | head -n3 | tail -n1 | fields 3-6`" "$i"
+  ls -ld "$i"
+  echo
+done
 
 popd
