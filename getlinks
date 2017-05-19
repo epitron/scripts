@@ -55,7 +55,7 @@ module URI
   # Strip out params with blank values.
   #
   alias_method :old_params, :params
-  
+
   def params
     old_params.delete_if { |k,v| v.blank? }
   end
@@ -91,9 +91,20 @@ end
 #########################################################################
 
 def get_links(url, types=TYPES, regexp=nil)
-  page             = Nokogiri::HTML(HTTP.get(url).body.to_s)
-  root_is_relative = relative_url?(url)
-  types            = types.uniq
+  if url =~ %r{^http?s://.+}
+    data             = HTTP.get(url).body.to_s
+    root_is_relative = relative_url?(url)
+  elsif File.exists? url
+    data = File.read url
+    root_is_relative = false
+  else
+    $stderr.puts "Error: #{url} isn't an URL or a(n existing) file"
+    exit 1
+  end
+
+  page = Nokogiri::HTML(data)
+
+  types = types.uniq
 
   result =
     types.map do |type|
@@ -109,7 +120,7 @@ def get_links(url, types=TYPES, regexp=nil)
       links.select! { |link| link =~ regexp } if regexp
 
       [type, links]
-    end.to_h  
+    end.to_h
 
   # pp result
 
