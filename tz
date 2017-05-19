@@ -176,7 +176,14 @@ def search(query, page_size=nil, page=nil, order=nil)
 
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
+  puts url if $verbose
   page = Nokogiri::HTML(read_url(url))
+  puts page if $verbose
+
+  if page.at("title").text =~ /attention.+cloudflare/i
+    puts "Cloudflare block."
+    exit 1
+  end
 
   dls = page.search(".results dl")
   dls = dls.take(page_size) if page_size
@@ -292,7 +299,7 @@ end
 
 ###########################################################
 
-def open_url(url, verbose=false)
+def open_url(url)
   puts "open url"
   # Make sure the torrent client exists
   cmd = Settings.client.split
@@ -302,7 +309,7 @@ def open_url(url, verbose=false)
     exit 1
   end
 
-  puts url if verbose
+  puts url if $verbose
   puts
 
   # # Fork into the background before running the client
@@ -317,6 +324,7 @@ end
 
 if __FILE__ == $0
   opts, args = parse_options
+  $verbose = opts.verbose?
 
   query = args.join(" ")
 
@@ -351,7 +359,7 @@ if __FILE__ == $0
 
     chosen = choose_torrents(results)
     chosen.each do |t|
-      open_url(t.magnet_url, opts.verbose?)
+      open_url(t.magnet_url)
     end
   end
 end

@@ -5,7 +5,7 @@ require 'epitools/clitools'
 queries = ARGV.map { |arg| /#{arg}/i }
 
 wins = WM.windows.select do |win|
-  queries.all? { |q| win.name =~ q || win.process.command =~ q }
+  queries.all? { |q| win.name =~ q || win.process&.command =~ q }
 end
 
 case wins.size
