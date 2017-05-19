@@ -10,11 +10,11 @@
 require 'epitools'
 
 MEDIA_DEFS = [
-  #  type of thing                     players                            exts
-  [  [/^image/, /^pic/, /^photo/],     ["gthumb","ristretto","shotwell"], %w[jpg jpeg png gif],                    ],
-  [  [/^mov/, /^vid/],                 ["mpv", "mplayer", "totem"],         %w[mp4 avi mov mpg mpeg flv wmv asf m4v ogm],],
+  #  type of thing                     players                                     exts
+  [  [/^image/, /^pic/, /^photo/],     ["feh", "gthumb","ristretto","shotwell"], %w[jpg jpeg png gif] ],
+  [  [/^mov/, /^vid/],                 ["mpv", "mplayer", "totem"],              %w[mp4 avi mov mpg mpeg flv wmv asf m4v ogm] ],
   [  [/^mus/, /^aud/, /^song/],        ["audacious", "audacious2",
-                                        "amarok -e"],                     %w[mp3 flac mp4 aac ogg],                ],
+                                        "amarok -e"],                            %w[mp3 flac mp4 aac ogg] ],
 ]
 
 opts = {
