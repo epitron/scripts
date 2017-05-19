@@ -114,6 +114,7 @@ EXTRA_LANGS = {
   ".qml"         => :php,
   ".pro"         => :sql,
   ".ws"          => :xml,
+  ".ui"          => :xml,
   ".opml"        => :xml,
 }
 
