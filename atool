@@ -1476,7 +1476,7 @@ sub findformat($$) {
     ['rzip',           qr/\.rz$/],
     ['tar',            qr/\.tar$/],
     ['xz',             qr/\.xz$/],
-    ['zip',            qr/\.(zip|pk3|epub)$/],
+    ['zip',            qr/\.(zip|pk3|epub|apk)$/],
   );
 
   if ($manual) {
