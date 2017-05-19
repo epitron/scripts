@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
-
 require 'dbm'
 ###################################################################
 
@@ -10,6 +9,8 @@ DB_FILE   = File.join CACHE_DIR, "oui-database"
 CSV_URL   = "http://standards-oui.ieee.org/oui/oui.csv"
 # CSV_URL   = "oui.csv"
 
+###################################################################
+# Utility functions
 ###################################################################
 
 def help!
@@ -23,18 +24,13 @@ def help!
   puts
 end
 
-def commatize(num)
-  char = ","
-  num.to_s.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
-end
-
 def db_exists?
   Dir["#{DB_FILE}*"].any?
 end
 
 def db_open(flags=DBM::READER)
   db = DBM.open(DB_FILE, 0666, flags)
-  
+
   if block_given?
     result = yield db
     db.close
@@ -61,11 +57,52 @@ def backup(src)
 end
 
 ###################################################################
+# Patches
+###################################################################
+
+module Enumerable
+  def average
+    any? ? reduce(:+) / size.to_f : 0
+  end
+end
+
+class Numeric
+  #
+  # Convert this number to a string, adding commas between each group of 3 digits.
+  #
+  # (The "char" argument is optional, and specifies what character to use in between
+  #  each group of numbers.)
+  #
+  def commatize(char=",")
+    int, frac = to_s.split(".")
+    int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
+
+    frac ? "#{int}.#{frac}" : int
+  end
+
+
+  def humanize_bytes
+    if self < 1024
+      sprintf("%d bytes", self)
+    elsif self < 1024 * 1000 # 1000kb
+      sprintf("%0.1f kb", self.to_f / 1024)
+    elsif self < 1024 * 1024 * 1000  # 1000mb
+      sprintf("%0.3f mb", self.to_f / 1024 / 1024)
+    else
+      sprintf("%0.3f gb", self.to_f / 1024 / 1024 / 1024)
+    end
+  end
+
+end
+
+###################################################################
+# Commands
+###################################################################
 
 def update
 
   require 'csv'
-  require 'open-uri'
+  require 'http'
 
   puts "* Re-importing database..."
   puts "  |_ source: #{CSV_URL.inspect}"
@@ -74,15 +111,37 @@ def update
 
   db_open(DBM::NEWDB) do |db|
 
-    CSV.new(open(CSV_URL), :headers => :first_row).each.with_index do |row, n|
+    response = HTTP.get(CSV_URL).body
+
+    first_chunk  = Time.now
+    chunks       = []
+    bytes_loaded = 0
+
+    while chunk = response.readpartial
+      bytes_loaded += chunk.size
+      # elapsed       = now - last_update
+      total_elapsed = Time.now - first_chunk
+      rate          = (bytes_loaded / total_elapsed)
+
+      chunks << chunk
+
+      # p elapsed: total_elapsed, chunk: chunk.size, rate: rate #, avg: avg_rate
+      print "\e[1G  |_ bytes loaded: #{bytes_loaded.commatize} (#{rate.humanize_bytes}/sec)\e[J"
+    end
+
+    puts
+
+    # CSV.new(open(CSV_URL), :headers => :first_row).each.with_index do |row, n|
+    CSV.parse(chunks.join, :headers => :first_row).each.with_index do |row, n|
       # MA-L,34F968,"ATEK Products, LLC",210 NE 10th Avenue Brainerd MN US 56401
       type, hex, company, address = row.fields
       company.strip! if company
       address.strip! if address
 
       db[hex] = "#{company}\n#{address}"
-      
-      print "\e[1G  |_ records imported: #{commatize(n)}\e[J" if n % 137 == 0
+
+      $stdout.print "\e[1G  |_ records imported: #{n.commatize}\e[J" if n % 3 == 0
+      $stdout.flush
     end
 
     puts
@@ -90,7 +149,7 @@ def update
 
   end
 
-end  
+end
 
 ###################################################################
 
@@ -112,6 +171,8 @@ def lookup_macs(args)
 
 end
 
+###################################################################
+# Main
 ###################################################################
 
 
