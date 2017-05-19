@@ -202,6 +202,16 @@ gc() {
   fi
 }
 
+aur() {
+  aur-get "$@"
+  if [ -d "$@" ]; then
+    cd "$@"
+    c PKGBUILD
+  else
+    echo "something went wrong?"
+  fi
+}
+
 alias gcs="gc --depth=1"
 
 # ruby
