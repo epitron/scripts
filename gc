@@ -35,8 +35,17 @@ end
 
 repo, dest = args
 
-if repo =~ /^[\w\-]+\/[\w\-\.]+$/ and not File.exists? repo
-  repo = "https://github.com/#{repo}"
+unless File.exists? repo
+  case repo
+  when %r{^[\w\-]+/[\w\-\.]+$}
+    # user left off https://github.com/; fill it in!
+    repo = "https://github.com/#{repo}"
+  when %r{^github\.com/.+}
+    # user left off https://; fill it in!
+    repo = "https://#{repo}"
+  else
+    puts "#{repo} is unhandled"
+  end
 end
 
 if dest and File.exists?(dest)
