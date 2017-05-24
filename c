@@ -169,16 +169,16 @@ end
 ##############################################################################
 
 def print_torrent(filename)
-  require 'bencode_ext'
+  require 'bencode'
   require 'digest/sha1'
 
-  data      = BEncode.decode_file(filename)
+  data = BEncode.load_file(filename)
 
   # require 'awesome_print'; return data.ai
 
   date        = Time.at data["creation date"]
   name        = data.dig "info", "name"
-  infohash    = Digest::SHA1.hexdigest(BEncode.encode data["info"])
+  infohash    = Digest::SHA1.hexdigest(BEncode.dump data["info"])
   files       = data["info"]["files"]
   trackers    = [data["announce"], *data["announce-list"]].compact
   urls        = data["url-list"]
