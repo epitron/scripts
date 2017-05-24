@@ -168,6 +168,64 @@ end
 
 ##############################################################################
 
+def print_torrent(filename)
+  require 'bencode_ext'
+  require 'digest/sha1'
+
+  data      = BEncode.decode_file(filename)
+
+  # require 'awesome_print'; return data.ai
+
+  date        = Time.at data["creation date"]
+  name        = data.dig "info", "name"
+  infohash    = Digest::SHA1.hexdigest(BEncode.encode data["info"])
+  files       = data["info"]["files"]
+  trackers    = [data["announce"], *data["announce-list"]].compact
+  urls        = data["url-list"]
+  col1_size   = files.map { |f| f["length"] }.max.to_s.size if files
+  comment     = data["comment"]
+  creator     = data["created by"]
+  piece_size  = data.dig "info", "piece length"
+  pieces      = data.dig("info", "pieces").size / 20
+  total_size  = data.dig("info", "length") || files && files.map { |f| f["length"] }.reduce(:+)
+
+  output = []
+
+  output << "Name:        #{name}" if name
+  output << "Created At:  #{date}"
+  output << "Infohash:    #{infohash}"
+  output << "Comment:     #{comment}" if comment
+  output << "Created By:  #{creator}"
+  output << "Pieces:      #{pieces} @ #{piece_size} bytes = ~#{pieces * piece_size} bytes"
+  output << "Total Size:  #{total_size}"
+  output << ""
+
+  if files
+    files.sort_by { |f| [-f["path"].size, f["path"]] }.each do |f|
+      output << "#{f["length"].to_s.rjust(col1_size)} | #{f["path"].join("/")}"
+    end
+    output << ""
+  end
+
+  {
+    "Trackers:" => trackers,
+    "URLs:"     => urls
+  }.each do |title, things|
+    if things
+      output << "----------------"
+      output << title
+      output << "----------------"
+      things.each {|t| output << t }
+      output << ""
+    end
+  end
+
+  # data["info"]["pieces"] = "[...#{data["info"]["pieces"].size} bytes of binary data...]"
+  output.join("\n")
+end
+
+##############################################################################
+
 def print_cp437(filename)
   open(filename, "r:cp437:utf-8", &:read).gsub("\r", "")
 end
@@ -313,6 +371,8 @@ def convert(arg)
       IO.popen([*cmd, arg])
     elsif %w[.md .markdown .mdwn].include? ext
       print_markdown(arg)
+    elsif %w[.torrent].include? ext
+      print_torrent(arg)
     elsif %w[.nfo .ans .drk .ice].include? ext
       print_cp437(arg)
     elsif %w[.pem .crt].include? ext
