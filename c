@@ -176,7 +176,7 @@ def print_torrent(filename)
 
   # require 'awesome_print'; return data.ai
 
-  date        = Time.at data["creation date"]
+  date        = data["creation date"] && Time.at(data["creation date"])
   name        = data.dig "info", "name"
   infohash    = Digest::SHA1.hexdigest(BEncode.dump data["info"])
   files       = data["info"]["files"]
@@ -192,10 +192,10 @@ def print_torrent(filename)
   output = []
 
   output << "Name:        #{name}" if name
-  output << "Created At:  #{date}"
+  output << "Created At:  #{date}" if date
   output << "Infohash:    #{infohash}"
   output << "Comment:     #{comment}" if comment
-  output << "Created By:  #{creator}"
+  output << "Created By:  #{creator}" if creator
   output << "Pieces:      #{pieces} @ #{piece_size} bytes = ~#{pieces * piece_size} bytes"
   output << "Total Size:  #{total_size}"
   output << ""
