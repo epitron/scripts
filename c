@@ -266,9 +266,9 @@ def print_bibtex(filename)
   out = StringIO.new
   bib = BibTeX.open(filename)
 
-  bib.each do |entry|
+  bib.sort_by { |entry| entry.fields[:year] || "zzzz" }.each do |entry|
     o      = OpenStruct.new entry.fields
-    year   = o.year ? o.year.to_s : "XXXX"
+    year   = o.year ? o.year.to_s : "____"
     indent = " " * (year.size + 1)
 
     out.puts "<14>#{year} <15>#{o.title} <8>(<7>#{entry.type}<8>)".colorize
