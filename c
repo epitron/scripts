@@ -259,6 +259,36 @@ def print_archived_file(archive, internal_file)
   end
 end
 
+def print_bibtex(filename)
+  require 'bibtex'
+  require 'epitools/colored'
+
+  out = StringIO.new
+  bib = BibTeX.open(filename)
+
+  bib.each do |entry|
+    o      = OpenStruct.new entry.fields
+    year   = o.year ? o.year.to_s : "XXXX"
+    indent = " " * (year.size + 1)
+
+    out.puts "<14>#{year} <15>#{o.title} <8>(<7>#{entry.type}<8>)".colorize
+
+    out.puts "#{indent}<11>#{o.author}".colorize if o.author
+
+    out.puts "#{indent}#{o.booktitle}"    if o.booktitle
+    out.puts "#{indent}#{o.series}"       if o.series
+    out.puts "#{indent}#{o.publisher}"    if o.publisher
+    out.puts "#{indent}#{o.journal}, Vol. #{o.volume}, No. #{o.number}, pages #{o.pages}"  if o.journal
+    out.puts "#{indent}<9>#{o.url}".colorize if o.url
+    out.puts
+    # out.puts o.inspect
+    # out.puts
+  end
+
+  out.seek 0
+  out.read
+end
+
 ##############################################################################
 
 def run(*args)
@@ -381,6 +411,8 @@ def convert(arg)
       print_csv(arg)
     elsif ext == ".tsv"
       print_csv(arg, "\t")
+    elsif ext == ".bib"
+      print_bibtex(arg)
     elsif ext == ".k3b"
       print_archived_file(path, "maindata.xml")
     else
