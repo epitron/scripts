@@ -232,95 +232,18 @@ end
 
 ##############################################################################
 
-def pretty_xml(data)
-  require "rexml/document"
-
-  result    = ""
-  doc       = REXML::Document.new(data)
-  formatter = REXML::Formatters::Pretty.new
-
-  formatter.compact = true # use as little whitespace as possible
-  formatter.write(doc, result)
-
-  result
-end
-
-
-def print_archive(filename)
-  run("atool", "-l", filename)
-end
-
-def print_archived_file(archive, internal_file)
-  # internal_ext = File.extname(internal_file)
-  case archive.extname
-  when ".k3b"
-    data = IO.popen(["unzip", "-p", archive.to_s, internal_file], "r") { |io| io.read }
-    CodeRay.scan(pretty_xml(data), :xml).term
-  end
-end
-
-def print_bibtex(filename)
-  require 'bibtex'
-  require 'epitools/colored'
-
-  out = StringIO.new
-  bib = BibTeX.open(filename)
-
-  bib.sort_by { |entry| entry.fields[:year] || "zzzz" }.each do |entry|
-    o      = OpenStruct.new entry.fields
-    year   = o.year ? o.year.to_s : "____"
-    indent = " " * (year.size + 1)
-
-    out.puts "<14>#{year} <15>#{o.title} <8>(<7>#{entry.type}<8>)".colorize
-
-    out.puts "#{indent}<11>#{o.author}".colorize if o.author
-
-    out.puts "#{indent}#{o.booktitle}"    if o.booktitle
-    out.puts "#{indent}#{o.series}"       if o.series
-    out.puts "#{indent}#{o.publisher}"    if o.publisher
-    out.puts "#{indent}#{o.journal}, Vol. #{o.volume}, No. #{o.number}, pages #{o.pages}"  if o.journal
-    out.puts "#{indent}<9>#{o.url}".colorize if o.url
-    out.puts
-    # out.puts o.inspect
-    # out.puts
-  end
-
-  out.seek 0
-  out.read
-end
-
-##############################################################################
-
-def run(*args)
-  IO.popen(args, "r")
-end
-
-def highlight(enum, &block)
-  Enumerator.new do |y|
-    enum.each do |line|
-      y << block.call(line)
-    end
-  end
-end
-
-def highlight_lines_with_colons(enum)
-  highlight(enum) do |line|
-    if line =~ /^(\S+.*):(.*)/
-      "\e[37;1m#{$1}\e[0m: #{$2}"
-    else
-      line
-    end
-  end
-end
-
 def print_obj(filename)
   highlight_lines_with_colons(run("objdump", "-xT", filename))
 end
+
+##############################################################################
 
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
+
+##############################################################################
 
 def print_csv(filename)
   require 'csv'
@@ -376,6 +299,92 @@ end
 
 ##############################################################################
 
+def pretty_xml(data)
+  require "rexml/document"
+
+  result    = ""
+  doc       = REXML::Document.new(data)
+  formatter = REXML::Formatters::Pretty.new
+
+  formatter.compact = true # use as little whitespace as possible
+  formatter.write(doc, result)
+
+  result
+end
+
+##############################################################################
+
+def print_archive(filename)
+  run("atool", "-l", filename)
+end
+
+def print_archived_xml_file(archive, internal_file)
+  # internal_ext = File.extname(internal_file)
+  case archive.extname
+  when ".k3b"
+    data = IO.popen(["unzip", "-p", archive.to_s, internal_file], "r") { |io| io.read }
+    CodeRay.scan(pretty_xml(data), :xml).term
+  end
+end
+
+##############################################################################
+
+def print_bibtex(filename)
+  require 'bibtex'
+  require 'epitools/colored'
+
+  out = StringIO.new
+  bib = BibTeX.open(filename)
+
+  bib.sort_by { |entry| entry.fields[:year] || "zzzz" }.each do |entry|
+    o      = OpenStruct.new entry.fields
+    year   = o.year ? o.year.to_s : "____"
+    indent = " " * (year.size + 1)
+
+    out.puts "<14>#{year} <15>#{o.title} <8>(<7>#{entry.type}<8>)".colorize
+
+    out.puts "#{indent}<11>#{o.author}".colorize if o.author
+
+    out.puts "#{indent}#{o.booktitle}"    if o.booktitle
+    out.puts "#{indent}#{o.series}"       if o.series
+    out.puts "#{indent}#{o.publisher}"    if o.publisher
+    out.puts "#{indent}#{o.journal}, Vol. #{o.volume}, No. #{o.number}, pages #{o.pages}"  if o.journal
+    out.puts "#{indent}<9>#{o.url}".colorize if o.url
+    out.puts
+    # out.puts o.inspect
+    # out.puts
+  end
+
+  out.seek 0
+  out.read
+end
+
+##############################################################################
+
+def run(*args)
+  IO.popen(args, "r")
+end
+
+def highlight(enum, &block)
+  Enumerator.new do |y|
+    enum.each do |line|
+      y << block.call(line)
+    end
+  end
+end
+
+def highlight_lines_with_colons(enum)
+  highlight(enum) do |line|
+    if line =~ /^(\S+.*):(.*)/
+      "\e[37;1m#{$1}\e[0m: #{$2}"
+    else
+      line
+    end
+  end
+end
+
+##############################################################################
+
 COMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
@@ -414,7 +423,7 @@ def convert(arg)
     elsif ext == ".bib"
       print_bibtex(arg)
     elsif ext == ".k3b"
-      print_archived_file(path, "maindata.xml")
+      print_archived_xml_file(path, "maindata.xml")
     else
       format = run('file', arg).read
 
