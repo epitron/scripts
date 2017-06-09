@@ -7,7 +7,7 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: f [options]"
 
-    # on "a",  "along",  "desc"
+    on "d",  "dirs", "Search directory names only"
     # on "b=", "blong",  "desc", default: ""
   end
 
@@ -25,6 +25,8 @@ cmd = nil
 bins.any? { |bin, args| cmd = [bin, *args] if which(bin) }
 
 if cmd
+
+  cmd += %w[-type d] if opts.dirs?
 
   query = Regexp.new(args.map{|a| Regexp.escape(a) }.join(".*"), Regexp::IGNORECASE)
 
