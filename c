@@ -359,6 +359,10 @@ def print_bibtex(filename)
   out.read
 end
 
+def print_http(url)
+  IO.popen(["lynx", "-dump", url], "r") { |io| io.read }
+end
+
 ##############################################################################
 
 def run(*args)
@@ -392,54 +396,58 @@ COMPRESSORS = {
 }
 
 def convert(arg)
-  arg = which(arg) unless File.exists? arg
-
-  if arg
-    return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
-
-    path = Pathname.new(arg)
-
-    # TODO: Fix relative symlinks
-    # arg = File.readlink(arg) if File.symlink?(arg)
-
-    ext = path.extname.downcase
-
-    if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
-      print_archive(arg)
-    elsif cmd = COMPRESSORS[ext]
-      IO.popen([*cmd, arg])
-    elsif %w[.md .markdown .mdwn].include? ext
-      print_markdown(arg)
-    elsif %w[.torrent].include? ext
-      print_torrent(arg)
-    elsif %w[.nfo .ans .drk .ice].include? ext
-      print_cp437(arg)
-    elsif %w[.pem .crt].include? ext
-      print_ssl_certificate(arg)
-    elsif ext == ".csv"
-      print_csv(arg)
-    elsif ext == ".tsv"
-      print_csv(arg, "\t")
-    elsif ext == ".bib"
-      print_bibtex(arg)
-    elsif ext == ".k3b"
-      print_archived_xml_file(path, "maindata.xml")
-    else
-      format = run('file', arg).read
-
-      case format
-      when /POSIX shell script/
-        print_source(arg)
-      when /:.+?(executable|shared object)[^,]*,/
-        print_obj(arg)
-      when /(image,|image data)/
-        show_image(arg)
-      else
-        print_source(arg)
-      end
-    end
+  if arg =~ %r{^https?://.+}
+    print_http(arg)
   else
-    "\e[31m\e[1mFile not found.\e[0m"
+    arg = which(arg) unless File.exists? arg
+
+    if arg
+      return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
+
+      path = Pathname.new(arg)
+
+      # TODO: Fix relative symlinks
+      # arg = File.readlink(arg) if File.symlink?(arg)
+
+      ext = path.extname.downcase
+
+      if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
+        print_archive(arg)
+      elsif cmd = COMPRESSORS[ext]
+        IO.popen([*cmd, arg])
+      elsif %w[.md .markdown .mdwn].include? ext
+        print_markdown(arg)
+      elsif %w[.torrent].include? ext
+        print_torrent(arg)
+      elsif %w[.nfo .ans .drk .ice].include? ext
+        print_cp437(arg)
+      elsif %w[.pem .crt].include? ext
+        print_ssl_certificate(arg)
+      elsif ext == ".csv"
+        print_csv(arg)
+      elsif ext == ".tsv"
+        print_csv(arg, "\t")
+      elsif ext == ".bib"
+        print_bibtex(arg)
+      elsif ext == ".k3b"
+        print_archived_xml_file(path, "maindata.xml")
+      else
+        format = run('file', arg).read
+
+        case format
+        when /POSIX shell script/
+          print_source(arg)
+        when /:.+?(executable|shared object)[^,]*,/
+          print_obj(arg)
+        when /(image,|image data)/
+          show_image(arg)
+        else
+          print_source(arg)
+        end
+      end
+    else
+      "\e[31m\e[1mFile not found.\e[0m"
+    end
   end
 end
 
