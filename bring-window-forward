@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require 'epitools/wm'
+require 'epitools/clitools'
+
+queries = ARGV.map { |arg| /#{arg}/i }
+
+wins = WM.windows.select do |win|
+  queries.all? { |q| win.name =~ q || win.process&.command =~ q }
+end
+
+case wins.size
+when 0
+  notify_send "No windows found"
+# when 1
+else
+  wins.each {|w| p w; w.activate! }
+  # notify_send "Found too many windows"
+end 

@@ -51,7 +51,7 @@ class MathOTron
   def braggadocio
     puts "==============================================="
     puts " Math-o-tron 9000(tm)!"
-    puts " (c) 2014 by Chris Gahan (chris@ill-logic.com)"
+    puts " (c) 2014-17 by Chris Gahan (chris@ill-logic.com)"
     puts "-----------------------------------------------"
     puts "Type 'help' for help."
   end
@@ -139,16 +139,19 @@ class MathOTron
 
     begin
       result = helpers.instance_eval translated_expr
-
-      case result
-      when Numeric
-        puts "<13>#{result.commatize} <4>(<12>#{"%.2e" % result}<4>)".colorize
-
-        unless (words = result.to_words).blank?
-          puts "<8>(<7>#{words}<8>)".colorize
-        end
+      if not $stdout.isatty
+        puts result
       else
-        p result
+        case result
+        when Numeric
+          puts "<13>#{result.commatize} <4>(<12>#{"%.2e" % result}<4>)".colorize
+
+          unless (words = result.to_words).blank?
+            puts "<8>(<7>#{words}<8>)".colorize
+          end
+        else
+          p result
+        end
       end
     rescue Exception => e
       puts e.to_s.bright_red

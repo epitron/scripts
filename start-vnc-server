@@ -1,0 +1,9 @@
+#!/bin/bash
+while [ ! -f ~/.vnc/passwd ]; do
+  echo "~/.vnc/passwd is missing -- creating a new one."
+  echo
+  x11vnc -storepasswd
+done
+
+x11vnc -ncache 10 -ncache_cr -display :0 -usepw
+# x11vnc -display :0 -usepw

@@ -1,22 +1,67 @@
 #!/usr/bin/env ruby
-require 'rubygems'
-require 'nokogiri'
-require 'open-uri'
-require 'uri'
-require 'epitools'
+#########################################################################
 
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'nokogiri'
+require 'epitools'
+require 'http'
+
+#########################################################################
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    # banner "Usage: <<scriptname>> [options]"
+    banner %{Usage:
+  getlinks <url1|file1> [<url2|file2>, ...]
+
+Purpose:
+  Returns all the HREFs from the <a href=\"\"> tags in the specificed
+  url(s). The links are output to STDOUT, while the status information
+  is output to STDERR, so you can pipe the links to 'grep' and/or
+  'xargs wget'.
+
+Example:
+  getlinks http://something.com/stuff.html | egrep '\.zip$' | xargs wget
+}
+
+    # on "a",  "along",  "desc"
+    on "m=", "match",  "Match link content (regexp)"
+    on "t=", "tags",   "Which tags to extract?"
+    on "i",  "images", "Only select images"
+    on "l",  "links",  "Only select links"
+    on "m",  "media",  "Only select media"
+    on "e",  "enclosures", "Only select enclosures"
+  end
+
+  [opts, ARGV]
+end
+
+#########################################################################
+
+TYPES = {
+  :links      => ["a",         proc { |e| e["href"] } ],
+  :embeds     => ["embed",     proc { |e| e["src"] }  ],
+  :videos     => ["video",     proc { |e| e.search("source").map{|s| s["src"]} }], # <video><source src="..." type="video/ogg"></..>
+  :audios     => ["audio",     proc { |e| e.search("source").map{|s| s["src"]} }], # <audio><source src="..." type="audio/mpeg"></..>
+  :images     => ["img",       proc { |e| e["src"] || e["data-src"] }  ],
+  :enclosures => ["enclosure", proc { |e| e["url"] }  ],
+}
+
+#########################################################################
 
 module URI
   #
   # Strip out params with blank values.
   #
   alias_method :old_params, :params
-  
+
   def params
     old_params.delete_if { |k,v| v.blank? }
   end
 end
 
+#########################################################################
 
 def strip_trackers(url)
   uri = URI.parse(url)
@@ -31,18 +76,9 @@ def strip_trackers(url)
   end.to_s
 end
 
-
 def absolute_uri(root, url)
-  #pp [:url_join, root, url]
-  URI.join(root, URI.escape(url)).to_s
+  URI.join( root, url ).to_s
 end
-
-
-def get_page(url)
-  #$stderr.puts "Loading #{url.inspect}..."
-  Nokogiri::HTML(open(url))
-end
-
 
 def relative_url?(url)
   URI.join(url, url)
@@ -52,73 +88,87 @@ rescue URI::BadURIError
 end
 
 
-def get_links(url)
+#########################################################################
 
-  page = get_page(url)
-  root_is_relative = relative_url?(url)
+def get_links(url, types=TYPES, regexp=nil)
+  if url =~ %r{^http?s://.+}
+    data             = HTTP.get(url).body.to_s
+    root_is_relative = relative_url?(url)
+  elsif File.exists? url
+    data = File.read url
+    root_is_relative = false
+  else
+    $stderr.puts "Error: #{url} isn't an URL or a(n existing) file"
+    exit 1
+  end
 
-  result = {
+  page = Nokogiri::HTML(data)
 
-    :links => page.search("a").map { |a|
-      linkurl = a["href"]
-    }.squash,
-    
-    :embeds => page.search("embed").map { |embed|
-      linkurl = embed["src"]
-      #if embed["type"].in? %w(application/x-mplayer2)
-    }.squash,
-    
-    :images => page.search("img").map { |img|
-      linkurl = img["src"]
-    }.squash,
-    
-    :enclosures => page.search("enclosure").map { |e|
-      linkurl = e["url"]
-    }.squash,
+  types = types.uniq
 
-  }
+  result =
+    types.map do |type|
+      tag, callback = TYPES[type]
 
-  result.map_values! { |links| 
-    links.map { |linkurl|
-      absolute_uri(url, linkurl)
-    }
-  } unless root_is_relative
+      links = page.search(tag).map(&callback).to_a.compact
 
-  result.map_values! { |links| links.map { |link| strip_trackers link } }
+      unless root_is_relative
+        links.map! { |link| absolute_uri(url, link) }
+      end
 
-  result[:emails] = result[:links].select{|v| v["mailto:"]}
-  result[:links] -= result[:emails]
-  
+      links.map! { |link| strip_trackers link }
+      links.select! { |link| link =~ regexp } if regexp
+
+      [type, links]
+    end.to_h
+
+  # pp result
+
+  if (emails = result[:links]&.select{|v| v["mailto:"]}) and emails.any?
+    result[:emails] = emails
+    result[:links] -= result[:emails]
+  end
+
   result
 
 end
 
+#########################################################################
 
-if ARGV.empty?
+opts, args = parse_options
 
-  puts
-  puts "Usage: getlinks <url1|file1> [<url2|file2>, ...]"
-  puts
-  puts "Purpose:"
-  puts "  Returns all the HREFs from the <a href=\"\"> tags in the specificed"
-  puts "  url(s). The links are output to STDOUT, while the status information"
-  puts "  is output to STDERR, so you can pipe the links to 'grep' and/or"
-  puts "  'xargs wget'."
-  puts
-  puts "Example:"
-  puts "  getlinks http://something.com/stuff.html | egrep '\.zip$' | xargs wget"
-  puts
+if args.empty?
+  puts opts
+  exit 1
+end
 
+
+types = []
+types += [:audios, :videos]  if opts.media?
+types += [:images]           if opts.images?
+types += [:links]            if opts.links?
+types += [:enclosures]       if opts.enclosures?
+
+# Filter tag types
+if tags = opts[:tags]
+  types += tags.split(",").map(&:strip).map(&:to_sym)
+elsif types.empty?
+  types += TYPES.keys
+end
+
+# Filter links by regexp
+if expr = opts[:match]
+  filter = Regexp.new(expr)
 else
+  filter = nil
+end
 
-  ARGV.each do |arg|
-    $stdout.puts "### #{arg}"
-    for category, links in get_links(arg)
-      next if links.empty?
-      $stdout.puts "# #{category}"
-      links.each { |link| puts link }
-      puts
-    end
+args.each do |arg|
+  $stdout.puts "### #{arg}"
+  for category, links in get_links(arg, types, filter)
+    next if links.empty?
+    $stdout.puts "# #{category}"
+    links.each { |link| puts link }
+    puts
   end
-
 end

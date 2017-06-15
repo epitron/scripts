@@ -1,0 +1,210 @@
+term*background: Black
+xterm*foreground: Wheat
+xterm*cursorColor: Gray30
+xterm*reverseVideo: false
+xterm*scrollBar: true
+*VT100*colorBDMode: on
+xterm*reverseWrap: true
+xterm*font: fixed
+xterm*boldfont: fixed
+xterm*fullCursor: true
+xterm*saveLines: 2000
+xterm*scrollTtyOutput: off
+xterm*scrollKey: on
+*VT100*colorMode: on
+*VT100*dynamicColors: on
+xterm*titleBar: false
+xterm*VT100.Translations: #override\n\
+<Key>BackSpace:     string(0x7F)\n\
+<Key>Delete:        string(0x1b) string("[3~")\n\
+<Key>Home:          string(0x1b) string("[1~")\n\
+<Key>End:           string(0x1b) string("[4~")\n\
+!<KeyPress>Prior :   scroll-back(1,page)\n\
+!<KeyPress>Next :    scroll-forw(1,page)\n\
+<Key>Prior :   string(0x1b) string("[40~")\n\
+<Key>Next :    string(0x1b) string("[41~")\n\
+Shift~Ctrl~Alt<Key>Prior:     scroll-back(1,page)\n\
+Shift~Ctrl~Alt<Key>Next:      scroll-forw(1,page)\n\
+~Shift~Ctrl~Alt<Key>Prior:     string(0x1b) string("[40~")\n\
+~Shift~Ctrl~Alt<Key>Next:      string(0x1b) string("[41~")
+
+xterm_color*VT100.Translations: #override\n\
+<Key>BackSpace:     string(0x7F)\n\
+<Key>Delete:        string(0x1b) string("[3~")\n\
+<Key>Home:          string(0x1b) string("[1~")\n\
+<Key>End:           string(0x1b) string("[4~")\n\
+!<KeyPress>Prior :   scroll-back(1,page)\n\
+!<KeyPress>Next :    scroll-forw(1,page)\n\
+<Key>Prior :   string(0x1b) string("[40~")\n\
+<Key>Next :    string(0x1b) string("[41~")\n\
+Shift~Ctrl~Alt<Key>Prior:     scroll-back(1,page)\n\
+Shift~Ctrl~Alt<Key>Next:      scroll-forw(1,page)\n\
+~Shift~Ctrl~Alt<Key>Prior:     string(0x1b) string("[40~")\n\
+~Shift~Ctrl~Alt<Key>Next:      string(0x1b) string("[41~")
+
+nxterm*VT100.Translations: #override <Key>BackSpace: string(0x7F)\n\
+<Key>Delete:        string(0x1b) string("[3~")\n\
+<Key>Home:          string(0x1b) string("[1~")\n\
+<Key>End:           string(0x1b) string("[4~")\n\
+Shift~Ctrl~Alt<Key>Prior:     scroll-back(1,page)\n\
+Shift~Ctrl~Alt<Key>Next:      scroll-forw(1,page)\n\
+~Shift~Ctrl~Alt<Key>Prior:     string(0x1b) string("[40~")\n\
+~Shift~Ctrl~Alt<Key>Next:      string(0x1b) string("[41~")
+
+xterm_color*background: Black
+xterm_color*foreground: Wheat
+xterm_color*cursorColor: Orchid
+xterm_color*reverseVideo: false
+xterm_color*scrollBar: true
+xterm_color*saveLines: 5000
+xterm_color*reverseWrap: true
+xterm_color*font: fixed
+xterm_color.geometry: 80x25+20+20
+xterm_color*fullCursor: true
+xterm_color*scrollTtyOutput: off
+xterm_color*scrollKey: on
+xterm_color*titleBar: false
+
+!# Scrolling on wheel mouse: half a page normally, line per line with shift
+xterm*VT100.translations: #override\n\
+ Shift<Btn4Down>,<Btn4Up>:scroll-back(1,line)\n\
+ Shift<Btn5Down>,<Btn5Up>:scroll-forw(1,line)\n\
+ Ctrl<Btn4Down>,<Btn4Up>:scroll-back(1,page)\n\
+ Ctrl<Btn5Down>,<Btn5Up>:scroll-forw(1,page)\n\
+ <Btn4Down>,<Btn4Up>:scroll-back(1,halfpage)\n\
+ <Btn5Down>,<Btn5Up>:scroll-forw(1,halfpage)\n\
+
+!# In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core dump
+!# This will move proportionnaly to cursor position but we dont know how to
+!# program the same exact behavior as in the text widget.
+xterm*VT100.Scrollbar.translations: #override\n\
+     <Btn5Down>: StartScroll(Forward)\n\
+     <Btn4Down>: StartScroll(Backward)\n\
+
+!# Scrolling on wheel mouse: half a page normally, line per line with shift
+xterm_color*VT100.translations: #override\n\
+ Shift<Btn4Down>,<Btn4Up>:scroll-back(1,line)\n\
+ Shift<Btn5Down>,<Btn5Up>:scroll-forw(1,line)\n\
+ Ctrl<Btn4Down>,<Btn4Up>:scroll-back(1,page)\n\
+ Ctrl<Btn5Down>,<Btn5Up>:scroll-forw(1,page)\n\
+ <Btn4Down>,<Btn4Up>:scroll-back(1,halfpage)\n\
+ <Btn5Down>,<Btn5Up>:scroll-forw(1,halfpage)\n\
+
+rxvt*background: Black
+rxvt*foreground: Wheat
+rxvt*cursorColor: Orchid
+rxvt*reverseVideo: false
+rxvt*scrollBar: true
+rxvt*reverseWrap: true
+rxvt*font: fixed
+rxvt*fullCursor: true
+rxvt*scrollTtyOutput: off
+rxvt*scrollKey: on
+
+!# In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core dump
+!# This will move proportionnaly to cursor position but we dont know how to
+!# program the same exact behavior as in the text widget.
+xterm_color*VT100.Scrollbar.translations: #override\n\
+     <Btn5Down>: StartScroll(Forward)\n\
+     <Btn4Down>: StartScroll(Backward)\n\
+
+!## Athena text widgets
+*Paned.Text.translations: #override\n\
+ Shift<Btn4Down>,<Btn4Up>: scroll-one-line-down()\n\
+ Shift<Btn5Down>,<Btn5Up>: scroll-one-line-up()\n\
+ Ctrl<Btn4Down>,<Btn4Up>: previous-page()\n\
+ Ctrl<Btn5Down>,<Btn5Up>: next-page()\n\
+ ~Shift~Ctrl~Alt<Btn4Down>,<Btn4Up>:scroll-one-line-down()scroll-one-line-down()scroll-one-line-down()scroll-one-line-down()scroll-one-line-down()\n\
+ ~Shift~Ctrl~Alt<Btn5Down>,<Btn5Up>:scroll-one-line-up()scroll-one-line-up()scroll-one-line-up()scroll-one-line-up()scroll-one-line-up()\n\
+
+!## Athena table of contents, for toc widgets of xrn & xmh
+*toc.Translations: #override\n\
+ Shift<Btn4Down>,<Btn4Up>: scroll-one-line-down()\n\
+ Shift<Btn5Down>,<Btn5Up>: scroll-one-line-up()\n\
+ Ctrl<Btn4Down>,<Btn4Up>: previous-page()\n\
+ Ctrl<Btn5Down>,<Btn5Up>: next-page()\n\
+ ~Shift~Ctrl~Alt<Btn4Down>,<Btn4Up>:scroll-one-line-down()scroll-one-line-down()scroll-one-line-down()scroll-one-line-down()scroll-one-line-down()\n\
+ ~Shift~Ctrl~Alt<Btn5Down>,<Btn5Up>:scroll-one-line-up()scroll-one-line-up()scroll-one-line-up()scroll-one-line-up()scroll-one-line-up()\n\
+
+! ============================================================================ !
+! ### NETSCAPE ############################################################### !
+! ============================================================================ !
+
+!Netscape*background: gray40
+!Netscape*foreground: white
+
+Netscape*blinkingEnabled:               False
+Netscape*useStderrDialog:               False
+Netscape*useStdoutDialog:               False
+Netscape*dontSaveGeometryPrefs:         True
+!Netscape*ignoreGeometryPrefs:           True
+Netscape*noAboutSplash:                 True
+Netscape*documentFonts.sizeIncrement: 10
+Netscape*toolBar.destinations.isEnabled: false
+Netscape*toolBar.myshopping.isEnabled: false
+Netscape*toolBar.search.isEnabled: false
+Netscape*toolBar.viewSecurity.isEnabled: false
+
+Netscape*selectForeground: White
+Netscape*selectBackground: Blue
+
+! Fonts in the widgets.
+!
+Netscape*fontList:                      lucidasans-10 
+
+Netscape*XmTextField.fontList:          sabvga
+
+!This stuff fixes up mouse-wheel scrolling...
+Netscape*drawingArea.translations:      #replace        \
+        <Btn1Down>:                     ArmLink()       \n\
+        <Btn2Down>:                     ArmLink()       \n\
+        ~Shift<Btn1Up>:                 ActivateLink()  \n\
+        ~Shift<Btn2Up>:                 ActivateLink(new-window)  \
+                                        DisarmLink()    \n\
+        Shift<Btn1Up>:                  ActivateLink(save-only)  \
+                                        DisarmLink()    \n\
+        Shift<Btn2Up>:                  ActivateLink(save-only)  \
+                                        DisarmLink()    \n\
+        <Btn1Motion>:                   DisarmLinkIfMoved()  \n\
+        <Btn2Motion>:                   DisarmLinkIfMoved()  \n\
+        <Btn3Motion>:                   DisarmLinkIfMoved()  \n\
+        <Motion>:                       DescribeLink()  \n\
+        <Btn3Down>:                     xfeDoPopup()    \n\
+        <Btn3Up>:                       ActivatePopup() \n\
+        Ctrl<Btn4Down>: PageUp()\n\
+        Ctrl<Btn5Down>: PageDown()\n\
+        Shift<Btn4Down>: LineUp()\n\
+        Shift<Btn5Down>: LineDown()\n\
+         ~Shift~Ctrl~Alt<Btn4Down>: LineUp()LineUp()LineUp()LineUp()LineUp()LineUp()\n\
+         ~Shift~Ctrl~Alt<Btn5Down>: LineDown()LineDown()LineDown()LineDown()LineDown()LineDown()\n\
+        Alt<Btn4Down>: xfeDoCommand(forward)\n\
+        Alt<Btn5Down>: xfeDoCommand(back)\n
+
+Netscape*globalNonTextTranslations: #override\n\
+ Shift<Btn4Down>: LineUp()\n\
+ Shift<Btn5Down>: LineDown()\n\
+ ~Shift~Ctrl~Alt<Btn4Down>:LineUp()LineUp()LineUp()LineUp()LineUp()LineUp()\n\
+ ~Shift~Ctrl~Alt<Btn5Down>:LineDown()LineDown()LineDown()LineDown()LineDown()LineDown()\n\
+ Alt<Btn4Down>: xfeDoCommand(forward)\n\
+ Alt<Btn5Down>: xfeDoCommand(back)\n
+
+nedit*text.foreground: gray
+nedit*text.background: black
+nedit*text.cursorForeground: white
+nedit*text.selectBackground: blue4
+nedit*text.selectForeground: white
+
+nedit*text.highlightForeground: black
+nedit*text.highlightBackground: magenta
+nedit*text.lineNumForeground: gray50
+nedit*text.blinkRate: 400
+!nedit*foreground: lightblue
+!nedit*background: grey20
+
+nedit*text.Translations: #override\n\
+ Shift<Btn4Down>: scroll_up(2)\n\
+ Shift<Btn5Down>: scroll_down(2)\n\
+ Ctrl<Btn4Down>: scroll_up(35)\n\
+ Ctrl<Btn5Down>: scroll_down(35)\n\
+ ~Shift~Ctrl~Alt<Btn4Down>: scroll_up(8)\n\
+ ~Shift~Ctrl~Alt<Btn5Down>: scroll_down(8)\n\

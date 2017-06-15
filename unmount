@@ -4,13 +4,13 @@ require 'epitools'
 # /dev/sda2 on / type ext4 (rw,errors=remount-ro,commit=0)
 
 class Mount < Struct.new(:dev, :path, :type, :options)
-  
+
   def self.from_line(line)
-    if line =~ %r{^(\S+) on (\S+) type (\S+) \((\S+)\)$} 
+    if line =~ %r{^(\S+) on (\S+) type (\S+) \((\S+)\)$}
       new($1, $2, $3, $4)
     end
   end
-  
+
 end
 
 fuser_types = {
@@ -20,7 +20,7 @@ fuser_types = {
  "F"=>"open file for writing",
  "r"=>"root directory",
  "m"=>"mmap'ed file or shared library"
-}  
+}
 
 def processes_holding(mountpoint)
   # procs = Sys.ps
@@ -30,7 +30,8 @@ def processes_holding(mountpoint)
   #   Sys.ps.zip types
   # end
 
-  system("fuser", "-v", "-m", mountpoint)
+  # system("fuser", "-v", "-m", mountpoint)
+  system("lsof", "+D", mountpoint)
 end
 
 def kill_processes_holding(mountpoint)
@@ -44,31 +45,31 @@ end
 def unmount(arg)
 
   print "unmount #{arg.inspect}: "
-  
+
   unless File.directory? arg
     puts "FAIL! (not a directory)"
     return false
   end
-  
+
   realpath = File.realpath(arg)
 
   mount = mounts.
             select { |mount| realpath[/^#{Regexp.escape mount.path}/] }.
             sort_by { |m| m.path.size }.
             last
-  
+
   unless mount
     puts "FAIL! (not mounted)"
     return false
   end
-  
+
   # Do the unmount
   success = if mount.type[/^fuse/]
               system("fusermount", "-u", mount.path)
             else
               system("sudoifnotroot", "umount", mount.path)
             end
-    
+
   if success
     puts "SUCCESS!"
   else

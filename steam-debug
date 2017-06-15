@@ -1,0 +1,2 @@
+#!/bin/bash
+LD_DEBUG=libs ~/.local/share/Steam/ubuntu12_32/steam

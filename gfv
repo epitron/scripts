@@ -40,7 +40,10 @@ end
 
 if args.delete("-a")
   cmd << "--extract-audio"
+  
   cmd += ["-f", "bestaudio[ext=m4a]"] unless args.include?("-f")
+  # cmd += ["-f", "bestaudio[ext=m4a]", "--audio-format", "aac"] unless args.include?("-f")
+  
   # cmd += %w[--extract-audio -f bestaudio]
 elsif args.delete("-s")
   cmd << "--skip-download"

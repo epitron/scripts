@@ -1,6 +1,10 @@
 #!/bin/bash
 BASE="$HOME/.local/share/wineprefixes"
 
+if [ ! -d "$BASE" ]; then
+  mkdir -p "$BASE"
+fi
+
 if [ "$1" == "" ]; then
   find "$BASE" -maxdepth 1
   exit

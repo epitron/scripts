@@ -2,7 +2,9 @@
 ###############################################################################
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'epitools'
+require 'epitools/rash'
+require 'epitools/path'
+require 'epitools/colored'
 ###############################################################################
 
 COLORS = Rash.new(
@@ -23,7 +25,7 @@ class Path
       fn = dirs[-1].light_blue + "/"
     elsif symlink?
       fn = "<11>#{filename}"
-      fn += " <8>-> <7>#{symlink_target}" if wide
+      fn += " <8>-> <#{target.exists? ? "7" : "12"}>#{target}" if wide
       fn = fn.colorize
     elsif color = COLORS[filename]
       fn = filename.send(color)
@@ -48,7 +50,7 @@ SIZE_COLORS = Rash.new(
 
 
 class Integer
-  def colorized(rjust=15)
+  def commatized_and_colorized(rjust=15)
     color = SIZE_COLORS[self] || :white
     s = commatize
     padding = " " * (rjust - s.size)
@@ -66,17 +68,26 @@ class Integer
   end
 end
 
+class NilClass
+  def commatized_and_colorized(rjust=15)
+    " " * 15
+  end
+end
+
 ###############################################################################
 
 class DirLister
 
   def show_long(path)
-    fn = path.colorized(true)
-    time = (path.mtime.strftime("%Y-%m-%d %H:%M:%S") rescue "").ljust(10)
+    fn = path.colorized
+    # time = (path.mtime.strftime("%Y-%m-%d %H:%M:%S") rescue "").ljust(10)
+    time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
+    #   size = -1
+    # else
     size = path.size rescue nil
+    # end
     #size = size.commatize.rjust(15).send(SIZE_COLORS[size] || :white) rescue ''
-    size = size.colorized
-    puts "#{size} #{time} #{fn}"
+    puts "#{size.commatized_and_colorized} #{time} #{fn}"
   end
 
   def list_dir(dir, opts)
@@ -95,10 +106,10 @@ class DirLister
     paths.reverse! if opts["reverse-size"] or opts["reverse-time"]
 
     dirs, files = paths.partition(&:dir?)
-    paths       = dirs + files
+    paths = dirs + files # dirs first!
 
     if opts.long?
-      (dirs+files).each do |path|
+      paths.each do |path|
         show_long path
       end
     else

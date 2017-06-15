@@ -15,6 +15,7 @@ require 'epitools'
 ROOT_URL = "https://torrentz2.eu/"
 
 TRACKERS = %w[
+  udp://tracker.pirateparty.gr:6969/announce
   udp://tracker.coppersurfer.tk:6969/announce
   udp://tracker.openbittorrent.com:80/
   http://tracker.openbittorrent.com:80/
@@ -24,6 +25,7 @@ TRACKERS = %w[
   udp://p4p.arenabg.ch:1337/announce
   http://tracker.ccc.de:80/
   udp://tracker.ccc.de:80/
+  udp://glotorrents.pw:6969/announce
   udp://fr33dom.h33t.com:3310/announce
   http://tracker.ilibr.org:6969/announce
   udp://9.rarbg.com:2710/announce
@@ -32,9 +34,9 @@ TRACKERS = %w[
   udp://tracker.istole.it:6969/
   udp://tracker.prq.to/announce
   udp://tracker.glotorrents.com:6969/announce
-  udp://glotorrents.pw:6969/announce
   http://inferno.demonoid.com:3407/announce
   http://p4p.arenabg.ch:1337/announce
+  udp://p4p.arenabg.ch:1337
   udp://torrent.gresille.org:80/announce
   udp://tracker.leechers-paradise.org:6969/announce
   udp://zer0day.ch:1337/announce
@@ -79,6 +81,11 @@ class Result
   attr_accessor :title, :hash, :votes, :age, :date, :size, :seeds, :peers # :tags
 
   def initialize(dl)
+    if dl.is_a? String
+      @hash = dl
+      return
+    end
+
     link = dl.at("dt a")
 
     if link.nil?
@@ -120,14 +127,12 @@ class Result
     end
   end
 
-  def magnet_url
-    tracker_params = TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
-    "magnet:?xt=urn:btih:#{hash}&dn=#{title}#{tracker_params}"
+  def tracker_params
+    TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
   end
 
-  def self.md5_to_magnet_url(md5)
-    tracker_params = TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
-    "magnet:?xt=urn:btih:#{md5}#{tracker_params}"
+  def magnet_url
+    "magnet:?xt=urn:btih:#{hash}#{tracker_params}#{"&dn=#{title}" if title}"
   end
 
 end
@@ -171,7 +176,14 @@ def search(query, page_size=nil, page=nil, order=nil)
 
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
+  puts url if $verbose
   page = Nokogiri::HTML(read_url(url))
+  puts page if $verbose
+
+  if page.at("title").text =~ /attention.+cloudflare/i
+    puts "Cloudflare block."
+    exit 1
+  end
 
   dls = page.search(".results dl")
   dls = dls.take(page_size) if page_size
@@ -287,36 +299,46 @@ end
 
 ###########################################################
 
-def open_url(url, verbose=false)
+def open_url(url)
+  puts "open url"
   # Make sure the torrent client exists
-  unless Path.which(Settings.client)
+  cmd = Settings.client.split
+
+  unless Path.which(cmd.first)
     $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
     exit 1
   end
 
-  puts url if verbose
+  puts url if $verbose
   puts
-  # Fork into the background before running the client
-  fork { exec(Settings.client, url) }
+
+  # # Fork into the background before running the client
+  # fork { exec(*cmd, url) }
+  
+  # Daemonize to kill the console spam
+  Process.daemon(true)
+  system(*cmd, url)
 end
+
+###########################################################
 
 if __FILE__ == $0
   opts, args = parse_options
+  $verbose = opts.verbose?
 
   query = args.join(" ")
 
-  md5s = args.map do |arg|
-    if arg.strip =~ %r{^https?://torrentz2.eu/(\w{40})}
-      $1
-    end
-  end + [opts[:add]]
+  # when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
+  # Detect
+  md5s = args.map { |arg| arg.strip =~ %r{^https?://.+/([a-f0-9]{40})}i ? $1 : nil }.compact + [opts[:add]]
 
   md5s.compact!
 
   if md5s.any?
     Process.daemon(true)
     md5s.each do |md5|
-      url = Result.md5_to_magnet_url(md5)
+      puts "#{md5}"
+      url = Result.new(md5).magnet_url
       open_url(url)
     end
   elsif opts.mirror?
@@ -337,7 +359,7 @@ if __FILE__ == $0
 
     chosen = choose_torrents(results)
     chosen.each do |t|
-      open_url(t.magnet_url, opts.verbose?)
+      open_url(t.magnet_url)
     end
   end
 end

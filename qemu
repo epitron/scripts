@@ -7,9 +7,14 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
 
-    on "m=", "memory",  "How much memory to use?", default: "2G"
-    # on "d=", "disk",    "Disk image to use (extension defaults to qcow2)"
-    on "s=", "size",    "Disk size", default: "5G"
+    on "m=", "memory",   "How much memory to use?", default: "2G"
+    on "s=", "size",     "Disk size", default: "5G"
+    on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
+    on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
+    on "r",  "restrict", "Restrict the network (firewall)"
+    on "c",  "console",  "Output serial to the console"
+    on "C",  "cursor",   "Show the mouse cursor"
+    on "v",  "verbose",  "Show (a little) more information"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
 
@@ -22,9 +27,69 @@ isos, disks = args.map(&:to_Path).partition { |arg| arg.ext == "iso" }
 isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
 exit 1 unless isos.all? &:exist?
 
+###############################
+# Attach NBD
+###############################
+if opts.nbd?
+
+  if Process.uid != 0
+    puts "Error: You must run this as root."
+    # exec("sudo", "ruby", __FILE__)
+  else
+    # TODO: Detect if an image (this image?) is already mounted
+    # TODO: Prompt the user to disconnect a device if they're all full
+    disks.each do |disk|
+      dev = "/dev/nbd0"
+      mnt = "/mnt"
+
+      puts "[-] loading nbd kernel module"
+      system("modprobe", "nbd", "max_part=8")
+
+      puts "[-] connecting #{disk} to #{dev}"
+      system("qemu-nbd", "--connect=#{dev}", disk)
+
+      puts "[-] creating /devs #{disk} to #{dev}"
+      system("partx", "-a", dev)
+
+      puts "[!] done!"
+      puts
+      puts
+
+      system("fdisk", "-l", dev)
+
+      puts
+      puts "(NOTE: You can run 'qemu-nbd --disconnect #{dev}' to disconnect the nbd from the disk image)"
+      puts
+      # p system("qemu-nbd", "--disconnect", dev)
+    end
+
+    isos.each do |iso|
+      puts "Can't mount isos yet. Sorry!"
+    end
+  end
+
+  exit
+end
+
+
+###############################
+# Run QEMU
+###############################
 memory = opts[:memory]
 
-cmd = ["qemu-system-x86_64", "-enable-kvm", "-vga", "std", "-m", memory]
+cmd = ["qemu-system-x86_64", "-enable-kvm", "-m", memory]
+
+if opts.console?
+  # cmd += %w[-nographic -serial mon:stdio -append 'console=ttyS0']
+  # cmd += %w[-nographic -serial mon:stdio]
+  # cmd += %w[-nographic -device sga -serial mon:stdio]
+  cmd += %w[-device sga -nographic -serial mon:stdio]
+  # cmd += %w[-nographic -curses]
+else
+  cmd += ["-vga", "std"]
+end
+
+cmd << "-show-cursor" if opts.cursor?
 
 disks.each do |disk|
   unless disk.exists?
@@ -46,5 +111,20 @@ disks.each do |disk|
 end
 
 isos.each  { |iso| cmd += ["-cdrom", iso] }
+
+# Networking
+netopts = "user"
+
+netops += ",restrict=on" if opts.restrict?
+
+if port = opts[:port]
+  src, dest = port.split(":")
+  dest ||= src
+  netopts += ",hostfwd=tcp::#{src}-:#{dest}"
+end
+
+cmd += ["-net", netopts]
+
+p cmd if opts.verbose?
 
 exec *cmd

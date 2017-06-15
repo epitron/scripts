@@ -55,7 +55,7 @@
 
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
-BROWSERS       = %w[opera vivaldi-bin chrome chromium xombrero midori firefox jumanji]
+BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 routes do
@@ -75,7 +75,7 @@ routes do
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed)}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
-  match path: /\.(mp4|mkv|m4v|webm|ogv|avi|flv|ts|mov|mpe?g|mjpeg)$/i, &play_video
+  match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
   match host: %w[imgur.com twitch.tv justin.tv infoq.com] do |uri|
@@ -133,6 +133,11 @@ BEGIN {
     def params
       old_params.delete_if { |k,v| v.blank? }
     end
+
+    def path_with_query
+      "#{path}&#{query}"
+    end
+    alias_method :fullpath, :path_with_query
 
     def follow_redirect
       require 'http'
@@ -230,12 +235,12 @@ BEGIN {
               when Array
                 if key == :host
                   # match the end of the domain
-                  val.any? { |v| uri.host[/(^|\.)#{v}$/] }
+                  val.any? { |v| uri.host&.[](/(^|\.)#{v}$/) }
                 else
                   val.any? { |v| uri.send(key)[v] }
                 end
               when String, Regexp
-                uri.send(key)[val]
+                uri.send(key)&.[](val)
               else
                 raise "Unknown match value: #{val.inspect}"
               end
@@ -439,7 +444,7 @@ if $0 == __FILE__
   load_rc_file
 
   if url = ARGV.first
-    url = "http://#{url}" unless url[%r{^(https?|file)://}i] # slap an http:// on the argument if necessary
+    # url = "http://#{url}" unless url[%r{^(https?|file|magnet)://}i] # slap an http:// on the argument if necessary
     route url
   else
     puts "usage: web <url>"

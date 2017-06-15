@@ -36,7 +36,7 @@ class Numeric
   def clamp(range)
     if self < range.first
       range.first
-    elsif self >= range.last 
+    elsif self >= range.last
       if range.exclude_end?
         range.last - 1
       else
@@ -52,7 +52,7 @@ class Pager
 
   attr_accessor :width, :height,
                 :top, :bottom,
-                :scrollback, :queue, 
+                :scrollback, :queue,
                 :read_thread, :display_thread,
                 :tail_mode
 
@@ -102,7 +102,7 @@ class Pager
       key("t")      { pager.toggle_tail_mode }
       key("w")      { pager.toggle_wrap }
       key("n")      { pager.toggle_line_numbers }
-      
+
       key("r", "\C-r", "\r", "\f")  { pager.refresh! }
       key("?", "h", "\C-/", "\C-?") { pager.toggle_help }
 
@@ -327,11 +327,11 @@ class Pager
   end
 
   def scroll_left(n=20)
-    refresh! if move_hpos(-n) != 0    
+    refresh! if move_hpos(-n) != 0
   end
 
   def scroll_right(n=20)
-    refresh! if move_hpos(n) != 0    
+    refresh! if move_hpos(n) != 0
   end
 
   def scroll_home
@@ -383,7 +383,7 @@ class Pager
 
     print "\e[37;1m" +
       "line: #{bottom+1}/#{lines} (#{percent}), " +
-      "col: #{@hpos} " + 
+      "col: #{@hpos} " +
       "#{"[TAIL] " if @tail_mode}" +
       "#{"[WRAP] " if @wrap}" +
       "(? = help)" +
@@ -548,7 +548,7 @@ class KeyMap
         seq.each_char do |c|
           level = (level[c] ||= {})
         end
-        
+
         level[:handler] = block
       end
     end
@@ -593,6 +593,7 @@ if $0 == __FILE__
 
   case args.size
   when 0
+    # TODO: Use a PTY to avoid buffering
     Pager.new($stdin).page!
   when 1
     Pager.new(open(args.first)).page!
@@ -600,7 +601,7 @@ if $0 == __FILE__
     IO.popen(["c", *args], :err=>[:child, :out]) do |io|
       Pager.new(io).page!
     end
-  end  
+  end
 
   exit!
 end

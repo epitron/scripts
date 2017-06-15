@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: pause-process <process name substring>"
+  exit 1
+fi
+
+pkill -f -STOP "$@"

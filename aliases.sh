@@ -178,6 +178,7 @@ alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
 alias gl="git log --graph --stat"
+alias glu="gl -u"
 alias gch="git checkout"
 # alias g[[="git stash"
 # alias g]]="git stash pop"
@@ -202,6 +203,25 @@ gc() {
   fi
 }
 
+aur() {
+  aur-get "$@"
+  if [ -d "$@" ]; then
+    cd "$@"
+    c PKGBUILD
+  else
+    echo "something went wrong?"
+  fi
+}
+
+kill-bg-jobs() {
+  jobs=`jobs -ps`
+  if [ "$jobs" == "" ]; then
+    echo "Couldn't find any running background jobs"
+  else
+    echo "killing jobs: $jobs"
+    kill -9 $jobs
+  fi
+}
 alias gcs="gc --depth=1"
 
 # ruby

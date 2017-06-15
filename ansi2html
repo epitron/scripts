@@ -7,7 +7,7 @@ class State
   attr_accessor :fore, :back, :attrs
 
   COLORS = [:black, :red, :green, :yellow, :blue, :magenta, :cyan, :white]
-  
+
   ATTRS = {
     0 => :reset,
     1 => :bright,
@@ -18,7 +18,7 @@ class State
     8 => :hidden,
   }
 
-  FORES = { 
+  FORES = {
     30 => :black,
     31 => :red,
     32 => :green,
@@ -63,15 +63,15 @@ class State
   def initialize
     reset
   end
-  
+
   def reset
     @fore = :white
     @back = :black
-    
+
     @attrs ||= Set.new
     @attrs.clear
   end
-  
+
   def update(code)
     case
     when attr = ATTRS[code]
@@ -85,14 +85,14 @@ class State
     when back = BACKS[code]
       @back = back
     end
-  end 
-  
+  end
+
   def html_color(sym, bright=false)
     n = COLORS.index(sym)
     n += 8 if bright
     PALETTE[n]
   end
-  
+
   def html_for(text)
     bright = @attrs.include?(:bright)
     style = "color:#{html_color @fore, bright }; background-color:#{ html_color @back };"
@@ -112,7 +112,7 @@ class Screen
   attr_accessor :screen, :fore, :back, :attrs
 
   COLORS = [:black, :red, :green, :yellow, :blue, :magenta, :cyan, :white]
-  
+
   ATTRS = {
     0 => :reset,
     1 => :bright,
@@ -123,7 +123,7 @@ class Screen
     8 => :hidden,
   }
 
-  FORES = { 
+  FORES = {
     30 => :black,
     31 => :red,
     32 => :green,
@@ -168,7 +168,7 @@ class Screen
   def initialize
     reset
   end
-  
+
   def reset
     @screen = []
     @x = 1
@@ -176,11 +176,11 @@ class Screen
 
     @fore = :white
     @back = :black
-    
+
     @attrs ||= Set.new
     @attrs.clear
   end
-  
+
   def update_color(code)
     case
     when attr = ATTRS[code]
@@ -194,18 +194,18 @@ class Screen
     when back = BACKS[code]
       @back = back
     end
-  end 
+  end
 
   def update_position(direction, amount)
 
   end
-  
+
   def html_color(sym, bright=false)
     n = COLORS.index(sym)
     n += 8 if bright
     PALETTE[n]
   end
-  
+
   def html_for(text)
     bright = @attrs.include?(:bright)
     style = "color:#{html_color @fore, bright }; background-color:#{ html_color @back };"
@@ -239,24 +239,24 @@ def ansi2html_old(ansi)
   # questions:
   #   * what scenario(s) will cause this scheme to produce more tags than a naive approach?
   #
-  # simpler algorithm:
+  # simpler algorithm (implemented):
   #   * split on color codes
   #   * delete redundant codes
   #   * create <span>s
-  
+
   # debugging info
   tokens = ansi.split(/(\e\[\d{1,4}(?:;\d{1,4})*[mhclnRABCDfsugJKi])/)
-  
+
   # remove non-color terminal codes
-  tokens = tokens.select{|s| not ( s.blank? or s =~ /^\e\[([\d;]+)?[hclnRABCDfsugJKi]$/ ) } 
-  
+  tokens = tokens.select{|s| not ( s == "" or s =~ /^\e\[([\d;]+)?[hclnRABCDfsugJKi]$/ ) }
+
   output = []         # will contain series of html tags
   state = State.new   # the state of the terminal (current color and attributes)
-  
+
   tokens.each do |token|
     if token =~ /^\e\[(.+)m$/
       codes = $1.scan(/(\d+);?/).flatten.map(&:to_i) # grab all the code numbers
-      
+
       codes.each do |code|
         state.update(code)
       end
@@ -265,7 +265,7 @@ def ansi2html_old(ansi)
     end
   end
   puts
-  
+
   output.join("")#.gsub("\n", "<br/>\n")
 end
 
@@ -285,16 +285,16 @@ def ansi2html(ansi)
   #   * split on color codes
   #   * delete redundant codes
   #   * create <span>s
-  
+
   # debugging info
   tokens = ansi.split(/(\e\[\d{1,4}(?:;\d{1,4})*[mhclnRABCDfsugJKi])/)
-  
+
   # remove non-color terminal codes
-  tokens = tokens.select{|s| not ( s.blank? or s =~ /^\e\[([\d;]+)?[hclnRfsugJKi]$/ ) } 
-  
+  tokens = tokens.select{|s| not ( s.blank? or s =~ /^\e\[([\d;]+)?[hclnRfsugJKi]$/ ) }
+
   output = []         # will contain series of html tags
   state = State.new   # the state of the terminal (current color and attributes)
-  
+
   tokens.each do |token|
     if token =~ /^\e\[(\d+)?(A|B|C|D)$/
       # A = up, B = down, C = right, D = left
@@ -303,7 +303,7 @@ def ansi2html(ansi)
 
     elsif token =~ /^\e\[(.+)m$/
       codes = $1.scan(/(\d+);?/).flatten.map(&:to_i) # grab all the code numbers
-      
+
       codes.each do |code|
         state.update(code)
       end
@@ -312,7 +312,8 @@ def ansi2html(ansi)
     end
   end
   puts
-  
+
+
   output.join("")#.gsub("\n", "<br/>\n")
 end
 
@@ -322,14 +323,14 @@ def ansi2file(ansi, f)
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   </head>
-  
+
   <body>
   }
-  
+
   f.puts "<pre style='background-color: black;'>"
   f.puts ansi2html(ansi)
   f.puts "</pre>"
-  
+
   f.puts %{
   </body>
   </html>
@@ -338,17 +339,17 @@ end
 
 def test_pattern
   result = ansi2html("\e[c" + "<red>red <light_green>green <blue>blue".colorize + "\e[31;1m")
-  
+
   # print the output
   puts "result: "; pp result
-  
+
   colors = State::COLORS + State::COLORS.map {|color| "light_#{color}" }
   ansi = colors.map{|color| "<8>[<#{color}>#{color}<8>]\n" }.join('').colorize
   open("testpat.html", "w") do |f|
     f.puts "<code style='background-color: black; display: block;'>"
     f.puts ansi2html(ansi)
     f.puts "</code>"
-    
+
     puts "* testpat.html written!"
   end
 end

@@ -1,0 +1,2 @@
+#!/bin/bash
+gpg --keyserver pgp.mit.edu --recv "$*"

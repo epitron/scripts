@@ -15,6 +15,8 @@ def parse_options
     on 'a=', 'acodec',   'Output audio codec (eg: mp3, aac)', default: "copy"
     on 'v=', 'vcodec',   'Output video codec', default: "copy"
     on 'c',  'codecs',   'List the availiable codecs'
+    on 'b',  'bob',      'Bob deinterlace (using yadif)'
+    on 'q=', 'quantizer','How quantized do you like it? (only matters when using vcodec)'
     on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)', default: "00:00"
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
@@ -30,18 +32,18 @@ COEFFS = [24*60*60, 60*60, 60, 1]
 def to_sec(t)
   bits = t.split(":").map{|x| x.to_i}
   bits.reverse.zip(COEFFS.reverse).map{|c,n| c*n}.sum
-end  
+end
 
 def to_time(s)
-  result = COEFFS.map do |c| 
+  result = COEFFS.map do |c|
     num, s = s.divmod(c)
     num
   end
-  
+
   result.shift      while result.first == 0
   result.unshift 0  while result.size < 2
 
-  result.map{|n| "%0.2d" % n}.join(":")  
+  result.map{|n| "%0.2d" % n}.join(":")
 end
 
 def timediff(a,b)
@@ -58,7 +60,7 @@ if $0 == __FILE__
   files = ARGV
 
   if opts.codecs?
-    
+
     case opts[:use]
     when "ffmpeg"
       system("ffmpeg", "-codecs")
@@ -91,7 +93,7 @@ if $0 == __FILE__
     puts "ERROR: Input file not found: #{infile}"
     exit 1
   end
-  
+
 
   ## Compute length
 
@@ -115,9 +117,12 @@ if $0 == __FILE__
     when "ffmpeg"
       cmd = ["ffmpeg", "-i", infile]
       cmd += ["-codec:v", opts[:vcodec]]
+      cmd += ["-crf", opts[:quantizer]] if opts.quantizer?
       cmd += ["-codec:a", opts[:acodec]]
       cmd += ["-ss", start]
       cmd += ["-t", length] if length
+      cmd += ["-vf", "yadif=1"] if opts.bob?
+
 
       if tracks = opts[:tracks]
         cmd += tracks.split(",").map {|t| ["-map", "0:#{t}"] }.flatten
@@ -127,12 +132,12 @@ if $0 == __FILE__
 
     when "mencoder"
       cmd = [
-        "mencoder", infile, 
-        "-o", outfile, 
-        "-ss", start, 
+        "mencoder", infile,
+        "-o", outfile,
+        "-ss", start,
         "-of", "lavf", "-lavfopts", "format=#{outfile.ext}"
       ]
-        
+
       cmd += ["-endpos", length] if length
       cmd += ["-ovc", opts[:vcodec]]
 

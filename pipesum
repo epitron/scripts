@@ -34,6 +34,8 @@ HASHERS = {
   "--sha512" => Digest::SHA512,
 }
 
+DEFAULTS = ["--md5", "--sha1", "--sha256"]
+
 ################################################################
 
 BLOCKSIZE=2**16 # 64k read size
@@ -42,19 +44,21 @@ BLOCKSIZE=2**16 # 64k read size
 
 def usage
   puts "Usage:"
-  puts "  pipesum [options...]"
+  puts "  #{File.basename __FILE__} <hashers...> [<file(s)...>]"
   puts
   puts "Purpose:"
-  puts "  Insert this into a pipeline to hash data on the fly, and output"
-  puts "  the computed hash(es) to STDERR."
+  puts "  Hashes data streamed through a pipe to STDIN, or files specified on the command line."
+  puts "  The computed hash(es) are output to STDERR."
   puts
-  puts "Options:"
-  puts "  --all     => Compute all hash functions"
+  puts "Options/Hashers:"
   HASHERS.each do |opt, klass|
-    puts "  #{opt.ljust(9)} => #{klass}"
+    puts "  #{opt.ljust(10)} => #{klass}"
   end
+  puts "  -a / --all      => All of the above!"
   puts
-  puts "(Note: Defaults to --sha1 if no options specified)"
+  puts "  -p / --parallel => Compute each hash in its own process (uses multiple CPUs)"
+  puts
+  puts "(Note: Defaults to #{DEFAULTS.join(", ")} if no hashers specified)"
   puts
   puts "Example:"
   puts "  curl http://hostname.website/file.iso | pipesum --sha1 > file.iso"
@@ -70,15 +74,20 @@ if opts.delete("--help") or opts.delete("-h")
   exit
 end
 
-opts += ["--md5", "--sha1", "--sha256"] if opts.empty?
+opts += DEFAULTS if opts.empty?
 
-if opts.delete("--all")
+if opts.delete("--all") or opts.delete("-a")
   opts += HASHERS.keys
 end
 
 ################################################################
 
-def sum(digests, input, output=nil, messages=$stderr)
+def sum(digests, input, output=nil, messages=$stderr, parallel=false)
+  if parallel
+    puts "ERROR: Parallel mode not yet implemented."
+    exit 1
+  end
+
   while data = input.read(BLOCKSIZE)
     digests.each {|digest| digest << data }
     output.write(data) if output
@@ -121,5 +130,6 @@ if args.any?
     puts
   end
 else
-  sum(create_digests(opts), $stdin, $stdout)
+  parallel = (opts.delete("--parallel") or opts.delete("-p"))
+  sum(create_digests(opts), $stdin, $stdout, $stderr, parallel)
 end

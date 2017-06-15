@@ -35,8 +35,17 @@ end
 
 repo, dest = args
 
-if repo =~ /^[\w\-]+\/[\w\-\.]+$/ and not File.exists? repo
-  repo = "https://github.com/#{repo}"
+unless File.exists? repo
+  case repo
+  when %r{^[\w\-]+/[\w\-\.]+$}
+    # user left off https://github.com/; fill it in!
+    repo = "https://github.com/#{repo}"
+  when %r{^github\.com/.+}
+    # user left off https://; fill it in!
+    repo = "https://#{repo}"
+  else
+    puts "#{repo} is unhandled"
+  end
 end
 
 if dest and File.exists?(dest)
@@ -46,7 +55,7 @@ end
 
 cmd = ["git", "clone"]
 cmd << "--depth=1" if opts.shallow?
-cmd << "--recursive" if opts[:r]
+cmd << "--recursive" unless opts[:r]
 cmd += ["-b", opts[:branch]] if opts[:branch]
 cmd << repo
 cmd << dest if dest

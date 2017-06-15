@@ -88,9 +88,11 @@ EXTRA_LANGS = {
   ".cr"          => :ruby,
   ".jl"          => :ruby,
   ".pl"          => :ruby,
+  ".cmake"       => :ruby,
   "Rakefile"     => :ruby,
   "Gemfile"      => :ruby,
   "Makefile"     => :bash,
+  "makefile"     => :bash,
   ".mk"          => :bash,
   "PKGBUILD"     => :bash,
   "configure.in" => :bash,
@@ -99,8 +101,11 @@ EXTRA_LANGS = {
   ".desktop"     => :bash,
   ".conf"        => :bash,
   ".prf"         => :bash,
-  ".cmake"       => :ruby,
+  ".hs"          => :text,
+  ".ini"         => :bash,
+  ".service"     => :bash,
   "Gemfile.lock" => :c,
+  ".cl"          => :c,
   "database.yml" => :yaml,
   ".gradle"      => :groovy,
   ".sage"        => :python,
@@ -108,8 +113,8 @@ EXTRA_LANGS = {
   ".scm"         => :clojure,
   ".qml"         => :php,
   ".pro"         => :sql,
-  ".service"     => :ini,
   ".ws"          => :xml,
+  ".ui"          => :xml,
   ".opml"        => :xml,
 }
 
@@ -119,7 +124,7 @@ def print_source(filename)
   if File.read(filename, 256) =~ /\A#!(.+)/
     # Shebang!
     lang = case $1
-      when /\b(bash|zsh|sh)\b/ then :bash
+      when /\b(bash|zsh|sh|make|expect)\b/ then :bash
       when /ruby/   then :ruby
       when /python/ then :python
       when /perl/   then :ruby
@@ -163,71 +168,82 @@ end
 
 ##############################################################################
 
+def print_torrent(filename)
+  require 'bencode'
+  require 'digest/sha1'
+
+  data = BEncode.load_file(filename)
+
+  # require 'awesome_print'; return data.ai
+
+  date        = data["creation date"] && Time.at(data["creation date"])
+  name        = data.dig "info", "name"
+  infohash    = Digest::SHA1.hexdigest(BEncode.dump data["info"])
+  files       = data["info"]["files"]
+  trackers    = [data["announce"], *data["announce-list"]].compact
+  urls        = data["url-list"]
+  col1_size   = files.map { |f| f["length"] }.max.to_s.size if files
+  comment     = data["comment"]
+  creator     = data["created by"]
+  piece_size  = data.dig "info", "piece length"
+  pieces      = data.dig("info", "pieces").size / 20
+  total_size  = data.dig("info", "length") || files && files.map { |f| f["length"] }.reduce(:+)
+
+  output = []
+
+  output << "Name:        #{name}" if name
+  output << "Created At:  #{date}" if date
+  output << "Infohash:    #{infohash}"
+  output << "Comment:     #{comment}" if comment
+  output << "Created By:  #{creator}" if creator
+  output << "Pieces:      #{pieces} @ #{piece_size} bytes = ~#{pieces * piece_size} bytes"
+  output << "Total Size:  #{total_size}"
+  output << ""
+
+  if files
+    files.sort_by { |f| [-f["path"].size, f["path"]] }.each do |f|
+      output << "#{f["length"].to_s.rjust(col1_size)} | #{f["path"].join("/")}"
+    end
+    output << ""
+  end
+
+  {
+    "Trackers:" => trackers,
+    "URLs:"     => urls
+  }.each do |title, things|
+    if things
+      output << "----------------"
+      output << title
+      output << "----------------"
+      things.each {|t| output << t }
+      output << ""
+    end
+  end
+
+  # data["info"]["pieces"] = "[...#{data["info"]["pieces"].size} bytes of binary data...]"
+  output.join("\n")
+end
+
+##############################################################################
+
 def print_cp437(filename)
-  open(filename, "r:cp437:utf-8", &:read)
+  open(filename, "r:cp437:utf-8", &:read).gsub("\r", "")
 end
 
 ##############################################################################
-
-def pretty_xml(data)
-  require "rexml/document"
-
-  result    = ""
-  doc       = REXML::Document.new(data)
-  formatter = REXML::Formatters::Pretty.new
-
-  formatter.compact = true # use as little whitespace as possible
-  formatter.write(doc, result)
-
-  result
-end
-
-
-def print_archive(filename)
-  run("atool", "-l", filename)
-end
-
-def print_archived_file(archive, internal_file)
-  # internal_ext = File.extname(internal_file)
-  case archive.extname
-  when ".k3b"
-    data = IO.popen(["unzip", "-p", archive.to_s, internal_file], "r") { |io| io.read }
-    CodeRay.scan(pretty_xml(data), :xml).term
-  end
-end
-
-##############################################################################
-
-def run(*args)
-  IO.popen(args, "r")
-end
-
-def highlight(enum, &block)
-  Enumerator.new do |y|
-    enum.each do |line|
-      y << block.call(line)
-    end
-  end
-end
-
-def highlight_lines_with_colons(enum)
-  highlight(enum) do |line|
-    if line =~ /^(\S+.*):(.*)/
-      "\e[37;1m#{$1}\e[0m: #{$2}"
-    else
-      line
-    end
-  end
-end
 
 def print_obj(filename)
   highlight_lines_with_colons(run("objdump", "-xT", filename))
 end
 
+##############################################################################
+
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
+
+##############################################################################
 
 def print_csv(filename)
   require 'csv'
@@ -283,6 +299,96 @@ end
 
 ##############################################################################
 
+def pretty_xml(data)
+  require "rexml/document"
+
+  result    = ""
+  doc       = REXML::Document.new(data)
+  formatter = REXML::Formatters::Pretty.new
+
+  formatter.compact = true # use as little whitespace as possible
+  formatter.write(doc, result)
+
+  result
+end
+
+##############################################################################
+
+def print_archive(filename)
+  run("atool", "-l", filename)
+end
+
+def print_archived_xml_file(archive, internal_file)
+  # internal_ext = File.extname(internal_file)
+  case archive.extname
+  when ".k3b"
+    data = IO.popen(["unzip", "-p", archive.to_s, internal_file], "r") { |io| io.read }
+    CodeRay.scan(pretty_xml(data), :xml).term
+  end
+end
+
+##############################################################################
+
+def print_bibtex(filename)
+  require 'bibtex'
+  require 'epitools/colored'
+
+  out = StringIO.new
+  bib = BibTeX.open(filename)
+
+  bib.sort_by { |entry| entry.fields[:year] || "zzzz" }.each do |entry|
+    o      = OpenStruct.new entry.fields
+    year   = o.year ? o.year.to_s : "____"
+    indent = " " * (year.size + 1)
+
+    out.puts "<14>#{year} <15>#{o.title} <8>(<7>#{entry.type}<8>)".colorize
+
+    out.puts "#{indent}<11>#{o.author}".colorize if o.author
+
+    out.puts "#{indent}#{o.booktitle}"    if o.booktitle
+    out.puts "#{indent}#{o.series}"       if o.series
+    out.puts "#{indent}#{o.publisher}"    if o.publisher
+    out.puts "#{indent}#{o.journal}, Vol. #{o.volume}, No. #{o.number}, pages #{o.pages}"  if o.journal
+    out.puts "#{indent}<9>#{o.url}".colorize if o.url
+    out.puts
+    # out.puts o.inspect
+    # out.puts
+  end
+
+  out.seek 0
+  out.read
+end
+
+def print_http(url)
+  IO.popen(["lynx", "-dump", url], "r") { |io| io.read }
+end
+
+##############################################################################
+
+def run(*args)
+  IO.popen(args, "r")
+end
+
+def highlight(enum, &block)
+  Enumerator.new do |y|
+    enum.each do |line|
+      y << block.call(line)
+    end
+  end
+end
+
+def highlight_lines_with_colons(enum)
+  highlight(enum) do |line|
+    if line =~ /^(\S+.*):(.*)/
+      "\e[37;1m#{$1}\e[0m: #{$2}"
+    else
+      line
+    end
+  end
+end
+
+##############################################################################
+
 COMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
@@ -290,48 +396,58 @@ COMPRESSORS = {
 }
 
 def convert(arg)
-  arg = which(arg) unless File.exists? arg
-
-  if arg
-    return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
-
-    path = Pathname.new(arg)
-
-    # TODO: Fix relative symlinks
-    # arg = File.readlink(arg) if File.symlink?(arg)
-
-    ext = path.extname.downcase
-
-    if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
-      print_archive(arg)
-    elsif cmd = COMPRESSORS[ext]
-      IO.popen([*cmd, arg])
-    elsif %w[.md .markdown .mdwn].include? ext
-      print_markdown(arg)
-    elsif %w[.nfo .ans .drk .ice].include? ext
-      print_cp437(arg)
-    elsif %w[.pem .crt].include? ext
-      print_ssl_certificate(arg)
-    elsif ext == ".csv"
-      print_csv(arg)
-    elsif ext == ".tsv"
-      print_csv(arg, "\t")
-    elsif ext == ".k3b"
-      print_archived_file(path, "maindata.xml")
-    else
-      format = run('file', arg).read
-
-      case format
-      when /:.+?(executable|shared object)[^,]*,/
-        print_obj(arg)
-      when /(image,|image data)/
-        show_image(arg)
-      else
-        print_source(arg)
-      end
-    end
+  if arg =~ %r{^https?://.+}
+    print_http(arg)
   else
-    "\e[31m\e[1mFile not found.\e[0m"
+    arg = which(arg) unless File.exists? arg
+
+    if arg
+      return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
+
+      path = Pathname.new(arg)
+
+      # TODO: Fix relative symlinks
+      # arg = File.readlink(arg) if File.symlink?(arg)
+
+      ext = path.extname.downcase
+
+      if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
+        print_archive(arg)
+      elsif cmd = COMPRESSORS[ext]
+        IO.popen([*cmd, arg])
+      elsif %w[.md .markdown .mdwn].include? ext
+        print_markdown(arg)
+      elsif %w[.torrent].include? ext
+        print_torrent(arg)
+      elsif %w[.nfo .ans .drk .ice].include? ext
+        print_cp437(arg)
+      elsif %w[.pem .crt].include? ext
+        print_ssl_certificate(arg)
+      elsif ext == ".csv"
+        print_csv(arg)
+      elsif ext == ".tsv"
+        print_csv(arg, "\t")
+      elsif ext == ".bib"
+        print_bibtex(arg)
+      elsif ext == ".k3b"
+        print_archived_xml_file(path, "maindata.xml")
+      else
+        format = run('file', arg).read
+
+        case format
+        when /POSIX shell script/
+          print_source(arg)
+        when /:.+?(executable|shared object)[^,]*,/
+          print_obj(arg)
+        when /(image,|image data)/
+          show_image(arg)
+        else
+          print_source(arg)
+        end
+      end
+    else
+      "\e[31m\e[1mFile not found.\e[0m"
+    end
   end
 end
 
