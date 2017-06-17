@@ -166,6 +166,30 @@ def print_markdown(filename)
   carpet.render(File.read filename)
 end
 
+def print_ipynb(filename)
+  require 'json'
+  require 'tempfile'
+
+  json = JSON.load(open(filename))
+  tmp = Tempfile.new('c-')
+  p tmp.path
+
+  json["cells"].each do |c|
+    case c["cell_type"]
+    when "markdown"
+      tmp.puts c["source"].join
+    when "code"
+      tmp.puts "\n```python\n#{c["source"].join}\n```\n\n"
+    else
+      raise "unknown cell type: #{c["cell_type"]}"
+    end
+  end
+
+  at_exit { tmp.unlink }
+
+  print_markdown(tmp.path)
+end
+
 ##############################################################################
 
 def print_torrent(filename)
@@ -417,6 +441,8 @@ def convert(arg)
         IO.popen([*cmd, arg])
       elsif %w[.md .markdown .mdwn].include? ext
         print_markdown(arg)
+      elsif %w[.ipynb].include? ext
+        print_ipynb(arg)
       elsif %w[.torrent].include? ext
         print_torrent(arg)
       elsif %w[.nfo .ans .drk .ice].include? ext
