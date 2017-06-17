@@ -182,9 +182,10 @@ def print_ipynb(filename)
   json["cells"].each do |c|
     case c["cell_type"]
     when "markdown"
-      tmp.puts c["source"].join
+      tmp.write "#{c["source"].join}\n\n"
     when "code"
-      tmp.puts "\n```python\n#{c["source"].join}\n```\n\n"
+      # FIXME: Hardwired to python; check if a cell's metadata attribute supports other languages
+      tmp.write "\n```python\n#{c["source"].join}\n```\n\n"
     else
       raise "unknown cell type: #{c["cell_type"]}"
     end
