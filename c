@@ -642,8 +642,10 @@ class BlackCarpet < Redcarpet::Render::Base
   end
 
   def table(header, body)
-    table = Terminal::Table.new(rows: @rows.dup)
-    @rows = []
+    headings = @rows.shift
+    table    = Terminal::Table.new(headings: headings, rows: @rows)
+    @rows    = []
+
     "#{table}\n\n"
   end
 end
