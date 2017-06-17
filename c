@@ -162,7 +162,13 @@ def print_markdown(filename)
 
   eval DATA.read
 
-  carpet = Redcarpet::Markdown.new(BlackCarpet, :fenced_code_blocks=>true)
+  begin
+    require 'terminal-table'
+    carpet = Redcarpet::Markdown.new(BlackCarpet, fenced_code_blocks: true, tables: true)
+  rescue LoadError
+    carpet = Redcarpet::Markdown.new(BlackCarpet, fenced_code_blocks: true)
+  end
+
   carpet.render(File.read filename)
 end
 
@@ -522,7 +528,7 @@ end
 
 __END__
 
-# This gets lazily loaded if markdown is to be rendered.
+# This gets lazily loaded before rendering a markdown file
 
 def indented?(text)
   indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
@@ -617,5 +623,26 @@ class BlackCarpet < Redcarpet::Render::Base
     when :unordered
       "  <8>*</8> #{content.strip}\n".colorize
     end
+  end
+
+  def table_cell(content, alignment)
+    @cells ||= []
+    @cells << content
+
+    content
+  end
+
+  def table_row(content)
+    @rows ||= []
+    @rows << @cells.dup
+    @cells.clear
+
+    content
+  end
+
+  def table(header, body)
+    table = Terminal::Table.new(rows: @rows.dup)
+    @rows = []
+    "#{table}\n\n"
   end
 end
