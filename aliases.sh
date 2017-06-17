@@ -40,6 +40,8 @@ alias ll='ls -l'
 alias lh='ls -lh'
 alias lts='lt -s'
 
+alias fd='f -d'
+
 # cd
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
