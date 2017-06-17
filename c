@@ -172,7 +172,6 @@ def print_ipynb(filename)
 
   json = JSON.load(open(filename))
   tmp = Tempfile.new('c-')
-  p tmp.path
 
   json["cells"].each do |c|
     case c["cell_type"]
