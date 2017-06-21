@@ -256,6 +256,7 @@ alias py=python2
 #alias math='noglob math'
 #alias gfv='noglob gfv'
 alias yd='youtube-dl --xattrs --no-mtime'
+alias ydu='youtube-dl --update'
 
 # arch
 alias pacman='sudoifnotroot pacman'
