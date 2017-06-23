@@ -40,6 +40,8 @@ alias ll='ls -l'
 alias lh='ls -lh'
 alias lts='lt -s'
 
+alias fd='f -d'
+
 # cd
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
@@ -178,6 +180,7 @@ alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
 alias gl="git log --graph --stat"
+alias glu="gl -u"
 alias gch="git checkout"
 # alias g[[="git stash"
 # alias g]]="git stash pop"
@@ -212,6 +215,15 @@ aur() {
   fi
 }
 
+kill-bg-jobs() {
+  jobs=`jobs -ps`
+  if [ "$jobs" == "" ]; then
+    echo "Couldn't find any running background jobs"
+  else
+    echo "killing jobs: $jobs"
+    kill -9 $jobs
+  fi
+}
 alias gcs="gc --depth=1"
 
 # ruby
@@ -244,6 +256,7 @@ alias py=python2
 #alias math='noglob math'
 #alias gfv='noglob gfv'
 alias yd='youtube-dl --xattrs --no-mtime'
+alias ydu='youtube-dl --update'
 
 # arch
 alias pacman='sudoifnotroot pacman'

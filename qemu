@@ -13,10 +13,11 @@ def parse_options
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "r",  "restrict", "Restrict the network (firewall)"
     on "c",  "console",  "Output serial to the console"
+    on "C",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
-  
+
   [opts, ARGV]
 end
 
@@ -87,6 +88,8 @@ if opts.console?
 else
   cmd += ["-vga", "std"]
 end
+
+cmd << "-show-cursor" if opts.cursor?
 
 disks.each do |disk|
   unless disk.exists?

@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 
 require 'epitools'
-require 'bencode_ext'
+require 'bencode'
 
 ##################################################################
 
 def torrent_info(path)
-  data = path.read.bdecode
+  data = BEncode.load path.read
   data && data["info"]
 rescue BEncode::DecodeError
   nil

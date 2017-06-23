@@ -5,16 +5,15 @@ paccmd="pacman --color=always"
 if [[ "$1" == "" ]]; then
   $paccmd -Q | $lesscmd
 else
-  if $paccmd -Ql "$*" | $lesscmd
+  if $paccmd -Ql "$*" 2>&1
   then
     # yay it worked
     echo
   else
     echo
-    echo "* Searching for '$*'..."
-    echo
+    echo "== Similar packages ==="
 
-    $paccmd -Q | grep --color "$*" | $lesscmd
-  fi
+    $paccmd -Q | grep --color=always "$*"
+  fi | $lesscmd
 fi
 

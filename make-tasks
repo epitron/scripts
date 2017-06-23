@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "usage: make-tasks"
+  echo "(run it in the directory with the Makefile to list all targets)"
+  exit 1
+fi
+
+echo "Make Targets:"
+echo "-------------"
+make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\/\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}'

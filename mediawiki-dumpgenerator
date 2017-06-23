@@ -22,8 +22,7 @@
 try:
     from kitchen.text.converters import getwriter
 except ImportError:
-    raise Exception("Please install the kitchen module.")
-
+    print "Please install the kitchen module."
 import cookielib
 import cPickle
 import datetime
