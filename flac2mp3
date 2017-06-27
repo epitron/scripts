@@ -1,6 +1,6 @@
 #! /bin/sh
 
-for a in "$*"; do
+for a in "$@"; do
     OUTF=${a%.flac}.mp3
 
     ARTIST=`metaflac "$a" --show-tag=ARTIST | sed s/.*=//g`

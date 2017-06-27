@@ -5,22 +5,23 @@ require 'slop'
 require 'epitools'
 ################################################################
 
-class FakeOptions
-  def method_missing(*args); nil; end
-end
+################################################################
+# Utility functions
 
-def parse_options
-  Slop.parse(help: true, strict: true) do
-    banner 'Usage: dupes [options] <files or dirs...>'
+def parse_opts_and_args
+  opts = Slop.parse(help: true, strict: true) do
+    banner 'Usage: dupes [options] <files or dirs to check for dupes...>'
 
-    on 'd',  'delete',      'Delete dupes (interactive by default)'
+    on 'd',  'delete',      'Delete dupes (keeping the oldest)'
     on 'i',  'interactive', 'Interactively delete dupes'
     on 'a',  'all',         "Process all files (don't ignore .git)"
     on 'e=', 'exclude',     'Exclude a path'
   end
+  [opts, ARGV]
 end
 
-################################################################
+def title(msg); puts "<8>* <15>#{msg}".colorize; end
+def subtitle(msg); puts "  <8>|_ <7>#{msg}".colorize; end
 
 def common_prefix(files)
   x, *xs = files.map &:to_s
@@ -34,37 +35,39 @@ def common_prefix(files)
   ""
 end
 
-################################################################
-
-args = ARGV
-
-if args.empty? or args.any? { |opt| opt[/^-/] }
-  opts = parse_options
-else
-  opts = FakeOptions.new
+def trash(*paths)
+  @trasher = Path.which("trsh", "rm").compact.first
+  system(@trasher, "-v", *paths)
 end
 
 ################################################################
+# Parse args
 
+opts, args = parse_opts_and_args
 args << "." if args.empty?  # Default is current dir
 
+################################################################
 # Gather files
+
 files = args.map do |arg|
   path = Path[arg]
   path.dir? ? path.ls_r.select(&:file?) : path
 end.flatten
 
+################################################################
 # Exclude patterns
 excludes = []
 excludes << %r{/\.git/} unless opts[:all]
 excludes << /#{Regexp.escape opts[:exclude]}/i if opts[:exclude]
 excludes.each { |regex| files.reject! { |f| f =~ regex } }
 
+################################################################
 # Get file sizes
 sized_files = files.map { |f| [f.size, f] }
 
-puts "* Found #{files.size} files..."
+title "Found <9>#{files.size}</9> files..."
 
+################################################################
 #
 # Find duplicates by first grouping by file size,
 # then grouping those groups by the file's SHA256 hash.
@@ -81,20 +84,33 @@ grouped_dupes = sized_files.group_by(&:first). # group by file size
 
 
 if grouped_dupes.empty?
-  puts "  |_ no duplicates"
+  subtitle "no duplicates"
   exit 1
 end
 
-puts "  |_ #{grouped_dupes.size} duplicates"
+subtitle "#{grouped_dupes.size} duplicates"
 puts
 
-if opts.delete? or opts.interactive?
+
+################################################################
+if opts.delete? 
+
+  #
+  # Delete all but oldest dupe
+  #
+
+  deleters = grouped_dupes.map do |group|
+    keeper = group.sort_by { |size, path| path.mtime }.first
+    (group - [keeper]).map { |size, path| path }
+  end.flatten
+
+  trash *deleters
+
+elsif opts.interactive?
 
   #
   # Interactively delete duplicates
   #
-
-  deleter = Path.which("trsh", "rm").compact.first
 
   grouped_dupes.each do |group|
 
@@ -122,9 +138,10 @@ if opts.delete? or opts.interactive?
       redo
     end
 
-    cmd = [deleter, file_to_delete]
-    p cmd.map(&:to_s)
-    system *cmd
+    # cmd = [deleter, file_to_delete]
+    # p cmd.map(&:to_s)
+    # system *cmd
+    trash file_to_delete
 
     puts
   end
@@ -132,7 +149,7 @@ if opts.delete? or opts.interactive?
 else
 
   #
-  # Display duplciates
+  # Display duplciates without deletin' nothin'
   #
   grouped_dupes.each do |group|
     group.each do |size, file|
