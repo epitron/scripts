@@ -162,11 +162,16 @@ def print_markdown(filename)
 
   eval DATA.read
 
+  options = {
+    no_intra_emphasis: true,
+    fenced_code_blocks: true,
+  }
+
   begin
     require 'terminal-table'
-    carpet = Redcarpet::Markdown.new(BlackCarpet, fenced_code_blocks: true, tables: true)
+    carpet = Redcarpet::Markdown.new(BlackCarpet, options.merge(tables: true))
   rescue LoadError
-    carpet = Redcarpet::Markdown.new(BlackCarpet, fenced_code_blocks: true)
+    carpet = Redcarpet::Markdown.new(BlackCarpet, options)
   end
 
   carpet.render(File.read filename)
