@@ -21,6 +21,30 @@ THEMES = {
 }
 CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
 
+HTML_ENTITIES = {
+  '&lt;'    => '<',
+  '&gt;'    => '>',
+  '&nbsp;'  => ' ',
+  '&ndash;' => '-',
+  '&mdash;' => '-',
+  '&amp;'   => '&',
+  '&raquo;' => '>>',
+  '&laquo;' => '<<',
+  '&quot;'  => '"',
+  '&micro;' => 'u',
+  '&copy;'  => '(c)',
+  '&trade;' => '(tm)',
+  '&reg;'   => '(R)',
+  '&#174;'  => '(R)',
+  '&#8220;' => '"',
+  '&#8221;' => '"',
+  '&#8212;' => '--',
+  '&#39;'   => "'",
+  '&#8217;' => "'",
+}
+
+##############################################################################
+
 def lesspipe(*args)
   if args.any? and args.last.is_a?(Hash)
     options = args.pop
@@ -55,6 +79,7 @@ def lesspipe(*args)
 rescue Errno::EPIPE, Interrupt
   # less just quit -- eat the exception.
 end
+
 ##############################################################################
 
 def which(bin)
@@ -174,7 +199,7 @@ def print_markdown(filename)
     carpet = Redcarpet::Markdown.new(BlackCarpet, options)
   end
 
-  carpet.render(File.read filename)
+  carpet.render(File.read(filename))
 end
 
 def print_ipynb(filename)
@@ -460,6 +485,8 @@ def convert(arg)
         print_cp437(arg)
       elsif %w[.pem .crt].include? ext
         print_ssl_certificate(arg)
+      elsif %w[.xml].include? ext
+        print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
       elsif ext == ".csv"
         print_csv(arg)
       elsif ext == ".tsv"
