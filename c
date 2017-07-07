@@ -475,7 +475,7 @@ def convert(arg)
         print_archive(arg)
       elsif cmd = COMPRESSORS[ext]
         IO.popen([*cmd, arg])
-      elsif %w[.md .markdown .mdwn].include? ext
+      elsif %w[.md .markdown .mdwn .page].include? ext
         print_markdown(arg)
       elsif %w[.ipynb].include? ext
         print_ipynb(arg)
