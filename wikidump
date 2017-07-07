@@ -42,7 +42,7 @@ end
 
 args.each do |url|
   if opts.info?
-    wikidump("--get-wiki-engine", arg)
+    wikidump("--get-wiki-engine", url)
   else
     options = ["--xml"]
     options << "--images" unless opts.boring?
