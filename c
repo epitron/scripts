@@ -151,8 +151,9 @@ def print_source(filename)
     lang = case $1
       when /\b(bash|zsh|sh|make|expect)\b/ then :bash
       when /ruby/   then :ruby
-      when /python/ then :python
       when /perl/   then :ruby
+      when /python/ then :python
+      when /lua/    then :lua
     end
 
     CodeRay.scan_file(filename, lang).term
