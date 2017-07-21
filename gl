@@ -4,7 +4,7 @@ args = ARGV
 cmd = %w[git log --graph --stat]
 
 if args.delete "-w"
-  args += %w[-u --word-diff]
+  cmd += %w[-u --word-diff]
 end
 
 cmd += args
