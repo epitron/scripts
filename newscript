@@ -31,24 +31,29 @@ if opts.bash?
 elsif opts.ruby?
   body = <<~BODY
     #!/usr/bin/env ruby
-    gem 'slop', "~> 3.6"
-    require 'slop'
+    ########################################################
     require 'epitools'
 
-    def parse_options
-      opts = Slop.parse(help: true, strict: true) do
-        banner "Usage: <<scriptname>> [options]"
+    gem 'slop', "~> 3.6"
+    require 'slop'
+    ########################################################
 
-        # on "a",  "along",  "desc"
-        # on "b=", "blong",  "desc", default: ""
-      end
 
-      [opts, ARGV]
+
+    ########################################################
+    # Parse options
+
+    opts = Slop.parse(help: true, strict: true) do
+      banner "Usage: <<scriptname>> [options]"
+
+      # on "a",  "along",  "desc"
+      # on "b=", "blong",  "desc", default: ""
     end
 
-    opts, args = parse_options
+    args = ARGV
 
-    # Do stuff here
+    ########################################################
+
   BODY
 else
   body = ""
