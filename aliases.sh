@@ -169,6 +169,7 @@ alias detach='bg; disown'
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
+alias columns='cols'
 
 # archives
 alias ax="aunpack"
