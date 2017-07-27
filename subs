@@ -26,10 +26,16 @@ args = ARGV
 ########################################################################
 
 if args.empty?
+
+  # Show help!
   puts opts
+
 else
 
+  # Create an array of downloaders (based on the passed options)
   dlers = opts.options.select { |o| o.short =~ /^\d$/ and o.value == true }.sort_by(&:short).map(&:long)
+
+  # Use all the downloaders if no specific ones were chosen by the user
   dlers = SUB_DLERS.keys if dlers.empty?
 
   failures = []
@@ -39,6 +45,7 @@ else
     puts "<8>=== <11>#{filename} <8>===========".colorize
     puts
 
+    # Try all the downloaders until one works
     success = dlers.any? do |dler|
       cmd = SUB_DLERS[dler]
 
@@ -48,8 +55,6 @@ else
 
         true # success
       else
-        failures << filename
-
         puts "<12>ERRORN! <7>Trying next downloader...".colorize
         puts
         puts
