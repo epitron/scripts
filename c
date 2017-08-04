@@ -1,6 +1,22 @@
 #!/usr/bin/env ruby
 ##############################################################################
 #
+# SuperCat! Print every file format, in beautiful ansi colour!
+#
+# Optional dependencies:
+#
+#   ruby gems:
+#     redcloth (for markdown)
+#     nokogiri (for wikidumps)
+#
+#   python packages:
+#     pygments
+#     rst2ansi
+#     docutils
+#
+#   ...and many more! (the script will blow up when you need that program! :D)
+#
+#
 # TODOs:
 #   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
@@ -42,6 +58,29 @@ HTML_ENTITIES = {
   '&#39;'   => "'",
   '&#8217;' => "'",
 }
+
+##############################################################################
+
+class Pathname
+
+  def filename
+    basename.to_s
+  end
+  alias_method :name, :filename
+
+end
+
+##############################################################################
+
+def run(*args)
+  opts = (args.last.is_a? Hash) ? args.last : {}
+
+  if opts[:stderr]
+    args << {err: [:child, :out]}
+  end
+
+  IO.popen(args)
+end
 
 ##############################################################################
 
@@ -141,7 +180,10 @@ EXTRA_LANGS = {
   ".ws"          => :xml,
   ".ui"          => :xml,
   ".opml"        => :xml,
+  ".nim"         => :pygmentize,
 }
+
+##############################################################################
 
 def print_source(filename)
   ext = filename[/\.[^\.]+$/]
@@ -156,25 +198,165 @@ def print_source(filename)
       when /lua/    then :lua
     end
 
-    CodeRay.scan_file(filename, lang).term
-  else
-    if ext == ".json"
-      require 'json'
-
-      json = JSON.parse(File.read(filename))
-      CodeRay.scan(JSON.pretty_generate(json), :json).term
-    elsif lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
-      # p lang: lang
-      CodeRay.scan_file(filename, lang).term
-    else
-      CodeRay.scan_file(filename).term
-    end
   end
+
+  if ext == ".json"
+
+    require 'json'
+    json = JSON.parse(File.read(filename))
+    CodeRay.scan(JSON.pretty_generate(json), :json).term
+
+  # Use an alternate parser for this language
+  elsif lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
+
+    if lang == :pygmentize
+      run("pygmentize", filename)
+    else
+      CodeRay.scan_file(filename, lang).term
+    end
+
+  else
+
+    CodeRay.scan_file(filename).term
+
+  end
+
 rescue ArgumentError
   concatenate_enumerables run("file", filename), run("ls", "-l", filename)
 end
 
 ##############################################################################
+
+#
+# Markdown to ANSI Renderer ("BlackCarpet")
+#
+# This class takes a little while to initialize, so instead of slowing down the script for every non-markdown file,
+# I've wrapped it in a proc which gets lazily loaded by `render_markdown` when needed.
+#
+
+BLACKCARPET_INIT = proc do
+
+  def indented?(text)
+    indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
+    indent_sizes.all? {|dent| dent > 0 }
+  end
+
+  def unwrap(text)
+    return text unless indented? text
+    text.lines.to_a.map(&:strip).join ' '
+  end
+
+  def indent(text,amount=2)
+    text.lines.map{|line| " "*amount + line }.join
+  end
+
+  class BlackCarpet < Redcarpet::Render::Base
+
+    def normal_text(text)
+      text
+    end
+
+    def raw_html(html)
+      ''
+    end
+
+    def link(link, title, content)
+      unless content[/^Back /]
+        "<15>#{content}</15> <8>(</8><9>#{link}</9><8>)</8>".colorize
+      end
+    end
+
+    def block_code(code, language)
+      language ||= :ruby
+      language = :cpp if language == "C++"
+      require 'coderay'
+      "#{indent CodeRay.scan(code, language).term, 4}\n"
+    end
+
+    def block_quote(text)
+      indent paragraph(text)
+    end
+
+    def codespan(code)
+      code.cyan
+    end
+
+    def header(title, level, anchor=nil)
+      color = case level
+        when 1 then :light_yellow
+        when 2 then :light_cyan
+        when 3 then :light_blue
+        else :purple
+      end
+
+      bar = ("-"*(title.size+4)).grey
+
+      "#{bar}\n  #{title.send(color)}\n#{bar}\n\n"
+    end
+
+    def double_emphasis(text)
+      text.light_green
+    end
+
+    def emphasis(text)
+      text.green
+    end
+
+    def linebreak
+      "\n"
+    end
+
+    def paragraph(text)
+      "#{indented?(text) ? text : unwrap(text)}\n\n"
+    end
+
+    def list(content, list_type)
+      case list_type
+      when :ordered
+        @counter = 0
+        "#{content}\n"
+      when :unordered
+        "#{content}\n"
+      end
+    end
+
+    def list_item(content, list_type)
+      case list_type
+      when :ordered
+        @counter ||= 0
+        @counter += 1
+        "  <8>#{@counter}.</8> #{content.strip}\n".colorize
+      when :unordered
+        "  <8>*</8> #{content.strip}\n".colorize
+      end
+    end
+
+    def table_cell(content, alignment)
+      @cells ||= []
+      @cells << content
+
+      content
+    end
+
+    def table_row(content)
+      @rows ||= []
+      @rows << @cells.dup
+      @cells.clear
+
+      content
+    end
+
+    def table(header, body)
+      headings = @rows.shift
+      table    = Terminal::Table.new(headings: headings, rows: @rows)
+      @rows    = []
+
+      "#{table}\n\n"
+    end
+  end
+
+  BlackCarpet
+end
 
 def print_markdown(filename)
   # Lazily load markdown renderer
@@ -186,7 +368,7 @@ def print_markdown(filename)
       print_source(filename)
   end
 
-  eval DATA.read
+  BLACKCARPET_INIT.call unless defined? BlackCarpet
 
   options = {
     no_intra_emphasis: true,
@@ -202,6 +384,48 @@ def print_markdown(filename)
 
   carpet.render(File.read(filename))
 end
+
+##############################################################################
+
+# def print_textile(filename)
+#   require 'redcloth'
+# end
+
+##############################################################################
+
+def print_wikidump(filename)
+  require 'nokogiri'
+  require 'date'
+  require 'tempfile'
+
+  doc = Nokogiri::XML(open(filename))
+
+  Enumerator.new do |out|
+    doc.search("page").each do |page|
+      title = page.at("title").inner_text
+      rev = page.at("revision")
+      date = DateTime.parse(rev.at("timestamp").inner_text).strftime("%Y-%m-%d")
+      body = rev.at("text").inner_text
+
+      # out << "<8>=== <15>#{title} <7>(<11>#{date}<7>) <8>=========================".colorize
+      out << "\e[30m\e[1m=== \e[0m\e[37m\e[1m#{title} \e[0m\e[37m(\e[0m\e[36m\e[1m#{date}\e[0m\e[37m) \e[0m\e[30m\e[1m=========================\e[0m"
+      out << ""
+      out << body
+      # parsed_page = WikiCloth::Parser.new(params: { "PAGENAME" => title }, data: body)
+      # out << parsed_page.to_html
+      out << ""
+      out << ""
+    end
+  end
+end
+
+##############################################################################
+
+def print_rst(filename)
+  run("rst2ansi", filename)
+end
+
+##############################################################################
 
 def print_ipynb(filename)
   require 'json'
@@ -383,7 +607,7 @@ def print_archived_xml_file(archive, internal_file)
   # internal_ext = File.extname(internal_file)
   case archive.extname
   when ".k3b"
-    data = IO.popen(["unzip", "-p", archive.to_s, internal_file], "r") { |io| io.read }
+    data = IO.popen(["unzip", "-p", archive.to_s, internal_file]) { |io| io.read }
     CodeRay.scan(pretty_xml(data), :xml).term
   end
 end
@@ -421,14 +645,10 @@ def print_bibtex(filename)
 end
 
 def print_http(url)
-  IO.popen(["lynx", "-dump", url], "r") { |io| io.read }
+  IO.popen(["lynx", "-dump", url]) { |io| io.read }
 end
 
 ##############################################################################
-
-def run(*args)
-  IO.popen(args, "r")
-end
 
 def highlight(enum, &block)
   Enumerator.new do |y|
@@ -456,45 +676,66 @@ COMPRESSORS = {
   ".bz2" => %w[bzip2 -d -c],
 }
 
+
 def convert(arg)
+
   if arg =~ %r{^https?://.+}
     print_http(arg)
   else
     arg = which(arg) unless File.exists? arg
 
-    if arg
-      return "\e[31m\e[1mThat's a directory!\e[0m" if File.directory? arg
+    return "\e[31m\e[1mFile not found.\e[0m" unless arg
 
-      path = Pathname.new(arg)
+    #
+    # If it's a directory, show the README, or print an error message.
+    #
+    if File.directory? arg
+      readmes = Dir.foreach(arg).select { |f| f[/^readme/i] }.sort_by(&:size)
+      if readme = readmes.first
+        return convert("#{arg}/#{readme}")
+      else
+        return run("tree", arg)
+        # return "\e[31m\e[1mThat's a directory!\e[0m"
+      end
+    end
 
-      # TODO: Fix relative symlinks
-      # arg = File.readlink(arg) if File.symlink?(arg)
+    path = Pathname.new(arg)
 
-      ext = path.extname.downcase
+    # TODO: Fix relative symlinks
+    # arg = File.readlink(arg) if File.symlink?(arg)
 
-      if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
-        print_archive(arg)
-      elsif cmd = COMPRESSORS[ext]
-        IO.popen([*cmd, arg])
-      elsif %w[.md .markdown .mdwn .page].include? ext
+    # MEGA SWITCH STATEMENT
+    ext = path.extname.downcase
+
+    if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
+      print_archive(arg)
+    elsif cmd = COMPRESSORS[ext]
+      run(*cmd, arg)
+    elsif path.filename =~ /.+-current\.xml$/
+      print_wikidump(arg)
+    else
+      case ext
+      when *%w[.md .markdown .mdwn .page]
         print_markdown(arg)
-      elsif %w[.ipynb].include? ext
+      when *%w[.ipynb]
         print_ipynb(arg)
-      elsif %w[.torrent].include? ext
+      when *%w[.torrent]
         print_torrent(arg)
-      elsif %w[.nfo .ans .drk .ice].include? ext
+      when *%w[.nfo .ans .drk .ice]
         print_cp437(arg)
-      elsif %w[.pem .crt].include? ext
+      when *%w[.rst]
+        print_rst(arg)
+      when *%w[.pem .crt]
         print_ssl_certificate(arg)
-      elsif %w[.xml].include? ext
+      when *%w[.xml]
         print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
-      elsif ext == ".csv"
+      when ".csv"
         print_csv(arg)
-      elsif ext == ".tsv"
+      when ".tsv"
         print_csv(arg, "\t")
-      elsif ext == ".bib"
+      when ".bib"
         print_bibtex(arg)
-      elsif ext == ".k3b"
+      when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
         format = run('file', arg).read
@@ -510,10 +751,9 @@ def convert(arg)
           print_source(arg)
         end
       end
-    else
-      "\e[31m\e[1mFile not found.\e[0m"
     end
   end
+
 end
 
 
@@ -555,130 +795,4 @@ else # 1 or more args
     end
   end
 
-end
-
-
-### Markdown ANSI Renderer ("BlackCarpet") ###################################
-
-__END__
-
-# This gets lazily loaded before rendering a markdown file
-
-def indented?(text)
-  indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
-  indent_sizes.all? {|dent| dent > 0 }
-end
-
-def unwrap(text)
-  return text unless indented? text
-  text.lines.to_a.map(&:strip).join ' '
-end
-
-def indent(text,amount=2)
-  text.lines.map{|line| " "*amount + line }.join
-end
-
-class BlackCarpet < Redcarpet::Render::Base
-
-  def normal_text(text)
-    text
-  end
-
-  def raw_html(html)
-    ''
-  end
-
-  def link(link, title, content)
-    unless content[/^Back /]
-      "<15>#{content}</15> <8>(</8><9>#{link}</9><8>)</8>".colorize
-    end
-  end
-
-  def block_code(code, language)
-    language ||= :ruby
-    language = :cpp if language == "C++"
-    require 'coderay'
-    "#{indent CodeRay.scan(code, language).term, 4}\n"
-  end
-
-  def block_quote(text)
-    indent paragraph(text)
-  end
-
-  def codespan(code)
-    code.cyan
-  end
-
-  def header(title, level, anchor=nil)
-    color = case level
-      when 1 then :light_yellow
-      when 2 then :light_cyan
-      when 3 then :light_blue
-      else :purple
-    end
-
-    bar = ("-"*(title.size+4)).grey
-
-    "#{bar}\n  #{title.send(color)}\n#{bar}\n\n"
-  end
-
-  def double_emphasis(text)
-    text.light_green
-  end
-
-  def emphasis(text)
-    text.green
-  end
-
-  def linebreak
-    "\n"
-  end
-
-  def paragraph(text)
-    "#{indented?(text) ? text : unwrap(text)}\n\n"
-  end
-
-  def list(content, list_type)
-    case list_type
-    when :ordered
-      @counter = 0
-      "#{content}\n"
-    when :unordered
-      "#{content}\n"
-    end
-  end
-
-  def list_item(content, list_type)
-    case list_type
-    when :ordered
-      @counter ||= 0
-      @counter += 1
-      "  <8>#{@counter}.</8> #{content.strip}\n".colorize
-    when :unordered
-      "  <8>*</8> #{content.strip}\n".colorize
-    end
-  end
-
-  def table_cell(content, alignment)
-    @cells ||= []
-    @cells << content
-
-    content
-  end
-
-  def table_row(content)
-    @rows ||= []
-    @rows << @cells.dup
-    @cells.clear
-
-    content
-  end
-
-  def table(header, body)
-    headings = @rows.shift
-    table    = Terminal::Table.new(headings: headings, rows: @rows)
-    @rows    = []
-
-    "#{table}\n\n"
-  end
 end
