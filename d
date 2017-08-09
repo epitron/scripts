@@ -7,16 +7,31 @@ require 'epitools/path'
 require 'epitools/colored'
 ###############################################################################
 
-COLORS = Rash.new(
-  /(rb|c|c++|cpp|py|sh)$/i                   => :blue,
-  /(mp3)$/i                                  => :purple,
-  /(mp4|mkv|avi|m4v)$/i                      => :light_purple,
-  /(srt|idx|sub)$/i                          => :grey,
-  /(jpe?g|bmp|png)$/i                        => :green,
-  /(txt|pdf)$/i                              => :light_white,
-  /(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2)$/i => :light_yellow
-)
+TYPE_INFO = [
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :white],
+  [:music,   /\.(mp3|ogg|m4a)$/i,                          :purple],
+  [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
+  [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
+  [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
+  [:doc,     /\.(txt|pdf)$/i,                              :light_white],
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2)$/i, :light_yellow]
+]
 
+FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
+FILENAME2TYPE  = Rash.new TYPE_INFO.map { |name, regex, color| [regex, name] }
+
+ARG2TYPE = Rash.new({
+  /^(code|source|src)$/   => :code,
+  /^music$/               => :music,
+  /^videos?$/             => :video,
+  /^(subs?)$/             => :sub,
+  /^(image?s|pics?|pix)$/ => :image,
+  /^(text|docs?)$/        => :doc,
+  /^(archives?|zip)$/     => :archive,
+  /^(dir|directory)$/     => :dir,
+})
+
+###############################################################################
 
 class Path
   def colorized(wide: true)
@@ -27,7 +42,7 @@ class Path
       fn = "<11>#{filename}"
       fn += " <8>-> <#{target.exists? ? "7" : "12"}>#{target}" if wide
       fn = fn.colorize
-    elsif color = COLORS[filename]
+    elsif color = FILENAME2COLOR[filename]
       fn = filename.send(color)
     elsif exe?
       fn = filename.light_green
@@ -36,6 +51,11 @@ class Path
     end
     fn
   end
+
+  def type
+    dir? ? :dir : FILENAME2TYPE[filename]
+  end
+
 end
 
 ###############################################################################
@@ -90,10 +110,18 @@ class DirLister
     puts "#{size.commatized_and_colorized} #{time} #{fn}"
   end
 
-  def list_dir(dir, opts)
-    root = Path[dir]
+  def list_dir(root, opts, selected_types=[])
+
+    unless root.exists? and root.dir?
+      $stderr.puts "<12>Error: <15>#{root} <12>doesn't exist".colorize
+      return
+    end
 
     paths = root.ls
+
+    if selected_types.any?
+      paths = paths.select { |path| selected_types.include? path.type  }
+    end
 
     if opts[:time] or opts["reverse-time"]
       paths.sort_by!(&:mtime)
@@ -124,17 +152,29 @@ end
 
 # args.flatten!
 
+types = TYPE_INFO.map &:first
+selected_types = []
+ARGV.each do |arg|
+  if type = ARG2TYPE[arg.gsub(/^--/, '')]
+    ARGV.delete(arg)
+    selected_types << type
+  end
+end
+
 opts = Slop.parse(help: true, strict: true) do
   banner "Usage: d"
 
-  on :v, :verbose,  'Enable verbose mode'
-  on :l, :long,     'Wide mode'
-  on :r, :recursive,'Recursive'
-  on :t, :time,     'Sort by modification time'
-  on :T, "reverse-time", 'Sort by modification time (reversed)'
-  on :s, :size,     'Sort by size'
-  on :S, "reverse-size", 'Sort by size (reversed)'
-  on :n, :dryrun,   'Dry-run', false
+  on "v", "verbose",  'Enable verbose mode'
+  on "l", "long",     'Long mode (with sizes and dates)'
+  on "r", "recursive",'Recursive'
+  on "t", "time",     'Sort by modification time'
+  on "T", "reverse-time", 'Sort by modification time (reversed)'
+  on "s", "size",     'Sort by size'
+  on "S", "reverse-size", 'Sort by size (reversed)'
+  on "n", "dryrun",   'Dry-run', false
+  # on "f=", "type",    "File types to select (eg: #{types.join(', ')})"
+
+  separator "        --<type name>       List files of this type (eg: #{types.join(', ')})"
 end
 
 args = []
@@ -143,4 +183,6 @@ opts.parse { |arg| args << arg }
 args << "." if args.empty?
 
 lister = DirLister.new
-args.each { |arg| lister.list_dir(arg, opts) }
+paths = args.map { |arg| Path[arg] }
+
+paths.each { |path| lister.list_dir(path, opts, selected_types) }
