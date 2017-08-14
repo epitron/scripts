@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+########################################################################
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+########################################################################
+
+SUB_DLERS = {
+  "subdl" => %w[subdl],
+  "subliminal" => %w[subliminal download -l en],
+}
+
+########################################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: subs [options] <file(s)...>"
+
+  SUB_DLERS.each_key.with_index do |sub_dler, n|
+    on "#{n+1}",  sub_dler, "Use '#{sub_dler}'#{"(default)" if n==0}'"
+  end
+end
+
+args = ARGV
+
+########################################################################
+
+if args.empty?
+
+  # Show help!
+  puts opts
+
+else
+
+  # Create an array of downloaders (based on the passed options)
+  dlers = opts.options.select { |o| o.short =~ /^\d$/ and o.value == true }.sort_by(&:short).map(&:long)
+
+  # Use all the downloaders if no specific ones were chosen by the user
+  dlers = SUB_DLERS.keys if dlers.empty?
+
+  failures = []
+
+  for filename in args
+    puts
+    puts "<8>=== <11>#{filename} <8>===========".colorize
+    puts
+
+    # Try all the downloaders until one works
+    success = dlers.any? do |dler|
+      cmd = SUB_DLERS[dler]
+
+      if system *cmd, filename
+        puts "Success!".light_green
+        puts
+
+        true # success
+      else
+        puts "<12>ERRORN! <7>Trying next downloader...".colorize
+        puts
+        puts
+
+        false # failed
+      end
+    end
+
+    failures << filename unless success
+  end
+
+
+  puts
+  puts
+  puts "<8>=== <15>DONE! <8>===========".colorize
+  puts
+
+  if failures.any?
+    puts "<8>* <15>#{failures.size} <12>failure#{"s" if failures.size > 1}:".colorize
+    for failure in failures
+      puts "  <8>|_ <9>#{failure}".colorize
+    end
+    puts
+  end
+end

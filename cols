@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+lines = $stdin.each_line.map &:chomp
+table = Term::Table.new(lines)
+
+puts table.by_columns

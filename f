@@ -8,6 +8,7 @@ def parse_options
     banner "Usage: f [options]"
 
     on "d",  "dirs", "Search directory names only"
+    on "x",  "xdev", "Stay on this device"
     # on "b=", "blong",  "desc", default: ""
   end
 
@@ -27,6 +28,7 @@ bins.any? { |bin, args| cmd = [bin, *args] if which(bin) }
 if cmd
 
   cmd += %w[-type d] if opts.dirs?
+  cmd << "-xdev" if opts.xdev?
 
   query = Regexp.new(args.map{|a| Regexp.escape(a) }.join(".*"), Regexp::IGNORECASE)
 

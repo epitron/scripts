@@ -7,38 +7,32 @@ require 'epitools/path'
 require 'epitools/colored'
 ###############################################################################
 
-COLORS = Rash.new(
-  /(rb|c|c++|cpp|py|sh)$/i                   => :blue,
-  /(mp3)$/i                                  => :purple,
-  /(mp4|mkv|avi|m4v)$/i                      => :light_purple,
-  /(srt|idx|sub)$/i                          => :grey,
-  /(jpe?g|bmp|png)$/i                        => :green,
-  /(txt|pdf)$/i                              => :light_white,
-  /(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2)$/i => :light_yellow
-)
+TYPE_INFO = [
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :white],
+  [:music,   /\.(mp3|ogg|m4a)$/i,                          :purple],
+  [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
+  [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
+  [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
+  [:doc,     /\.(txt|pdf)$/i,                              :light_white],
+  [:dotfile, /^\../i,                                      :grey],
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2)$/i, :light_yellow]
+]
 
+FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
+FILENAME2TYPE  = Rash.new TYPE_INFO.map { |name, regex, color| [regex, name] }
 
-class Path
-  def colorized(wide: true)
-    fn = ""
-    if dir?
-      fn = dirs[-1].light_blue + "/"
-    elsif symlink?
-      fn = "<11>#{filename}"
-      fn += " <8>-> <#{target.exists? ? "7" : "12"}>#{target}" if wide
-      fn = fn.colorize
-    elsif color = COLORS[filename]
-      fn = filename.send(color)
-    elsif exe?
-      fn = filename.light_green
-    else
-      fn = filename
-    end
-    fn
-  end
-end
-
-###############################################################################
+ARG2TYPE = Rash.new({
+  /^(code|source|src)$/   => :code,
+  /^music$/               => :music,
+  /^videos?$/             => :video,
+  /^(subs?)$/             => :sub,
+  /^(image?s|pics?|pix)$/ => :image,
+  /^(text|docs?)$/        => :doc,
+  /^(archives?|zip)$/     => :archive,
+  /^(dir|directory)$/     => :dir,
+  /^(bin|exe|program)s?$/ => :bin,
+  /^dotfiles?$/           => :dotfile,
+})
 
 SIZE_COLORS = Rash.new(
               0...100 => :grey,
@@ -48,6 +42,7 @@ SIZE_COLORS = Rash.new(
   1_000_000_000...1_000_000_000_000 => :light_white
 )
 
+###############################################################################
 
 class Integer
   def commatized_and_colorized(rjust=15)
@@ -76,45 +71,38 @@ end
 
 ###############################################################################
 
-class DirLister
+class Path
 
-  def show_long(path)
-    fn = path.colorized
-    # time = (path.mtime.strftime("%Y-%m-%d %H:%M:%S") rescue "").ljust(10)
-    time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
-    #   size = -1
-    # else
-    size = path.size rescue nil
-    # end
-    #size = size.commatize.rjust(15).send(SIZE_COLORS[size] || :white) rescue ''
-    puts "#{size.commatized_and_colorized} #{time} #{fn}"
-  end
+  def colorized(wide: false, regex: nil)
+    fn   = regex ? filename.gsub(regex) { |match| "<14>#{match}</14>" } : filename
+    line = ""
 
-  def list_dir(dir, opts)
-    root = Path[dir]
-
-    paths = root.ls
-
-    if opts[:time] or opts["reverse-time"]
-      paths.sort_by!(&:mtime)
-    elsif opts[:size] or opts["reverse-size"]
-      paths.sort_by!(&:size)
+    if dir?
+      line = dirs[-1].light_blue + "/"
+    elsif symlink?
+      line = "<11>#{fn}</11>"
+      line += " <8>-> <#{target.exists? ? "7" : "12"}>#{target}" if wide
+      line = line.colorize
+    elsif color = FILENAME2COLOR[fn]
+      line = "<#{color}>#{fn}</#{color}>"
+    elsif executable?
+      line = "<10>#{fn}</10>"
     else
-      paths.sort_by!(&:path)
+      line = fn
     end
 
-    paths.reverse! if opts["reverse-size"] or opts["reverse-time"]
+    line.colorize
+  end
 
-    dirs, files = paths.partition(&:dir?)
-    paths = dirs + files # dirs first!
-
-    if opts.long?
-      paths.each do |path|
-        show_long path
-      end
+  def type
+    if dir?
+      :dir
+    elsif type = FILENAME2TYPE[filename]
+      type
+    elsif ext.nil? or executable?
+      :bin
     else
-      puts Term::Table.new(dirs.map  { |path| path.colorized(wide: false) }, :ansi=>true).by_columns
-      puts Term::Table.new(files.map { |path| path.colorized(wide: false) }, :ansi=>true).by_columns
+      nil
     end
   end
 
@@ -122,25 +110,103 @@ end
 
 ###############################################################################
 
-# args.flatten!
+def print_paths(paths, long: false, regex: nil)
+  paths = paths.select { |path| path.filename =~ regex } if regex
 
-opts = Slop.parse(help: true, strict: true) do
-  banner "Usage: d"
-
-  on :v, :verbose,  'Enable verbose mode'
-  on :l, :long,     'Wide mode'
-  on :r, :recursive,'Recursive'
-  on :t, :time,     'Sort by modification time'
-  on :T, "reverse-time", 'Sort by modification time (reversed)'
-  on :s, :size,     'Sort by size'
-  on :S, "reverse-size", 'Sort by size (reversed)'
-  on :n, :dryrun,   'Dry-run', false
+  if long
+    paths.each do |path|
+      fn = path.colorized(regex: regex, wide: true)
+      time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
+      size = path.size rescue nil
+      puts "#{size.commatized_and_colorized} #{time} #{fn}"
+    end
+  else
+    colorized_paths = paths.map { |path| path.colorized(regex: regex) }
+    puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
+  end
 end
 
-args = []
-opts.parse { |arg| args << arg }
 
-args << "." if args.empty?
+###############################################################################
+# Main
+###############################################################################
 
-lister = DirLister.new
-args.each { |arg| lister.list_dir(arg, opts) }
+#
+# Snatch out the --<type> options before Slop sees them, so it doesn't blow up
+#
+types = TYPE_INFO.map &:first
+selected_types = []
+ARGV.each do |arg|
+  if type = ARG2TYPE[arg.gsub(/^--/, '')]
+    ARGV.delete(arg)
+    selected_types << type
+  end
+end
+
+#
+# Parse normal arguments
+#
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: d [options] <file/dir(s)..>"
+
+  on "v", "verbose",      'Enable verbose mode'
+  on "l", "long",         'Long mode (with sizes and dates)'
+  on "r", "recursive",    'Recursive'
+  on "t", "time",         'Sort by modification time'
+  on "T", "reverse-time", 'Sort by modification time (reversed)'
+  on "s", "size",         'Sort by size'
+  on "S", "reverse-size", 'Sort by size (reversed)'
+  on "n", "dryrun",       'Dry-run', false
+  on "g=","grep",         'Search filenames'
+  on "f=","find",         'Find in directory tree'
+
+  # on "f=", "type",    "File types to select (eg: #{types.join(', ')})"
+
+  separator "        --<type name>       List files of this type (eg: #{types.join(', ')})"
+end
+
+# List the current directory if no files/dirs were specified
+args = ARGV.empty? ? ["."] : ARGV
+
+# Expand arguments into collections of files
+grouped      = {}
+single_files = []
+
+args.each do |arg|
+  path = Path[arg]
+
+  unless path.exists?
+    $stderr.puts "<12>Error: <15>#{root} <12>doesn't exist".colorize
+    next
+  end
+
+  if path.dir?
+    grouped[path] = path.ls
+  else
+    single_files << path
+  end
+end
+
+grouped = grouped.update single_files.flatten.group_by(&:dir)
+regex   = opts[:grep] ? Regexp.new(opts[:grep], Regexp::IGNORECASE) : nil
+
+grouped.each do |dir, paths|
+  if grouped.size > 1
+    puts
+    puts "<9>#{dir}".colorize
+  end
+
+  if selected_types.any?
+    paths = paths.select { |path| selected_types.include? path.type }
+  end
+
+  if opts[:time] or opts["reverse-time"]
+    paths.sort_by!(&:mtime)
+  elsif opts[:size] or opts["reverse-size"]
+    paths.sort_by!(&:size)
+  else
+    paths.sort_by!(&:path)
+  end
+
+  print_paths(paths, long: opts.long?, regex: regex)
+end

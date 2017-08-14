@@ -79,13 +79,17 @@ end
 
 
 begin
-  # args = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv", "-l", "1"]
-  args = ["nvidia-smi", "--query-gpu=#{fields.values.join(",")}", "--format=csv,noheader,nounits", "-l", "1"]
+  if ARGV.include? "-v"
+    system *%w[watch -n1 nvidia-smi]
+  else
+    # cmd = ["nvidia-smi", "--query-gpu=#{fields.join(",")}", "--format=csv", "-l", "1"]
+    cmd = ["nvidia-smi", "--query-gpu=#{fields.values.join(",")}", "--format=csv,noheader,nounits", "-l", "1"]
 
-  run(*args) do |output|
-    CSV.new(output).each do |row|
-      s = Stat.new(*row.map(&:strip))
-      puts s.to_color
+    run(*cmd) do |output|
+      CSV.new(output).each do |row|
+        s = Stat.new(*row.map(&:strip))
+        puts s.to_color
+      end
     end
   end
 rescue Interrupt

@@ -40,6 +40,8 @@ alias ll='ls -l'
 alias lh='ls -lh'
 alias lts='lt -s'
 
+alias fd='f -d'
+
 # cd
 alias up='cd ..'
 alias back='cd "$OLDPWD"'
@@ -167,6 +169,7 @@ alias detach='bg; disown'
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
+alias columns='cols'
 
 # archives
 alias ax="aunpack"
@@ -177,7 +180,6 @@ alias al="als"
 alias gs="git status"
 alias gd="git diff"
 alias ga="git add"
-alias gl="git log --graph --stat"
 alias glu="gl -u"
 alias gch="git checkout"
 # alias g[[="git stash"
@@ -254,6 +256,7 @@ alias py=python2
 #alias math='noglob math'
 #alias gfv='noglob gfv'
 alias yd='youtube-dl --xattrs --no-mtime'
+alias ydu='youtube-dl --update'
 
 # arch
 alias pacman='sudoifnotroot pacman'

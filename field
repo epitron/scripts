@@ -8,6 +8,7 @@ end
 delim = /\s+/
 field = 0..-1
 args  = ARGV
+output_csv   = false
 
 while args.any?
 
@@ -16,6 +17,9 @@ while args.any?
   case arg
   when "--help"
     help
+
+  when "--csv", "-c"
+    output_csv = true
 
   when /^(\d+)$/
     field = $1.to_i - 1
@@ -37,6 +41,14 @@ end
 
 help unless field
 
+if output_csv
+  require 'csv'
+  csv = CSV.new($stdout)
+  emitter = proc { |result| csv << result }
+else
+  emitter = proc { |result| puts result.is_a?(Array) ? result.join(" ") : result }
+end
+
 $stdin.each_line do |line|
   case field
   when Array
@@ -46,7 +58,7 @@ $stdin.each_line do |line|
     result = line.split(delim)[field]
   end
 
-  puts result.is_a?(Array) ? result.join(" ") : result
+  emitter.(result)
 end
 
 

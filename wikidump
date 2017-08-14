@@ -1,1 +1,53 @@
-mediawiki-dumpgenerator
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: wikidump [options] <wiki url(s)>"
+
+    on "i", "info", "Show info about the wiki, then exit"
+    on "a", "all", "Download all historical revisions for every page"
+    on "b", "boring", "No images"
+    on "d=", "dir", "Output directory"
+
+    separator "Defaults to downloading the latest revision of each page with images."
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+def wikidump(*args)
+  cmd = ["mediawiki-dumpgenerator", *args]
+  puts "Executing: #{cmd.inspect}"
+  system *cmd
+end
+
+failure = proc do |msg|
+  $stderr.puts "<12>Error:</12> #{msg}".colorize
+  $stderr.puts
+  $stderr.puts opts
+  exit 1
+end
+
+
+failure["Wiki URL missing"] if args.empty?
+
+args.each do |url|
+  failure["Invalid URL <8>(<1>\"<9>#{url}<1>\"<8>)"] unless url =~ %r{^https?://.+}
+end
+
+args.each do |url|
+  if opts.info?
+    wikidump("--get-wiki-engine", url)
+  else
+    options = ["--xml"]
+    options << "--images" unless opts.boring?
+    options << "--curonly" unless opts[:all]
+
+    wikidump *options, url
+  end
+end

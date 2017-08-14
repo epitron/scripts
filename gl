@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+args = ARGV
+
+cmd = %w[git log --graph --stat]
+
+if args.delete "-w"
+  cmd += %w[-u --word-diff]
+end
+
+cmd += args
+
+system *cmd
