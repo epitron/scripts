@@ -39,6 +39,8 @@ alias la='ls -la'
 alias ll='ls -l'
 alias lh='ls -lh'
 alias lts='lt -s'
+alias lt='d -lt'
+
 
 alias fd='f -d'
 
@@ -144,7 +146,8 @@ alias dmesg='dmesg -T --color=always|less -S -R +\>'
 alias dmesg-tail='\dmesg -T --color -w'
 alias dstat-wide='dstat -tcyifd'
 alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
-alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
+#alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
+alias reboot='sudoifnotroot systemctl reboot'
 alias sus='ssu'
 
 # systemd
