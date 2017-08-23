@@ -72,6 +72,19 @@ end
 
 ##############################################################################
 
+class Numeric
+
+  def commatize(char=",")
+    int, frac = to_s.split(".")
+    int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
+
+    frac ? "#{int}.#{frac}" : int
+  end
+
+end
+
+##############################################################################
+
 def run(*args)
   opts = (args.last.is_a? Hash) ? args.last : {}
 
@@ -481,8 +494,8 @@ def print_torrent(filename)
   output << "Infohash:    #{infohash}"
   output << "Comment:     #{comment}" if comment
   output << "Created By:  #{creator}" if creator
-  output << "Pieces:      #{pieces} @ #{piece_size} bytes = ~#{pieces * piece_size} bytes"
-  output << "Total Size:  #{total_size}"
+  output << "Pieces:      #{pieces.commatize} @ #{piece_size.commatize} bytes = ~#{(pieces * piece_size).commatize} bytes"
+  output << "Total Size:  #{total_size.commatize}"
   output << ""
 
   if files
