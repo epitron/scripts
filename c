@@ -85,6 +85,35 @@ end
 
 ##############################################################################
 
+class Array
+  #
+  # Transpose an array that could have rows of uneven length
+  #
+  def transpose_with_padding
+    max_width = map(&:size).max
+    map { |row| row.rpad(max_width) }.transpose
+  end
+
+  #
+  # Extend the array the target_width by adding nils to the end (right side)
+  #
+  def rpad!(target_width)
+    if target_width > size and target_width > 0
+      self[target_width-1] = nil
+    end
+    self
+  end
+
+  #
+  # Return a copy of this array which has been extended to target_width by adding nils to the end (right side)
+  #
+  def rpad(target_width)
+    dup.rpad!(target_width)
+  end
+end
+
+##############################################################################
+
 def run(*args)
   opts = (args.last.is_a? Hash) ? args.last : {}
 
@@ -204,34 +233,26 @@ def print_source(filename)
   if File.read(filename, 256) =~ /\A#!(.+)/
     # Shebang!
     lang = case $1
-      when /\b(bash|zsh|sh|make|expect)\b/ then :bash
+      when /(bash|zsh|sh|make|expect)/ then :bash
       when /ruby/   then :ruby
       when /perl/   then :ruby
       when /python/ then :python
       when /lua/    then :lua
     end
-
   end
 
-  if ext == ".json"
+  lang ||= (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
 
+  if ext == ".json"
     require 'json'
     json = JSON.parse(File.read(filename))
     CodeRay.scan(JSON.pretty_generate(json), :json).term
-
-  # Use an alternate parser for this language
-  elsif lang = (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
-
-    if lang == :pygmentize
-      run("pygmentize", filename)
-    else
-      CodeRay.scan_file(filename, lang).term
-    end
-
+  elsif lang == :pygmentize
+    run("pygmentize", filename)
+  elsif lang
+    CodeRay.scan_file(filename, lang).term
   else
-
     CodeRay.scan_file(filename).term
-
   end
 
 rescue ArgumentError
@@ -552,18 +573,22 @@ def print_csv(filename)
   cyan      = "\e[36;1m"
   dark_cyan = "\e[36m"
 
-  tabs, commas = open(filename, "rb") { |f| f.each_line.take(5) }.map(&:chomp).map { |l| l.scan(%r{(,|\t)})}.flatten.partition { |e| e == "\t" }
+  if filename[/\.xls$/]
+    io = IO.popen(["xls2csv", filename], "rb")
+    csv = CSV.new(io) #, row_sep: "\r\n")
+  else
+    tabs, commas = open(filename, "rb") { |f| f.each_line.take(5) }.map(&:chomp).map { |l| l.scan(%r{(,|\t)})}.flatten.partition { |e| e == "\t" }
+    separator = tabs.size > commas.size ? "\t" : ","
+    csv = CSV.open(filename, "rb", col_sep: separator)
+  end
 
-  separator = tabs.size > commas.size ? "\t" : ","
-
-  numbered_rows = CSV.open(filename, "rb", col_sep: separator).map.with_index do |row, n|
+  numbered_rows = csv.map.with_index do |row, n|
     clean_row = row.map { |cell| cell && cell.strip }
     [n.to_s, *clean_row]
   end
 
-  col_maxes = numbered_rows.
-    map { |row| row.map { |cell| cell && cell.size } }.
-    transpose.
+  col_maxes = numbered_rows.map { |row| row.map { |cell| cell && cell.size } }.
+    transpose_with_padding.
     map {|col| col.compact.max.to_i }
 
   header    = numbered_rows.shift
@@ -742,7 +767,7 @@ def convert(arg)
         print_ssl_certificate(arg)
       when *%w[.xml]
         print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
-      when ".csv"
+      when *%w[.csv .xls]
         print_csv(arg)
       when ".tsv"
         print_csv(arg, "\t")
