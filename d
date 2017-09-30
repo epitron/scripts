@@ -23,7 +23,7 @@ FILENAME2TYPE  = Rash.new TYPE_INFO.map { |name, regex, color| [regex, name] }
 
 ARG2TYPE = Rash.new({
   /^(code|source|src)$/   => :code,
-  /^music$/               => :music,
+  /^(music|audio)$/       => :music,
   /^videos?$/             => :video,
   /^(subs?)$/             => :sub,
   /^(image?s|pics?|pix)$/ => :image,
@@ -110,8 +110,9 @@ end
 
 ###############################################################################
 
-def print_paths(paths, long: false, regex: nil)
+def print_paths(paths, long: false, regex: nil, hidden: false)
   paths = paths.select { |path| path.filename =~ regex } if regex
+  paths = paths.reject &:hidden? unless hidden
 
   if long
     paths.each do |path|
@@ -152,6 +153,8 @@ opts = Slop.parse(help: true, strict: true) do
   on "v", "verbose",      'Enable verbose mode'
   on "l", "long",         'Long mode (with sizes and dates)'
   on "r", "recursive",    'Recursive'
+  on "D", "dirs-first",   'Show directories first'
+  on "H", "hidden",       'Show hidden files'
   on "t", "time",         'Sort by modification time'
   on "T", "reverse-time", 'Sort by modification time (reversed)'
   on "s", "size",         'Sort by size'
@@ -208,5 +211,10 @@ grouped.each do |dir, paths|
     paths.sort_by!(&:path)
   end
 
-  print_paths(paths, long: opts.long?, regex: regex)
+  if opts.dirs_first?
+    dirs, paths = paths.partition &:dir?
+    print_paths(dirs, long: opts.long?, regex: regex, hidden: opts.hidden?)
+  end
+
+  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?)
 end
