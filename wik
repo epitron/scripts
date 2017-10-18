@@ -1,0 +1,252 @@
+#!/usr/bin/env ruby
+######################################################################
+require 'epitools'
+gem 'slop', "~> 3.6"
+require 'slop'
+######################################################################
+
+
+######################################################################
+# Parse options
+######################################################################
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: wik [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+######################################################################
+
+#
+# Markdown to ANSI Renderer ("BlackCarpet")
+#
+# This class takes a little while to initialize, so instead of slowing down the script for every non-markdown file,
+# I've wrapped it in a proc which gets lazily loaded by `render_markdown` when needed.
+#
+
+BLACKCARPET_INIT = proc do
+
+  def indented?(text)
+    indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
+    indent_sizes.all? {|dent| dent > 0 }
+  end
+
+  def unwrap(text)
+    return text unless indented? text
+    text.lines.to_a.map(&:strip).join ' '
+  end
+
+  def indent(text,amount=2)
+    text.lines.map{|line| " "*amount + line }.join
+  end
+
+  class BlackCarpet < Redcarpet::Render::Base
+
+    def normal_text(text)
+      text
+    end
+
+    def raw_html(html)
+      ''
+    end
+
+    def link(link, title, content)
+      unless content[/^Back /]
+        "<15>#{content}</15> <8>(</8><9>#{link}</9><8>)</8>".colorize
+      end
+    end
+
+    def block_code(code, language)
+      language ||= :ruby
+      language = :cpp if language == "C++"
+      require 'coderay'
+      "#{indent CodeRay.scan(code, language).term, 4}\n"
+    end
+
+    def block_quote(text)
+      indent paragraph(text)
+    end
+
+    def codespan(code)
+      code.cyan
+    end
+
+    def header(title, level, anchor=nil)
+      color = case level
+        when 1 then :light_yellow
+        when 2 then :light_cyan
+        when 3 then :light_blue
+        else :purple
+      end
+
+      bar = ("-"*(title.size+4)).grey
+
+      "#{bar}\n  #{title.send(color)}\n#{bar}\n\n"
+    end
+
+    def double_emphasis(text)
+      text.light_green
+    end
+
+    def emphasis(text)
+      text.green
+    end
+
+    def linebreak
+      "\n"
+    end
+
+    def paragraph(text)
+      "#{indented?(text) ? text : unwrap(text)}\n\n"
+    end
+
+    def list(content, list_type)
+      case list_type
+      when :ordered
+        @counter = 0
+        "#{content}\n"
+      when :unordered
+        "#{content}\n"
+      end
+    end
+
+    def list_item(content, list_type)
+      case list_type
+      when :ordered
+        @counter ||= 0
+        @counter += 1
+        "  <8>#{@counter}.</8> #{content.strip}\n".colorize
+      when :unordered
+        "  <8>*</8> #{content.strip}\n".colorize
+      end
+    end
+
+    def table_cell(content, alignment)
+      @cells ||= []
+      @cells << content
+
+      content
+    end
+
+    def table_row(content)
+      @rows ||= []
+
+      if @cells
+        @rows << @cells.dup
+        @cells.clear
+      else
+        @rows << []
+      end
+
+      content
+    end
+
+    def table(header, body)
+      headings = @rows.shift
+      table    = Terminal::Table.new(headings: headings, rows: @rows)
+      @rows    = []
+
+      "#{table}\n\n"
+    end
+  end
+
+  BlackCarpet
+end
+
+def markdown_to_ansi(markdown)
+  require 'redcarpet'
+
+  BLACKCARPET_INIT.call unless defined? BlackCarpet
+
+  options = {
+    no_intra_emphasis: true,
+    fenced_code_blocks: true,
+  }
+
+  begin
+    require 'terminal-table'
+    carpet = Redcarpet::Markdown.new(BlackCarpet, options.merge(tables: true))
+  rescue LoadError
+    carpet = Redcarpet::Markdown.new(BlackCarpet, options)
+  end
+
+  carpet.render(markdown)
+end
+
+######################################################################
+
+class Article < Struct.new(:wiki, :title, :id, :type, :redirect, :namespace)
+
+  TYPES = {
+    "R" => :redirect,
+    "A" => :article,
+  }
+
+  def self.from_line(wiki, line)
+    namespace, file, title, id, type, redirect, size = line.split("\t")
+    new(wiki, title, id, TYPES[type], redirect, namespace)
+  end
+
+  def redirect?
+    type == :redirect
+  end
+
+  def body
+    the_id = redirect? ? redirect : id
+    cmd = ["zimdump", "-o", the_id, "-d", wiki.file]
+    IO.popen(cmd, "r") { |io| io.read }
+  end
+
+end
+
+######################################################################
+
+class Wiki
+
+  attr_reader :file
+
+  def initialize(file)
+    @file = file
+  end
+
+  def search(string, max_results=50)
+    cmd = ["zimdump", "-f", string, "-L", @file]
+    lines = IO.popen(cmd, "r") { |io| io.each_line.take(max_results) }
+    lines.map { |line| Article.from_line(self, line) }
+  end
+
+end
+
+######################################################################
+
+w = Wiki.new(Path["~/kiwix/data/content/wikipedia_en_all_2016-12.zim"])
+
+query = ARGV.join(" ")
+results = w.search(query)
+
+colorized_results = results.map.with_index do |article, n|
+  highlighted_title = article.title.gsub(query) { |m| "<14>#{m}</14>" }
+  "<7>#{n+1}<8>. <11>#{highlighted_title}".colorize
+end
+
+puts Term::Table.new(colorized_results, :ansi=>true).by_columns
+
+print "<8>select> <7>".colorize
+
+n = $stdin.gets.to_i
+article = results[n-1]
+
+# article = results.first
+
+ansi = IO.popen("html2text", "r+") do |markdown|
+  markdown.write article.body
+  markdown.close_write
+  markdown_to_ansi(markdown.read)
+end
+
+lesspipe { |less| less.puts ansi }
+
