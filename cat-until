@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+########################################################
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+########################################################
+
+########################################################
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: cat-until [options] <file>"
+
+  on "d=", "delimiter",  "What to split on (regexp)"
+end
+
+args = ARGV
+
+if args.empty?
+  puts "Error: Supply a filename please!"
+  puts
+  puts opts
+  exit 1
+end
+
+########################################################
+
+re   = Regexp.new opts[:delimiter]
+open(args.first) do |io|
+  io.each_line do |line|
+    break if line =~ re
+    puts line
+  end
+end
