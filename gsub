@@ -6,14 +6,17 @@ require 'epitools'
 
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
-    banner "Usage: gsub -f from -t to [files...]"
+    banner <<~HELP
+      Usage: gsub -f from -t to [input files...]
+             (If no input files are given, reads from STDIN and outputs to STDOUT)
+    HELP
 
-    on :v,  :verbose, 'Enable verbose mode'
-    on :n,  :dryrun, 'Dry-run', false
+    on :f=, :from,        'From regexp', :optional => false
+    on :t=, :to,          'To regexp', :optional => false
+    on :c,  :stdout,      "Output to STDOUT (instead of a file)"
     on :b,  :"no-backup", "Don't do backups"
-    # on :r,  :regexp, "Regexp mode"
-    on :f=, :from, 'From regexp', :optional => false
-    on :t=, :to, 'To regexp', :optional => false
+    on :n,  :dryrun,      'Dry-run', false
+    on :v,  :verbose,     'Enable verbose mode'
   end
 
   [opts, ARGV]
@@ -24,39 +27,44 @@ opts, args = parse_options
 paths = args.map &:to_Path
 
 if paths.empty?
-  puts "Error: Must supply at least one filename"
-  puts
-  puts opts
-  exit 1
+  paths = [STDIN]
+  # puts "Error: Must supply at least one filename"
+  # puts
+  # puts opts
+  # exit 1
 end
 
 paths.each do |path|
-  puts "* gsubbing: #{path}"
 
-  unless path.exists?
-    puts "  |_ NOT FOUND."
-    next
-  end
+  if path.is_a? Path
+    puts "* gsubbing: #{path}"
 
-  if path.size > 1.million
-    answer = prompt("You sure you want to gsub a #{path.size.commatize}-byte file?")
-    next unless answer == "y"
+    unless path.exists?
+      puts "  |_ NOT FOUND."
+      next
+    end
+
+    if path.size > 1.million
+      answer = prompt("You sure you want to gsub a #{path.size.commatize}-byte file?")
+      next unless answer == "y"
+    end
   end
 
   data    = path.read
   matcher = Regexp.new(opts[:from])
   changes = 0
 
-  data.gsub(matcher) do |match|
+  result = data.gsub(matcher) do |match|
     puts "  |_ <11>#{match.inspect} <8>=> <14>#{opts[:to].inspect}".colorize if opts.verbose?
     changes += 1
+    opts[:to]
   end
 
   if opts.dryrun?
     puts "  |_ #{changes} changes would've been made (if this wasn't a dry run)"
+  elsif opts.stdout? or path == STDIN
+    puts result
   else
-    data.gsub!(matcher, opts[:to])
-
     puts "  |_ #{changes} changes were made!"
     puts "  |_ writing to #{path}..."
 
