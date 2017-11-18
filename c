@@ -18,6 +18,8 @@
 #
 #
 # TODOs:
+#   * Replace "arg" with "path" in main switch statement, so that methods can take either a string or a file as arguments
+#   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
 #   * Refactor into "filters" and "renderers", with one core loop to dispatch
@@ -30,9 +32,9 @@ require 'coderay_bash'
 ##############################################################################
 
 THEMES = {
-  siberia: {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
-  ocean:   {:class=>"\e[38;5;11m", :class_variable=>"\e[38;5;131m", :comment=>"\e[38;5;8m", :constant=>"\e[38;5;11m", :error=>"\e[38;5;0;48;5;131m", :float=>"\e[38;5;173m", :global_variable=>"\e[38;5;131m", :inline_delimiter=>"\e[38;5;137m", :instance_variable=>"\e[38;5;131m", :integer=>"\e[38;5;173m", :keyword=>"\e[38;5;139m", :method=>"\e[38;5;4m", :predefined_constant=>"\e[38;5;131m", :symbol=>"\e[38;5;10m", :regexp=>{:modifier=>"\e[38;5;10m", :self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;152m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :shell=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :string=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}},
-  modern:  {:class=>"\e[38;5;207;1m", :class_variable=>"\e[38;5;80m", :comment=>"\e[38;5;24m", :constant=>"\e[38;5;32;1;4m", :error=>"\e[38;5;31m", :float=>"\e[38;5;204;1m", :global_variable=>"\e[38;5;220m", :inline_delimiter=>"\e[38;5;41;1m", :instance_variable=>"\e[38;5;80m", :integer=>"\e[38;5;37;1m", :keyword=>"\e[38;5;167;1m", :method=>"\e[38;5;70;1m", :predefined_constant=>"\e[38;5;14;1m", :symbol=>"\e[38;5;83;1m", :regexp=>{:modifier=>"\e[38;5;204;1m", :self=>"\e[38;5;208m", :char=>"\e[38;5;208m", :content=>"\e[38;5;213m", :delimiter=>"\e[38;5;208;1m", :escape=>"\e[38;5;41;1m"}, :shell=>{:self=>"\e[38;5;70m", :char=>"\e[38;5;70m", :content=>"\e[38;5;70m", :delimiter=>"\e[38;5;15m", :escape=>"\e[38;5;41;1m"}, :string=>{:self=>"\e[38;5;41m", :char=>"\e[38;5;41m", :content=>"\e[38;5;41m", :delimiter=>"\e[38;5;41;1m", :escape=>"\e[38;5;41;1m"}},
+  siberia:   {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
+  ocean:     {:class=>"\e[38;5;11m", :class_variable=>"\e[38;5;131m", :comment=>"\e[38;5;8m", :constant=>"\e[38;5;11m", :error=>"\e[38;5;0;48;5;131m", :float=>"\e[38;5;173m", :global_variable=>"\e[38;5;131m", :inline_delimiter=>"\e[38;5;137m", :instance_variable=>"\e[38;5;131m", :integer=>"\e[38;5;173m", :keyword=>"\e[38;5;139m", :method=>"\e[38;5;4m", :predefined_constant=>"\e[38;5;131m", :symbol=>"\e[38;5;10m", :regexp=>{:modifier=>"\e[38;5;10m", :self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;152m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :shell=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :string=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}},
+  modern:    {:class=>"\e[38;5;207;1m", :class_variable=>"\e[38;5;80m", :comment=>"\e[38;5;24m", :constant=>"\e[38;5;32;1;4m", :error=>"\e[38;5;31m", :float=>"\e[38;5;204;1m", :global_variable=>"\e[38;5;220m", :inline_delimiter=>"\e[38;5;41;1m", :instance_variable=>"\e[38;5;80m", :integer=>"\e[38;5;37;1m", :keyword=>"\e[38;5;167;1m", :method=>"\e[38;5;70;1m", :predefined_constant=>"\e[38;5;14;1m", :symbol=>"\e[38;5;83;1m", :regexp=>{:modifier=>"\e[38;5;204;1m", :self=>"\e[38;5;208m", :char=>"\e[38;5;208m", :content=>"\e[38;5;213m", :delimiter=>"\e[38;5;208;1m", :escape=>"\e[38;5;41;1m"}, :shell=>{:self=>"\e[38;5;70m", :char=>"\e[38;5;70m", :content=>"\e[38;5;70m", :delimiter=>"\e[38;5;15m", :escape=>"\e[38;5;41;1m"}, :string=>{:self=>"\e[38;5;41m", :char=>"\e[38;5;41m", :content=>"\e[38;5;41m", :delimiter=>"\e[38;5;41;1m", :escape=>"\e[38;5;41;1m"}},
   solarized: {:class=>"\e[38;5;136m", :class_variable=>"\e[38;5;33m", :comment=>"\e[38;5;240m", :constant=>"\e[38;5;136m", :error=>"\e[38;5;254m", :float=>"\e[38;5;37m", :global_variable=>"\e[38;5;33m", :inline_delimiter=>"\e[38;5;160m", :instance_variable=>"\e[38;5;33m", :integer=>"\e[38;5;37m", :keyword=>"\e[38;5;246;1m", :method=>"\e[38;5;33m", :predefined_constant=>"\e[38;5;33m", :symbol=>"\e[38;5;37m", :regexp=>{:modifier=>"\e[38;5;160m", :self=>"\e[38;5;64m", :char=>"\e[38;5;160m", :content=>"\e[38;5;64m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;160m"}, :shell=>{:self=>"\e[38;5;160m", :char=>"\e[38;5;160m", :content=>"\e[38;5;37m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;160m"}, :string=>{:self=>"\e[38;5;160m", :char=>"\e[38;5;160m", :content=>"\e[38;5;37m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;37m"}},
 }
 CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
@@ -260,7 +262,6 @@ rescue ArgumentError
 end
 
 ##############################################################################
-
 #
 # Markdown to ANSI Renderer ("BlackCarpet")
 #
@@ -294,9 +295,23 @@ BLACKCARPET_INIT = proc do
       ''
     end
 
+    private def smash(s)
+      s&.downcase&.scan(/\w+/)&.join
+    end
+
     def link(link, title, content)
-      unless content[/^Back /]
-        "<15>#{content}</15> <8>(</8><9>#{link}</9><8>)</8>".colorize
+      unless content&.[] /^Back /
+        str = ""
+        str += "<15>#{content}</15>" if content
+        if title
+          if smash(title) != smash(content)
+            str += " <8>(</8><11>#{title}</11><8>)</8>"
+          end
+        elsif link
+          str += " <8>(</8><9>#{link}</9><8>)</8>"
+        end
+
+        str.colorize
       end
     end
 
@@ -374,8 +389,13 @@ BLACKCARPET_INIT = proc do
 
     def table_row(content)
       @rows ||= []
-      @rows << @cells.dup
-      @cells.clear
+
+      if @cells
+        @rows << @cells.dup
+        @cells.clear
+      else
+        @rows << []
+      end
 
       content
     end
@@ -387,19 +407,21 @@ BLACKCARPET_INIT = proc do
 
       "#{table}\n\n"
     end
+
   end
 
   BlackCarpet
 end
 
-def print_markdown(filename)
+
+def print_markdown(markdown)
   # Lazily load markdown renderer
   begin
     require 'epitools/colored'
     require 'redcarpet'
   rescue LoadError
-    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" +
-      print_source(filename)
+    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
+      + print_source(filename)
   end
 
   BLACKCARPET_INIT.call unless defined? BlackCarpet
@@ -416,7 +438,7 @@ def print_markdown(filename)
     carpet = Redcarpet::Markdown.new(BlackCarpet, options)
   end
 
-  carpet.render(File.read(filename))
+  carpet.render(markdown)
 end
 
 ##############################################################################
@@ -482,7 +504,7 @@ def print_ipynb(filename)
 
   at_exit { tmp.unlink }
 
-  print_markdown(tmp.path)
+  print_markdown(File.read tmp.path)
 end
 
 ##############################################################################
@@ -686,6 +708,14 @@ def print_http(url)
   IO.popen(["lynx", "-dump", url]) { |io| io.read }
 end
 
+def print_html(file)
+  ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
+    markdown.write File.read(file)
+    markdown.close_write
+    print_markdown(markdown.read)
+  end
+end
+
 ##############################################################################
 
 def highlight(enum, &block)
@@ -745,7 +775,8 @@ def convert(arg)
     # MEGA SWITCH STATEMENT
     ext = path.extname.downcase
 
-    if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
+    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
+       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem)$/
       print_archive(arg)
     elsif cmd = COMPRESSORS[ext]
       run(*cmd, arg)
@@ -753,8 +784,10 @@ def convert(arg)
       print_wikidump(arg)
     else
       case ext
+      when *%w[.html .htm]
+        print_html(arg)
       when *%w[.md .markdown .mdwn .page]
-        print_markdown(arg)
+        print_markdown(File.read arg)
       when *%w[.ipynb]
         print_ipynb(arg)
       when *%w[.torrent]
@@ -797,40 +830,44 @@ end
 
 ### MAIN #####################################################################
 
-args = ARGV
+if $0 == __FILE__
 
-if args.size == 0
-  puts "usage: c <filename(s)>"
-else # 1 or more args
+  args = ARGV
 
-  wrap = !args.any? { |arg| arg[/\.csv$/i] }
-  scrollable = args.delete("-s")
+  if args.size == 0
+    puts "usage: c <filename(s)>"
+  else # 1 or more args
 
-  lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
+    wrap = !args.any? { |arg| arg[/\.csv$/i] }
+    scrollable = args.delete("-s")
 
-    args.each do |arg|
-      if args.size > 1
-        less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
+    lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
+
+      args.each do |arg|
+        if args.size > 1
+          less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
+          less.puts
+        end
+
+        begin
+          result = convert(arg)
+        rescue Errno::EACCES
+          puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+          next
+        end
+
+        case result
+        when Enumerable
+          result.each { |line| less.puts line }
+        when String
+          result.each_line { |line| less.puts line }
+        end
+
+        less.puts
         less.puts
       end
-
-      begin
-        result = convert(arg)
-      rescue Errno::EACCES
-        puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
-        next
-      end
-
-      case result
-      when Enumerable
-        result.each { |line| less.puts line }
-      when String
-        result.each_line { |line| less.puts line }
-      end
-
-      less.puts
-      less.puts
     end
+
   end
 
 end
