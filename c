@@ -452,7 +452,6 @@ end
 def print_wikidump(filename)
   require 'nokogiri'
   require 'date'
-  require 'tempfile'
 
   doc = Nokogiri::XML(open(filename))
 
@@ -479,6 +478,26 @@ end
 
 def print_rst(filename)
   run("rst2ansi", filename)
+end
+
+##############################################################################
+
+def tmp_filename(prefix="c", length=20)
+  chars = [*'a'..'z'] + [*'A'..'Z'] + [*'0'..'9']
+  name  = nil
+  loop do
+    name = "/tmp/#{prefix}-#{length.times.map { chars.sample }.join}"
+    break unless File.exists?(name)
+  end
+  name
+end
+
+def print_doc(filename)
+  out = tmp_filename
+  system("wvText", filename, out)
+  result = File.read out
+  File.unlink out
+  result
 end
 
 ##############################################################################
@@ -709,6 +728,7 @@ def print_http(url)
 end
 
 def print_html(file)
+  # TODO: Is it better to use Term.width as html2text's -b option?
   ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
     markdown.write File.read(file)
     markdown.close_write
@@ -796,6 +816,8 @@ def convert(arg)
         print_cp437(arg)
       when *%w[.rst]
         print_rst(arg)
+      when *%w[.doc]
+        print_doc(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
       when *%w[.xml]
