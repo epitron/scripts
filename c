@@ -18,7 +18,8 @@
 #
 #
 # TODOs:
-#   * Replace "arg" with "path" in main switch statement, so that methods can take either a string or a file as arguments
+#   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
+#   *
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
@@ -192,19 +193,12 @@ end
 
 ### Converters ###############################################################
 
-EXTRA_LANGS = {
+CODERAY_EXT_MAPPING = {
   ".cr"          => :ruby,
   ".jl"          => :ruby,
   ".pl"          => :ruby,
   ".cmake"       => :ruby,
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
   ".mk"          => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
   ".install"     => :bash,
   ".desktop"     => :bash,
   ".conf"        => :bash,
@@ -212,9 +206,7 @@ EXTRA_LANGS = {
   ".hs"          => :text,
   ".ini"         => :bash,
   ".service"     => :bash,
-  "Gemfile.lock" => :c,
   ".cl"          => :c,
-  "database.yml" => :yaml,
   ".gradle"      => :groovy,
   ".sage"        => :python,
   ".lisp"        => :clojure,
@@ -225,13 +217,24 @@ EXTRA_LANGS = {
   ".ui"          => :xml,
   ".opml"        => :xml,
   ".nim"         => :pygmentize,
+  ".stp"         => :javascript, # systemtap
+}
+
+CODERAY_FILENAME_MAPPING = {
+  "Rakefile"     => :ruby,
+  "Gemfile"      => :ruby,
+  "Makefile"     => :bash,
+  "makefile"     => :bash,
+  "PKGBUILD"     => :bash,
+  "configure.in" => :bash,
+  "configure"    => :bash,
+  "Gemfile.lock" => :c,
+  "database.yml" => :yaml,
 }
 
 ##############################################################################
 
-def print_source(filename)
-  ext = filename[/\.[^\.]+$/]
-
+def shebang_lang(filename)
   if File.read(filename, 256) =~ /\A#!(.+)/
     # Shebang!
     lang = case $1
@@ -242,13 +245,26 @@ def print_source(filename)
       when /lua/    then :lua
     end
   end
+end
 
-  lang ||= (EXTRA_LANGS[ext] || EXTRA_LANGS[filename])
+##############################################################################
+
+def print_source(filename)
+  ext = filename[/\.[^\.]+$/]
+
+  lang =  shebang_lang(filename) ||
+          CODERAY_EXT_MAPPING[ext] ||
+          CODERAY_FILENAME_MAPPING[filename]
 
   if ext == ".json"
     require 'json'
-    json = JSON.parse(File.read(filename))
-    CodeRay.scan(JSON.pretty_generate(json), :json).term
+    begin
+      data = File.read(filename)
+      json = JSON.parse(data)
+      CodeRay.scan(JSON.pretty_generate(json), :json).term
+    rescue JSON::ParserError
+      data
+    end
   elsif lang == :pygmentize
     run("pygmentize", filename)
   elsif lang
@@ -317,7 +333,10 @@ BLACKCARPET_INIT = proc do
 
     def block_code(code, language)
       language ||= :ruby
+
+      language = language[1..-1] if language[0] == "."  # strip leading "."
       language = :cpp if language == "C++"
+
       require 'coderay'
       "#{indent CodeRay.scan(code, language).term, 4}\n"
     end
@@ -494,10 +513,16 @@ end
 
 def print_doc(filename)
   out = tmp_filename
-  system("wvText", filename, out)
-  result = File.read out
-  File.unlink out
-  result
+  if which("wvText")
+    system("wvText", filename, out)
+    result = File.read out
+    File.unlink out
+    result
+  elsif which("catdoc")
+    run "catdoc", filename
+  else
+    "\e[31m\e[1mError: Coudln't find a .doc reader; install 'wv' or 'catdoc'\e[0m"
+  end
 end
 
 ##############################################################################
@@ -810,6 +835,8 @@ def convert(arg)
         print_markdown(File.read arg)
       when *%w[.ipynb]
         print_ipynb(arg)
+      when /^\.[1-9]$/ # manpages
+        system("man", "-l", arg)
       when *%w[.torrent]
         print_torrent(arg)
       when *%w[.nfo .ans .drk .ice]
@@ -825,7 +852,8 @@ def convert(arg)
       when *%w[.csv .xls]
         print_csv(arg)
       when ".tsv"
-        print_csv(arg, "\t")
+        print_csv(arg)
+        # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
       when ".bib"
         print_bibtex(arg)
       when ".k3b"
