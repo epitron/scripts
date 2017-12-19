@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+tree = {}
+ARGF.each_line do |line|
+  tree.mkdir_p line.split("/")
+end
+
+tree.print_tree
