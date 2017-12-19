@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: split [options] <file>"
+
+  on "d=", "delimiter",  "What to split on (regexp)"
+  on "b", "before",     "Before the delimiter"
+  on "a", "after",      "After the delimiter (default)"
+  on "r", "remove",     "Remove everything (before/after) delimiter"
+end
+
+args = ARGV
+
+if args.empty?
+  puts "Error: Supply a filename please!"
+  puts
+  puts opts
+  exit 1
+end
+
+########################################################
+
+path     = Path[args.first]
+lines    = path.each_line
+split_re = Regexp.new opts[:delimiter]
+
+if opts.before?
+  a, b = lines.split_before(split_re)
+  a.each { |line| puts line }
+else
+  a, b = lines.split_after(split_re)
+  b.each { |line| puts line }
+end
+
