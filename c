@@ -249,10 +249,12 @@ end
 
 ##############################################################################
 
-def print_source(filename)
-  ext = filename[/\.[^\.]+$/]
+def print_source(arg)
+  path = Pathname.new(arg)
+  ext = path.extname #filename[/\.[^\.]+$/]
+  filename = path.filename
 
-  lang =  shebang_lang(filename) ||
+  lang =  shebang_lang(path) ||
           CODERAY_EXT_MAPPING[ext] ||
           CODERAY_FILENAME_MAPPING[filename]
 
@@ -266,15 +268,15 @@ def print_source(filename)
       data
     end
   elsif lang == :pygmentize
-    run("pygmentize", filename)
+    run("pygmentize", path)
   elsif lang
-    CodeRay.scan_file(filename, lang).term
+    CodeRay.scan_file(path, lang).term
   else
-    CodeRay.scan_file(filename).term
+    CodeRay.scan_file(path).term
   end
 
 rescue ArgumentError
-  concatenate_enumerables run("file", filename), run("ls", "-l", filename)
+  concatenate_enumerables run("file", path), run("ls", "-l", path)
 end
 
 ##############################################################################
@@ -803,7 +805,7 @@ def convert(arg)
     # If it's a directory, show the README, or print an error message.
     #
     if File.directory? arg
-      readmes = Dir.foreach(arg).select { |f| f[/^readme/i] }.sort_by(&:size)
+      readmes = Dir.foreach(arg).select { |f| f[/^readme/i] or f == "PKGBUILD" }.sort_by(&:size)
       if readme = readmes.first
         return convert("#{arg}/#{readme}")
       else
