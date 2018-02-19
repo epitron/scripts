@@ -455,6 +455,22 @@ end
 
 ##############################################################################
 
+def print_bookmarks(filename)
+  require 'nokogiri'
+
+  doc = Nokogiri::HTML(open(filename))
+
+  Enumerator.new do |out|
+    doc.search("a").each do |a| 
+      out << "\e[1;36m#{a.inner_text}\e[0m"
+      out << "  #{a["href"]}"
+      out << ""
+    end
+  end
+end
+
+##############################################################################
+
 def print_rst(filename)
   run("rst2ansi", filename)
 end
@@ -751,6 +767,8 @@ def convert(arg)
       run(*cmd, arg)
     elsif path.filename =~ /.+-current\.xml$/
       print_wikidump(arg)
+    elsif path.filename =~ /bookmark.+\.html$/i
+      print_bookmarks(arg)
     else
       case ext
       when *%w[.md .markdown .mdwn .page]
