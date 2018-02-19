@@ -13,7 +13,7 @@ TYPE_INFO = [
   [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
   [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
-  [:doc,     /\.(txt|pdf)$/i,                              :light_white],
+  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc))$/i,:light_white],
   [:dotfile, /^\../i,                                      :grey],
   [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2)$/i, :light_yellow]
 ]
