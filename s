@@ -1,16 +1,21 @@
 #!/usr/bin/env ruby
-
-CODE_PATHS  = %w[~/work ~/code ~/src]
-BIN_PATHS   = ENV["PATH"].split(":")
-EXECUTABLES = %w[
-  /usr/bin/subl
-  /usr/bin/subl3
+#############################################################################
+CODE_PATHS   = %w[~/work ~/code ~/src]
+BIN_PATHS    = ENV["PATH"].split(":")
+SUBLIME_BINS = %w[
+  subl
+  subl3
   ~/opt/sublime/sublime_text
   /opt/sublime/sublime_text
   /Applications/Sublime\ Text\ 2.app/Contents/SharedSupport/bin/subl
 ]
-
-bin = EXECUTABLES.map { |fn| File.expand_path fn }.find { |path| File.exists? path }
+OTHER_EDITORS = %w[
+  nano
+  vim
+  leafpad
+  mousepad
+]
+#############################################################################
 
 def which_dir(dir)
   CODE_PATHS.map { |d| File.expand_path d }.each do |path|
@@ -23,24 +28,32 @@ end
 def which_bin(bin)
   BIN_PATHS.each do |dir|
     path = File.join(dir, bin)
-    return path if File.exists? path
+    return path if File.file? path
   end
   nil
 end
 
+def find_bin(bins)
+  bins.each do |fn| 
+    if fn[%r{[~/]}] 
+      fn = File.expand_path(fn) 
+      return fn if File.exists? fn
+    else
+      if bin = which_bin(fn)
+        return bin
+      end
+    end
+  end
+  nil
+end
+    
+
 def sublime_on_current_desktop?
+  require 'epitools/wm'
   WM.current_desktop.windows.find { |w| w.title["Sublime Text"] }
 end
 
-unless bin
-  puts "Error: Sublime Text executable not found."
-  puts
-  puts "Tried:"
-  p EXECUTABLES
-  exit 1
-end
-
-require 'epitools/wm'
+#############################################################################
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
@@ -52,9 +65,15 @@ files = args.map do |arg|
   end
 end
 
-opts << "-n" unless opts.include?("-n") or sublime_on_current_desktop?
+if sublime_bin = find_bin(SUBLIME_BINS)
+  opts << "-n" unless opts.include?("-n") or sublime_on_current_desktop?
+  cmd = [sublime_bin, *opts, *files]
+elsif bin = find_bin(OTHER_EDITORS)
+  cmd = [bin, *files]
+else
+  puts "Error: Couldn't find an editor."
+  exit 1
+end
 
-# p bin: bin, opts: opts, files: files
-
-cmd = [bin, *opts, *files]
+p cmd
 exec *cmd
