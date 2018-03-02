@@ -68,12 +68,12 @@ end
 if sublime_bin = find_bin(SUBLIME_BINS)
   opts << "-n" unless opts.include?("-n") or sublime_on_current_desktop?
   cmd = [sublime_bin, *opts, *files]
+  fork { IO.popen(cmd, :err=>[:child, :out]) { |io| io.read } }
 elsif bin = find_bin(OTHER_EDITORS)
   cmd = [bin, *files]
+  exec *cmd
 else
   puts "Error: Couldn't find an editor."
   exit 1
 end
 
-p cmd
-exec *cmd
