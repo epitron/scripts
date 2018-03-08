@@ -1,0 +1,13 @@
+#!/bin/bash
+
+[ "$UID" = "0" ] || exec sudo $0 $@
+
+function zstats() {
+  echo "== $1 ====="
+  pushd $1 > /dev/null
+  grep . * 2> /dev/null
+  popd > /dev/null
+  echo
+}
+
+pr -m -t -w `tput cols` <(zstats /sys/kernel/debug/zswap) <(zstats /sys/kernel/slab/zswap_entry)
