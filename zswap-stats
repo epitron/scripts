@@ -2,7 +2,7 @@
 
 [ "$UID" = "0" ] || exec sudo $0 $@
 
-function zstats() {
+function print_sys_stuff() {
   echo "== $1 ====="
   pushd $1 > /dev/null
   grep . * 2> /dev/null
@@ -10,4 +10,15 @@ function zstats() {
   echo
 }
 
-pr -m -t -w `tput cols` <(zstats /sys/kernel/debug/zswap) <(zstats /sys/kernel/slab/zswap_entry)
+function zdebug_info() {
+  print_sys_stuff /sys/kernel/debug/zswap
+  echo -n "Swap used: "
+  free -h | grep -E '^Swap' | awk '{print $3 "/" $2}'
+  echo
+}
+
+function zslab_info() {
+  print_sys_stuff /sys/kernel/slab/zswap_entry
+}
+
+pr -m -t -w `tput cols` <(zdebug_info) <(zslab_info)
