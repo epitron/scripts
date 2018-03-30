@@ -232,6 +232,7 @@ CODERAY_FILENAME_MAPPING = {
   "database.yml" => :yaml,
 }
 
+
 ##############################################################################
 
 def shebang_lang(filename)
@@ -435,6 +436,31 @@ BLACKCARPET_INIT = proc do
 end
 
 
+HTMLENTITIES = {
+  'nbsp'  => ' ',
+  'ndash' => '-',
+  'mdash' => '-',
+  'amp'   => '&',
+  'raquo' => '>>',
+  'laquo' => '<<',
+  'quot'  => '"',
+  'micro' => 'u',
+  'copy'  => '(c)',
+  'trade' => '(tm)',
+  'reg'   => '(R)',
+  '#174'  => '(R)',
+  '#8212' => '--',
+  '#8230' => '--',
+  '#8220' => '"',
+  '#8221' => '"',
+  '#39'   => "'",
+  '#8217' => "'",
+}
+
+def convert_htmlentities(s)
+  s.gsub(/&([#\w]+);/) { HTMLENTITIES[$1] || $0 }
+end
+
 def print_markdown(markdown)
   # Lazily load markdown renderer
   begin
@@ -459,7 +485,66 @@ def print_markdown(markdown)
     carpet = Redcarpet::Markdown.new(BlackCarpet, options)
   end
 
-  carpet.render(markdown)
+  convert_htmlentities carpet.render(markdown)
+end
+
+##############################################################################
+
+def print_moin(moin)
+
+  convert_tables = proc do |s|
+    chunks = s.each_line.chunk { |line| line.match? /^\s*\|\|.*\|\|\s*$/ }
+
+    flattened = chunks.map do |is_table, lines|
+      if is_table
+
+        lines.map.with_index do |line,i|
+          cols = line.scan(/(?<=\|\|)([^\|]+)(?=\|\|)/).flatten
+
+          newline = cols.join(" | ")
+          newline << " |" if cols.size == 1
+          newline << "\n"
+
+          if i == 0
+            sep = cols.map { |col| "-" * col.size }.join("-|-") + "\n"
+
+            if cols.all? { |col| col.match? /__.+__/ } # table has headers!
+              [newline, sep]
+            else
+              empty_header = (["..."]*cols.size).join(" | ") + "\n"
+              [empty_header, sep, newline]
+            end
+          else
+            newline
+          end
+        end
+
+      else
+        lines
+      end
+    end.flatten
+
+    flattened.join
+  end
+
+  markdown = moin.
+    gsub(/^(={1,5}) (.+) =+$/) { |m| ("#" * $1.size ) + " " + $2 }. # headers
+    gsub(/'''/, "__").                            # bolds
+    gsub(/''/, "_").                              # italics
+    gsub(/\{\{attachment:(.+)\}\}/, "![](\\1)").  # images
+    gsub(/\[\[(.+)\|(.+)\]\]/, "[\\2](\\1)").     # links w/ desc
+    gsub(/\[\[(.+)\]\]/, "[\\1](\\1)").           # links w/o desc
+    gsub(/^#acl .+$/, '').                        # remove ACLs
+    gsub(/^<<TableOfContents.+$/, '').            # remove TOCs
+    gsub(/^## page was renamed from .+$/, '').    # remove 'page was renamed'
+    gsub(/^\{\{\{\n^#!raw\n(.+)\}\}\}$/m, "\\1"). # remove {{{#!raw}}}s
+    # TODO: convert {{{\n#!highlight lang}}}s (2-phase: match {{{ }}}'s, then match first line inside)
+    gsub(/^\{\{\{#!highlight (\w+)\n(.+)\n\}\}\}$/m, "```\\1\n\\2\n```"). # convert {{{#!highlight lang }}} to ```lang ```
+    gsub(/^\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
+
+  markdown = convert_tables[markdown]
+
+  print_markdown(markdown)
 end
 
 ##############################################################################
@@ -835,6 +920,8 @@ def convert(arg)
         print_html(arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
+      when *%w[.moin]
+        print_moin(File.read arg)
       when *%w[.ipynb]
         print_ipynb(arg)
       when /^\.[1-9]$/ # manpages
