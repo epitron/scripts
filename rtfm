@@ -1,2 +1,2 @@
 #!/bin/bash
-help $@ || $@ --help || man $@ || open "http://www.google.com/search?q=$@"
+man $@ || $@ --help || help $@ || open "http://www.google.com/search?q=$@"
