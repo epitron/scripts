@@ -22,11 +22,55 @@
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
 #   * Refactor into "filters" and "renderers", with one core loop to dispatch
 #     (eg: special rules for when a shebang starts the file)
+#   * Big Refactor: convert(stream/string, format: ..., filename: ...)
+#     (to allow chaining processors, ie: .diff.gz)
+#   * EXTRA_LANGS should pick best of coderay/rugmentize/pygmentize/rougify
+#     automatically (converter class which checks what's installed?)  
 #
 ##############################################################################
 require 'pathname'
 require 'coderay'
 require 'coderay_bash'
+##############################################################################
+
+EXTRA_LANGS = {
+  ".cr"          => :ruby,
+  ".jl"          => :ruby,
+  ".pl"          => :ruby,
+  ".cmake"       => :ruby,
+  "Rakefile"     => :ruby,
+  "Gemfile"      => :ruby,
+  "Makefile"     => :bash,
+  "makefile"     => :bash,
+  ".mk"          => :bash,
+  "PKGBUILD"     => :bash,
+  "configure.in" => :bash,
+  "configure"    => :bash,
+  ".install"     => :bash,
+  ".desktop"     => :bash,
+  ".conf"        => :bash,
+  ".prf"         => :bash,
+  ".hs"          => :text,
+  ".ini"         => :bash,
+  ".service"     => :bash,
+  "Gemfile.lock" => :c,
+  ".cl"          => :c,
+  ".rs"          => :rougify,
+  "database.yml" => :yaml,
+  ".gradle"      => :groovy,
+  ".sage"        => :python,
+  ".lisp"        => :clojure,
+  ".scm"         => :clojure,
+  ".qml"         => :php,
+  ".pro"         => :sql,
+  ".ws"          => :xml,
+  ".ui"          => :xml,
+  ".opml"        => :xml,
+  ".nim"         => :pygmentize,
+  ".diff"        => :pygmentize,
+  ".patch"       => :pygmentize,
+}
+
 ##############################################################################
 
 THEMES = {
@@ -115,7 +159,9 @@ end
 ##############################################################################
 
 def run(*args)
-  opts = (args.last.is_a? Hash) ? args.last : {}
+  opts = (args.last.is_a? Hash) ? args.pop : {}
+
+  args.map! &:to_s
 
   if opts[:stderr]
     args << {err: [:child, :out]}
@@ -190,43 +236,6 @@ end
 
 ### Converters ###############################################################
 
-EXTRA_LANGS = {
-  ".cr"          => :ruby,
-  ".jl"          => :ruby,
-  ".pl"          => :ruby,
-  ".cmake"       => :ruby,
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
-  ".mk"          => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
-  ".install"     => :bash,
-  ".desktop"     => :bash,
-  ".conf"        => :bash,
-  ".prf"         => :bash,
-  ".hs"          => :text,
-  ".ini"         => :bash,
-  ".service"     => :bash,
-  "Gemfile.lock" => :c,
-  ".cl"          => :c,
-  "database.yml" => :yaml,
-  ".gradle"      => :groovy,
-  ".sage"        => :python,
-  ".lisp"        => :clojure,
-  ".scm"         => :clojure,
-  ".qml"         => :php,
-  ".pro"         => :sql,
-  ".ws"          => :xml,
-  ".ui"          => :xml,
-  ".opml"        => :xml,
-  ".nim"         => :pygmentize,
-}
-
-##############################################################################
-
 def print_source(filename)
   ext = filename[/\.[^\.]+$/]
 
@@ -247,8 +256,8 @@ def print_source(filename)
     require 'json'
     json = JSON.parse(File.read(filename))
     CodeRay.scan(JSON.pretty_generate(json), :json).term
-  elsif lang == :pygmentize
-    run("pygmentize", filename)
+  elsif %i[pygmentize rugmentize rougify].include? lang
+    run(lang, filename)
   elsif lang
     CodeRay.scan_file(filename, lang).term
   else
@@ -575,7 +584,18 @@ end
 
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
-  highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
+  result = nil
+  %w[pem der net].each do |cert_format|
+    result = run("openssl", "x509", 
+        "-fingerprint", "-text", "-noout",
+        "-inform", cert_format, 
+        "-in", filename, 
+        stderr: true).read
+
+    break unless result =~ /unable to load certificate/
+  end
+
+  highlight_lines_with_colons(result)
 end
 
 ##############################################################################
@@ -705,6 +725,7 @@ end
 ##############################################################################
 
 def highlight(enum, &block)
+  enum = enum.each_line if enum.is_a? String
   Enumerator.new do |y|
     enum.each do |line|
       y << block.call(line)
