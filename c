@@ -18,14 +18,11 @@
 #
 #
 # TODOs:
-#   * Print [eof] between files when in multi-file mode
-#   * Make .ANS files work in 'less' (less -S -R, cp437)
-#   * Refactor into "filters" and "renderers", with one core loop to dispatch
-#     (eg: special rules for when a shebang starts the file)
-#   * Big Refactor: convert(stream/string, format: ..., filename: ...)
-#     (to allow chaining processors, ie: .diff.gz)
-#   * EXTRA_LANGS should pick best of coderay/rugmentize/pygmentize/rougify
-#     automatically (converter class which checks what's installed?)  
+#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
+#     |_ core loop builds pipeline (runs identifiers until pipeline is built)
+#     |_ def convert({stream,string}, format: ..., filename: ...) -- allows chaining processors (eg: .diff.gz)
+#   * Fix "magic" (use hex viewer when format isn't recognized)
+#   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
 #
 ##############################################################################
 require 'pathname'
