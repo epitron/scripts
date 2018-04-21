@@ -1,2 +1,2 @@
 #!/bin/bash
-gpg --keyserver pgp.mit.edu --recv "$*"
+gpg --keyserver pool.sks-keyservers.net --recv "$*"
