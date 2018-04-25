@@ -52,6 +52,7 @@ EXTRA_LANGS = {
   ".service"     => :bash,
   "Gemfile.lock" => :c,
   ".cl"          => :c,
+  ".ino"         => :c, # arduino sdk files
   ".rs"          => :rougify,
   "database.yml" => :yaml,
   ".gradle"      => :groovy,
