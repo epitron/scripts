@@ -1,2 +1,2 @@
 #!/bin/bash
-gpg --keyserver pool.sks-keyservers.net --recv "$*"
+gpg --keyserver ipv4.pool.sks-keyservers.net --recv "$*"
