@@ -203,10 +203,14 @@ grouped.each do |dir, paths|
     paths = paths.select { |path| selected_types.include? path.type }
   end
 
-  if opts[:time] or opts["reverse-time"]
+  if opts["time"]
     paths.sort_by!(&:mtime)
-  elsif opts[:size] or opts["reverse-size"]
+  elsif opts["reverse-time"]
+    paths.sort_by!(&:mtime).reverse!
+  elsif opts["size"]
     paths.sort_by!(&:size)
+  elsif opts["reverse-size"]
+    paths.sort_by!(&:size).reverse!
   else
     paths.sort_by!(&:path)
   end

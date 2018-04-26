@@ -139,6 +139,8 @@ class Anagrammer
   rescue Errno::EPIPE
     # STDOUT was closed before execution completed
     exit 74 # EX_IOERR
+  rescue Interrupt
+    $stderr.puts "Interrupted"
   end    
 
 end
@@ -153,16 +155,12 @@ if $0 == __FILE__
     anagrammer.solve!(phrase)
   end
 
-  loop do
-    puts "Enter another anagram (or hit ENTER to exit)"
-    phrase = Readline.readline("> ", true)
-    exit if phrase.blank?
-    begin
+  if $stdout.isatty
+    loop do
+      puts "Enter another anagram (or hit ENTER to exit)"
+      phrase = Readline.readline("> ", true)
+      exit if phrase.blank?
       anagrammer.solve!(phrase)
-    rescue Interrupt
-      # SIGINT or ^C received
-      # exit 130 # INT received
-      $stderr.puts "Interrupted"
-    end      
+    end
   end
 end
