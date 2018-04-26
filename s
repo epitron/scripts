@@ -18,9 +18,16 @@ OTHER_EDITORS = %w[
 #############################################################################
 
 def which_dir(dir)
-  CODE_PATHS.map { |d| File.expand_path d }.each do |path|
-    potential_path = File.join(path, dir)
-    return potential_path if File.exists? potential_path
+  if dir == "scripts"
+    sd = File.expand_path("~/scripts")
+    if File.directory?(sd)
+      return sd
+    end
+  else
+    CODE_PATHS.map { |d| File.expand_path d }.each do |path|
+      potential_path = File.join(path, dir)
+      return potential_path if File.exists? potential_path
+    end
   end
   nil
 end
