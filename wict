@@ -4,14 +4,6 @@
 require 'epitools'
 ###################################################################
 
-# http://toolserver.org/~enwikt/definitions/?sortby=7
-# ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
-# ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
-ENGLISH   = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz"
-ALL       = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz"
-# TODO: Pull urls from https://archive.org/details/enwikt-tsv?output=json
-
-
 CACHE_DIR  = File.expand_path("~/.cache/wict")
 INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
 TSV_FILE   = File.join CACHE_DIR, "enwikt.tsv"
@@ -62,9 +54,28 @@ end
 ###################################################################
 # Update TSV and generate index
 
-def update(url)
-  puts "* Re-importing database..."
-  puts "  |_ source: #{url.inspect}"
+def latest_tsv_url(lang="en")
+  #
+  # Old URLs:
+  # http://toolserver.org/~enwikt/definitions/?sortby=7
+  # http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz
+  # http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz
+  #
+  # New URLs:
+  # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz
+  # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz
+  #
+  json = `curl -s https://archive.org/details/enwikt-tsv?output=json`.from_json
+  files = json["files"].map(&:first).select { |fn| fn[%r{^/enwikt-defs-\d+-#{lang}\.tsv\.gz$}] }
+  latest = files.sort.last
+  "https://archive.org/download/enwikt-tsv#{latest}"
+end
+
+def update(lang="en")
+  puts "* Updating Wictionary..."
+  print "  |_ latest dump: "
+  url = latest_tsv_url(lang="en")
+  puts url.inspect
 
   Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
   backup(INDEX_FILE)
@@ -296,8 +307,8 @@ if $0 == __FILE__
 
   if opts[:update] or opts[:all]
 
-    url = opts[:all] ? ALL : ENGLISH
-    update(url)
+    lang = opts[:all] ? "all" : "en"
+    update(lang)
 
   else
 
