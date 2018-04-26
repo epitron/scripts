@@ -1,0 +1,308 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+# Encoding.default_internal = Encoding::UTF_8
+# Encoding.default_external = Encoding::UTF_8
+# Encoding.default_internal = Encoding.default_external = 'UTF-8'
+
+###################################################################
+require 'epitools'
+###################################################################
+
+# http://toolserver.org/~enwikt/definitions/?sortby=7
+# ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
+# ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
+ENGLISH   = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz"
+ALL       = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz"
+
+CACHE_DIR  = File.expand_path("~/.cache/wict")
+INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
+TSV_FILE   = File.join CACHE_DIR, "enwikt.tsv"
+
+###################################################################
+
+def parse_options
+  gem "slop", "~> 3.6"
+  require 'slop' # lazy loaded
+
+  opts = Slop.parse(help: true, strict: true) do
+    banner 'Usage: wict [options] <word(s)...>'
+
+    on 'u',  'update',  'Download the English wikipedia dictionary'
+    on 'a',  'all',     'Download the wikipedia dictionary for all languages'
+    on 's',  'stats',   'Dictionary statistics'
+  end
+
+  [opts, ARGV]
+end
+
+###################################################################
+# Utils
+
+def ensure_database!
+  unless File.exist? TSV_FILE and File.exist? INDEX_FILE
+    $stderr.puts "You must first download a database. Run 'wict -u'."
+    exit 1
+  end
+end
+
+def backup(src)
+  if File.exists? src
+    counter = 1
+    dest = "#{src}.bak"
+
+    while File.exists? dest
+      counter += 1
+      dest = "#{src}.bak#{counter}"
+    end
+
+    puts "  |_ database backed up to: #{dest.inspect}"
+
+    File.rename(src, dest)
+  end
+end
+
+###################################################################
+# Update TSV and generate index
+
+def update(url)
+  puts "* Re-importing database..."
+  puts "  |_ source: #{url.inspect}"
+  exit 
+
+  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+  backup(INDEX_FILE)
+  backup(TSV_FILE)
+
+  word_index = []
+  count      = 0
+  last_word  = nil
+
+  open(TSV_FILE, "w") do |out|
+    IO.popen("curl -s -L #{url} | gunzip -c", "r") do |tsv|
+      tsv.each_line_with_offset do |line, offset|
+        out.write(line)
+        lang, word, type, definition = line.strip.split("\t")
+
+        next if last_word == word
+
+        word_index << [word, offset]
+
+        last_word = word
+        count    += 1
+
+        print "\e[1G  |_ definitions read: #{n.commatize}\e[J" if n % 1337 == 0
+      end
+    end
+  end
+
+  puts "  |_ sorting index (#{word_index.size.commatize} words)"
+  word_index.sort!
+
+  puts "  |_ writing index to #{INDEX_FILE}..."
+  open(INDEX_FILE, "w") do |index|
+    word_index.each { |word, offset| index.write "#{word}\t#{offset}\n" }
+  end
+
+  puts
+  puts "* Done!"
+end  
+
+###################################################################
+# Lookup words
+
+def highlight(defn)
+
+  s = defn.dup
+
+  xforms = {
+    /^#\s*/ => proc { "<8>*</8> " },
+
+    # p [:squiggle, $1]
+    /\{\{([^\|\}]+?)\}\}/ => proc { "<9>[#{$1}]</9>" },
+
+    # p [:squiggle_pair, $1, $2]
+    /\{\{([^\|\}]+?)\|([^\}]+?)\}\}/ => proc { "<9>[#{$1}]</9> #{highlight $2}" },
+
+    # p [:brackets, $1, $2]
+    /\[\[([^\|]+?)\]\]/ => proc { "<15>#{$1}</15>" },
+
+    # p [:alternate_brackets, $1, $2]
+    /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc { highlight "[[#{$2}]]" },
+  }
+
+  xforms.each do |pattern,block|
+    s.gsub! pattern, &block
+  end
+
+  "<7>#{s}</7>"
+end
+
+def test_highlighter
+  defs = '''
+    # {{non-gloss definition|A [[greeting]] ([[salutation]]) said when [[meet]]ing someone or [[acknowledge|acknowledging]] someone’s [[arrival]] or [[presence]].}}
+    # {{non-gloss definition|A greeting used when [[answer]]ing the [[telephone]].}}
+    # {{non-gloss definition|A call for [[response]] if it is not clear if anyone is present or listening, or if a telephone conversation may have been [[disconnect]]ed.}}
+    # {{colloquial}} {{non-gloss definition|Used [[sarcastic]]ally to imply that the person addressed or referred to has done something the speaker or writer considers to be [[foolish]].}}
+    # {{non-gloss definition|An expression of [[puzzlement]] or [[discovery]].}}
+    # "[[hello#Interjection|Hello]]!" or an equivalent greeting.
+    #{{dated}} A female [[telephone operator]]
+    # A semi-formal form of [[hello]].
+    # {{offensive|but now often|_|humorous}} {{non-gloss definition|A response to being greeted with "[[hello]]".}}
+    # [[bright]]/[[light]] [[orange]]
+    # {{plural of|hello}}
+  '''.lines.map(&:strip).reject(&:blank?)
+
+  defs.each do |defn|
+    puts "="*50
+    puts highlight(defn).colorize
+  end
+
+  exit
+end
+
+def greparound(io, pos, query)
+  index_lines = []
+
+  grep_proc = proc do |line|
+    if line[/^#{query}/]
+      index_lines << line
+    else
+      raise :done
+    end
+  end
+
+  io.seek pos
+  io.reverse_each_from_current_pos(&grep_proc) rescue nil
+
+  index_lines.reverse!
+
+  io.seek pos
+  io.gets
+  io.each_line(&grep_proc) rescue nil
+
+  index_lines
+end
+
+def lookup_bsearch(args)
+  query = args.join
+
+  f = open(INDEX_FILE, "r")
+  range = (0...f.size)
+  loop do
+    return if range.size < 5
+
+    f.seek(range.middle)
+    f.seek_backwards_to("\n", 80)
+    
+    line                 = f.each_line.first
+    current_word, offset = line.split("\t")
+
+    if current_word[/^#{query}/]
+      index_lines = greparound(f, range.middle, query)
+      print_results(index_lines)
+      return
+    elsif query < current_word 
+      range = range.first...range.middle
+    else
+      range = range.middle...range.last
+    end
+  end
+
+ensure
+  f.close
+end
+
+def lookup_grep(args)
+  query = args.join
+
+  lines = `grep -iE '^#{query}' #{INDEX_FILE}`.each_line.to_a
+
+  print_results(lines)
+end
+
+def get_results(matches)
+  open(TSV_FILE, "r") do |tsv|
+    matches.map do |word, offset|
+      defs = []
+      tsv.seek(offset)
+
+      last_word = nil
+      loop do
+        lang, tsv_word, type, definition = tsv.gets.split("\t")
+        break if word != tsv_word
+        defs << definition.chomp
+      end
+      [word, defs]
+    end
+  end
+end
+
+def print_results(index_lines)
+  if index_lines.empty?
+    puts "No results found."
+    return
+  end
+
+  word_offsets = index_lines.map do |line|
+    word, offset = line.split("\t")
+    offset = offset.to_i
+    [word, offset]
+  end
+
+  lesspipe(wrap: true) do |less|
+    results = get_results(word_offsets)
+    results.each do |word, defs|
+      less.puts "<14>#{word}</14>".colorize
+      defs.each { |defn| less.puts "   #{highlight(defn).colorize}" }
+      less.puts
+    end
+  end
+end  
+
+
+# alias lookup lookup_grep
+alias lookup lookup_bsearch
+
+###################################################################
+
+def stats
+  puts "----------------------------------"
+  puts "   Wiktionary Statistics:"
+  puts "----------------------------------"
+
+  index_size = File.size INDEX_FILE
+  tsv_size   = File.size TSV_FILE
+  puts "    TSV size: #{tsv_size.commatize} bytes"
+  puts "  Index size: #{index_size.commatize} bytes"
+
+  words = open(INDEX_FILE) { |f| f.each_line.count }
+  puts "Unique words: #{words.commatize}"
+end
+
+###################################################################
+
+
+if $0 == __FILE__
+
+  opts, args = parse_options
+
+  if opts[:update] or opts[:all]
+
+    url = opts[:all] ? ALL : ENGLISH
+    update(url)
+
+  else
+
+    ensure_database!
+
+    if opts.stats?
+      stats
+    elsif args.empty?
+      puts "Pass the word(s) you want to look up as (an) argument(s)."
+    else
+      lookup(args)
+    end
+    
+  end
+
+end
