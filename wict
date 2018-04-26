@@ -11,8 +11,8 @@ include TokyoCabinet
 # http://toolserver.org/~enwikt/definitions/?sortby=7
 # ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
 # ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
-ENGLISH   = "http://chris.ill-logic.com/files/enwikt-defs-latest-en.tsv.gz"
-ALL       = "http://chris.ill-logic.com/files/enwikt-defs-latest-all.tsv.gz"
+ENGLISH   = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz"
+ALL       = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz"
 
 CACHE_DIR = File.expand_path("~/.cache/wict")
 INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
@@ -74,7 +74,7 @@ def update
 
   backup(INDEX)
 
-  IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
+  IO.popen("curl -s -L #{url} | gunzip -c", "r") do |tsv|
 
     bdb_open(INDEX, BDB::OWRITER | BDB::OCREAT) do |bdb|
 
@@ -133,22 +133,18 @@ def highlight(defn)
 
   xforms = {
     /^#\s*/ => proc { "<8>*</8> " },
-    /\{\{([^\|\}]+?)\}\}/ => proc do
-      # p [:squiggle, $1]
-      "<9>[#{$1}]</9>"
-    end,
-    /\{\{([^\|\}]+?)\|([^\}]+?)\}\}/ => proc do
-      # p [:squiggle_pair, $1, $2]
-      "<9>[#{$1}]</9> #{highlight $2}"
-    end,
-    /\[\[([^\|]+?)\]\]/ => proc do
-      # p [:brackets, $1, $2]
-      "<15>#{$1}</15>"
-    end,
-    /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc do
-      # p [:alternate_brackets, $1, $2]
-      highlight "[[#{$2}]]"
-    end,
+
+    # p [:squiggle, $1]
+    /\{\{([^\|\}]+?)\}\}/ => proc { "<9>[#{$1}]</9>" },
+
+    # p [:squiggle_pair, $1, $2]
+    /\{\{([^\|\}]+?)\|([^\}]+?)\}\}/ => proc { "<9>[#{$1}]</9> #{highlight $2}" },
+
+    # p [:brackets, $1, $2]
+    /\[\[([^\|]+?)\]\]/ => proc { "<15>#{$1}</15>" },
+
+    # p [:alternate_brackets, $1, $2]
+    /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc { highlight "[[#{$2}]]" },
   }
 
   xforms.each do |pattern,block|
