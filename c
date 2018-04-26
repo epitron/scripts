@@ -30,6 +30,21 @@ require 'coderay'
 require 'coderay_bash'
 ##############################################################################
 
+def pygmentize_cmd(lexer=nil, style="native", formatter="terminal256")
+  # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
+  #       Style gallery: https://help.farbox.com/pygments.html
+  #                     (good ones: monokai, native, emacs)
+  cmd = [
+    "pygmentize",
+    "-O", "style=#{style}",
+    "-f", formatter,
+  ]
+  cmd += ["-l", lexer] if lexer
+
+  cmd
+end
+
+
 EXTRA_LANGS = {
   ".cr"          => :ruby,
   ".jl"          => :ruby,
@@ -67,6 +82,8 @@ EXTRA_LANGS = {
   ".nim"         => :pygmentize,
   ".diff"        => :pygmentize,
   ".patch"       => :pygmentize,
+  ".rs"          => :pygmentize,
+  ".toml"        => pygmentize_cmd(:ini),
 }
 
 ##############################################################################
@@ -165,7 +182,7 @@ def run(*args)
     args << {err: [:child, :out]}
   end
 
-  IO.popen(args)
+  IO.popen(args.map &:to_s)
 end
 
 ##############################################################################
@@ -254,6 +271,8 @@ def print_source(filename)
     require 'json'
     json = JSON.parse(File.read(filename))
     CodeRay.scan(JSON.pretty_generate(json), :json).term
+  elsif lang.is_a? Array
+    run(*lang)
   elsif %i[pygmentize rugmentize rougify].include? lang
     run(lang, filename)
   elsif lang
@@ -743,12 +762,11 @@ end
 
 ##############################################################################
 
-COMPRESSORS = {
+DECOMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
 }
-
 
 def convert(arg)
 
@@ -782,7 +800,7 @@ def convert(arg)
 
     if ext =~ /\.(tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)|(tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem))$/
       print_archive(arg)
-    elsif cmd = COMPRESSORS[ext]
+    elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
     elsif path.filename =~ /.+-current\.xml$/
       print_wikidump(arg)
