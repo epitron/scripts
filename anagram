@@ -1,7 +1,22 @@
 #!/usr/bin/env ruby
-
+##############################################################################################
+require 'readline'
 require 'set'
+##############################################################################################
 
+class NilClass
+  def blank?; true; end
+end
+
+class String
+  def blank?; strip == ""; end
+end
+
+class Hash
+  def self.of_arrays; new {|h,k| h[k] = [] }; end
+end
+
+##############################################################################################
 
 class Array
 
@@ -27,6 +42,16 @@ class Array
 
 end
 
+##############################################################################################
+
+def time(msg)
+  $stderr.print "* #{msg}..."
+  start = Time.now
+  yield
+  $stderr.puts "done! (elapsed: %0.5f)" % (Time.now - start)
+end
+
+##############################################################################################
 
 class Anagrammer
 
@@ -38,57 +63,70 @@ class Anagrammer
     go hi id is km lb kg ow ox oh oi my ma
   ]
 
+  LOOKUP_TABLE_FILE = File.expand_path("~/.cache/anagram.lookup.table")
+
   def initialize(wordlist="/usr/share/dict/words")
-    cleaned_words = open(wordlist).
-      map    { |w| w.chomp.chomp("'s") }.
-      select { |w| w.size > 2 and w.upcase != w }.
-      map    { |l| l.downcase }
+    if File.exist?(LOOKUP_TABLE_FILE)
+      time("Loading word lookup table from #{LOOKUP_TABLE_FILE}") do
+        @grouped = open(LOOKUP_TABLE_FILE) { |f| Marshal.load f }
+      end
+    else
 
-    @words = Set.new(cleaned_words + SHORTWORDS)
-  end
+      time("Generating word lookup table") do
+        @grouped = Hash.of_arrays
+        group_proc = proc { |word| @grouped[word.chars.sort] << word }
 
-  def words_from(letters)
-    return to_enum(:words_from, letters) unless block_given?
+        open(wordlist).
+          map    { |w| w.chomp.chomp("'s") }.
+          select { |w| w.size > 2 and w.upcase != w }.
+          map    { |l| l.downcase }.
+          each   &group_proc
 
-    letters = letters.sort.reverse
+        SHORTWORDS.each &group_proc
+      end
 
-    (1..letters.size).each do |n|
-      letters.permutation(n) do |perm|
-
-        word = perm.join
-
-        if @words.include? word
-          remaining = letters.without(perm)
-
-          if remaining.any?
-            words_from(remaining).map { |subword| yield "#{word} #{subword}" }
-          else
-            yield word
-          end
-        end
-
+      time("Saving to #{LOOKUP_TABLE_FILE}...") do
+        @grouped.default_proc = nil
+        File.write(LOOKUP_TABLE_FILE, Marshal.dump(@grouped))
       end
     end
   end
 
-end
+  #
+  # Generates anagrams given a *sorted* array of letters
+  #
+  def words_from(letters)
+    return to_enum(:words_from, letters) unless block_given?
 
-if $0 == __FILE__
-  begin
+    letters = letters.sort
 
-    if ARGV.empty?
-      puts "usage: anagram [phrase]"
-      exit 1
+    letters.size.downto(1) do |n|
+      letters.combination(n) do |perm| # NB: combination() thoughtfully returns the letters in sorted order! :D
+        if words = @grouped[perm]
+          remaining = letters.without(perm)
+
+          words.each do |word|
+            if remaining.any?
+              words_from(remaining).each { |subword| yield "#{word} #{subword}" }
+            else
+              yield word
+            end
+          end
+        end
+      end
     end
+  end
 
-    phrase = ARGV.join(" ")
+  #
+  # Given a string, prints out all anagrams.
+  #
+  def solve!(phrase)
     found  = Set.new
-    anagrammer = Anagrammer.new
 
-    puts "# Searching for anagrams of #{phrase.inspect}..."
-    letters = phrase.downcase.scan(/\w/)
+    # $stderr.puts "# Searching for anagrams of #{phrase.inspect}..."
+    letters = phrase.downcase.scan(/\w/).sort
 
-    anagrammer.words_from(letters).each do |solution|
+    words_from(letters).each do |solution|
       words = solution.split.sort
       unless found.include? words
         found.add(words)
@@ -96,11 +134,35 @@ if $0 == __FILE__
       end
     end
 
-  rescue Interrupt
-    # SIGINT or ^C received
-    exit 130 # INT received
+    puts
+
   rescue Errno::EPIPE
     # STDOUT was closed before execution completed
     exit 74 # EX_IOERR
+  end    
+
+end
+
+##############################################################################################
+
+if $0 == __FILE__
+  anagrammer = Anagrammer.new
+
+  if ARGV.any?
+    phrase = ARGV.join(" ")
+    anagrammer.solve!(phrase)
+  end
+
+  loop do
+    puts "Enter another anagram (or hit ENTER to exit)"
+    phrase = Readline.readline("> ", true)
+    exit if phrase.blank?
+    begin
+      anagrammer.solve!(phrase)
+    rescue Interrupt
+      # SIGINT or ^C received
+      # exit 130 # INT received
+      $stderr.puts "Interrupted"
+    end      
   end
 end
