@@ -9,6 +9,8 @@ require 'epitools'
 # ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
 ENGLISH   = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz"
 ALL       = "https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz"
+# TODO: Pull urls from https://archive.org/details/enwikt-tsv?output=json
+
 
 CACHE_DIR  = File.expand_path("~/.cache/wict")
 INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
@@ -190,9 +192,9 @@ end
 
 def lookup_bsearch(args)
   query = args.join
-
-  f = open(INDEX_FILE, "r")
+  f     = open(INDEX_FILE, "r")
   range = (0...f.size)
+
   loop do
     return if range.size < 5
 
@@ -230,7 +232,6 @@ def get_results(matches)
     matches.map do |word, offset|
       defs = []
       tsv.seek(offset)
-
       last_word = nil
       loop do
         lang, tsv_word, type, definition = tsv.gets.split("\t")
@@ -254,8 +255,9 @@ def print_results(index_lines)
     [word, offset]
   end
 
+  results = get_results(word_offsets)
+
   lesspipe(wrap: true) do |less|
-    results = get_results(word_offsets)
     results.each do |word, defs|
       less.puts "<14>#{word}</14>".colorize
       defs.each { |defn| less.puts "   #{highlight(defn).colorize}" }
