@@ -33,7 +33,7 @@ end
 
 def which_is_best?(*bins)
   bins.flatten.each do |bin|
-    if location = which bin
+    if location = which(bin)
       return location
     end
   end
@@ -460,7 +460,7 @@ if $0 == __FILE__
         # end
 
         if which("mpv")
-          play(url, opts["no-daemon"], opts.verbose?)
+          play(url, opts["no-daemon"], opts[:verbose])
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
         end
