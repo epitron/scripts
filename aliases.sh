@@ -237,6 +237,8 @@ alias be="bundle exec"
 alias rock='luarocks'
 alias pi='pip install --user'
 alias py=python2
+alias rubygems="gem-search"
+alias gems="gem-search"
 
 gem-cd() {
   local gem_dir
@@ -245,6 +247,8 @@ gem-cd() {
     cd "$gem_dir"
   fi
 }
+
+
 
 
 # # 64/32bit specific aliases
