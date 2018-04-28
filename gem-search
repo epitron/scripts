@@ -72,7 +72,9 @@ puts
 
 doc = Oga.parse_html(html)
 gems = doc.css("a.gems__gem").map do |node|
-  extract_info(node).to_h
+  info = extract_info(node).to_h
+  info["url"] = "https://rubygems.org#{node["href"]}" 
+  info
 end.uniq
 
 gems.sort_by! { |g| g["downloads_count"].gsub(",","").to_i }
@@ -82,5 +84,6 @@ gems.sort_by! { |g| g["downloads_count"].gsub(",","").to_i }
 gems.each do |info|
   puts "<8>=== <11>#{info["name"]} <7>(<3>v#{info["version"]}<8>, <13>#{info["downloads_count"]} <5>downloads<7>) <8>==============".colorize
   puts "    <15>#{info["desc"]}".colorize
+  puts "    <3>#{info["url"]}".colorize
   puts
 end
