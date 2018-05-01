@@ -12,7 +12,7 @@ class String
   def tighten; gsub(/[\t ]+/,' ').strip; end
   def any?; not empty?; end
   def indent(prefix="    ")
-    each_line.map { |line| prefix + line }.join('')
+    gsub(/^/m, prefix)
   end
 end
 
@@ -83,7 +83,7 @@ gems.sort_by! { |g| g["downloads_count"].gsub(",","").to_i }
 
 gems.each do |info|
   puts "<8>=== <11>#{info["name"]} <7>(<3>v#{info["version"]}<8>, <13>#{info["downloads_count"]} <5>downloads<7>) <8>==============".colorize
-  puts "    <15>#{info["desc"]}".colorize
+  puts info["desc"].indent.bright_white
   puts "    <3>#{info["url"]}".colorize
   puts
 end
