@@ -18,6 +18,15 @@ class String
   end
 end
 
+class Numeric
+  def commatize(char=",")
+    int, frac = to_s.split(".")
+    int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
+
+    frac ? "#{int}.#{frac}" : int
+  end
+end
+
 ###################################################################
 
 def extract_info(root)
@@ -78,12 +87,12 @@ puts
 json["items"].reverse.each do |item|
   name     = item["full_name"]
   desc     = item["description"]
-  stars    = item["stargazers_count"]
-  size     = item["size"]
+  stars    = item["stargazers_count"].to_i
+  size     = item["size"].to_i
   language = item["language"]
   url      = item["clone_url"]
 
-  puts "<8>=== <11>#{name} <7>(#{"<9>#{language}<8>, " if language}<10>#{stars} <2>stars<8>, <13>#{size}<5>k<7>) <8>==============".colorize
+  puts "<8>=== <11>#{name} <7>(#{"<9>#{language}<8>, " if language}<10>#{stars.commatize} <2>stars<8>, <13>#{size.commatize}<5>KB<7>) <8>==============".colorize
   puts "    <15>#{desc}".colorize if desc
   puts "    <3>#{url}".colorize
   puts
