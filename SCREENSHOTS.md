@@ -15,6 +15,10 @@ Here are screenshots of some of the scripts.
 
 ![paclog](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/paclog.png)
 
+## gem-search (aka. gems/rubygems)
+
+![paclog](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/gem-search.png)
+
 ## acs
 
 ![acs](https://raw.githubusercontent.com/epitron/scripts/master/screenshots/acs.png)
