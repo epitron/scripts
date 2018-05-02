@@ -13,7 +13,7 @@ TYPE_INFO = [
   [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
   [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
-  [:doc,     /\.(txt|pdf)$/i,                              :light_white],
+  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc))$/i,:light_white],
   [:dotfile, /^\../i,                                      :grey],
   [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2|gem)$/i, :light_yellow]
 ]
@@ -203,10 +203,14 @@ grouped.each do |dir, paths|
     paths = paths.select { |path| selected_types.include? path.type }
   end
 
-  if opts[:time] or opts["reverse-time"]
+  if opts["time"]
     paths.sort_by!(&:mtime)
-  elsif opts[:size] or opts["reverse-size"]
+  elsif opts["reverse-time"]
+    paths.sort_by!(&:mtime).reverse!
+  elsif opts["size"]
     paths.sort_by!(&:size)
+  elsif opts["reverse-size"]
+    paths.sort_by!(&:size).reverse!
   else
     paths.sort_by!(&:path)
   end

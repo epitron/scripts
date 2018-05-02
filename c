@@ -18,18 +18,81 @@
 #
 #
 # TODOs:
-#   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
-#   *
-#   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
-#   * Print [eof] between files when in multi-file mode
-#   * Make .ANS files work in 'less' (less -S -R, cp437)
-#   * Refactor into "filters" and "renderers", with one core loop to dispatch
-#     (eg: special rules for when a shebang starts the file)
+#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
+#     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
+#     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
+#   * Fix "magic" (use hex viewer when format isn't recognized)
+#   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
+#   * Easy fix: Change `print_*` methods to receive a string (raw data) *or* a Pathname/File 
 #
 ##############################################################################
 require 'pathname'
 require 'coderay'
 require 'coderay_bash'
+##############################################################################
+
+def pygmentize_cmd(lexer=nil, style="native", formatter="terminal256")
+  # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
+  #       Style gallery: https://help.farbox.com/pygments.html
+  #                     (good ones: monokai, native, emacs)
+  cmd = [
+    "pygmentize",
+    "-O", "style=#{style}",
+    "-f", formatter,
+  ]
+  cmd += ["-l", lexer] if lexer
+
+  cmd
+end
+
+
+### Converters ###############################################################
+
+EXT_HIGHLIGHTERS = {
+  ".cr"          => :ruby,
+  ".jl"          => :ruby,
+  ".pl"          => :ruby,
+  ".cmake"       => :ruby,
+  ".mk"          => :bash,
+  ".install"     => :bash,
+  ".desktop"     => :bash,
+  ".conf"        => :bash,
+  ".prf"         => :bash,
+  ".ini"         => :bash,
+  ".service"     => :bash,
+  ".hs"          => :text,
+  ".cl"          => :c,
+  ".ino"         => :c, # arduino sdk files
+  ".gradle"      => :groovy,
+  ".sage"        => :python,
+  ".lisp"        => :clojure,
+  ".scm"         => :clojure,
+  ".qml"         => :php,
+  ".pro"         => :sql,
+  ".ws"          => :xml,
+  ".ui"          => :xml,
+  ".opml"        => :xml,
+  ".stp"         => :javascript, # systemtap
+  ".ml"          => :pygmentize,
+  ".nim"         => :pygmentize,
+  ".diff"        => :pygmentize,
+  ".patch"       => :pygmentize,
+  ".rs"          => :pygmentize,
+  ".toml"        => pygmentize_cmd(:ini),
+}
+
+FILENAME_HIGHLIGHTERS = {
+  "Rakefile"     => :ruby,
+  "Gemfile"      => :ruby,
+  "Makefile"     => :bash,
+  "makefile"     => :bash,
+  "PKGBUILD"     => :bash,
+  "configure.in" => :bash,
+  "configure"    => :bash,
+  "Gemfile.lock" => :c,
+  "database.yml" => :yaml,
+}
+
 ##############################################################################
 
 THEMES = {
@@ -226,49 +289,6 @@ def tmp_filename(prefix="c", length=20)
   name
 end
 
-### Converters ###############################################################
-
-CODERAY_EXT_MAPPING = {
-  ".cr"          => :ruby,
-  ".jl"          => :ruby,
-  ".pl"          => :ruby,
-  ".cmake"       => :ruby,
-  ".mk"          => :bash,
-  ".install"     => :bash,
-  ".desktop"     => :bash,
-  ".conf"        => :bash,
-  ".prf"         => :bash,
-  ".ini"         => :bash,
-  ".service"     => :bash,
-  ".hs"          => :text,
-  ".cl"          => :c,
-  ".gradle"      => :groovy,
-  ".sage"        => :python,
-  ".lisp"        => :clojure,
-  ".scm"         => :clojure,
-  ".qml"         => :php,
-  ".pro"         => :sql,
-  ".ws"          => :xml,
-  ".ui"          => :xml,
-  ".opml"        => :xml,
-  ".nim"         => :pygmentize,
-  ".ml"          => :pygmentize,
-  ".stp"         => :javascript, # systemtap
-}
-
-CODERAY_FILENAME_MAPPING = {
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
-  "Gemfile.lock" => :c,
-  "database.yml" => :yaml,
-}
-
-
 ##############################################################################
 
 def shebang_lang(filename)
@@ -292,20 +312,21 @@ def print_source(arg)
   filename = path.filename
 
   lang =  shebang_lang(path) ||
-          CODERAY_EXT_MAPPING[ext] ||
-          CODERAY_FILENAME_MAPPING[filename]
+          EXT_HIGHLIGHTERS[ext] ||
+          FILENAME_HIGHLIGHTERS[filename]
 
   if ext == ".json"
     require 'json'
     begin
-      data = File.read(filename)
-      json = JSON.parse(data)
+      json = JSON.parse(File.read(filename))
       CodeRay.scan(JSON.pretty_generate(json), :json).term
     rescue JSON::ParserError
       data
     end
-  elsif lang == :pygmentize
-    run("pygmentize", path.to_s)
+  elsif lang.is_a? Array
+    run(*lang)
+  elsif %i[pygmentize rugmentize rougify].include? lang
+    run(lang, filename)
   elsif lang
     CodeRay.scan_file(path, lang).term
   else
@@ -621,6 +642,22 @@ end
 
 ##############################################################################
 
+def print_bookmarks(filename)
+  require 'nokogiri'
+
+  doc = Nokogiri::HTML(open(filename))
+
+  Enumerator.new do |out|
+    doc.search("a").each do |a| 
+      out << "\e[1;36m#{a.inner_text}\e[0m"
+      out << "  #{a["href"]}"
+      out << ""
+    end
+  end
+end
+
+##############################################################################
+
 def print_rst(filename)
   run("rst2ansi", filename)
 end
@@ -752,7 +789,18 @@ end
 
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
-  highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
+  result = nil
+  %w[pem der net].each do |cert_format|
+    result = run("openssl", "x509", 
+        "-fingerprint", "-text", "-noout",
+        "-inform", cert_format, 
+        "-in", filename, 
+        stderr: true).read
+
+    break unless result =~ /unable to load certificate/
+  end
+
+  highlight_lines_with_colons(result)
 end
 
 ##############################################################################
@@ -903,6 +951,7 @@ end
 ##############################################################################
 
 def highlight(enum, &block)
+  enum = enum.each_line if enum.is_a? String
   Enumerator.new do |y|
     enum.each do |line|
       y << block.call(line)
@@ -922,12 +971,11 @@ end
 
 ##############################################################################
 
-COMPRESSORS = {
+DECOMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
 }
-
 
 def convert(arg)
 
@@ -962,10 +1010,12 @@ def convert(arg)
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
        ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem)$/
       print_archive(arg)
-    elsif cmd = COMPRESSORS[ext]
+    elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
     elsif path.filename =~ /.+-current\.xml$/
       print_wikidump(arg)
+    elsif path.filename =~ /bookmark.+\.html$/i
+      print_bookmarks(arg)
     else
       case ext
       when *%w[.html .htm]
@@ -1030,11 +1080,13 @@ if $0 == __FILE__
   args = ARGV
 
   if args.size == 0 or %w[-h --help].include? args.first
+
     puts "usage: c [options] <filename(s)>"
     puts
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
     puts
+
   else # 1 or more args
 
     wrap = !args.any? { |arg| arg[/\.csv$/i] }

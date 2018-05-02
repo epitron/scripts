@@ -83,6 +83,7 @@ alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
 alias cls='clear'
+alias r="ren"
 
 # text
 alias nano="nano -w"
@@ -209,6 +210,8 @@ gc() {
 }
 
 aur() {
+  if [ ! -d ~/aur ]; then mkdir ~/aur; fi
+  cd ~/aur
   aur-get "$@"
   if [ -d "$@" ]; then
     cd "$@"
@@ -229,12 +232,11 @@ kill-bg-jobs() {
 }
 alias gcs="gc --depth=1"
 
-# ruby
-alias r="ren"
+# scripting languagey things
 alias be="bundle exec"
-alias pad="padrino"
-# alias cr='crystal'
 alias rock='luarocks'
+alias pi='pip install --user'
+alias py=python2
 
 gem-cd() {
   local gem_dir
@@ -244,8 +246,8 @@ gem-cd() {
   fi
 }
 
-# python
-alias py=python2
+
+
 
 # # 64/32bit specific aliases
 # case `uname -m` in

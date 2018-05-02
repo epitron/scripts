@@ -1,11 +1,51 @@
 #!/usr/bin/env ruby
-
+###################################################################################################
 require 'json'
-
-###########################################################
-
+###################################################################################################
 LOGFILE      = File.expand_path("~/play.log")
 JSON_LOGFILE = File.expand_path("~/play.json")
+###################################################################################################
+
+def parse_options
+  gem 'slop', "~> 3.6"
+  require 'slop'
+
+  Slop.parse(help: true, strict: true) do
+    banner 'Usage: play [options] <video URL, or history number>'
+
+    on 'l',  'list',      "List <n> previously viewed videos"
+    on 'a',  'all',       "List all videos (piped to less)"
+    on 'd',  'download',  "Download video <n>"
+    on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
+    on 'v',  'verbose',   "Show more info"
+  end
+end
+
+###################################################################################################
+
+def which(bin)
+  ENV["PATH"].split(":").each do |dir|
+    full_path = File.join(dir, bin)
+    return full_path if File.exists? full_path
+  end
+  nil
+end
+
+def which_is_best?(*bins)
+  bins.flatten.each do |bin|
+    if location = which(bin)
+      return location
+    end
+  end
+  nil
+end
+
+unless YOUTUBE_DL = which("youtube-dl")
+  puts "Error: youtube-dl not found in the path; please install it."
+  exit 1
+end
+
+###################################################################################################
 
 # PLAYERS  = [
 #   [          "mpv", proc { |url, title| ["mpv", "--force-media-title", title, url] } ],
@@ -16,21 +56,6 @@ JSON_LOGFILE = File.expand_path("~/play.json")
 # ]
 
 # PLAYER_NAMES = PLAYERS.map(&:first)
-
-###########################################################
-
-def which(bin)
-  ENV["PATH"].split(":").each do |dir|
-    full_path = File.join(dir, bin)
-    return full_path if File.exists? full_path
-  end
-  nil
-end
-
-unless YOUTUBE_DL = which("youtube-dl")
-  puts "Error: youtube-dl not found in the path; please install it."
-  exit 1
-end
 
 # def best_player
 #   PLAYERS.each do |bin, command|
@@ -46,21 +71,7 @@ end
 #   Hash[PLAYERS][bin]
 # end
 
-def parse_options
-  gem 'slop', "~> 3.6"
-  require 'slop'
-
-  Slop.parse(help: true, strict: true) do
-    banner 'Usage: play [options] <video URL, or history number>'
-
-    on 'l',  'list',      "List <n> previously viewed videos"
-    on 'a',  'all',       "List all videos (piped to less)"
-    on 'd',  'download',  "Download video <n>"
-    on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
-  end
-end
-
-###########################################################
+###################################################################################################
 
 class LogEntry < Struct.new(:date, :time, :url, :title, :pos)
   def initialize(line, pos)
@@ -75,7 +86,7 @@ class LogEntry < Struct.new(:date, :time, :url, :title, :pos)
   end
 end
 
-###########################################################
+###################################################################################################
 
 require 'uri'
 require 'cgi'
@@ -102,7 +113,7 @@ module URI
   end
 end
 
-###########################################################
+###################################################################################################
 
 def notify(type, title, body, time: 5)
   require 'cgi'
@@ -124,15 +135,20 @@ end
 def run(*cmd)
   require 'open3'
   # stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
+  p running: cmd
   out, err, status = Open3.capture3(*cmd)
   [out.strip, err.strip, status]
 end
 
 def play_click_sound
   file = File.expand_path("~/scripts/sounds/click.mp3")
-  fork { %w[mplayer mpg123 mpv].any? { |player| run(player, file).last.success? } }
-  # fork { run("mplayer", file) }
+  
+  if best = which_is_best?("mplayer", "mpg123", "mpv")
+    fork { run(best, file).last.success? } 
+  end
 end
+
+###################################################################################################
 
 # def xspf_file(title, media_url)
 #   require 'tempfile'
@@ -154,7 +170,7 @@ end
 #   file
 # end
 
-###########################################################
+###################################################################################################
 
 def log_entries
   open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
@@ -243,10 +259,11 @@ def search(query=nil, n=10, reverse=true, paged=false)
   end
 
   output.close if paged
+
 rescue Errno::EPIPE
 end
 
-###########################################################
+###################################################################################################
 
 def write_to_log(url, json)
   timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
@@ -271,6 +288,7 @@ def write_to_log(url, json)
   end
 end
 
+###################################################################################################
 
 def download(*urls)
   urls << log_entries.first if urls.empty?
@@ -287,18 +305,7 @@ def download(*urls)
   end
 end
 
-# def youtube_dl(url)
-#   out, err, status = run YOUTUBE_DL, "-f", "best", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url
-
-#   if not status.success? or out.empty?
-#     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
-#     exit 1
-#   end
-
-#   media_url, title = out.lines.take(2).map(&:strip)
-
-#   [media_url, title]
-# end
+###################################################################################################
 
 def youtube_json(url)
 
@@ -325,25 +332,31 @@ def youtube_json(url)
   JSON.parse(out)
 end
 
-def play(url, foreground=false)
+###################################################################################################
+
+def play(url, foreground=false, verbose=false)
   if url.is_a? LogEntry
     notify(:info, "Loading:", url.title, time: 4)
   else
     notify(:info, "Processing:", url.to_s, time: 3)
   end
 
-  play_click_sound
-
+  # Fork into the background (to give the commandline back to the user asap)
   Process.daemon(true) unless foreground
 
+  # Click! (useful when run with a hotkey, to tell that it's working)
+  play_click_sound
+
+  # Detailed video information (including media URLs)
   json = youtube_json(url.to_s)
-  # media_url, title = youtube_dl(url.to_s)
+
+  # Watched-history log
   write_to_log(url, json) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
 
+  # Command to execute
   cmd = ["mpv", "--force-media-title", "#{json["title"]} (#{json["upload_date"]})"]
-  # cmd = player_proc(player).call(media_url, title)
 
-  # Video/Audio URLs
+  # Pull audio/video URLs from JSON
   if rf = json["requested_formats"]
     video, audio = rf
     cmd += [video["url"], "--audio-file", audio["url"]]
@@ -353,7 +366,7 @@ def play(url, foreground=false)
     raise "Dunno!"
   end
 
-  # Subtitles
+  # Pull subtitles from JSON
   if subs = json["requested_subtitles"] || json["subtitles"]
     subs.each do |lang, sub_info|
       # "en" => [{"ext"=>"vtt","url"=>"https://vimeo.com/texttrack/4085370.vtt"}],
@@ -364,7 +377,8 @@ def play(url, foreground=false)
     end
   end
 
-  # Seek to time
+  ## Seek to time in video
+
   uri = URI.parse(url.to_s)
 
   case uri.params["t"]
@@ -383,12 +397,14 @@ def play(url, foreground=false)
 
   cmd += ["--start", seek.to_s] if seek
 
-  # Run mpv
+  ## Run mpv
+
   # notify(:video, "Playing:", json["title"], time: 4)
+  p running: cmd if verbose
   system(*cmd)
 end
 
-###########################################################
+###################################################################################################
 
 
 if $0 == __FILE__
@@ -396,7 +412,6 @@ if $0 == __FILE__
   if ARGV.any? { |arg| arg[/^--?\w/] }
     opts = parse_options
   else
-    # opts = {player: PLAYER_NAMES.first}
     opts = {}
   end
 
@@ -445,7 +460,7 @@ if $0 == __FILE__
         # end
 
         if which("mpv")
-          play(url, opts["no-daemon"])
+          play(url, opts["no-daemon"], opts[:verbose])
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
         end

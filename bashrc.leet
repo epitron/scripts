@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#if [ -f /etc/profile ]; then . /etc/profile; fi
-#PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
-
 # The directory from which this script is being called
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -12,6 +9,14 @@ if [ "$EDITOR" == "" ]; then
   export EDITOR="nano"
 fi
 
+## Paths
+if [ -d ~/.local/bin ]; then
+  export PATH=~/.local/bin:$PATH
+fi
+
+if [ -d ~/.gem/bin ]; then
+  export PATH=$PATH:~/.gem/bin
+fi
 if [ -d /usr/scripts ]; then
   SCRIPTDIR=/usr/scripts
 elif [ -d ~/scripts ]; then
@@ -23,34 +28,7 @@ if [ -d ~/bin ]; then
   export PATH=~/bin:$PATH
 fi
 
-if [ -d ~/.gem/bin ]; then
-  export PATH=$PATH:~/.gem/bin
-fi
-
-## Ruby 1.8
-#if ruby -rubygems -e 1 > /dev/null 2>&1; then
-#  export RUBYOPT="rubygems"
-#fi
-
-## `noglob` alias disables globbing
-noglob_helper() {
-    "$@"
-    case "$shopts" in
-        *noglob*) ;;
-        *braceexpand*) ;;
-        *) set +f ;;
-    esac
-    unset shopts
-}
-
-alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
-
-## colors
-export CLICOLOR=1
-#export TERM=xterm-color
-#export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
-
-export PYTHONSTARTUP=~/.pystartup
+## Functions
 
 # colorful manpages
 man() {
@@ -66,13 +44,20 @@ man() {
 }
 
 
-## FUCK YOU, ^S AND ^Q!!
-#stty stop undef
-#stty start undef
-
-## Pager
+## Environment Variables
 
 export PAGER=less
+export CLICOLOR=1
+#export TERM=xterm-color
+#export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
+export PYTHONSTARTUP=~/.pystartup
+export XZ_OPT="--threads=0"
+
+if [ -f /proc/cpuinfo ]; then
+  export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
+  export MAKEOPTS="-j`expr $PROCESSORS + 1`"
+  export MAKEFLAGS="$MAKEOPTS"
+fi
 
 # Enable recursive glob (eg: **/*.txt)
 shopt -s globstar > /dev/null 2>&1
@@ -83,19 +68,8 @@ shopt -s checkwinsize
 # Verify ! history expansions
 shopt -s histverify
 
-## no display!
-#unset DISPLAY
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-
-#if [ -f /etc/bash_completion ]; then
-#    . /etc/bash_completion
-#fi
-# mkdir and cd, all in one!
-
-export XZ_OPT="--threads=0"
+## Platform-specific customizations
 
 case $(uname -s) in
   Darwin|FreeBSD)
@@ -108,6 +82,7 @@ case $(uname -s) in
     ;;
 esac
 
+
 case $(uname -o) in
   Android)
     . $SCRIPTDIR/bashrc.android
@@ -118,8 +93,29 @@ case $(uname -o) in
 esac
 
 
-if [ -f /proc/cpuinfo ]; then
-  export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
-  export MAKEOPTS="-j`expr $PROCESSORS + 1`"
-  export MAKEFLAGS="$MAKEOPTS"
-fi
+## Dead code
+
+#if [ -f /etc/bash_completion ]; then
+#    . /etc/bash_completion
+#fi
+
+## FUCK YOU, ^S AND ^Q!!
+#stty stop undef
+#stty start undef
+
+## FUCK YOU, X11!!
+#unset DISPLAY
+
+# # Run a command without globbing (broken)
+# noglob_helper() {
+#     "$@"
+#     case "$shopts" in
+#         *noglob*) ;;
+#         *braceexpand*) ;;
+#         *) set +f ;;
+#     esac
+#     unset shopts
+# }
+# alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
+
+

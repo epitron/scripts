@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if which lshw > /dev/null; then
+  lshw -class cpu -quiet 2> /dev/null
+else
+  cat /proc/cpuinfo
+fi
+

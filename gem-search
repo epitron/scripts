@@ -1,0 +1,89 @@
+#!/usr/bin/env ruby
+###################################################################
+require 'oga'
+require 'epitools/colored'
+###################################################################
+
+RUBYGEMS_SEARCH_URL = "https://rubygems.org/search?utf8=%%E2%%9C%%93&query=%s"
+
+###################################################################
+
+class String
+  def tighten; gsub(/[\t ]+/,' ').strip; end
+  def any?; not empty?; end
+  def indent(prefix="    ")
+    gsub(/^/m, prefix)
+  end
+end
+
+###################################################################
+
+def extract_info(root)
+  result = []
+
+  classes = root["class"].split.map do |s|
+    if s =~ /^gems__gem__(.+)/
+      $1.gsub("__", "_")
+    else
+      nil
+    end
+  end.compact
+
+  text = root.inner_text.tighten
+  
+  if classes.any? and text.any? 
+    result << [classes.first, text]
+  end
+
+  root.children.each do |node|
+    next unless node.is_a? Oga::XML::Element
+    result += extract_info(node)
+  end
+
+  result
+end
+
+###################################################################
+
+
+# Handle ARGV
+
+query = ARGV.join("+")
+
+if query.empty?
+  puts "usage: #{__FILE__} <search query>"
+  exit 1
+end
+
+# curl the results
+
+puts "<8>* <7>Searching rubygems.org for <14>#{query.inspect}<7>...".colorize
+
+begin
+  html = IO.popen(["curl", "-Ss", RUBYGEMS_SEARCH_URL % query], &:read)
+rescue Errno::ENOENT
+  puts "Error: 'curl' isn't installed. You need this!"
+  exit 1
+end
+
+puts
+
+# parse the results
+
+doc = Oga.parse_html(html)
+gems = doc.css("a.gems__gem").map do |node|
+  info = extract_info(node).to_h
+  info["url"] = "https://rubygems.org#{node["href"]}" 
+  info
+end.uniq
+
+gems.sort_by! { |g| g["downloads_count"].gsub(",","").to_i }
+
+# print the results
+
+gems.each do |info|
+  puts "<8>=== <11>#{info["name"]} <7>(<3>v#{info["version"]}<8>, <13>#{info["downloads_count"]} <5>downloads<7>) <8>==============".colorize
+  puts info["desc"].indent.bright_white
+  puts "    <3>#{info["url"]}".colorize
+  puts
+end
