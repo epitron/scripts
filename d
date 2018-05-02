@@ -15,7 +15,7 @@ TYPE_INFO = [
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
   [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc))$/i,:light_white],
   [:dotfile, /^\../i,                                      :grey],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2)$/i, :light_yellow]
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2|gem)$/i, :light_yellow]
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -184,7 +184,7 @@ args.each do |arg|
   end
 
   if path.dir?
-    grouped[path] = path.ls
+    grouped[path] = opts.recursive? ? path.ls_R : path.ls
   else
     single_files << path
   end

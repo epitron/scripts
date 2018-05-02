@@ -3,6 +3,8 @@ gem 'slop', "~> 3.6"
 require 'slop'
 require 'epitools'
 
+Colored.enable!
+
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: f [options]"

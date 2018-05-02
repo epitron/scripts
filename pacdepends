@@ -3,22 +3,33 @@ gem "slop", "~> 3.6"
 require 'slop'
 require 'epitools'
 
-for arg in ARGV
-  puts "<8>=== <14>#{arg} <8>============".colorize
-  puts
+def packages_that_depend_on(package)
+  result = []
 
-  `pacman -Sii #{arg}`.each_line do |l|
-    # p l
-    if l =~ /Required By\s+: (.+)/
-      if $1["None"]
-        puts "  <12>None".colorize
-      else
-        packages = $1.strip.split
-        system "pacman", "-Ss", "^(#{packages.join '|'})$"
+  [`pacman -Sii #{package}`, `pacman -Qi #{package}`].map do |output|
+    output.each_line do |l|
+      if l =~ /Required By\s+: (.+)/
+        result += $1.strip.split unless $1["None"]
+        break
       end
     end
   end
 
+  result
+end
+
+for package in ARGV
+  puts "<8>=== <14>#{package} <8>============".colorize
   puts
 
+  packages = packages_that_depend_on(package)
+
+  if packages.empty?
+    puts "  <12>None".colorize
+  else
+    system "pacman", "-Ss", "^(#{packages.join '|'})$" # upstream packages
+    system "pacman", "-Qs", "^(#{packages.join '|'})$" # packages that are only installed locally
+  end
+
+  puts
 end

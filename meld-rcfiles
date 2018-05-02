@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: meld-rcfiles"
+
+    # on "a",  "along",  "desc"
+    # on "b=", "blong",  "desc", default: ""
+  end
+
+  [opts, ARGV]
+end
+
+opts, args = parse_options
+
+#########################################################
+
+rcdir = Path["~/scripts/rc"]
+relative_files = rcdir.ls_R.map { |f| f.relative_to(rcdir) }
+
+pp relative_files
+
+t = Path.tmpdir
+t.chmod 0700
+
+relative_files.each do |r|
+  srcfile = Path.home/r
+  if srcfile.file?
+    destfile = t/r
+
+    puts "Copying #{srcfile} to #{destfile}"
+    srcfile.cp_p(destfile)
+  end
+end
+
+system "ls", "-la", t
+
+system "meld", t, rcdir
+
+puts "rm -rf #{t} (simulated)"
+# t.rm_rf

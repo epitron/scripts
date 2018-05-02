@@ -22,6 +22,7 @@ opts = Slop.parse(help: true, strict: true) do
   on 's=', 'scale',    'Scale to resolution (eg: 1024x768, 1024:-1, 1024, -1:720)'
   on 'q=', 'quality',  'Quantization Parameter (eg: 22)'
   on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
+  on 'D=', 'denoise',  'Denoise filter (0: none, 1: fast, 2: slow but good)', default: nil
   on 'b',  'bob',      'Bob deinterlace (using yadif)'
   on "r=", "aspect",   'Aspect ratio (eg: 4:3, 1.6666)'
   on 'd=', 'outdir',   'Output directory'
@@ -124,7 +125,8 @@ files.each do |inp|
     cmd += ["-c:a", acodec]
   end
 
-  cmd += ["-crf", opts[:quality]] if opts.quality?
+  # cmd += ["-crf", opts[:quality]] if opts.quality?
+  cmd += ["-qp", opts[:quality]] if opts.quality?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
 
@@ -132,6 +134,17 @@ files.each do |inp|
   vfilters << "crop=#{opts[:crop]}" if opts[:crop]
   vfilters << "yadif"             if opts.deinterlace?
   vfilters << "yadif=1"           if opts.bob?
+
+  if opts.denoise?
+    case opts[:denoise].to_i
+    when 0
+      # nothing
+    when 1
+      vfilters << "hqdn3d"
+    when 2
+      vfilters << "nlmeans"
+    end
+  end
 
   if scale = opts[:scale]
     case scale

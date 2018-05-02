@@ -6,6 +6,10 @@
 #    TODOs:
 # -------------------------
 #
+# + Tagline:
+#   - moar is more moar than less is more
+#   - more is more by being less than less is less than more
+# + Other possible names: "most", "least", "pager"
 # + "Log" mode (tail, and deduplicate lines)
 # + Wrap ANSI properly (strip ANSI codes)
 # + Search
@@ -23,7 +27,6 @@
 # |- Use the scroll up/down sequences and set a scrollable region
 # |- Only update status bar if the visible portion of the screen doesn't change
 # \- Only apply throttle to status bar
-# + Other possible names: "moar", "lest", "pager"
 #
 
 require 'io/console'
@@ -64,6 +67,40 @@ class Pager
     end
   end
 
+
+  def display_help_screen
+    clear
+    print %{
+      ------------------\r
+        Help!!!\r
+      ------------------\r
+      \r
+      Up/Down:    Scroll vertically\r
+      Left/Right: Scroll horizontally\r
+      PgUp/PgDn:  Scroll up/down by a page\r
+      Space:      Scroll down by a page\r
+      Home/End:   Scroll to beginning/end\r
+      \r
+      t: Toggle tail-mode\r
+      w: Toggle word-wrap\r
+      n: Toggle line numbers\r
+      r: Refresh\r
+      \r
+      \r
+      q: Quit\r
+      \r
+      ?/h/^h/^?: HELP!\r
+    }
+
+    # TODO:
+    #
+    # /: Search\r
+    # ?: Search backwards\r
+    # n: Next match\r
+    # p: Previous match\r
+
+  end
+
   def initialize(io)
     @display_lock            = Mutex.new
     @scrollback              = []
@@ -74,7 +111,7 @@ class Pager
     @longest_line            = 0
     @io                      = io
     @max_fps                 = 45
-    @refresh_throttle        = 1.0 / @max_fps
+    @refresh_throttle        = 1.0 / (@max_fps)
     @last_refresh            = Time.now - @refresh_throttle
     @last_display_status_bar = Time.now - @refresh_throttle
 
@@ -103,7 +140,7 @@ class Pager
       key("w")      { pager.toggle_wrap }
       key("n")      { pager.toggle_line_numbers }
 
-      key("r", "\C-r", "\r", "\f")  { pager.refresh! }
+      key("r", "\C-r", "\r", "\f", "\C-l")  { pager.refresh! }
       key("?", "h", "\C-/", "\C-?") { pager.toggle_help }
 
       # key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
@@ -121,6 +158,61 @@ class Pager
     end
   end
 
+
+  class Config
+
+    NAMED_KEYS = {
+      :up     => "\e[A",
+      :down   => "\e[B",
+      :left   => "\e[C",
+      :right  => "\e[D",
+      :home   => ["\eOH", "\e[1~", "\e[H"],
+      :end    => ["\eOF", "\e[4~", "\e[F"],
+      :pgup   => "\e[5~",
+      :pgdown => "\e[6~",
+      :ctrl_c => "\C-c"
+    }
+
+    attr_accessor :trie_root
+
+    def initialize(&block)
+      @trie_root = {}
+
+      # Make sure ^C is defined
+      key(:ctrl_c) { raise KeyMap::Quit }
+
+      instance_eval(&block)
+    end
+
+    #
+    # Add a command to the trie of input sequences
+    #
+    def key(*seqs, &block)
+      seqs = seqs.flat_map { |seq| NAMED_KEYS[seq] || seq }
+
+      seqs.each do |seq|
+        level = @trie_root
+
+        seq.each_char do |c|
+          level = (level[c] ||= {})
+        end
+
+        level[:handler] = block
+      end
+    end
+
+    #
+    # This block will be run if the key isn't defined.
+    #
+    def default(&block)
+      if block_given? then @default = block else @default end
+    end
+
+    def always(&block)
+      if block_given? then @always = block else @always end
+    end
+
+  end
 
 
 
@@ -242,7 +334,6 @@ class Pager
 
 
   def lines_on_screen(padded=true)
-
     range = top..bottom
 
     debug(lines_on_screen: range.size, range: range, lines: lines)
@@ -431,38 +522,6 @@ class Pager
     refresh!
   end
 
-
-  def display_help_screen
-    clear
-    print %{
-      ------------------\r
-        Help!!!\r
-      ------------------\r
-      \r
-      Up/Down:    Scroll vertically\r
-      Left/Right: Scroll horizontally\r
-      PgUp/PgDn:  Scroll vertically by a page\r
-      Space:      Scroll down by a page\r
-      \r
-      t: Toggle tail-mode\r
-      w: Toggle word-wrap\r
-      n: Toggle line numbers\r
-      \r
-      \r
-      q: Quit\r
-      \r
-      ?/h/^h/^?: HELP!\r
-    }
-
-    # TODO:
-    #
-    # /: Search\r
-    # ?: Search backwards\r
-    # n: Next match\r
-    # p: Previous match\r
-
-  end
-
 end
 
 
@@ -476,7 +535,7 @@ class KeyMap
   class Quit < Exception; end
 
   def initialize(&block)
-    @config = Config.new(&block)
+    @config = Pager::Config.new(&block)
   end
 
   def process(input)
@@ -507,63 +566,6 @@ class KeyMap
 
   rescue Quit
     # one of the key handlers threw a KeyMap::Quit
-  end
-
-
-
-  class Config
-
-    NAMED_KEYS = {
-      :up     => "\e[A",
-      :down   => "\e[B",
-      :left   => "\e[C",
-      :right  => "\e[D",
-      :home   => ["\eOH", "\e[1~"],
-      :end    => ["\eOF", "\e[4~"],
-      :pgup   => "\e[5~",
-      :pgdown => "\e[6~",
-      :ctrl_c => "\C-c"
-    }
-
-    attr_accessor :trie_root
-
-    def initialize(&block)
-      @trie_root = {}
-
-      # Make sure ^C is defined
-      key(:ctrl_c) { raise KeyMap::Quit }
-
-      instance_eval(&block)
-    end
-
-    #
-    # Add a command to the trie of input sequences
-    #
-    def key(*seqs, &block)
-      seqs = seqs.flat_map { |seq| NAMED_KEYS[seq] || seq }
-
-      seqs.each do |seq|
-        level = @trie_root
-
-        seq.each_char do |c|
-          level = (level[c] ||= {})
-        end
-
-        level[:handler] = block
-      end
-    end
-
-    #
-    # This block will be run if the key isn't defined.
-    #
-    def default(&block)
-      if block_given? then @default = block else @default end
-    end
-
-    def always(&block)
-      if block_given? then @always = block else @always end
-    end
-
   end
 
 end
