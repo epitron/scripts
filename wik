@@ -12,6 +12,15 @@ class String
   def smash
     downcase.scan(/\w+/).join
   end
+
+  STOPWORD_RE = /\b(#{String::STOP_WORDS.join("|")})\s*\b/i
+
+  #
+  # Return a copy of the string with all STOPWORDS removed
+  #
+  def without_stopwords
+    gsub(STOPWORD_RE, '')
+  end
 end
 
 ######################################################################
@@ -401,17 +410,42 @@ class Wiki
     end
   end
 
+  def score(orig_title, words)
+    score = 0
+    title = orig_title.without_stopwords.downcase
+
+    # whole phrase is in title
+    score += orig_title[/^#{words.join("\s+")}$/i] ? 1000 : 0
+
+    # first word is in title
+    score += title[/^#{words.first}/i] ? 100 : 0
+
+    # percentage of words in title
+    matched_words = words.select { |w| title[w] }
+    score += (matched_words.size/words.size.to_f)*100
+
+    # minimal text in between the words in the title
+    junk = title.scan(/#{matched_words.join("(.*)")}/)
+    score -= (junk.flatten.join.size/title.size.to_f)*100
+
+    # p [score, title]
+    score
+  end
+
   def tsv_search(words, max_results=100)
     # words = words.map &:downcase
+    p searching: words
     cmd = ["grep", "-iE", "#{words.join(".*")}", index.to_s]
-    IO.popen(cmd).
-      each_line.
-      # select do |line|
-      #   title = line.split[2].downcase
-      #   words.all? { |word| title[word] }
-      # end.
-      map { |line| Article.from_line(self, line) }.
-      select { |article| article.article? and article.title =~ /#{words.join(".*")}/i }
+    results = IO.popen(cmd) do |io|
+      io.each_line.
+        # select do |line|
+        #   title = line.split[2].downcase
+        #   words.all? { |word| title[word] }
+        # end.
+        map { |line| Article.from_line(self, line) }.
+        select { |article| article.article? and article.title =~ /#{words.join(".*")}/i }.
+        sort_by { |article| -score(article.title, words) }
+    end
   end
 
   def zimdump_search_crappy(words, max_results=100)
@@ -562,7 +596,7 @@ WEBSERVER = proc do |wiki|
     get %r{/(?:-|I)/(.+)} do |filename|
       raise Sinatra::NotFound if filename[/\.js$/]
 
-      ext      = filename[/\..+$/].downcase
+      ext      = filename[/\.[^\.]+$/].downcase
       mimetype = Rack::Mime::MIME_TYPES[ext]
       article  = $wiki.get_file(filename)
 
