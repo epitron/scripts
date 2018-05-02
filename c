@@ -117,14 +117,30 @@ end
 
 ##############################################################################
 
+class Object
+
+  def ensure_string
+    is_a?(String) ? self : to_s
+  end
+
+end
+
+##############################################################################
+
 def run(*args)
-  opts = (args.last.is_a? Hash) ? args.last : {}
+  opts = (args.last.is_a? Hash) ? args.pop : {}
+  args = [args.map(&:ensure_string)]
 
   if opts[:stderr]
     args << {err: [:child, :out]}
   end
 
-  IO.popen(args)
+  if env = opts[:env]
+    env = env.map { |k,v| [k, v.ensure_string] }.to_h
+    args.unshift env
+  end
+
+  IO.popen(*args)
 end
 
 ##############################################################################
@@ -176,6 +192,13 @@ end
 
 ##############################################################################
 
+def term_width
+  require 'io/console'
+  STDOUT.winsize.last
+end
+
+##############################################################################
+
 def concatenate_enumerables(*enums)
   Enumerator.new do |y|
     enums.each do |enum|
@@ -191,6 +214,18 @@ def show_image(filename)
   ""
 end
 
+##############################################################################
+
+def tmp_filename(prefix="c", length=20)
+  chars = [*'a'..'z'] + [*'A'..'Z'] + [*'0'..'9']
+  name  = nil
+  loop do
+    name = "/tmp/#{prefix}-#{length.times.map { chars.sample }.join}"
+    break unless File.exists?(name)
+  end
+  name
+end
+
 ### Converters ###############################################################
 
 CODERAY_EXT_MAPPING = {
@@ -203,9 +238,9 @@ CODERAY_EXT_MAPPING = {
   ".desktop"     => :bash,
   ".conf"        => :bash,
   ".prf"         => :bash,
-  ".hs"          => :text,
   ".ini"         => :bash,
   ".service"     => :bash,
+  ".hs"          => :text,
   ".cl"          => :c,
   ".gradle"      => :groovy,
   ".sage"        => :python,
@@ -217,6 +252,7 @@ CODERAY_EXT_MAPPING = {
   ".ui"          => :xml,
   ".opml"        => :xml,
   ".nim"         => :pygmentize,
+  ".ml"          => :pygmentize,
   ".stp"         => :javascript, # systemtap
 }
 
@@ -269,7 +305,7 @@ def print_source(arg)
       data
     end
   elsif lang == :pygmentize
-    run("pygmentize", path)
+    run("pygmentize", path.to_s)
   elsif lang
     CodeRay.scan_file(path, lang).term
   else
@@ -290,22 +326,36 @@ end
 
 BLACKCARPET_INIT = proc do
 
-  def indented?(text)
-    indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
-    indent_sizes.all? {|dent| dent > 0 }
-  end
-
-  def unwrap(text)
-    return text unless indented? text
-    text.lines.to_a.map(&:strip).join ' '
-  end
-
-  def indent(text,amount=2)
-    text.lines.map{|line| " "*amount + line }.join
+  begin
+    require 'epitools/colored'
+    require 'redcarpet'
+  rescue LoadError
+    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
+      + print_source(filename)
   end
 
   class BlackCarpet < Redcarpet::Render::Base
+  private
 
+    def indented?(text)
+      indent_sizes = text.lines.map{ |line| if line =~ /^(\s+)/ then $1 else '' end }.map(&:size)
+      indent_sizes.all? {|dent| dent > 0 }
+    end
+
+    def unwrap(text)
+      return text unless indented? text
+      text.lines.to_a.map(&:strip).join ' '
+    end
+
+    def indent(text,amount=2)
+      text.lines.map{|line| " "*amount + line }.join
+    end
+
+    def smash(s)
+      s&.downcase&.scan(/\w+/)&.join
+    end
+
+  public
     def normal_text(text)
       text
     end
@@ -314,9 +364,6 @@ BLACKCARPET_INIT = proc do
       ''
     end
 
-    private def smash(s)
-      s&.downcase&.scan(/\w+/)&.join
-    end
 
     def link(link, title, content)
       unless content&.[] /^Back /
@@ -463,14 +510,6 @@ end
 
 def print_markdown(markdown)
   # Lazily load markdown renderer
-  begin
-    require 'epitools/colored'
-    require 'redcarpet'
-  rescue LoadError
-    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
-      + print_source(filename)
-  end
-
   BLACKCARPET_INIT.call unless defined? BlackCarpet
 
   options = {
@@ -531,7 +570,7 @@ def print_moin(moin)
     gsub(/^(={1,5}) (.+) =+$/) { |m| ("#" * $1.size ) + " " + $2 }. # headers
     gsub(/'''/, "__").                            # bolds
     gsub(/''/, "_").                              # italics
-    gsub(/\{\{attachment:(.+)\}\}/, "![](\\1)").  # images
+    gsub(/\{\{(?:attachment:)?(.+)\}\}/, "![](\\1)").  # images
     gsub(/\[\[(.+)\|(.+)\]\]/, "[\\2](\\1)").     # links w/ desc
     gsub(/\[\[(.+)\]\]/, "[\\1](\\1)").           # links w/o desc
     gsub(/^#acl .+$/, '').                        # remove ACLs
@@ -539,8 +578,8 @@ def print_moin(moin)
     gsub(/^## page was renamed from .+$/, '').    # remove 'page was renamed'
     gsub(/^\{\{\{\n^#!raw\n(.+)\}\}\}$/m, "\\1"). # remove {{{#!raw}}}s
     # TODO: convert {{{\n#!highlight lang}}}s (2-phase: match {{{ }}}'s, then match first line inside)
-    gsub(/^\{\{\{#!highlight (\w+)\n(.+)\n\}\}\}$/m, "```\\1\n\\2\n```"). # convert {{{#!highlight lang }}} to ```lang ```
-    gsub(/^\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
+    gsub(/\{\{\{\n?#!(?:highlight )?(\w+)\n(.+)\n\}\}\}$/m, "```\\1\n\\2\n```"). # convert {{{#!highlight lang }}} to ```lang ```
+    gsub(/\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
 
   markdown = convert_tables[markdown]
 
@@ -588,16 +627,6 @@ end
 
 ##############################################################################
 
-def tmp_filename(prefix="c", length=20)
-  chars = [*'a'..'z'] + [*'A'..'Z'] + [*'0'..'9']
-  name  = nil
-  loop do
-    name = "/tmp/#{prefix}-#{length.times.map { chars.sample }.join}"
-    break unless File.exists?(name)
-  end
-  name
-end
-
 def print_doc(filename)
   out = tmp_filename
   if which("wvText")
@@ -609,6 +638,17 @@ def print_doc(filename)
     run "catdoc", filename
   else
     "\e[31m\e[1mError: Coudln't find a .doc reader; install 'wv' or 'catdoc'\e[0m"
+  end
+end
+
+##############################################################################
+
+def print_rtf(filename)
+  if which("catdoc")
+    width = term_width - 5
+    run "catdoc", "-m", width.to_s, filename
+  else
+    "\e[31m\e[1mError: Coudln't find an .rtf reader; install 'catdoc'\e[0m"
   end
 end
 
@@ -850,6 +890,18 @@ end
 
 ##############################################################################
 
+def print_pdf(file)
+  # TODO: Is it better to use Term.width as html2text's -b option?
+  html = run("pdftohtml", "-stdout", "-noframes", file).read
+  ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
+    markdown.write html
+    markdown.close_write
+    print_markdown(markdown.read)
+  end
+end
+
+##############################################################################
+
 def highlight(enum, &block)
   Enumerator.new do |y|
     enum.each do |line|
@@ -884,7 +936,7 @@ def convert(arg)
   else
     arg = which(arg) unless File.exists? arg
 
-    return "\e[31m\e[1mFile not found.\e[0m" unless arg
+    raise Errno::ENOENT unless arg
 
     #
     # If it's a directory, show the README, or print an error message.
@@ -925,15 +977,19 @@ def convert(arg)
       when *%w[.ipynb]
         print_ipynb(arg)
       when /^\.[1-9]$/ # manpages
-        system("man", "-l", arg)
+        run("man", "-l", "-Tascii", arg, env: {"MANWIDTH" => term_width})
       when *%w[.torrent]
         print_torrent(arg)
       when *%w[.nfo .ans .drk .ice]
         print_cp437(arg)
       when *%w[.rst]
         print_rst(arg)
+      when *%w[.pdf]
+        print_pdf(arg)
       when *%w[.doc]
         print_doc(arg)
+      when *%w[.rtf]
+        print_rtf(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
       when *%w[.xml]
@@ -973,8 +1029,12 @@ if $0 == __FILE__
 
   args = ARGV
 
-  if args.size == 0
-    puts "usage: c <filename(s)>"
+  if args.size == 0 or %w[-h --help].include? args.first
+    puts "usage: c [options] <filename(s)>"
+    puts
+    puts "options:"
+    puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
+    puts
   else # 1 or more args
 
     wrap = !args.any? { |arg| arg[/\.csv$/i] }
@@ -992,6 +1052,9 @@ if $0 == __FILE__
           result = convert(arg)
         rescue Errno::EACCES
           puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+          next
+        rescue Errno::ENOENT
+          puts "\e[31m\e[1mFile not found.\e[0m"
           next
         end
 
