@@ -775,6 +775,23 @@ end
 
 ##############################################################################
 
+# def print_mp3(arg)
+#   require 'id3tag'
+#   require 'terminal-table'
+
+#   fields = ID3Tag.read(open(arg)).frames.map do |frame|
+#     [frame.id, frame.content]
+#   end
+
+#   Terminal::Table.new(rows: fields).to_s
+# end
+
+def print_mp3(arg)
+  run "ffprobe", "-hide_banner", arg
+end
+
+##############################################################################
+
 def print_cp437(filename)
   open(filename, "r:cp437:utf-8", &:read).gsub("\r", "")
 end
@@ -1046,6 +1063,8 @@ def convert(arg)
         print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
       when *%w[.csv .xls]
         print_csv(arg)
+      when *%w[.mp3]
+        print_mp3(arg)
       when ".tsv"
         print_csv(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
