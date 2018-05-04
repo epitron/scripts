@@ -775,19 +775,9 @@ end
 
 ##############################################################################
 
-# def print_mp3(arg)
-#   require 'id3tag'
-#   require 'terminal-table'
-
-#   fields = ID3Tag.read(open(arg)).frames.map do |frame|
-#     [frame.id, frame.content]
-#   end
-
-#   Terminal::Table.new(rows: fields).to_s
-# end
-
-def print_mp3(arg)
-  run "ffprobe", "-hide_banner", arg
+def print_media(arg)
+  result = run("ffprobe", "-hide_banner", arg, stderr: true)
+  highlight_lines_with_colons(result)
 end
 
 ##############################################################################
@@ -978,8 +968,8 @@ end
 
 def highlight_lines_with_colons(enum)
   highlight(enum) do |line|
-    if line =~ /^(\S+.*):(.*)/
-      "\e[37;1m#{$1}\e[0m: #{$2}"
+    if line =~ /^(\s*)(\S+):(.*)/
+      "#{$1}\e[37;1m#{$2}\e[0m: #{$3}"
     else
       line
     end
@@ -1063,8 +1053,8 @@ def convert(arg)
         print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
       when *%w[.csv .xls]
         print_csv(arg)
-      when *%w[.mp3]
-        print_mp3(arg)
+      when *%w[.mp3 .ogg .mkv .mp4 .avi .mov .qt .rm .wma .wmv]
+        print_media(arg)
       when ".tsv"
         print_csv(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
