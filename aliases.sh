@@ -263,6 +263,15 @@ gem-cd() {
 alias yd='youtube-dl --xattrs --no-mtime'
 alias ydu='youtube-dl --update'
 
+# upm
+alias u=upm
+alias up=upm
+alias ui='upm install'
+alias uu='upm upgrade'
+alias ur='upm remove'
+alias ul='upm list'
+alias us='upm search'
+
 # arch
 alias pacman='sudoifnotroot pacman'
 alias pacs='\pacman -Ss'   # search for package
