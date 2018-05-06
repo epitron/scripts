@@ -265,10 +265,11 @@ alias ydu='youtube-dl --update'
 
 # upm
 alias u=upm
-alias up=upm
+alias uu='upm update'
+alias up='upm upgrade'
 alias ui='upm install'
-alias uu='upm upgrade'
 alias ur='upm remove'
+alias uf='upm files'
 alias ul='upm list'
 alias us='upm search'
 
