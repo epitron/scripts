@@ -318,7 +318,8 @@ def print_source(arg)
   if ext == ".json"
     require 'json'
     begin
-      json = JSON.parse(File.read(filename))
+      data = File.read(filename)
+      json = JSON.parse(data)
       CodeRay.scan(JSON.pretty_generate(json), :json).term
     rescue JSON::ParserError
       data
@@ -1112,10 +1113,10 @@ if $0 == __FILE__
         begin
           result = convert(arg)
         rescue Errno::EACCES
-          puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+          less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
           next
         rescue Errno::ENOENT
-          puts "\e[31m\e[1mFile not found.\e[0m"
+          less.puts "\e[31m\e[1mFile not found.\e[0m"
           next
         end
 
