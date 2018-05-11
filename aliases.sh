@@ -146,9 +146,9 @@ alias_all_as_sudo sysdig swapped perf
 alias dmesg='dmesg -T --color=always|less -S -R +\>'
 alias dmesg-tail='\dmesg -T --color -w'
 alias dstat-wide='dstat -tcyifd'
-alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
+#alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
 #alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
-alias reboot='sudoifnotroot systemctl reboot'
+#alias reboot='sudoifnotroot systemctl reboot'
 alias sus='ssu'
 
 # systemd
