@@ -87,7 +87,12 @@ alias cls='clear'
 alias r="ren"
 
 # text
-alias nano="nano -w"
+if ! which nano > /dev/null && which pico > /dev/null; then
+  alias nano="pico -w"
+else
+  alias nano="nano -w"
+fi
+
 alias s.='s .'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
