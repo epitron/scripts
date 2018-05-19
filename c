@@ -62,6 +62,7 @@ EXT_HIGHLIGHTERS = {
   ".service"     => :bash,
   ".hs"          => :text,
   ".cl"          => :c,
+  ".rl"          => :c, # ragel definitions
   ".ino"         => :c, # arduino sdk files
   ".gradle"      => :groovy,
   ".sage"        => :python,
@@ -318,7 +319,7 @@ def print_source(arg)
   if ext == ".json"
     require 'json'
     begin
-      data = File.read(filename)
+      data = File.read(arg)
       json = JSON.parse(data)
       CodeRay.scan(JSON.pretty_generate(json), :json).term
     rescue JSON::ParserError
