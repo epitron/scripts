@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 #
 # atool - A script for managing file archives of various types.
 #
@@ -72,7 +72,7 @@ sub issingleformat($);
 sub repack_archive($$$$);
 sub set_config_option($$$);
 
-$::SYSCONFDIR = '/usr/etc'; # This line is automatically updated by make
+$::SYSCONFDIR = '/usr/local/etc'; # This line is automatically updated by make
 $::PACKAGE = 'atool'; # This line is automatically updated by make
 $::VERSION = '0.39.0-epihax'; # This line is automatically updated by make
 $::BUG_EMAIL = 'oskar@osk.mine.nu'; # This line is automatically updated by make
