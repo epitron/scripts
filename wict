@@ -77,7 +77,7 @@ def update(lang="en")
   url = latest_tsv_url(lang="en")
   puts url.inspect
 
-  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+  FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
   backup(INDEX_FILE)
   backup(TSV_FILE)
 
