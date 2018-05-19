@@ -41,8 +41,9 @@ alias lh='ls -lh'
 alias lts='lt -s'
 alias lt='d -lt'
 
-
-alias fd='f -d'
+#if which fd > /dev/null; then
+#  alias f='fd -IH'
+#fi
 
 # cd
 alias up='cd ..'
@@ -134,10 +135,17 @@ alias iptraf='sudoifnotroot iptraf-ng'
 alias_all_as_sudo fdisk blkid
 alias fatrace="sudoifnotroot fatrace | grep -v xfce4-terminal"
 alias md='mdadm'
+
 alias df='df -h'
 alias df.='df .'
 alias screen='screen -U'
-alias dd='dcfldd'
+
+if which dcfldd > /dev/null; then
+  alias dd='dcfldd'
+elif which ddrescue > /dev/null; then
+  alias dd='ddrescue'
+fi 
+
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 

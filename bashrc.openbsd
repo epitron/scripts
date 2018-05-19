@@ -1,5 +1,4 @@
 unalias rm
-unalias git
 unalias ls
 unalias grep
 unalias mv
