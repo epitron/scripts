@@ -116,6 +116,10 @@ fi
 alias less='less -X -F -i'
 alias diff='diff -u'
 
+if which scc > /dev/null; then
+  alias cloc='scc'
+fi
+
 # media
 alias o="open"
 alias o.="open ."
