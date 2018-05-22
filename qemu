@@ -24,6 +24,11 @@ end
 
 opts, args = parse_options
 
+if args.empty?
+  puts opts
+  exit 1
+end
+
 isos, disks = args.map(&:to_Path).partition { |arg| arg.ext == "iso" }
 isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
 exit 1 unless isos.all? &:exist?
@@ -80,7 +85,8 @@ memory = opts[:memory]
 
 cmd = ["qemu-system-x86_64"]
 cmd << "-enable-kvm" if opts.kvm?
-cmd <<  "-localtime"
+
+cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/random"]
 
