@@ -307,6 +307,10 @@ end
 
 ##############################################################################
 
+def render_source(data, format)
+  CodeRay.scan(data, format).term
+end
+
 def print_source(arg)
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
@@ -348,14 +352,6 @@ end
 #
 
 BLACKCARPET_INIT = proc do
-
-  begin
-    require 'epitools/colored'
-    require 'redcarpet'
-  rescue LoadError
-    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
-      + print_source(filename)
-  end
 
   class BlackCarpet < Redcarpet::Render::Base
   private
@@ -532,6 +528,14 @@ def convert_htmlentities(s)
 end
 
 def print_markdown(markdown)
+  begin
+    require 'epitools/colored'
+    require 'redcarpet'
+  rescue LoadError
+    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
+      + markdown
+  end
+
   # Lazily load markdown renderer
   BLACKCARPET_INIT.call unless defined? BlackCarpet
 
