@@ -93,7 +93,7 @@ def update(lang="en")
   last_word  = nil
 
   open(TSV_FILE, "w") do |out|
-    IO.popen("curl -s -L #{url} | gunzip -c", "r") do |tsv|
+    IO.popen("curl -s -L #{url} | gunzip -c", "rb") do |tsv|
       tsv.each_line_with_offset do |line, offset|
         out.write(line)
         lang, word, type, definition = line.strip.split("\t")
