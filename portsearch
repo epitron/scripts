@@ -2,7 +2,7 @@
 require 'epitools/colored'
 require 'open-uri'
 
-SVNURL = "http://svnweb.FreeBSD.org/ports/head/%s/%s"
+SVNURL = "svn://svn.FreeBSD.org/ports/head/%s/%s"
 NUM_RESULTS = 20
 SEARCH_URL = "https://www.freshports.org/search.php?query=%s&num=#{NUM_RESULTS}&stype=name&method=match&deleted=excludedeleted&start=1&casesensitivity=caseinsensitive"
 
