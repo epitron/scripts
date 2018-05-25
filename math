@@ -20,7 +20,10 @@
 #
 #############################################################################
 
-require 'epitools'
+require 'epitools/colored'
+require 'epitools/numwords'
+require 'epitools/core_ext/string'
+require 'epitools/core_ext/numbers'
 
 #############################################################################
 
@@ -84,34 +87,46 @@ class MathOTron
 
   def translate(expr)
     # Translate suffix units (like 25k, or 15%) into plain numbers
-    expr = expr.gsub /(\d[\d_]+(?:\.\d+)?)([a-zA-Z]+\b|%( ?= \s|$))/ do |m|
+    expr = expr.gsub /(\d[\d_]*(?:\.\d+)?)([a-zA-Z]+\b|%( ?= \s|$))/ do |m|
       units = $2
-      num   = $1.to_f
+      num   = $1 #.to_f
 
-      zeroes = case units.downcase
+      result = case units.downcase
       when "%"
-        0.01
+        # 0.01
+        num / 100.0
       when "k", "kb"
-        10**3
+        # 10**3
+        "#{num}.thousand"
       when "m", "mb", "mm"
-        10**6
+        # 10**6
+        "#{num}.million"
       when "b", "g", "bn", "gb"
-        10**9
+        # 10**9
+        "#{num}.billion"
       when "t", "tb"
-        10**12
+        # 10**12
+        "#{num}.trillion"
       when "q"
-        10**15
+        # 10**15
+        "#{num}.quadrillion"
       when "Q"
-        10**18
+        # 10**18
+        "#{num}.quintillion"
       when "min"
-        1.minute
+        # 1.minute
+        "#{num}.minutes"
       when "hours", "h", "hr"
-        1.hour
+        # 1.hour
+        "#{num}.hours"
+      when "d", "days", "dy"
+        "#{num}.days"
       else
         return error("Invalid units: <15>#{units.inspect}</15>, in: <15>#{m.inspect}</15>")
       end
 
-      num * zeroes
+      # num * zeroes
+      result
     end
 
     # Apply rewrite rules (converting bash-friendly operators into ruby operators, and more...)
