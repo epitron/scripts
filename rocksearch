@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+require 'epitools/colored'
+require 'open-uri'
+require 'oga'
+require 'ostruct'
+
+URL_ROOT   = "https://luarocks.org"
+SEARCH_URL = "#{URL_ROOT}/search?q=%s"
+
+def search(query)
+  # html = open(SEARCH_URL % query, &:read)
+  # html = File.read("rocks.html")
+  doc    = Oga.parse_html(open(SEARCH_URL % query))
+
+  doc.css("div.module_row]").map do |row|
+    a = row.at_css("a.title")
+    OpenStruct.new(
+      name:        a.text,
+      url:        "#{URL_ROOT}#{a["href"]}",
+      downloads:   row.at_css(".downloads .value").text.to_i,
+      description: row.at_css(".summary").text,
+      author:      row.at_css(".author a").text,
+    )
+  end
+end
+
+if ARGV.empty?
+  puts "usage: rocksearch <query>"
+  exit 1
+end
+
+query = ARGV.join(" ")
+
+puts "<8>* <7>Searching for <15>#{query}<7>...".colorize
+
+results = search(query)
+results.sort_by! &:downloads
+puts
+results.each do |r|
+  puts "<11>#{r.name} <8>(<7>by <5>#{r.author}, <2>#{r.downloads} <7>downloads<8>)".colorize
+  puts "  <9>#{r.description}".colorize
+  puts "  <8>#{r.url}".colorize
+end
