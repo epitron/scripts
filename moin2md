@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: moin2md [options] <file(s)...>"
+
+  on "i",  "in-place",  "Write new file(s)"
+end
+
+args = ARGV
+
+########################################################
+
+def convert(doc)
+  doc.
+    gsub(/^(={1,5}) (.+) =+$/) { |m| ("#" * $1.size ) + " " + $2 }. # headers
+    gsub(/'''/, "__").                            # bolds
+    gsub(/''/, "_").                              # italics
+    gsub(/\{\{attachment:(.+)\}\}/, "![](\\1)").  # images
+    gsub(/\[\[(.+)\|(.+)\]\]/, "[\\2](\\1)").     # links w/ desc
+    gsub(/\[\[(.+)\]\]/, "[\\1](\\1)").           # links w/o desc
+    gsub(/^#acl .+$/, '').                        # remove ACLs
+    gsub(/^<<TableOfContents.+$/, '').            # remove TOCs
+    gsub(/^## page was renamed from .+$/, '').    # remove renamed
+    gsub(/^\{\{\{\n^#!raw\n(.+)\}\}\}$/m, "\\1"). # remove {{{#!raw}}}s
+    gsub(/^\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
+end
+
+args.each do |arg|
+  path = Path[arg]
+
+  puts convert(path.read)
+end
