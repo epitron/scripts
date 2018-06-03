@@ -1,0 +1,3 @@
+#!/bin/bash
+IFACE=lo
+iptables -t nat -A OUTPUT -o $IFACE -p tcp --dport $1 -j REDIRECT --to-port $2
