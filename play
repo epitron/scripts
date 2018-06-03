@@ -306,9 +306,11 @@ def youtube_json(url)
   # ERROR: kK1E2nB_Nu4: YouTube said: This video contains content from WMG, who has blocked it in your country on copyright grounds.
   # ( https://www.youtube.com/watch?v=kK1E2nB_Nu4 )
 
+
   cmd = YOUTUBE_DL,
     "-j",
     "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+    # "-f", "bestvideo[ext=mp4,height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4]/best", # limit to 1080p
     "--sub-format", "srt/ass/vtt/best",
     "--sub-lang", "en",
     "--write-sub",
