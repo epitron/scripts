@@ -1,8 +1,11 @@
 {
 	"auto_complete": false,
+	"auto_complete_commit_on_tab": true,
+	"auto_find_in_selection": true,
 	"color_scheme": "Packages/Theme - Nil/Big Duo.tmTheme",
 	"colored_folder_glyphs": true,
 	"enable_telemetry": false,
+	"figlet_font": "roman",
 	"file_exclude_patterns":
 	[
 		".tags",
@@ -19,8 +22,9 @@
 		"CVS",
 		"tmp/cache"
 	],
-	"font_size": 12,
+	"font_size": 13,
 	"ha_style": "filled",
+	"highlight_line": true,
 	"highlight_modified_tabs": true,
 	"ignored_packages":
 	[
@@ -39,9 +43,14 @@
 		"Julia",
 		"Pony Language"
 	],
+	"indent_guide_options":
+	[
+		"draw_active"
+	],
+	"show_tab_close_buttons": false,
 	"tab_size": 2,
 	"theme": "Cobalt2.sublime-theme",
 	"translate_tabs_to_spaces": true,
-	"trim_trailing_white_space_on_save": false,
+	"trim_trailing_white_space_on_save": true,
 	"update_check": true
 }

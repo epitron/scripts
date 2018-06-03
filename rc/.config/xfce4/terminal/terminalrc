@@ -1,5 +1,4 @@
 [Configuration]
-BackgroundMode=TERMINAL_BACKGROUND_TRANSPARENT
 CommandLoginShell=TRUE
 MiscAlwaysShowTabs=FALSE
 MiscBell=FALSE
@@ -29,7 +28,17 @@ ColorPalette=#000000000000;#cccc00000000;#a18be5bc27d5;#c4c4a0a00000;#39e59091ff
 ColorForeground=#e318e318e318
 BackgroundImageFile=/home/epi/backup/docs/backgrounds/1680/1. purplesunrise.jpg
 BackgroundImageStyle=TERMINAL_BACKGROUND_STYLE_CENTERED
-FontName=Monospace 14
-BackgroundDarkness=0.660000
+FontName=Ubuntu Mono 14
 ColorCursor=#492ee73282ee
+BackgroundDarkness=0.670000
+MiscBellUrgent=FALSE
+MiscMouseWheelZoom=TRUE
+MiscMiddleClickOpensUri=FALSE
+MiscDefaultWorkingDir=
+MiscRewrapOnResize=TRUE
+BackgroundImageShading=0.610000
+ColorBackground=#00000bf22aaa
+MiscUseShiftArrowsToScroll=FALSE
+MiscCopyOnSelect=FALSE
+MiscSlimTabs=FALSE
 
