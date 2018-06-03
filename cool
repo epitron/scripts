@@ -1,2 +1,3 @@
 #!/bin/bash
+# WINEARCH=win32 WINEPREFIX=~/.wine32 wine ~/.wine32/drive_c/Program\ Files/coolpro2/coolpro2.exe "$@"
 wine ~/.wine/drive_c/Program\ Files\ \(x86\)/coolpro2/coolpro2.exe "$@"
