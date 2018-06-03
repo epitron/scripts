@@ -1,0 +1,159 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+############################################################################
+POOL_SIZE=12
+############################################################################
+
+def run(cmd)
+  IO.popen(cmd, err: [:child, :out]) { |io| io.read }
+end
+
+#
+# TODO: Move this to epitools
+#
+module Enumerable
+
+  def parallel_map(num_workers=8, &block)
+    require 'thread'
+
+    queue = Queue.new
+    each { |e| queue.push e }
+
+    Enumerator.new do |y|
+      workers = (0...num_workers).map do
+        Thread.new do
+          begin
+            while e = queue.pop(true)
+              y << block.call(e)
+            end
+          rescue ThreadError
+          end
+        end
+      end
+
+      workers.map(&:join)
+    end
+  end
+
+end
+
+############################################################################
+
+if ARGV.any?
+  repos = ARGV.map(&:to_Path)
+else
+  repos = Path["*/.git"].map(&:parent)
+end
+
+puts "<8>* <11>Updating <15>#{repos.size} <11>repos <8>(<9>using <15>#{POOL_SIZE} <9>parallel workers<8>)".colorize
+
+############################################################################
+# Update all the repos and gather the results
+
+parallel_enum = repos.parallel_map(POOL_SIZE) do |repo|
+  begin
+    if not repo.exists?
+      [:error, repo, "Error: path does not exist"]
+    elsif repo.file?
+      [:error, repo, "Error: repo must be a directory"]
+    else
+      Path.cd(repo) do
+        if Path[".git"].dir?
+          # Regular repo
+          output = run "git pull"
+          status = output["Already up-to-date."] ? :no_change : :error
+
+          # FIXME: switch "updated = true" to "status = :descriptive_symbol", and update the function that depends on this one
+
+        elsif Path["HEAD"].exists?
+
+          # Bare repo
+          output  = run "git fetch"
+          # status = output.blank? ? :
+          updated = true
+
+        elsif (pull_script = Path["pull"]).exists? and pull_script.executable?
+
+          # ./pull script
+          output = run "./pull"
+          updated = !output.blank?
+
+        end
+
+        # output[/^(fatal: .+)$/] || output[/^(error: Your local changes.+)$/] || output[/no such ref was fetched./]
+        [updated ? :updated : :not_a_repo, repo, output]
+      end
+    end
+  rescue => e
+    [:error, repo, e.to_s]
+  end
+end
+
+STATUS_COLORS = {
+  error:         [:light_red],
+  updated:       [:light_green, :light_cyan],
+  merge_problem: [:light_purple],
+  not_a_repo:    [:light_blue],
+}
+
+grouped_results = Hash.of_arrays
+
+# Print the dots
+parallel_enum.each do |status, repo, output|
+  case status
+  when :error
+    print ".".light_red
+  when :updated
+    puts
+    puts "<3>========== <11>#{repo} <3>===============".colorize
+    puts
+    puts output
+    puts
+  else
+    print ".".grey
+  end
+
+  grouped_results[status] << [repo, output]
+end
+
+
+############################################################################
+# Summarize the results
+
+grouped_results.each do |status, results|
+  title_color, repo_color = STATUS_COLORS[status]
+
+  title_color ||= :white
+  repo_color  ||= :light_white
+
+  title = status.to_s.gsub("_", " ").titlecase
+
+  puts
+  puts
+  puts "----------------------------------------------------------------".grey
+  puts " #{title}:".send(title_color)
+  puts "----------------------------------------------------------------".grey
+
+  results.each do |repo, output|
+    puts repo.to_s.send(repo_color)
+    puts output.indent(4) if status != :updated
+  end
+end
+
+# puts
+# puts
+# puts "----------------------------------------------------------------".grey
+# puts " Errors:".light_red
+# puts "----------------------------------------------------------------".grey
+# errors.each do |repo, error|
+#   puts "#{repo}".light_red
+#   puts error.indent(4)
+# end
+# puts
+
+# puts "----------------------------------------------------------------".grey
+# puts " Updated:".light_green
+# puts "----------------------------------------------------------------".grey
+# updated_repos.each { |repo| puts "#{repo}".light_cyan }
+# puts
