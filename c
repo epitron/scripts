@@ -19,7 +19,8 @@
 #
 # TODOs:
 #   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
-#   * "install all dependencies" command (adds gems/packages for full functionality)
+#   * Command to install all dependencies (automatically installs gems/packages to provide maximum functionality)
+#   * '--format=...'/'--as=...' options for manually speficying the file type (ie: necessary when piping data to STDIN, and 'file' can't recognize it)
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
