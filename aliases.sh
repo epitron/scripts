@@ -40,7 +40,7 @@ alias ll='ls -l'
 alias lh='ls -lh'
 alias lts='lt -s'
 alias lt='d -lt'
-
+alias da='d -a'
 
 alias fd='f -d'
 
