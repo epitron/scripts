@@ -19,7 +19,7 @@
 #
 # TODOs:
 #   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
-#   *
+#   * "install all dependencies" command (adds gems/packages for full functionality)
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
@@ -132,6 +132,19 @@ class Object
     is_a?(String) ? self : to_s
   end
 
+end
+
+
+##############################################################################
+
+def print_header(title, level=nil)
+  colors = ["\e[33m\e[1m%s\e[0m", "\e[36m\e[1m%s\e[0m", "\e[34m\e[1m%s\e[0m", "\e[35m%s\e[0m"]
+  color = colors[level || -1]
+  grey = "\e[30m\e[1m%s\e[0m"
+
+  bar = grey % ("-"*(title.size+4))
+
+  "#{bar}\n  #{color % title}\n#{bar}\n\n"
 end
 
 ##############################################################################
@@ -735,6 +748,18 @@ end
 
 ##############################################################################
 
+def print_sqlite(filename)
+  stats  = run("sqlite3", filename, ".dbinfo").read
+  schema = run("sqlite3", filename, ".schema --indent").read
+
+  print_header("Statistics:",0) +
+    stats + "\n" +
+  print_header("Schema:",1) +
+    CodeRay.scan(schema, :sql).term
+end
+
+##############################################################################
+
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
@@ -992,6 +1017,8 @@ def convert(arg)
         format = run('file', arg).read
 
         case format
+        when /SQLite 3.x database/
+          print_sqlite(arg)
         when /POSIX shell script/
           print_source(arg)
         when /:.+?(executable|shared object)[^,]*,/
