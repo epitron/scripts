@@ -15,7 +15,7 @@ TYPE_INFO = [
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
   [:doc,     /\.(txt|pdf)$/i,                              :light_white],
   [:dotfile, /^\../i,                                      :grey],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2|gem)$/i, :light_yellow]
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|bz2|xz)|gem)$/i, :light_yellow]
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -154,7 +154,7 @@ opts = Slop.parse(help: true, strict: true) do
   on "l", "long",         'Long mode (with sizes and dates)'
   on "r", "recursive",    'Recursive'
   on "D", "dirs-first",   'Show directories first'
-  on "H", "hidden",       'Show hidden files'
+  on "a", "all"   ,       'Show all files (including hidden)'
   on "t", "time",         'Sort by modification time'
   on "T", "reverse-time", 'Sort by modification time (reversed)'
   on "s", "size",         'Sort by size'
@@ -213,8 +213,8 @@ grouped.each do |dir, paths|
 
   if opts.dirs_first?
     dirs, paths = paths.partition &:dir?
-    print_paths(dirs, long: opts.long?, regex: regex, hidden: opts.hidden?)
+    print_paths(dirs, long: opts.long?, regex: regex, hidden: opts.a?)
   end
 
-  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?)
+  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?)
 end
