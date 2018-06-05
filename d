@@ -5,6 +5,7 @@ require 'slop'
 require 'epitools/rash'
 require 'epitools/path'
 require 'epitools/colored'
+require 'epitools/clitools'
 ###############################################################################
 
 TYPE_INFO = [
@@ -110,7 +111,7 @@ end
 
 ###############################################################################
 
-def print_paths(paths, long: false, regex: nil, hidden: false)
+def print_paths(paths, long: false, regex: nil, hidden: false, output: $stdout)
   paths = paths.select { |path| path.filename =~ regex } if regex
   paths = paths.reject &:hidden? unless hidden
 
@@ -119,11 +120,11 @@ def print_paths(paths, long: false, regex: nil, hidden: false)
       fn = path.colorized(regex: regex, wide: true)
       time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
       size = path.size rescue nil
-      puts "#{size.commatized_and_colorized} #{time} #{fn}"
+      output.puts "#{size.commatized_and_colorized} #{time} #{fn}"
     end
   else
     colorized_paths = paths.map { |path| path.colorized(regex: regex) }
-    puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
+    output.puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
   end
 end
 
@@ -159,6 +160,7 @@ opts = Slop.parse(help: true, strict: true) do
   on "T", "reverse-time", 'Sort by modification time (reversed)'
   on "s", "size",         'Sort by size'
   on "S", "reverse-size", 'Sort by size (reversed)'
+  on "p", "paged",        'Pipe output to "less"'
   on "n", "dryrun",       'Dry-run', false
   on "g=","grep",         'Search filenames'
   on "f=","find",         'Find in directory tree'
@@ -212,9 +214,13 @@ grouped.each do |dir, paths|
   end
 
   if opts.dirs_first?
-    dirs, paths = paths.partition &:dir?
-    print_paths(dirs, long: opts.long?, regex: regex, hidden: opts.a?)
+    dirs, paths = paths.partition(&:dir?)
+    paths = dirs + paths
   end
 
-  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?)
+  if opts.paged?
+    lesspipe { |less| print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?, output: less) }
+  else
+    print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?)
+  end
 end
