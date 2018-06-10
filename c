@@ -141,8 +141,9 @@ end
 
 def print_header(title, level=nil)
   colors = ["\e[33m\e[1m%s\e[0m", "\e[36m\e[1m%s\e[0m", "\e[34m\e[1m%s\e[0m", "\e[35m%s\e[0m"]
-  color = colors[level || -1]
-  grey = "\e[30m\e[1m%s\e[0m"
+  level  = level ? (level-1) : 0
+  color  = colors[level] || colors[-1]
+  grey   = "\e[30m\e[1m%s\e[0m"
 
   bar = grey % ("-"*(title.size+4))
 
@@ -686,8 +687,6 @@ def print_torrent(filename)
 
   data = BEncode.load_file(filename)
 
-  # require 'awesome_print'; return data.ai
-
   date        = data["creation date"] && Time.at(data["creation date"])
   name        = data.dig "info", "name"
   infohash    = Digest::SHA1.hexdigest(BEncode.dump data["info"])
@@ -750,14 +749,37 @@ end
 
 ##############################################################################
 
-def print_sqlite(filename)
-  stats  = run("sqlite3", filename, ".dbinfo").read
-  schema = run("sqlite3", filename, ".schema --indent").read
+# def print_sqlite(filename)
+#   stats  = run("sqlite3", filename, ".dbinfo").read
+#   schema = run("sqlite3", filename, ".schema --indent").read
 
-  print_header("Statistics:",0) +
-    stats + "\n" +
-  print_header("Schema:",1) +
-    CodeRay.scan(schema, :sql).term
+#   print_header("Statistics:",1) +
+#     stats + "\n" +
+#   print_header("Schema:",2) +
+#     CodeRay.scan(schema, :sql).term
+# end
+
+def print_sqlite(filename)
+  return to_enum(:print_sqlite, filename) unless block_given?
+
+  require 'sequel'
+  require 'pp'
+
+  Sequel.sqlite(filename) do |db|
+    db.tables.each do |table|
+      yield print_header("#{table}", 1)
+      schemas = db[:sqlite_master].where(tbl_name: "#{table}").select(:sql).map(&:values).flatten.join("\n")
+      yield CodeRay.scan(schemas, :sql).term
+      yield ""
+      begin
+        db[table].each { |row| yield CodeRay.scan(row.pretty_inspect, :ruby).term }
+      rescue Sequel::DatabaseError => e
+        yield e.inspect
+      end
+      yield ""
+      yield ""
+    end
+  end
 end
 
 ##############################################################################
@@ -892,7 +914,7 @@ def print_http(url)
 end
 
 def print_html(file)
-  # TODO: Is it better to use Term.width as html2text's -b option?
+  # TODO: Switch to using 'html-renderer'
   ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
     markdown.write File.read(file)
     markdown.close_write
