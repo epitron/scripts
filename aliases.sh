@@ -13,6 +13,10 @@
 
 # alias open='xdg-open "$@" 2>/dev/null'
 
+function we_have() {
+  which "$@" > /dev/null 2>&1
+}
+
 function alias_all_as_sudo() {
   for var in "$@"
   do
@@ -23,7 +27,7 @@ function alias_all_as_sudo() {
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
   #export LS_OPTIONS='--color=auto'
-  if which dircolors > /dev/null 2>&1
+  if we_have dircolors
   then
     eval `dircolors -b`
   fi
@@ -87,7 +91,7 @@ alias cls='clear'
 alias r="ren"
 
 # text
-if ! which nano > /dev/null && which pico > /dev/null; then
+if ! we_have nano && we_have pico; then
   alias nano="pico -w"
 else
   alias nano="nano -w"
@@ -106,7 +110,7 @@ rgrep() {
   rcat "$@" | grep -Ei $expression
 }
 
-if which ag > /dev/null 2>&1
+if we_have ag
 then
   alias ag='ag --pager "less -RSFXi"'
 else
@@ -116,7 +120,7 @@ fi
 alias less='less -X -F -i'
 alias diff='diff -u'
 
-if which scc > /dev/null; then
+if we_have scc; then
   alias cloc='scc'
 fi
 
@@ -149,9 +153,9 @@ alias df='df -h'
 alias df.='df .'
 alias screen='screen -U'
 
-if which dcfldd > /dev/null; then
+if we_have dcfldd; then
   alias dd='dcfldd'
-elif which ddrescue > /dev/null; then
+elif we_have ddrescue; then
   alias dd='ddrescue'
 fi 
 
