@@ -45,6 +45,12 @@ alias lh='ls -lh'
 alias lts='lt -s'
 alias lt='d -lt'
 
+
+function fd() {
+  query="$@"
+  $(which fd) --color=always "$query" | less -RS "+/$query"
+}
+
 #if which fd > /dev/null; then
 #  alias f='fd -IH'
 #fi
