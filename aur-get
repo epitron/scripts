@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# TODO:
+#   Allow URLs to be passed, eg:
+#     https://aur.archlinux.org/packages/gpointing-device-settings/
+#     https://aur.archlinux.org/gpointing-device-settings.git
+
 if [ "$1" == "" ]; then
   echo "usage: aur-get <package name>"
 else
