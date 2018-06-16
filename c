@@ -18,6 +18,9 @@
 #
 #
 # TODOs:
+#   * Add gem/program dependencies to functions (using a DSL) 
+#     |_ "install all dependencies" can use it
+#     |_ error/warning when dependency isn't installed, plus a fallback codepath  
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
