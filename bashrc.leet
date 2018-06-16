@@ -1,51 +1,51 @@
 #!/bin/bash
 
 # The directory from which this script is being called
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source "$DIR/aliases.sh"
+function path_prepend() {
+  if [ -d "$@" ]; then
+    export PATH="$@:$PATH"
+  fi
+}
 
-if [ "$EDITOR" == "" ]; then
-  export EDITOR="nano"
-fi
+source "$SCRIPTDIR/aliases.sh"
+
+export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
+export LESS_TERMCAP_md="`echo -e '\e[01;37m'`"
+export LESS_TERMCAP_me="`echo -e '\e[0m'`"
+export LESS_TERMCAP_se="`echo -e '\e[0m'`"
+export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
+export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
+export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
 ## Paths
-if [ -d ~/.local/bin ]; then
-  export PATH=~/.local/bin:$PATH
-fi
-
-if [ -d ~/.gem/bin ]; then
-  export PATH=$PATH:~/.gem/bin
-fi
-if [ -d /usr/scripts ]; then
-  SCRIPTDIR=/usr/scripts
-elif [ -d ~/scripts ]; then
-  SCRIPTDIR=~/scripts
-fi
-export PATH=$SCRIPTDIR:$PATH
-
-if [ -d ~/bin ]; then
-  export PATH=~/bin:$PATH
-fi
+path_prepend ~/.gem/bin
+path_prepend ~/go/bin
+path_prepend $SCRIPTDIR
+path_prepend ~/bin
 
 ## Functions
 
 # colorful manpages
-man() {
-	env \
-		LESS_TERMCAP_mb=$(printf "\e[1;33m") \
-		LESS_TERMCAP_md=$(printf "\e[1;36m") \
-		LESS_TERMCAP_me=$(printf "\e[0m") \
-		LESS_TERMCAP_se=$(printf "\e[0m") \
-		LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
-		LESS_TERMCAP_ue=$(printf "\e[0m") \
-		LESS_TERMCAP_us=$(printf "\e[1;38m") \
-			man "$@"
-}
+# man() {
+# 	env \
+# 		LESS_TERMCAP_mb=$(printf "\e[1;33m") \
+# 		LESS_TERMCAP_md=$(printf "\e[1;36m") \
+# 		LESS_TERMCAP_me=$(printf "\e[0m") \
+# 		LESS_TERMCAP_se=$(printf "\e[0m") \
+# 		LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+# 		LESS_TERMCAP_ue=$(printf "\e[0m") \
+# 		LESS_TERMCAP_us=$(printf "\e[1;38m") \
+# 			man "$@"
+# }
 
 
 ## Environment Variables
 
+if [ "$EDITOR" == "" ]; then
+  export EDITOR="nano"
+fi
 export PAGER=less
 export CLICOLOR=1
 #export TERM=xterm-color
@@ -93,18 +93,9 @@ case $(uname -o) in
 esac
 
 
-## Dead code
-
-#if [ -f /etc/bash_completion ]; then
-#    . /etc/bash_completion
-#fi
-
-## FUCK YOU, ^S AND ^Q!!
+## Disable TTY flow control (^S and ^Q)
 #stty stop undef
 #stty start undef
-
-## FUCK YOU, X11!!
-#unset DISPLAY
 
 # # Run a command without globbing (broken)
 # noglob_helper() {
