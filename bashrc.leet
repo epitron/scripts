@@ -3,14 +3,28 @@
 # The directory from which this script is being called
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Push a directory onto the path (if it exists)
 function path_prepend() {
   if [ -d "$@" ]; then
     export PATH="$@:$PATH"
   fi
 }
 
+# Aliases
 source "$SCRIPTDIR/aliases.sh"
 
+
+## Environment Variables
+
+# Things for the PATH
+path_prepend ~/node_modules/.bin
+path_prepend ~/.gem/bin
+path_prepend ~/go/bin
+path_prepend ~/.local/bin
+path_prepend $SCRIPTDIR
+path_prepend ~/bin
+
+# Lovely less/man colors
 export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
 export LESS_TERMCAP_md="`echo -e '\e[01;37m'`"
 export LESS_TERMCAP_me="`echo -e '\e[0m'`"
@@ -19,39 +33,28 @@ export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
 export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
 export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
-## Paths
-path_prepend ~/.gem/bin
-path_prepend ~/go/bin
-path_prepend $SCRIPTDIR
-path_prepend ~/bin
+# fzf
+if we_have fzf; then
+  if we_have bfs; then
+    export FZF_DEFAULT_COMMAND="bfs -color"
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_DEFAULT_OPTS="--ansi"
+  fi
 
-## Functions
+  . /usr/share/fzf/completion.bash
+  . /usr/share/fzf/key-bindings.bash
+fi
 
-# colorful manpages
-# man() {
-# 	env \
-# 		LESS_TERMCAP_mb=$(printf "\e[1;33m") \
-# 		LESS_TERMCAP_md=$(printf "\e[1;36m") \
-# 		LESS_TERMCAP_me=$(printf "\e[0m") \
-# 		LESS_TERMCAP_se=$(printf "\e[0m") \
-# 		LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
-# 		LESS_TERMCAP_ue=$(printf "\e[0m") \
-# 		LESS_TERMCAP_us=$(printf "\e[1;38m") \
-# 			man "$@"
-# }
-
-
-## Environment Variables
-
+# misc
 if [ "$EDITOR" == "" ]; then
   export EDITOR="nano"
 fi
 export PAGER=less
 export CLICOLOR=1
-#export TERM=xterm-color
-#export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 export PYTHONSTARTUP=~/.pystartup
 export XZ_OPT="--threads=0"
+#export TERM=xterm-color
+#export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
 if [ -f /proc/cpuinfo ]; then
   export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
@@ -109,4 +112,17 @@ esac
 # }
 # alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
 
+
+# colorful manpages
+# man() {
+#   env \
+#     LESS_TERMCAP_mb=$(printf "\e[1;33m") \
+#     LESS_TERMCAP_md=$(printf "\e[1;36m") \
+#     LESS_TERMCAP_me=$(printf "\e[0m") \
+#     LESS_TERMCAP_se=$(printf "\e[0m") \
+#     LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+#     LESS_TERMCAP_ue=$(printf "\e[0m") \
+#     LESS_TERMCAP_us=$(printf "\e[1;38m") \
+#       man "$@"
+# }
 
