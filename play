@@ -17,6 +17,7 @@ def parse_options
     on 'l',  'list',      "List <n> previously viewed videos"
     on 'a',  'all',       "List all videos (piped to less)"
     on 'd',  'download',  "Download video <n>"
+    on 'i',  'info',      "Detailed info about <n>"
     on 's',  'search',    "Search youtube"
     on 'c',  'cast',      "Cast to Chromecast"
     on 'C=', 'device',    "Chromecast device"
@@ -229,6 +230,62 @@ def entries_for_nums(nums)
   end
 
   entries
+end
+
+###########################################################
+
+def info(nums)
+  require 'epitools/colored'
+
+  fields = %w[
+    uploader
+    description
+    upload_date
+    tags
+    categories
+    view_count
+    like_count
+    dislike_count
+    average_rating
+    webpage_url
+    format
+    fps
+    duration
+    vcodec
+    acodec
+    uploader_url
+  ]
+
+  # TODO: Format duration
+
+  log_entries.select { |e| nums.include? e.pos }.each do |e|
+    puts "<8>=== <10>#{e.pos}<7>: <14>#{e.title} <8>====================".colorize
+    puts
+    fields.each do |k|
+      v = e.extra[k]
+
+      next if v.nil? or (v.respond_to?(:empty?) and v.empty?)
+
+      print "<11>#{k}<8>: ".colorize
+      
+      v = case v
+      when Numeric then "<15>#{v}"
+      when Hash then v.to_s
+      when String
+        if v["\n"]
+          "\n" + v.each_line.map {|l| "    #{l}" }.join
+        else
+          v
+        end
+      when Array
+        v.join("<8>, </8>") 
+      end
+      
+      puts v.colorize
+
+    end
+    puts
+  end
 end
 
 ###########################################################
@@ -507,6 +564,11 @@ if $0 == __FILE__
       search_history(nil, nums.first, false, true)
       exit
     end
+  end
+
+  if opts.info?
+    info(nums)
+    exit
   end
 
   urls = entries_for_nums(nums) if nums
