@@ -10,15 +10,20 @@ def parse_options
   gem 'slop', "~> 3.6"
   require 'slop'
 
-  Slop.parse(help: true, strict: true) do
+  opts = Slop.parse(help: true, strict: true) do
     banner 'Usage: play [options] <video URL, or history number>'
 
     on 'l',  'list',      "List <n> previously viewed videos"
     on 'a',  'all',       "List all videos (piped to less)"
     on 'd',  'download',  "Download video <n>"
+    on 's',  'search',    "Search youtube"
+    on 'c',  'cast',      "Cast to Chromecast"
+    on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
     on 'v',  'verbose',   "Show more info"
   end
+
+  [opts, ARGV]
 end
 
 ###################################################################################################
@@ -135,7 +140,7 @@ end
 def run(*cmd)
   require 'open3'
   # stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
-  p running: cmd
+  # p running: cmd
   out, err, status = Open3.capture3(*cmd)
   [out.strip, err.strip, status]
 end
@@ -198,7 +203,7 @@ end
 
 ###########################################################
 
-def search(query=nil, n=10, reverse=true, paged=false)
+def search_history(query=nil, n=10, reverse=true, paged=false)
   require 'epitools/colored'
 
   if query
@@ -261,6 +266,12 @@ def search(query=nil, n=10, reverse=true, paged=false)
   output.close if paged
 
 rescue Errno::EPIPE
+end
+
+###################################################################################################
+
+def search_youtube(query)
+  exec("yt", *query)
 end
 
 ###################################################################################################
@@ -330,6 +341,28 @@ def youtube_json(url)
   end
 
   JSON.parse(out)
+end
+
+###################################################################################################
+
+def cast(url, device=nil)
+  cmd = ["catt", "cast"]
+  cmd += ["-d", device] if device
+  cmd << url.to_s
+
+  if url.is_a? LogEntry
+    notify(:video, "Casting:", url.title, time: 4)
+  else
+    notify(:info, "Looking up:", url.to_s, time: 3)
+    fork do
+      json = youtube_json(url.to_s)
+      write_to_log(url, json)
+      notify(:video, "Casting:", json["title"], time: 4)
+    end
+  end
+
+  # Process.daemon(true) unless foreground
+  system(*cmd)
 end
 
 ###################################################################################################
@@ -409,33 +442,34 @@ end
 
 if $0 == __FILE__
 
-  if ARGV.any? { |arg| arg[/^--?\w/] }
-    opts = parse_options
-  else
-    opts = {}
-  end
+  # if ARGV.any? { |arg| arg[/^--?\w/] }
+  #   opts = parse_options
+  # else
+  #   opts = {}
+  # end
+  # args = ARGV
 
-  args = ARGV
+  opts, args = parse_options
 
   if opts[:all]
-    search(nil, 0, false, true)
+    search_history(nil, 0, false, true)
     exit
   end
 
   if args.empty?
-    search
+    search_history
     exit
   elsif args.all? { |arg| arg =~ /^\d+$/ } # all args are numbers?
     nums = args.map(&:to_i)
   elsif args.all? { |arg| arg =~ %r{^https?://}i } # all args are urls?
     urls = args
-  else # must be a search query
+  else # must be a search_history query
     query = args
   end
 
   if opts[:list]
     if nums
-      search(nil, nums.first, false, true)
+      search_history(nil, nums.first, false, true)
       exit
     end
   end
@@ -444,7 +478,11 @@ if $0 == __FILE__
 
   if query
 
-    search(query)
+    if opts.search? # serach youtube
+      search_youtube(query)
+    else
+      search_history(query)
+    end
 
   elsif urls
 
@@ -459,7 +497,9 @@ if $0 == __FILE__
         #   exit 1
         # end
 
-        if which("mpv")
+        if opts.cast?
+          cast(url, opts[:device])
+        elsif which("mpv")
           play(url, opts["no-daemon"], opts[:verbose])
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
