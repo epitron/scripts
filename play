@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 ###################################################################################################
 require 'json'
+require 'ostruct'
 ###################################################################################################
 LOGFILE      = File.expand_path("~/play.log")
 JSON_LOGFILE = File.expand_path("~/play.json")
@@ -78,12 +79,35 @@ end
 
 ###################################################################################################
 
-class LogEntry < Struct.new(:date, :time, :url, :title, :pos)
-  def initialize(line, pos)
+class LogEntry < OpenStruct
+  
+  def self.from_line(line, pos)
     timestamp, url, title = line.strip.split(" | ", 3)
     date, time            = timestamp.split
 
-    super(date, time, url, title, pos)
+    new(date: date, time: time, url: url, title: title, pos: pos)
+  end
+
+  def self.from_json(line, pos)
+    # {"timestamp":"2017-04-09 00:58:59","url":"https://www.youtube.com/watch?v=j556MWGVVqI","title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","upload_date":"20160208","uploader":"huluDotCom","extra":{"id":"j556MWGVVqI","uploader":"Hulu","uploader_id":"huluDotCom","uploader_url":"http://www.youtube.com/user/huluDotCom","upload_date":"20160208","license":"Standard YouTube License","creator":null,"title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","alt_title":null,"thumbnail":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","description":"Triumph discusses gender identity, micro aggressions and trigger warnings with young college voters as part of Triumph's Election Special 2016, now streaming on Hulu.\n\nWatch Triumph on Hulu at http://www.hulu.com/Triumph\nLike Hulu on Facebook at http://www.facebook.com/Hulu/\nFollow Hulu on Twitter at http://www.twitter.com/Hulu\nFollow Hulu on Instagram at http://www.instagram.com/Hulu\nSubscribe to our YouTube channel at http://www.youtube.com/hulu\n\nIn Triumph's Election Special 2016, Triumph the Insult Comic Dog hits the 2016 presidential campaign trail.  Viewers will be taken from Iowa to New Hampshire to South Carolina in a tenacious news-gathering journey in the heat of the primary election season.  Triumph has already visited a Democratic Debate, a Tea Party Convention, and followed a string of Ted Cruz bus appearances.  In addition to crashing campaign events and mocking the press for their thirst for controversy, Triumph will take on hard-hitting issues of concern to voters on each side of the spectrum.","categories":["Entertainment"],"tags":["hulu"],"automatic_captions":{},"duration":641,"age_limit":0,"annotations":null,"webpage_url":"https://www.youtube.com/watch?v=j556MWGVVqI","view_count":3204771,"like_count":36135,"dislike_count":1104,"average_rating":4.88141441345,"is_live":null,"start_time":null,"end_time":null,"series":null,"season_number":null,"episode_number":null,"extractor":"youtube","webpage_url_basename":"watch","extractor_key":"Youtube","playlist":null,"playlist_index":null,"thumbnails":[{"url":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","id":"0"}],"display_id":"j556MWGVVqI","format":"137 - 1920x1080 (DASH video)+140 - audio only (DASH audio)","format_id":"137+140","width":1920,"height":1080,"resolution":null,"fps":24,"vcodec":"avc1.640028","vbr":null,"stretched_ratio":null,"acodec":"mp4a.40.2","abr":128,"ext":"mp4","fulltitle":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","_filename":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu-j556MWGVVqI.mp4"}}
+    json = JSON.parse(line)
+    date, time = json["timestamp"].split
+    json.merge!(
+      pos: pos,
+      date: date,
+      time: time
+    )
+    new(json)
+  end
+
+  # Converts nested hashes into OpenStructs
+  def initialize(hash)
+    super(
+      hash.map do |k,v|
+        v = super(v) if v.is_a? Hash
+        [k, v]
+      end.to_h
+    )
   end
 
   def to_s
@@ -178,9 +202,15 @@ end
 ###################################################################################################
 
 def log_entries
-  open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
-  log = open(LOGFILE)
-  log.reverse_each.lazy.with_index.map {|logline, i| LogEntry.new(logline, i+1) }
+  if File.exists? JSON_LOGFILE
+    log = open(JSON_LOGFILE)
+    meth = :from_json
+  else
+    open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
+    log = open(LOGFILE)
+    meth = :from_line
+  end  
+  log.reverse_each.lazy.with_index.map { |logline, i| LogEntry.send(meth, logline, i+1) }
 end
 
 def entries_for_nums(nums)
@@ -258,7 +288,12 @@ def search_history(query=nil, n=10, reverse=true, paged=false)
     output.print "#{pos.to_s.rjust(max_pos_width)}. ".bright_yellow
     indent += " " * (max_pos_width + 2)
 
-    output.puts "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}".colorize
+    headline = "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}"
+    if result.respond_to? :uploader
+      headline << " <8>(<1>#{result.uploader}<8>)"
+    end
+
+    output.puts headline.colorize
     output.puts "<2>#{indent}#{result.time} <4>| <9>#{regexp ? result.url.gsub(regexp, &:on_blue) : result.url}".colorize
     output.puts
   end
@@ -346,7 +381,7 @@ end
 ###################################################################################################
 
 def cast(url, device=nil)
-  cmd = ["catt", "cast"]
+  cmd  = ["catt", "cast"]
   cmd += ["-d", device] if device
   cmd << url.to_s
 
