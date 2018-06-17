@@ -201,6 +201,7 @@ alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
 alias columns='cols'
+alias cast='catt cast'
 
 # archives
 alias ax="aunpack"
@@ -318,8 +319,8 @@ alias abs='sudoifnotroot abs'
 alias mp='makepkg -s'
 
 # npm
-alias ni="sudoifnotroot npm install -g"
-alias nl="npm list -g --color=always |& less -S"
+# alias ni="sudoifnotroot npm install -g"
+# alias nl="npm list -g --color=always |& less -S"
 
 #
 # Usage:
