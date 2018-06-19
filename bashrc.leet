@@ -19,6 +19,7 @@ source "$SCRIPTDIR/aliases.sh"
 # Things for the PATH
 path_prepend ~/node_modules/.bin
 path_prepend ~/.gem/bin
+path_prepend ~/.nimble/bin
 path_prepend ~/go/bin
 path_prepend ~/.local/bin
 path_prepend $SCRIPTDIR
