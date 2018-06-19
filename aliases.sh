@@ -179,12 +179,13 @@ alias dstat-wide='dstat -tcyifd'
 alias sus='ssu'
 
 # systemd
-alias_all_as_sudo systemctl journalctl
+# alias_all_as_sudo systemctl journalctl
 alias jc='journalctl'
 alias jt='journalctl -f'
 alias sys='systemctl'
 alias j='journalctl'
 alias iu='i --user'
+alias suspend='systemctl suspend -i'
 
 # misc
 alias dict='dictless'
