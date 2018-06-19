@@ -11,8 +11,7 @@
 #
 #   python packages:
 #     pygments
-#     rst2ansi
-#     docutils
+#     rst2ansi & docutils
 #
 #   ...and many more! (the script will blow up when you need that program! :D)
 #
@@ -34,7 +33,7 @@ require 'coderay'
 require 'coderay_bash'
 ##############################################################################
 
-def pygmentize_cmd(lexer=nil, style="native", formatter="terminal256")
+def pygmentize(lexer=nil, style="native", formatter="terminal256")
   # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
   #       Style gallery: https://help.farbox.com/pygments.html
   #                     (good ones: monokai, native, emacs)
@@ -48,41 +47,49 @@ def pygmentize_cmd(lexer=nil, style="native", formatter="terminal256")
   cmd
 end
 
+def rougify(lexer=nil)
+  cmd = ["rougify"]
+  cmd += ["-l", lexer] if lexer
+  cmd
+end
 
 ### Converters ###############################################################
 
 EXT_HIGHLIGHTERS = {
-  ".cr"          => :ruby,
-  ".jl"          => :ruby,
-  ".pl"          => :ruby,
-  ".cmake"       => :ruby,
-  ".mk"          => :bash,
-  ".install"     => :bash,
-  ".desktop"     => :bash,
-  ".conf"        => :bash,
-  ".prf"         => :bash,
-  ".ini"         => :bash,
-  ".service"     => :bash,
-  ".hs"          => :text,
-  ".cl"          => :c,
-  ".rl"          => :c, # ragel definitions
-  ".ino"         => :c, # arduino sdk files
-  ".gradle"      => :groovy,
-  ".sage"        => :python,
-  ".lisp"        => :clojure,
-  ".scm"         => :clojure,
-  ".qml"         => :php,
-  ".pro"         => :sql,
-  ".ws"          => :xml,
-  ".ui"          => :xml,
-  ".opml"        => :xml,
-  ".stp"         => :javascript, # systemtap
-  ".ml"          => :pygmentize,
-  ".nim"         => :pygmentize,
-  ".diff"        => :pygmentize,
-  ".patch"       => :pygmentize,
-  ".rs"          => :pygmentize,
-  ".toml"        => pygmentize_cmd(:ini),
+  ".cr"             => :ruby,
+  ".jl"             => :ruby,
+  ".pl"             => :ruby,
+  ".cmake"          => :ruby,
+  ".mk"             => :bash,
+  ".install"        => :bash,
+  ".desktop"        => :bash,
+  ".conf"           => :bash,
+  ".prf"            => :bash,
+  ".ini"            => :bash,
+  ".service"        => :bash,
+  ".hs"             => :text,
+  ".cl"             => :c,
+  ".rl"             => :c, # ragel definitions
+  ".ino"            => :c, # arduino sdk files
+  ".gradle"         => :groovy,
+  ".sage"           => :python,
+  ".lisp"           => :clojure,
+  ".scm"            => :clojure,
+  ".qml"            => :php,
+  ".pro"            => :sql,
+  ".ws"             => :xml,
+  ".ui"             => :xml,
+  ".opml"           => :xml,
+  ".stp"            => :javascript, # systemtap
+  ".ml"             => pygmentize,
+  ".nim"            => rougify,
+  ".nimble"         => rougify("nim"),
+  ".diff"           => pygmentize,
+  ".patch"          => pygmentize,
+  ".rs"             => pygmentize,
+  ".toml"           => rougify,
+  ".tmLanguage"     => :xml,
+  ".sublime-syntax" => :yaml,
 }
 
 FILENAME_HIGHLIGHTERS = {
@@ -333,7 +340,7 @@ def print_source(arg)
       data
     end
   elsif lang.is_a? Array
-    run(*lang)
+    run(*lang, arg)
   elsif %i[pygmentize rugmentize rougify].include? lang
     run(lang, filename)
   elsif lang
@@ -555,6 +562,13 @@ def print_markdown(markdown)
   end
 
   convert_htmlentities carpet.render(markdown)
+end
+
+##############################################################################
+
+def print_asciidoc(data)
+  # TODO: Use Asciidoctor to convert it to a man page, then print that
+  data
 end
 
 ##############################################################################
@@ -1038,6 +1052,8 @@ def convert(arg)
         print_html(arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
+      when *%w[.adoc]
+        print_asciidoc(File.read arg)
       when *%w[.moin]
         print_moin(File.read arg)
       when *%w[.ipynb]
