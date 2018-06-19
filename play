@@ -174,7 +174,7 @@ end
 def play_click_sound
   file = File.expand_path("~/scripts/sounds/click.mp3")
   
-  if best = which_is_best?("mplayer", "mpg123", "mpv")
+  if best = which_is_best?("/bin/play", "mplayer", "mpg123", "mpv")
     fork { run(best, file).last.success? } 
   end
 end
