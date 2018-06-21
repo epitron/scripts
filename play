@@ -440,6 +440,7 @@ end
 
 def cast(url, enqueue=false, device=nil)
   cmd  = ["catt"]
+  cmd += ["-d", device] if device
   if enqueue
     cmd << "add"
     verb = "Enqueueing:"
@@ -447,7 +448,6 @@ def cast(url, enqueue=false, device=nil)
     cmd << "cast"
     verb = "Casting:"
   end
-  cmd += ["-d", device] if device
   cmd << url.to_s
 
   if url.is_a? LogEntry
@@ -602,7 +602,7 @@ if $0 == __FILE__
         #   exit 1
         # end
 
-        if opts.cast? or opts.enqueue?
+        if opts.cast? or opts.enqueue? or opts.device?
           cast(url, opts.enqueue?, opts[:device])
         elsif which("mpv")
           play(url, opts["no-daemon"], opts[:verbose])
