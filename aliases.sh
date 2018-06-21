@@ -275,7 +275,9 @@ gem-cd() {
   fi
 }
 
-
+pip-cd() {
+  cd ~/.local/lib/python3*/site-packages/$1
+}
 
 
 # # 64/32bit specific aliases
