@@ -32,10 +32,13 @@ end
 ###################################################################################################
 
 def which(bin)
+  return bin if bin[0] == "/" and File.exists?(bin)
+    
   ENV["PATH"].split(":").each do |dir|
     full_path = File.join(dir, bin)
     return full_path if File.exists? full_path
   end
+
   nil
 end
 
