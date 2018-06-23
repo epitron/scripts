@@ -196,7 +196,7 @@ def print_search_results(query)
           "<13>#{info["downloads"].commatize} <5>downloads<7>) " + 
           "<8>==============").colorize
     puts info["info"].indent.bright_white
-    puts "    <3>https://rubygems.org/#{info["name"]}".colorize
+    puts "    <3>https://rubygems.org/gems/#{info["name"]}".colorize
     puts
   end
 end
