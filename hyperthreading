@@ -18,13 +18,20 @@ class CPU
 
   def [](str)
     val = (path/str).read.strip
-    (val =~ /^\d+$/) ? val.to_i : val
+    case val
+    when /^\d+$/
+      val.to_i
+    when /^\d+\.\d+$/
+      val.to_f 
+    else 
+      val
+    end
   end
 
   def []=(str, value); (path/str).write(value); end
 
   def path; ROOT/"cpu#{num}"; end
-  def freq; cpu["cpufreq/scaling_cur_freq"]; end
+  def freq; self["cpufreq/scaling_cur_freq"]; end
 
   def online?;  num == 0 or self["online"] == 1; end
   def offline?; not online?; end
@@ -70,7 +77,7 @@ class CPU
   def self.print_status
     all.each do |cpu|
       print "CPU#{cpu.num}: o#{cpu.online? ? "n" : "ff"}line"
-      print " (#{freq.commatize} hz)" if cpu.online?
+      print " (#{cpu.freq.commatize} hz)" if cpu.online?
       puts
     end
   end
