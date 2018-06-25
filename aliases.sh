@@ -163,7 +163,7 @@ if we_have dcfldd; then
   alias dd='dcfldd'
 elif we_have ddrescue; then
   alias dd='ddrescue'
-fi 
+fi
 
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
@@ -265,6 +265,7 @@ alias gcs="gc --depth=1"
 alias be="bundle exec"
 alias rock='luarocks'
 alias pi='pip install --user'
+alias piu='pip uninstall'
 alias py=python2
 
 gem-cd() {
