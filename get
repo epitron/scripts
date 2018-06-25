@@ -1,38 +1,54 @@
 #!/usr/bin/env ruby
+########################################################
+require 'uri'
+########################################################
 
 def run(*cmd)
   puts
-  puts cmd.map { |c| c[" "] ? "'#{c}'" : c }.join(" ")
+  # puts cmd.map { |c| c[" "] ? "'#{c}'" : c }.join(" ")
   system *cmd
   puts
 end
 
-opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+def urlsnap(url)
+  uri = URI.parse(url)
+  outfile = uri.path.split("/").reject(&:empty?).last
+  outfile = File.basename(outfile, ".*") + ".mhtml"
 
-cmd = [
-  "curl",
-  "-L",       # follow redirects
-  "--xattr",  # xattrs
-  "-C", "-",  # resume at whatever the output file size is
-  "-O",       # write to file named after remote name
-]
+  cmd = ["urlsnap", "--mhtml=#{outfile}", url]
 
-args.each do |arg|
-  run *cmd, arg
+  puts "* Urlsnapping:"
+  puts "  |_ input: #{url}"
+  print "  |_ output: #{outfile}"
+  run(*cmd)
+  puts "* Done:"
+  system("ls", "-l", outfile)
+  puts
 end
 
+def curl(url)
+  cmd = [
+    "curl",
+    "-L",       # follow redirects
+    "--xattr",  # xattrs
+    "-C", "-",  # resume at whatever the output file size is
+    "-O",       # write to file named after remote name
+    url
+  ]
 
+  run(*cmd)
+end
 
-# cmd << "-i" # print headers (doesn't work when writing to a file)
-# cmd << "-#" # progress bar
-# cmd << "-v" # verbosity
+########################################################
 
-# case args.size
-# when 2
-#   cmd += [args.first, "-o", args.last]
-# else
-#   unless args.include? "-o"
-#     cmd << "-O" # write to file named after remote name
-#   end
-#   cmd += args
-# end
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if opts.delete("--mhtml")
+  getter = :urlsnap
+else
+  getter = :curl
+end
+
+args.each do |arg|
+  send(getter, arg)
+end
