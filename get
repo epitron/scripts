@@ -21,7 +21,6 @@ def urlsnap(url)
   puts "  |_ input: #{url}"
   print "  |_ output: #{outfile}"
   run(*cmd)
-  puts "* Done:"
   system("ls", "-l", outfile)
   puts
 end
@@ -43,7 +42,7 @@ end
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-if opts.delete("--mhtml")
+if opts.delete("--mhtml") or opts.delete("-s") or opts.delete("-m")
   getter = :urlsnap
 else
   getter = :curl
