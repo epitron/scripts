@@ -104,12 +104,17 @@ reponame = clone(
 if reponame
   fork { exec("subl", reponame) } if opts.edit?
   readmes = Dir.foreach(reponame).select { |f| f[/^readme/i] }.sort_by(&:size)
+
   if readme = readmes.first
     Dir.chdir(reponame)
     if opts.wiki?
       wiki = repo.sub(/(\/$|\.git$|$)/, ".wiki.git")
       clone(wiki, "wiki", shallow: opts[:shallow])
     end
-    system("c", readme, "wiki")
+
+    args = [readme]
+    args << "wiki" if opts.wiki?
+
+    system("c", *args)
   end
 end
