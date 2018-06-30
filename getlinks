@@ -77,7 +77,15 @@ def strip_trackers(url)
 end
 
 def absolute_uri(root, url)
-  URI.join( root, url ).to_s
+  begin
+    URI.join(root, url)
+  rescue URI::InvalidURIError
+    # Unicode nonsense
+    a, b = url.split("#")
+    url = URI.encode(a)
+    url << "#" + URI.encode(b) if b
+    URI.join(root, url)
+  end.to_s
 end
 
 def relative_url?(url)
@@ -91,7 +99,7 @@ end
 #########################################################################
 
 def get_links(url, types=TYPES, regexp=nil)
-  if url =~ %r{^http?s://.+}
+  if url =~ %r{^https?://.+}
     data             = HTTP.get(url).body.to_s
     root_is_relative = relative_url?(url)
   elsif File.exists? url
