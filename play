@@ -41,7 +41,7 @@ end
 
 def which(bin)
   return bin if bin[0] == "/" and File.exists?(bin)
-    
+
   ENV["PATH"].split(":").each do |dir|
     full_path = File.join(dir, bin)
     return full_path if File.exists? full_path
@@ -71,7 +71,7 @@ if missing_binaries.any?
   puts "ERROR: Can't find the following programs: #{missing_binaries.join(", ")}"
   puts "       Please install them."
   exit 1
-end 
+end
 
 ###################################################################################################
 
@@ -102,7 +102,7 @@ end
 ###################################################################################################
 
 class LogEntry < OpenStruct
-  
+
   def self.from_line(line, pos)
     timestamp, url, title = line.strip.split(" | ", 3)
     date, time            = timestamp.split
@@ -193,9 +193,9 @@ end
 
 def play_click_sound
   file = File.expand_path("~/scripts/sounds/click.mp3")
-  
+
   if best = which_is_best?("/bin/play", "mplayer", "mpg123", "mpv")
-    fork { run(best, file).last.success? } 
+    fork { run(best, file).last.success? }
   end
 end
 
@@ -231,7 +231,7 @@ def log_entries
     open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
     log = open(LOGFILE)
     meth = :from_line
-  end  
+  end
   log.reverse_each.lazy.with_index.map { |logline, i| LogEntry.send(meth, logline, i+1) }
 end
 
@@ -288,7 +288,7 @@ def info(nums)
       next if v.nil? or (v.respond_to?(:empty?) and v.empty?)
 
       print "<11>#{k}<8>: ".colorize
-      
+
       v = case v
       when Numeric then "<15>#{v}"
       when Hash then v.to_s
@@ -299,9 +299,9 @@ def info(nums)
           v
         end
       when Array
-        v.join("<8>, </8>") 
+        v.join("<8>, </8>")
       end
-      
+
       puts v.colorize
 
     end
@@ -367,7 +367,7 @@ def search_history(query: nil, amount: 10, reverse: true, paged: false)
     indent += " " * (max_pos_width + 2)
 
     headline = "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}"
-    if result.respond_to? :uploader
+    if result.respond_to?(:uploader) and result.uploader
       headline << " <8>(<1>#{result.uploader}<8>)"
     end
 
@@ -437,7 +437,7 @@ def download(*urls, audio_only: false)
         "--sub-format", "srt/ass/vtt/best",
       ]
     end
-    
+
     cmd << url.to_s
 
     system *cmd
@@ -537,8 +537,8 @@ def play(url, foreground: false, verbose: false, audio_only: false)
       cmd << audio["url"]
     else
       cmd += [
-        video["url"], 
-        "--audio-file", 
+        video["url"],
+        "--audio-file",
         audio["url"],
       ]
     end
@@ -601,7 +601,7 @@ if $0 == __FILE__
   if args.all? &:number?
     # all args are numbers
     nums = args.map(&:to_i)
-  elsif args.all? &:url? 
+  elsif args.all? &:url?
     # all args are urls
     urls = args
   else
