@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+########################################################
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+########################################################
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: cast [options]"
+
+  on "p",  "pause",   "Pause/unpause"
+  on "a",  "add",     "Enqueue URL"
+  on "s",  "scan",    "Scan devices"
+  on "d=", "device",  "Set Chromecast device"
+  on "t=", "seek",    "Seek to time"
+  on "n",  "next",    "Go to next playlist entry"
+  on "u=", "url",     "Show an URL"
+  on "i",  "info",    "Info about the currently playing thing"
+  on "v",  "verbose", "Show extended info"
+end
+
+args = ARGV
+
+########################################################
+
+def catt(command, *args, device: nil)
+  cmd = ["catt"]
+  cmd += ["-d", device] if device
+  cmd << command
+  cmd += args
+
+  p cmd; puts
+  system *cmd
+end
+
+########################################################
+
+def repl(opts={})
+  require 'readline'
+
+  device = opts[:device]
+
+  loop do
+    input = Readline.readline("> ", true)
+    return unless input and not input.empty?
+
+    cmd, args = input.split
+    args      = [args].flatten.compact
+
+    case cmd
+    when "help", "?"
+      catt("--help")
+      puts "...and..."
+      puts "  device        Set Chromecast device"
+      puts "  help          Show this!"
+
+    when "device"
+      if args.empty?
+        if device
+          puts "device: #{device}"
+        else
+          Path["~/.config/catt/catt.cfg"].
+            grep(/^device/).
+            each { |line| puts line }
+        end
+      else
+        device = args.join(" ")
+        puts "Device changed to: #{device.inspect}"
+      end
+
+    when "devices"
+      catt("scan")
+
+    else
+      catt(cmd, *args, device: device)
+    end
+  end
+end
+
+########################################################
+
+if args.empty?
+  repl(opts)
+else
+  if opts.scan?
+    catt("scan")
+  elsif opts.info?
+    catt("status")
+  elsif opts.next?
+    catt("skip")
+  elsif time = opts[:seek]
+    catt("seek", time)
+  elsif url = opts[:url]
+    catt("cast_site", url)
+  else
+    catt("cast", args.pop) unless opts.add?
+    args.each { |arg| catt("add", arg) }
+  end
+end

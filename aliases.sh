@@ -202,7 +202,6 @@ alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
 alias columns='cols'
-alias cast='catt cast'
 
 # archives
 alias ax="aunpack"
