@@ -29,8 +29,43 @@ def catt(command, *args, device: nil)
   cmd << command
   cmd += args
 
-  p cmd; puts
+  # p cmd; puts
   system *cmd
+end
+
+########################################################
+
+def help
+  @help ||= `catt --help`
+end
+
+def help_commands
+  help.split_after(/Commands:/).to_a.last.each_line.map { |line| line.strip.split }.compact
+end
+
+def valid_commands
+  help_commands.map &:first
+end
+
+def config_lines
+  path = Path["~/.config/catt/catt.cfg"]
+  if path.exists?
+    path.each_line
+  else
+    []
+  end
+end
+
+def devices
+  @devices ||= `catt scan`.each_line.reject { |l| l["Scanning"] }
+end
+
+def aliases
+  config_lines.split_after("[aliases]").to_a.last
+end
+
+def playing?
+  `catt status`.each_line.grep(/State: PLAYING/).any?
 end
 
 ########################################################
@@ -38,20 +73,26 @@ end
 def repl(opts={})
   require 'readline'
 
+  Thread.new { help } # pre-cache help
+
   device = opts[:device]
 
   loop do
     input = Readline.readline("> ", true)
-    return unless input and not input.empty?
+    unless input and not input.empty?
+      puts
+      return
+    end
 
     cmd, args = input.split
     args      = [args].flatten.compact
 
     case cmd
     when "help", "?"
-      catt("--help")
-      puts "...and..."
+      puts help
       puts "  device        Set Chromecast device"
+      puts "  alises        Show device aliases"
+      puts "  devices       Show available devices and aliases"
       puts "  help          Show this!"
 
     when "device"
@@ -59,39 +100,72 @@ def repl(opts={})
         if device
           puts "device: #{device}"
         else
-          Path["~/.config/catt/catt.cfg"].
-            grep(/^device/).
-            each { |line| puts line }
+          config_lines.grep(/^device/).each &:displayln
         end
       else
         device = args.join(" ")
         puts "Device changed to: #{device.inspect}"
       end
 
+    when "aliases"
+      puts aliases
+
     when "devices"
-      catt("scan")
+      puts "Aliases:"
+      puts aliases
+      puts
+      puts "Devices:"
+      puts devices
+
+    when "volume"
+      if args.empty?
+        puts `catt status`.each_line.grep(/^Volume:/)
+      else
+        volume = args.first.to_i.clamp(0..100)
+        puts "Setting volume to #{volume}"
+        catt("volume", volume.to_s)
+      end
+
+    when "commands"
+      p valid_commands
 
     else
-      catt(cmd, *args, device: device)
+      if valid_commands.include? cmd
+        catt(cmd, *args, device: device)
+      else
+        puts "Error: #{cmd.inspect} is not a valid command"
+      end
+
     end
   end
 end
 
 ########################################################
 
-if args.empty?
-  repl(opts)
+
+if opts.scan?
+  catt("scan")
+elsif opts.info?
+  catt("status")
+elsif opts.verbose?
+  catt("info")
+elsif opts.next?
+  catt("skip")
+elsif opts.pause?
+  if playing?
+    puts "Pausing..."
+    catt("pause")
+  else
+    puts "Playing..."
+    catt("play")
+  end
+elsif time = opts[:seek]
+  catt("seek", time)
+elsif url = opts[:url]
+  catt("cast_site", url)
 else
-  if opts.scan?
-    catt("scan")
-  elsif opts.info?
-    catt("status")
-  elsif opts.next?
-    catt("skip")
-  elsif time = opts[:seek]
-    catt("seek", time)
-  elsif url = opts[:url]
-    catt("cast_site", url)
+  if args.empty?
+    repl(opts)
   else
     catt("cast", args.pop) unless opts.add?
     args.each { |arg| catt("add", arg) }
