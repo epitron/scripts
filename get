@@ -1,6 +1,22 @@
 #!/usr/bin/env ruby
 ########################################################
+gem 'slop', "~> 3.6"
+require 'slop'
 require 'uri'
+# require 'epitools'
+########################################################
+
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: get [options]"
+
+  on "m",  "mhtml",  "Capture page and assets as an MHTML file (requires 'urlsnap')"
+  on "o=", "output", "Output filename (defaults to guessing based on URL)"
+end
+
+args = ARGV
+
 ########################################################
 
 def run(*cmd)
@@ -10,10 +26,15 @@ def run(*cmd)
   puts
 end
 
-def urlsnap(url)
+def urlsnap(url, output: nil)
   uri = URI.parse(url)
-  outfile = uri.path.split("/").reject(&:empty?).last
-  outfile = File.basename(outfile, ".*") + ".mhtml"
+
+  if output
+    outfile = "#{output}.mhtml" unless output[/\.mhtml$/]
+  else
+    outfile = uri.path.split("/").reject(&:empty?).last
+    outfile = File.basename(outfile, ".*") + ".mhtml"
+  end
 
   cmd = ["urlsnap", "--mhtml=#{outfile}", url]
 
@@ -25,29 +46,34 @@ def urlsnap(url)
   puts
 end
 
-def curl(url)
+def curl(url, output: nil)
+  puts " Curling:"
+  puts " |_ input: #{url}"
+  puts " |_ output: #{output}" if output
+
   cmd = [
     "curl",
     "-L",       # follow redirects
     "--xattr",  # xattrs
     "-C", "-",  # resume at whatever the output file size is
-    "-O",       # write to file named after remote name
-    url
   ]
+
+  if output
+    cmd += ["-o", output]
+  else
+    cmd << "-O" # write to file named after remote name
+  end
+
+  cmd << url
 
   run(*cmd)
 end
 
 ########################################################
 
-opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
-
-if opts.delete("--mhtml") or opts.delete("-s") or opts.delete("-m")
-  getter = :urlsnap
-else
-  getter = :curl
-end
+getter = opts.mhtml? ? :urlsnap : :curl
 
 args.each do |arg|
-  send(getter, arg)
+  send(getter, arg, output: opts[:output])
 end
+
