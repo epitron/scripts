@@ -70,6 +70,71 @@ end
 
 ########################################################
 
+def process_command(cmd, args, device: nil)
+  case cmd
+  when "help", "?"
+    puts help
+    puts "  device        Set Chromecast device"
+    puts "  alises        Show device aliases"
+    puts "  devices       Show available devices and aliases"
+    puts "  help          Show this!"
+
+  when "device"
+    if args.empty?
+      if device
+        puts "device: #{device}"
+      else
+        config_lines.grep(/^device/).each &:displayln
+      end
+    else
+      device = args.join(" ")
+      puts "Device changed to: #{device.inspect}"
+    end
+
+  when "aliases"
+    puts aliases
+
+  when "devices"
+    puts "Aliases:"
+    puts aliases
+    puts
+    puts "Devices:"
+    puts devices
+
+  when "pos"
+    puts `catt status`.each_line.grep(/^Time:/)
+
+  when "seek"
+    if args.empty?
+      process_command("pos")
+    else
+      process_command("seek", args)
+    end
+
+  when "volume"
+    if args.empty?
+      puts `catt status`.each_line.grep(/^Volume:/)
+    else
+      volume = args.first.to_i.clamp(0..100)
+      puts "Setting volume to #{volume}"
+      catt("volume", volume.to_s)
+    end
+
+  when "commands"
+    p valid_commands
+
+  else
+    if valid_commands.include? cmd
+      catt(cmd, *args, device: device)
+    else
+      puts "Error: #{cmd.inspect} is not a valid command"
+    end
+
+  end
+end
+
+########################################################
+
 def repl(opts={})
   require 'readline'
 
@@ -87,61 +152,11 @@ def repl(opts={})
     cmd, args = input.split
     args      = [args].flatten.compact
 
-    case cmd
-    when "help", "?"
-      puts help
-      puts "  device        Set Chromecast device"
-      puts "  alises        Show device aliases"
-      puts "  devices       Show available devices and aliases"
-      puts "  help          Show this!"
-
-    when "device"
-      if args.empty?
-        if device
-          puts "device: #{device}"
-        else
-          config_lines.grep(/^device/).each &:displayln
-        end
-      else
-        device = args.join(" ")
-        puts "Device changed to: #{device.inspect}"
-      end
-
-    when "aliases"
-      puts aliases
-
-    when "devices"
-      puts "Aliases:"
-      puts aliases
-      puts
-      puts "Devices:"
-      puts devices
-
-    when "volume"
-      if args.empty?
-        puts `catt status`.each_line.grep(/^Volume:/)
-      else
-        volume = args.first.to_i.clamp(0..100)
-        puts "Setting volume to #{volume}"
-        catt("volume", volume.to_s)
-      end
-
-    when "commands"
-      p valid_commands
-
-    else
-      if valid_commands.include? cmd
-        catt(cmd, *args, device: device)
-      else
-        puts "Error: #{cmd.inspect} is not a valid command"
-      end
-
-    end
+    process_command(cmd, args, device: device)
   end
 end
 
 ########################################################
-
 
 if opts.scan?
   catt("scan")
