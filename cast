@@ -23,7 +23,7 @@ args = ARGV
 
 ########################################################
 
-def catt(command, *args, device: nil)
+def catt(command, *args, device: nil, stderr: true)
   cmd = ["catt"]
   cmd += ["-d", device] if device
   cmd << command
@@ -68,16 +68,47 @@ def playing?
   `catt status`.each_line.grep(/State: PLAYING/).any?
 end
 
+def playpause
+  if playing?
+    puts "Pausing..."
+    catt("pause")
+  else
+    puts "Playing..."
+    catt("play")
+  end
+end
+
+def monitor(delay=1)
+  begin
+    last_update = Time.now
+
+    print "\e[H\e[J" # clear
+    loop do
+      print "\e[1;1H" # home
+      process_command("status")
+
+      elapsed = Time.now-last_update
+      sleep(delay-elapsed) if elapsed < delay
+
+      last_update = Time.now
+    end
+  rescue Interrupt
+  end
+end
+
 ########################################################
 
-def process_command(cmd, args, device: nil)
+def process_command(cmd, *args, device: nil)
   case cmd
   when "help", "?"
     puts help
     puts "  device        Set Chromecast device"
     puts "  alises        Show device aliases"
     puts "  devices       Show available devices and aliases"
-    puts "  help          Show this!"
+    puts "  seek/pos      Show/set seek position"
+    puts "  volume        Show/set volume"
+    puts "  commands      Show available commands"
+    puts "  help          This!"
 
   when "device"
     if args.empty?
@@ -101,17 +132,14 @@ def process_command(cmd, args, device: nil)
     puts "Devices:"
     puts devices
 
-  when "pos"
-    puts `catt status`.each_line.grep(/^Time:/)
-
-  when "seek"
+  when "seek", "pos"
     if args.empty?
-      process_command("pos")
+      puts `catt status`.each_line.grep(/^Time:/)
     else
-      process_command("seek", args)
+      catt("seek", args.first)
     end
 
-  when "volume"
+  when "volume", "vol"
     if args.empty?
       puts `catt status`.each_line.grep(/^Volume:/)
     else
@@ -119,6 +147,15 @@ def process_command(cmd, args, device: nil)
       puts "Setting volume to #{volume}"
       catt("volume", volume.to_s)
     end
+
+  when "s"
+    process_command("status")
+
+  when "monitor", "mon"
+    monitor
+
+  when "next"
+    process_command("skip")
 
   when "commands"
     p valid_commands
@@ -152,7 +189,7 @@ def repl(opts={})
     cmd, args = input.split
     args      = [args].flatten.compact
 
-    process_command(cmd, args, device: device)
+    process_command(cmd, *args, device: device)
   end
 end
 
@@ -167,13 +204,7 @@ elsif opts.verbose?
 elsif opts.next?
   catt("skip")
 elsif opts.pause?
-  if playing?
-    puts "Pausing..."
-    catt("pause")
-  else
-    puts "Playing..."
-    catt("play")
-  end
+  playpause
 elsif time = opts[:seek]
   catt("seek", time)
 elsif url = opts[:url]
