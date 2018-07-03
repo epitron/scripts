@@ -1,1 +1,4 @@
-redshift -O 5500 -g 1.0
+#!/bin/bash
+for output in `xrandr | grep " connected" | fields 1`; do
+  xrandr --output $output --gamma 1:1:1
+done
