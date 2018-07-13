@@ -306,7 +306,7 @@ alias us='upm search'
 
 # arch
 alias pacman='sudoifnotroot pacman'
-alias pacs='\pacman -Ss'   # search for package
+# alias pacs='\pacman -Ss'   # search for package
 alias pacf='\pacman -Ql|grep' # which package contains this file?
 alias pacq='\pacman -Q|grep'  # find a package
 alias pacg='\pacman -Qg'   # show groups
