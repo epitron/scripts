@@ -55,7 +55,7 @@ end
 
 class Anagrammer
 
-  attr_accessor :words
+  attr_accessor :words, :grouped
 
   SHORTWORDS = %w[
     a in be to if in of at it ho no ye yo we
@@ -98,7 +98,7 @@ class Anagrammer
   def words_from(letters)
     return to_enum(:words_from, letters) unless block_given?
 
-    letters = letters.sort
+    # letters = letters.sort
 
     letters.size.downto(1) do |n|
       letters.combination(n) do |perm| # NB: combination() thoughtfully returns the letters in sorted order! :D
@@ -141,7 +141,7 @@ class Anagrammer
     exit 74 # EX_IOERR
   rescue Interrupt
     $stderr.puts "Interrupted"
-  end    
+  end
 
 end
 
