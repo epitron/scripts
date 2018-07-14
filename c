@@ -17,15 +17,15 @@
 #
 #
 # TODOs:
-#   * Add gem/program dependencies to functions (using a DSL) 
+#   * Add gem/program dependencies to functions (using a DSL)
 #     |_ "install all dependencies" can use it
-#     |_ error/warning when dependency isn't installed, plus a fallback codepath  
+#     |_ error/warning when dependency isn't installed, plus a fallback codepath
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Fix "magic" (use hex viewer when format isn't recognized)
 #   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
-#   * Easy fix: Change `print_*` methods to receive a string (raw data) *or* a Pathname/File 
+#   * Easy fix: Change `print_*` methods to receive a string (raw data) *or* a Pathname/File
 #
 ##############################################################################
 require 'pathname'
@@ -80,6 +80,7 @@ EXT_HIGHLIGHTERS = {
   ".ws"             => :xml,
   ".ui"             => :xml,
   ".opml"           => :xml,
+  ".dfxp"           => :xml,
   ".stp"            => :javascript, # systemtap
   ".ml"             => pygmentize,
   ".nim"            => rougify,
@@ -671,7 +672,7 @@ def print_bookmarks(filename)
   doc = Nokogiri::HTML(open(filename))
 
   Enumerator.new do |out|
-    doc.search("a").each do |a| 
+    doc.search("a").each do |a|
       out << "\e[1;36m#{a.inner_text}\e[0m"
       out << "  #{a["href"]}"
       out << ""
@@ -821,10 +822,10 @@ def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   result = nil
   %w[pem der net].each do |cert_format|
-    result = run("openssl", "x509", 
+    result = run("openssl", "x509",
         "-fingerprint", "-text", "-noout",
-        "-inform", cert_format, 
-        "-in", filename, 
+        "-inform", cert_format,
+        "-in", filename,
         stderr: true).read
 
     break unless result =~ /unable to load certificate/
@@ -1074,6 +1075,8 @@ def convert(arg)
         print_rtf(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
+      # when *%w[.dfxp .xml]
+      #   pretty_xml(arg)
       when *%w[.xml]
         print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
       when *%w[.csv .xls]
