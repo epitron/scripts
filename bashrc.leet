@@ -16,10 +16,11 @@ source "$SCRIPTDIR/aliases.sh"
 
 ## Environment Variables
 
-# Things for the PATH
+# Things for the PATH (in reverse order of precedence)
 path_prepend ~/node_modules/.bin
 path_prepend ~/.gem/bin
 path_prepend ~/.nimble/bin
+path_prepend ~/.luarocks/bin
 path_prepend ~/go/bin
 path_prepend ~/.local/bin
 path_prepend $SCRIPTDIR
