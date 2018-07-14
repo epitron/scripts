@@ -78,32 +78,6 @@ end
 
 ###################################################################################################
 
-# PLAYERS  = [
-#   [          "mpv", proc { |url, title| ["mpv", "--force-media-title", title, url] } ],
-#   [ "baka-mplayer", proc { |url, title| ["baka-mplayer", "-title", title, url] } ],
-#   [       "parole", proc { |url, title| ["parole", "-i", xspf_file(title, url)] } ],
-#   [        "totem", proc { |url, title| ["totem", xspf_file(title, url).path] } ],
-#   [      "mplayer", proc { |url, title| ["mplayer", "-title", title, "-cache", "20000", "-cache-min", "0.0128", url] } ],
-# ]
-
-# PLAYER_NAMES = PLAYERS.map(&:first)
-
-# def best_player
-#   PLAYERS.each do |bin, command|
-#     return bin if which(bin)
-#   end
-#   nil
-# end
-
-# #
-# # Returns a proc that takes two args: "url" and "title"
-# #
-# def player_proc(bin)
-#   Hash[PLAYERS][bin]
-# end
-
-###################################################################################################
-
 class LogEntry < OpenStruct
 
   def self.from_line(line, pos)
@@ -201,28 +175,6 @@ def play_click_sound
     fork { run(best, file).last.success? }
   end
 end
-
-###################################################################################################
-
-# def xspf_file(title, media_url)
-#   require 'tempfile'
-#   require 'cgi'
-
-#   xml = %{<?xml version="1.0" encoding="UTF-8"?>
-# <playlist version="1" xmlns="http://xspf.org/ns/0/">
-#  <trackList>
-#   <track>
-#    <title>#{CGI.escape_html title}</title>
-#    <location>#{CGI.escape_html  media_url}</location>
-#   </track>
-#  </trackList>
-# </playlist>}
-
-#   file = Tempfile.create ["play", ".xspf"]
-#   file.puts xml
-#   file.close
-#   file
-# end
 
 ###################################################################################################
 
@@ -478,31 +430,44 @@ end
 
 ###################################################################################################
 
-def cast(url, enqueue=false, device=nil)
-  cmd  = ["catt"]
-  cmd += ["-d", device] if device
-  if enqueue
-    cmd << "add"
-    verb = "Enqueueing:"
-  else
-    cmd << "cast"
-    verb = "Casting:"
-  end
-  cmd << url.to_s
-
-  if url.is_a? LogEntry
-    notify(:video, verb, url.title, time: 4)
-  else
-    notify(:info, "Looking up:", url.to_s, time: 3)
-    fork do
-      json = youtube_json(url.to_s)
-      write_to_log(url.to_s, json)
-      notify(:video, verb, json["title"], time: 4)
+def cast(*urls, enqueue: false, device: nil)
+  if urls.size > 1
+    # recursively cast/enqueue urls
+    unless enqueue
+      cast(urls.shift, enqueue: false, device: device)
     end
-  end
 
-  # Process.daemon(true) unless foreground
-  system(*cmd)
+    urls.each do |url|
+      cast(url, enqueue: true, device: device)
+    end
+  else
+    url = urls.first
+    cmd  = ["catt"]
+    cmd += ["-d", device] if device
+
+    if enqueue
+      cmd << "add"
+      msg = "Enqueueing:"
+    else
+      cmd << "cast"
+      msg = "Casting:"
+    end
+    cmd << url.to_s
+
+    if url.is_a? LogEntry
+      notify(:video, msg, url.title, time: 4)
+    else
+      notify(:info, "Looking up:", url.to_s, time: 3)
+      fork do
+        json = youtube_json(url.to_s)
+        write_to_log(url.to_s, json)
+        notify(:video, msg, json["title"], time: 4)
+      end
+    end
+
+    # Process.daemon(true) unless foreground
+    system(*cmd)
+  end
 end
 
 ###################################################################################################
@@ -635,19 +600,12 @@ if $0 == __FILE__
 
   elsif urls
 
-    urls.each do |url|
-      if opts.download?
-        download(url, audio_only: opts.audio?)
-      else
-        # if opts[:player]
-        #   play(url, opts[:player])
-        # else
-        #   notify(:error, "Could not find a player!", "You must install one of the following: #{PLAYER_NAMES.join(", ")}")
-        #   exit 1
-        # end
-
-        if opts.cast? or opts.enqueue? or opts.device?
-          cast(url, opts.enqueue?, opts[:device])
+    if opts.cast? or opts.enqueue? or opts.device?
+      cast(*urls, enqueue: opts.enqueue?, device: opts[:device])
+    else
+      urls.each do |url|
+        if opts.download?
+          download(url, audio_only: opts.audio?)
         elsif which("mpv")
           play(url, foreground: opts["no-daemon"], verbose: opts.verbose?, audio_only: opts.audio?)
         else
