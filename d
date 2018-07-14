@@ -8,14 +8,16 @@ require 'epitools/colored'
 ###############################################################################
 
 TYPE_INFO = [
-  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :white],
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :light_yellow],
+  [:data,    /\.(json|ya?ml)$/i,                           :yellow],
+  [:config,  /\.(conf|ini)$/i,                             :cyan],
   [:music,   /\.(mp3|ogg|m4a)$/i,                          :purple],
   [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
-  [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
+  [:sidecar, /\.(srt|idx|sub|asc|sig|log)$/i,              :grey],
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
-  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc))$/i,:light_white],
+  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc|log))$/i,:light_white],
   [:dotfile, /^\../i,                                      :grey],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2|gem)$/i, :light_yellow]
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2|tgz|pixz|gem)$/i, :light_yellow]
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -212,7 +214,7 @@ grouped.each do |dir, paths|
   elsif opts["reverse-size"]
     paths.sort_by!(&:size).reverse!
   else
-    paths.sort_by!(&:path)
+    paths.sort_by! { |path| path.path.downcase }
   end
 
   if opts.dirs_first?
