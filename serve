@@ -81,7 +81,15 @@ puts %q{
 |____/ \___|_|    \_/ |_|_| |_|\__, | |_| |_| |_|\___|\__,_|_|\__,_(_|_|_)
                                |___/             }
 puts
-puts "ADDRESS: http://#{host}:#{port}/"
+
+if host == "0.0.0.0"
+  Socket.ip_address_list.each do |addr|
+    puts "ADDRESS: http://#{addr.ip_address}:#{port}/" if addr.afamily == 2
+  end
+else
+  puts "ADDRESS: http://#{host}:#{port}/"
+end
+
 puts " SOURCE: #{settings.root_dir}"
 puts
 
