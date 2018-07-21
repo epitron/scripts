@@ -88,7 +88,7 @@ cmd << "-enable-kvm" if opts.kvm?
 
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
-cmd += ["-object", "rng-random,id=rando,filename=/dev/random"]
+cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
 
 if opts.console?
   # cmd += %w[-nographic -serial mon:stdio -append 'console=ttyS0']
@@ -127,9 +127,9 @@ end
 isos.each  { |iso| cmd += ["-cdrom", iso] }
 
 # Networking
-netopts = "user"
+netopts = "user,id=usernet"
 
-netops += ",restrict=on" if opts.restrict?
+netopts += ",restrict=on" if opts.restrict?
 
 if port = opts[:port]
   src, dest = port.split(":")
@@ -137,8 +137,8 @@ if port = opts[:port]
   netopts += ",hostfwd=tcp::#{src}-:#{dest}"
 end
 
-cmd += ["-net", netopts]
-cmd += ["-net", "nic"]
+cmd += ["-netdev", netopts]
+cmd += ["-net", "nic,netdev=usernet"]
 
 p cmd if opts.verbose?
 
