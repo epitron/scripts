@@ -78,14 +78,14 @@ def playpause
   end
 end
 
-def monitor(delay=1)
+def monitor(delay=1, device: nil)
   begin
     last_update = Time.now
 
     print "\e[H\e[J" # clear
     loop do
       print "\e[1;1H" # home
-      process_command("status")
+      process_command("status", device: device)
 
       elapsed = Time.now-last_update
       sleep(delay-elapsed) if elapsed < delay
@@ -97,6 +97,10 @@ def monitor(delay=1)
 end
 
 ########################################################
+
+def status(device=nil)
+  `catt #{"-d #{device} " if device}status`
+end
 
 def process_command(cmd, *args, device: nil)
   case cmd
@@ -134,28 +138,28 @@ def process_command(cmd, *args, device: nil)
 
   when "seek", "pos"
     if args.empty?
-      puts `catt status`.each_line.grep(/^Time:/)
+      puts status(device).each_line.grep(/^Time:/)
     else
-      catt("seek", args.first)
+      catt("seek", args.first, device: device)
     end
 
   when "volume", "vol"
     if args.empty?
-      puts `catt status`.each_line.grep(/^Volume:/)
+      puts status(device).each_line.grep(/^Volume:/)
     else
       volume = args.first.to_i.clamp(0..100)
       puts "Setting volume to #{volume}"
-      catt("volume", volume.to_s)
+      catt("volume", volume.to_s, device: device)
     end
 
   when "s"
-    process_command("status")
+    process_command("status", device: device)
 
   when "monitor", "mon"
-    monitor
+    monitor(device: device)
 
   when "next"
-    process_command("skip")
+    process_command("skip", device: device)
 
   when "commands"
     p valid_commands
@@ -196,24 +200,24 @@ end
 ########################################################
 
 if opts.scan?
-  catt("scan")
+  catt("scan", device: opts[:device])
 elsif opts.info?
-  catt("status")
+  catt("status", device: opts[:device])
 elsif opts.verbose?
-  catt("info")
+  catt("info", device: opts[:device])
 elsif opts.next?
-  catt("skip")
+  catt("skip", device: opts[:device])
 elsif opts.pause?
   playpause
 elsif time = opts[:seek]
-  catt("seek", time)
+  catt("seek", time, device: opts[:device])
 elsif url = opts[:url]
-  catt("cast_site", url)
+  catt("cast_site", url, device: opts[:device])
 else
   if args.empty?
     repl(opts)
   else
-    catt("cast", args.pop) unless opts.add?
-    args.each { |arg| catt("add", arg) }
+    catt("cast", args.pop, device: opts[:device]) unless opts.add?
+    args.each { |arg| catt("add", arg, device: opts[:device]) }
   end
 end
