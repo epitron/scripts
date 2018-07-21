@@ -32,14 +32,14 @@ class Systemd
     else
       cmd = root? ? %w[systemctl] : %w[sudo systemctl]
     end
-    
+
     cmd += args
 
     puts
     print "\e[30m\e[1m=>"
     print " \e[36m\e[1m#{opts[:msg]}" if opts[:msg]
     puts  " \e[30m\e[1m(\e[34m\e[1m#{cmd.join(" ")}\e[30m\e[1m)\e[0m"
-    puts 
+    puts
     system *cmd
   end
 
@@ -55,9 +55,9 @@ class Systemd
 
   # "command1>command2" means to call command2 whenever command1 is called
   # something starting with a ":" means to call a method
-  %w[start>status stop>status restart>status disable>stop enable>:start].each do |command|
+  %w[start>status stop>status restart>status disable>stop enable>:start mask>status unmask>status].each do |command|
     commands = command.split(">")
-    
+
     define_method commands.first do |service|
       commands.each do |command|
         case command
@@ -146,7 +146,7 @@ class Initd
 
     puts "Services (filtered by /#{query}/):"
     puts "================================================="
-    
+
     highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
 
     puts Term::Table.new(highlighted, :ansi=>true).by_columns
