@@ -149,6 +149,7 @@ alias whois='whois -H'
 alias geoip='geoiplookup'
 alias geoip6='geoiplookup6'
 alias iptraf='sudoifnotroot iptraf-ng'
+alias ip6='ip -6'
 
 # disks
 alias_all_as_sudo fdisk blkid
