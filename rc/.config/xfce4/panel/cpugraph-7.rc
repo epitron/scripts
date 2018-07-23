@@ -1,18 +1,18 @@
-UpdateInterval=1
+UpdateInterval=0
 TimeScale=0
-Size=58
-Mode=0
-Frame=1
-Border=1
+Size=50
+Mode=3
+Frame=0
+Border=0
 Bars=0
 TrackedCore=0
 Command=term htop
 InTerminal=0
 StartupNotification=1
-ColorMode=2
-Foreground1=#0381da9c56fd
-Foreground2=#d964ffff2f3a
+ColorMode=0
+Foreground1=#00001ad70000
+Foreground2=#0000ffff27a2
 Foreground3=#00000000ffff
 Background=#000000000000
-BarsColor=#0000092fffff
+BarsColor=#ffffe7a60000
 

@@ -17,9 +17,9 @@ Pry.history.loader = proc do |&block|
     File.foreach(fn) { |line| block.call(line) }
   end
 end
- 
+
 # history_file = nil
- 
+
 Pry.history.saver = proc do |line|
   if !@history_file
     Dir.mkdir(PRY_CONFIG_DIR) unless File.exists?(PRY_CONFIG_DIR)
@@ -219,7 +219,7 @@ end # no more rails!
 #   #   require 'awesome_print/ext/nokogiri'
 #   #   require 'nokogiri'
 #   # end
-  
+
 #   # # awesomeprint output
 #   # Pry.config.print = proc do |output, value|
 #   #   pretty = value.ai(:indent=>2)

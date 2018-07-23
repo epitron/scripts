@@ -1,5 +1,6 @@
 [
   { "keys": ["ctrl+t", "ctrl+r"], "command": "rebuild_tags" },
+  { "keys": ["alt+p"], "command": "git_push" },
   { "keys": ["alt+s"], "command": "git_status" },
   { "keys": ["alt+d"], "command": "git_diff" },
   { "keys": ["alt+w"], "command": "toggle_setting", "args": {"setting": "word_wrap"} },
