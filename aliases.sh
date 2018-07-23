@@ -277,9 +277,13 @@ gem-cd() {
 }
 
 pip-cd() {
-  cd ~/.local/lib/python3*/site-packages/$1
+  if [ -d ~/.local/lib/python*/site-packages/$1 ]; then
+    cd ~/.local/lib/python*/site-packages/$1
+  elif [ -d /usr/lib/python*/site-packages/$1 ]; then
+    cd /usr/lib/python*/site-packages/$1
+  fi
 }
-
+alias pycd=pip-cd
 
 # # 64/32bit specific aliases
 # case `uname -m` in
