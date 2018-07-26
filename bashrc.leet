@@ -3,28 +3,28 @@
 # The directory from which this script is being called
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Push a directory onto the path (if it exists)
-function path_prepend() {
-  if [ -d "$@" ]; then
-    export PATH="$@:$PATH"
-  fi
-}
-
 # Aliases
 source "$SCRIPTDIR/aliases.sh"
 
 
 ## Environment Variables
 
+# Push a directory onto the path (if it exists)
+function possibly_prepend_path() {
+  if [ -d "$@" ]; then
+    export PATH="$@:$PATH"
+  fi
+}
+
 # Things for the PATH (in reverse order of precedence)
-path_prepend ~/node_modules/.bin
-path_prepend ~/.gem/bin
-path_prepend ~/.nimble/bin
-path_prepend ~/.luarocks/bin
-path_prepend ~/go/bin
-path_prepend ~/.local/bin
-path_prepend $SCRIPTDIR
-path_prepend ~/bin
+possibly_prepend_path ~/node_modules/.bin
+possibly_prepend_path ~/.gem/bin
+possibly_prepend_path ~/.nimble/bin
+possibly_prepend_path ~/.luarocks/bin
+possibly_prepend_path ~/go/bin
+possibly_prepend_path ~/.local/bin
+possibly_prepend_path $SCRIPTDIR
+possibly_prepend_path ~/bin
 
 # Lovely less/man colors
 export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
