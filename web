@@ -53,6 +53,22 @@
 #     query  = "query=yes"
 ######################################################################################
 
+######################################################################################
+# .webrc (Local Config)
+######################################################################################
+#
+# You can add extra rules just for your specific machine by putting them in ~/.webrc.
+#
+# (The .webrc's contents are treated as regular Ruby code, and evaluated inside a
+# "routes do; ...; end" block.)
+#
+# Example .webrc:
+#
+#    match host: "another-video-site.com", path: "/videos/", &play_video
+#    match(host: "another-url-shortener.com") { |uri| route uri.follow_redirect }
+#
+######################################################################################
+
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
 BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
@@ -298,6 +314,14 @@ BEGIN {
 
   ######################################################################################
 
+  def load_rc_file
+    rc = File.expand_path("~/.webrc")
+    if File.exists? rc
+      $router.instance_eval File.read(rc)
+      # eval File.read(rc)
+    end
+  end
+
   def select_parents(query, &block)
     process = Sys.ps($$).first.parent
 
@@ -417,11 +441,6 @@ BEGIN {
   end
 
 }
-
-def load_rc_file
-  rc = File.expand_path("~/.web-rules")
-  eval File.read(rc) if File.exists? rc
-end
 
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }
