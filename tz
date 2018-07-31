@@ -325,42 +325,53 @@ end
 
 if __FILE__ == $0
   opts, args = parse_options
-  $verbose = opts.verbose?
+  $verbose   = opts.verbose?
+  magnets    = []
+  words      = []
 
-  query = args.join(" ")
-
-  # when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
-  # Detect
-  md5s = args.map { |arg| arg.strip =~ %r{^https?://.+/([a-f0-9]{40})}i ? $1 : nil }.compact + [opts[:add]]
-
-  md5s.compact!
-
-  if md5s.any?
-    # Process.daemon(true)
-    md5s.each do |md5|
-      # puts "#{md5}"
-      url = Result.new(md5).magnet_url
-      opts.print? ? (puts url) : (open_url url)
-    end
-  elsif opts.mirror?
-    mirror(query)
-  else
-    if opts.date?
-      order = :date
-    elsif opts.rating?
-      order = :rating
+  args.each do |arg|
+    case arg.strip
+    when /^magnet:/
+      magnets << arg
+    when %r{^https?://.+/([a-f0-9]{40})}i
+      magnets << Result.new($1).magnet_url
     else
-      order = Settings.order
+      words << arg
+    end
+  end
+
+
+  if magnets.any?
+
+    magnets.each do |magnet|
+      opts.print? ? puts(magnet) : open_url(magnet)
     end
 
-    page_size = opts[:num]&.to_i || Settings.page_size
-    results   = search(query, page_size, nil, order)
+  else
 
-    display(results)
+    query = words.join(" ")
 
-    chosen = choose_torrents(results)
-    chosen.each do |t|
-      opts.print? ? (puts t.magnet_url) : (open_url t.magnet_url)
+    if opts.mirror?
+      mirror(query)
+    else
+      if opts.date?
+        order = :date
+      elsif opts.rating?
+        order = :rating
+      else
+        order = Settings.order
+      end
+
+      page_size = opts[:num]&.to_i || Settings.page_size
+      results   = search(query, page_size, nil, order)
+
+      display(results)
+
+      chosen = choose_torrents(results)
+      chosen.each do |t|
+        opts.print? ? (puts t.magnet_url) : (open_url t.magnet_url)
+      end
     end
+
   end
 end
