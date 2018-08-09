@@ -1,6 +1,42 @@
 #!/usr/bin/env ruby
 
-for arg in ARGV
-  system("ffprobe", "-hide_banner", arg)
+class Numeric
+
+  def commatize(char=",")
+    int, frac = to_s.split(".")
+    int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
+
+    frac ? "#{int}.#{frac}" : int
+  end
+
+end
+
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if args.empty? or opts.include?("-h") or opts.include?("--help")
+  puts DATA.read
+  exit
+end
+
+verbose = (opts.delete("-v") or opts.delete("-a"))
+
+for arg in args
+  size = File.size(arg).commatize
+  date = File.mtime(arg).strftime("%Y-%m-%d")
+  puts "\e[1;33;1m#{arg} \e[0m(\e[1;37m#{date}\e[0m, \e[1;36m#{size} \e[0;36mbytes\e[0m)\e[0m"
+  IO.popen(["ffprobe", "-hide_banner", arg], "rb", err: [:child, :out]) do |io|
+    lines = io.each_line
+    lines = io.grep(/^\s+Stream/) unless verbose
+    lines.each { |line| puts line }
+  end
   puts
 end
+
+
+__END__
+usage:
+  ffmpeg-info [options] <filename(s)>
+
+options:
+  -v or -a    show all info (defaults to showing only the streams)
