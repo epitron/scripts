@@ -121,7 +121,6 @@ files.each do |inp|
 
   unless opts.mute?
     acodec = opts[:acodec]
-    acodec = "libfdk_aac" if acodec == "aac"
     cmd += ["-c:a", acodec]
   end
 
