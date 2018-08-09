@@ -1,68 +1,78 @@
 #!/bin/bash
 
+#if [ -f /etc/profile ]; then . /etc/profile; fi
+#PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/bin/X11:/usr/games:/usr/scripts:."
+
 # The directory from which this script is being called
-SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Aliases
-source "$SCRIPTDIR/aliases.sh"
+source "$DIR/aliases.sh"
 
-
-## Environment Variables
-
-# Push a directory onto the path (if it exists)
-function possibly_prepend_path() {
-  if [ -d "$@" ]; then
-    export PATH="$@:$PATH"
-  fi
-}
-
-# Things for the PATH (in reverse order of precedence)
-possibly_prepend_path ~/node_modules/.bin
-possibly_prepend_path ~/.gem/bin
-possibly_prepend_path ~/.nimble/bin
-possibly_prepend_path ~/.luarocks/bin
-possibly_prepend_path ~/go/bin
-possibly_prepend_path ~/.local/bin
-possibly_prepend_path $SCRIPTDIR
-possibly_prepend_path ~/bin
-
-# Lovely less/man colors
-export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
-export LESS_TERMCAP_md="`echo -e '\e[01;37m'`"
-export LESS_TERMCAP_me="`echo -e '\e[0m'`"
-export LESS_TERMCAP_se="`echo -e '\e[0m'`"
-export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
-export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
-export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
-
-# fzf
-if we_have fzf; then
-  if we_have bfs; then
-    export FZF_DEFAULT_COMMAND="bfs -color"
-    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-    export FZF_DEFAULT_OPTS="--ansi"
-  fi
-
-  . /usr/share/fzf/completion.bash
-  . /usr/share/fzf/key-bindings.bash
-fi
-
-# misc
 if [ "$EDITOR" == "" ]; then
   export EDITOR="nano"
 fi
-export PAGER=less
+
+if [ -d /usr/scripts ]; then
+  SCRIPTDIR=/usr/scripts
+elif [ -d ~/scripts ]; then
+  SCRIPTDIR=~/scripts
+fi
+export PATH=$SCRIPTDIR:$PATH
+
+if [ -d ~/bin ]; then
+  export PATH=~/bin:$PATH
+fi
+
+if [ -d ~/.gem/bin ]; then
+  export PATH=$PATH:~/.gem/bin
+fi
+
+## Ruby 1.8
+#if ruby -rubygems -e 1 > /dev/null 2>&1; then
+#  export RUBYOPT="rubygems"
+#fi
+
+## `noglob` alias disables globbing
+noglob_helper() {
+    "$@"
+    case "$shopts" in
+        *noglob*) ;;
+        *braceexpand*) ;;
+        *) set +f ;;
+    esac
+    unset shopts
+}
+
+alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
+
+## colors
 export CLICOLOR=1
-export PYTHONSTARTUP=~/.pystartup
-export XZ_OPT="--threads=0"
 #export TERM=xterm-color
 #export LSCOLORS=gxgxcxdxbxegedabagacad  # cyan directories
 
-if [ -f /proc/cpuinfo ]; then
-  export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
-  export MAKEOPTS="-j`expr $PROCESSORS + 1`"
-  export MAKEFLAGS="$MAKEOPTS"
-fi
+export PYTHONSTARTUP=~/.pystartup
+
+# colorful manpages
+man() {
+	env \
+		LESS_TERMCAP_mb=$(printf "\e[1;33m") \
+		LESS_TERMCAP_md=$(printf "\e[1;36m") \
+		LESS_TERMCAP_me=$(printf "\e[0m") \
+		LESS_TERMCAP_se=$(printf "\e[0m") \
+		LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+		LESS_TERMCAP_ue=$(printf "\e[0m") \
+		LESS_TERMCAP_us=$(printf "\e[1;38m") \
+			man "$@"
+}
+
+
+## FUCK YOU, ^S AND ^Q!!
+#stty stop undef
+#stty start undef
+
+## Pager
+
+export PAGER=less
 
 # Enable recursive glob (eg: **/*.txt)
 shopt -s globstar > /dev/null 2>&1
@@ -73,8 +83,19 @@ shopt -s checkwinsize
 # Verify ! history expansions
 shopt -s histverify
 
+## no display!
+#unset DISPLAY
 
-## Platform-specific customizations
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+
+#if [ -f /etc/bash_completion ]; then
+#    . /etc/bash_completion
+#fi
+# mkdir and cd, all in one!
+
+export XZ_OPT="--threads=0"
 
 case $(uname -s) in
   Darwin|FreeBSD)
@@ -87,7 +108,6 @@ case $(uname -s) in
     ;;
 esac
 
-
 case $(uname -o) in
   Android)
     . $SCRIPTDIR/bashrc.android
@@ -98,33 +118,8 @@ case $(uname -o) in
 esac
 
 
-## Disable TTY flow control (^S and ^Q)
-#stty stop undef
-#stty start undef
-
-# # Run a command without globbing (broken)
-# noglob_helper() {
-#     "$@"
-#     case "$shopts" in
-#         *noglob*) ;;
-#         *braceexpand*) ;;
-#         *) set +f ;;
-#     esac
-#     unset shopts
-# }
-# alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
-
-
-# colorful manpages
-# man() {
-#   env \
-#     LESS_TERMCAP_mb=$(printf "\e[1;33m") \
-#     LESS_TERMCAP_md=$(printf "\e[1;36m") \
-#     LESS_TERMCAP_me=$(printf "\e[0m") \
-#     LESS_TERMCAP_se=$(printf "\e[0m") \
-#     LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
-#     LESS_TERMCAP_ue=$(printf "\e[0m") \
-#     LESS_TERMCAP_us=$(printf "\e[1;38m") \
-#       man "$@"
-# }
-
+if [ -f /proc/cpuinfo ]; then
+  export PROCESSORS="`cat /proc/cpuinfo|grep "processor"|wc -l`"
+  export MAKEOPTS="-j`expr $PROCESSORS + 1`"
+  export MAKEFLAGS="$MAKEOPTS"
+fi

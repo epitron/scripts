@@ -53,22 +53,6 @@
 #     query  = "query=yes"
 ######################################################################################
 
-######################################################################################
-# .webrc (Local Config)
-######################################################################################
-#
-# You can add extra rules just for your specific machine by putting them in ~/.webrc.
-#
-# (The .webrc's contents are treated as regular Ruby code, and evaluated inside a
-# "routes do; ...; end" block.)
-#
-# Example .webrc:
-#
-#    match host: "another-video-site.com", path: "/videos/", &play_video
-#    match(host: "another-url-shortener.com") { |uri| route uri.follow_redirect }
-#
-######################################################################################
-
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
 BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
@@ -90,7 +74,6 @@ routes do
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed|attribution_link)}, &play_video
-  match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
   match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
@@ -314,14 +297,6 @@ BEGIN {
 
   ######################################################################################
 
-  def load_rc_file
-    rc = File.expand_path("~/.webrc")
-    if File.exists? rc
-      $router.instance_eval File.read(rc)
-      # eval File.read(rc)
-    end
-  end
-
   def select_parents(query, &block)
     process = Sys.ps($$).first.parent
 
@@ -441,6 +416,11 @@ BEGIN {
   end
 
 }
+
+def load_rc_file
+  rc = File.expand_path("~/.web-rules")
+  eval File.read(rc) if File.exists? rc
+end
 
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }

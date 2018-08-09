@@ -8,12 +8,10 @@ expr="$1"
 shift
 
 if [ "$#" == "0" ]; then # no directories specified
-  find -x . | grep -Ei --color=always "$expr"
-  # find -x . | ag "$expr"
+  find -x . | ag "$expr" # grep -Ei --color=always "$expr"
 else
   while (( "$#" )); do   # for each directory
-    find -x "$1" | grep -Ei --color=always "$expr"
-    # find -x "$1" | ag "$expr"
+    find -x "$1" | ag "$expr"  #grep -Ei --color=always "$expr"
     shift
   done
 fi

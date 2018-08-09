@@ -1,8 +1,0 @@
-#!/bin/bash
-
-if [ "$1" == "" ]; then
-  echo "usage: pacs <query>"
-  exit 1
-fi
-
-pacman --color=always -Ss "$@" | less -RSXFi

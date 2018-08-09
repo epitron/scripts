@@ -1,14 +1,57 @@
 #!/usr/bin/env ruby
+require 'epitools'
 
+acceptable = [
+  "Too many packets buffered for output stream",
+  "Application provided invalid, non monotonically increasing dts to muxer",
+  "packet fragment position invalid",
+  "Last message repeated",
+]
+
+puts "* Testing files..."
+
+errored = []
 for arg in ARGV
+  unless File.file?(arg)
+    puts "  |_ #{arg}: <11>not a file".colorize
+    next
+  end
+
+  unless IO.popen(["file", "-ib", arg], &:read)[%r{^video/}]
+    puts "  |_ #{arg}: is <11>not a video".colorize
+    next
+  end
+
   cmd = ["ffmpeg", "-v", "error", "-i", arg, "-f", "null", "-"]
+  print "  <8>|_ <15>#{arg}<8>: ".colorize
 
-  puts "========== #{arg} ================================="
-  system(*cmd)
+  output = IO.popen(cmd, err: [:child, :out]) { |io| io.read }
 
-  #output = IO.popen(cmd, err: [:child, :out]) { |io| io.read }
-  #if output[/Error/]
-  #  puts "========== #{arg} ================================="
-  #  puts "Error: #{output}"
-  #end
+  if output.empty?
+    puts "OK".light_green
+  else
+    lines = output.each_line.reject { |line| acceptable.any? { |str| line[str] } }
+    if lines.any?
+      puts "ERRORS!".light_red
+      errored << arg
+    else    
+      puts "some glitches... consider re-muxing".light_yellow
+    end
+    puts output.grey.indent("         ")
+  end
+end
+
+puts
+puts "----------------------------------------------------".grey
+puts "  <14>#{errored.size} <7>files with errors:".colorize
+puts "----------------------------------------------------".grey
+puts
+errored.each { |f| puts "<8>* <15>#{f}".colorize }
+puts
+
+if prompt("Trash them??".light_cyan, "yN") == "y"
+  system("trsh", *errored)
+  puts "Trashed!".light_red
+else
+  puts "no trashing!"
 end

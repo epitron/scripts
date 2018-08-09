@@ -1,4 +1,5 @@
 unalias rm
+unalias git
 unalias pacs
 alias pacu="pkg upgrade"
 

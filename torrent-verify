@@ -1,8 +1,0 @@
-#!/bin/bash
-
-if [ "$1" == "" ]; then
-  echo "usage: torrent-verify <file.torrent>"
-  exit 1
-fi
-
-aria2c -V --seed-time=0 "$1"

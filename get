@@ -1,79 +1,38 @@
 #!/usr/bin/env ruby
-########################################################
-gem 'slop', "~> 3.6"
-require 'slop'
-require 'uri'
-# require 'epitools'
-########################################################
-
-# Parse options
-
-opts = Slop.parse(help: true, strict: true) do
-  banner "Usage: get [options]"
-
-  on "m",  "mhtml",  "Capture page and assets as an MHTML file (requires 'urlsnap')"
-  on "o=", "output", "Output filename (defaults to guessing based on URL)"
-end
-
-args = ARGV
-
-########################################################
 
 def run(*cmd)
   puts
-  # puts cmd.map { |c| c[" "] ? "'#{c}'" : c }.join(" ")
+  puts cmd.map { |c| c[" "] ? "'#{c}'" : c }.join(" ")
   system *cmd
   puts
 end
 
-def urlsnap(url, output: nil)
-  uri = URI.parse(url)
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
 
-  if output
-    outfile = "#{output}.mhtml" unless output[/\.mhtml$/]
-  else
-    outfile = uri.path.split("/").reject(&:empty?).last
-    outfile = File.basename(outfile, ".*") + ".mhtml"
-  end
-
-  cmd = ["urlsnap", "--mhtml=#{outfile}", url]
-
-  puts "* Urlsnapping:"
-  puts "  |_ input: #{url}"
-  print "  |_ output: #{outfile}"
-  run(*cmd)
-  system("ls", "-l", outfile)
-  puts
-end
-
-def curl(url, output: nil)
-  puts " Curling:"
-  puts " |_ input: #{url}"
-  puts " |_ output: #{output}" if output
-
-  cmd = [
-    "curl",
-    "-L",       # follow redirects
-    "--xattr",  # xattrs
-    "-C", "-",  # resume at whatever the output file size is
-  ]
-
-  if output
-    cmd += ["-o", output]
-  else
-    cmd << "-O" # write to file named after remote name
-  end
-
-  cmd << url
-
-  run(*cmd)
-end
-
-########################################################
-
-getter = opts.mhtml? ? :urlsnap : :curl
+cmd = [
+  "curl",
+  "-L",       # follow redirects
+  "--xattr",  # xattrs
+  "-C", "-",  # resume at whatever the output file size is
+  "-O",       # write to file named after remote name
+]
 
 args.each do |arg|
-  send(getter, arg, output: opts[:output])
+  run *cmd, arg
 end
 
+
+
+# cmd << "-i" # print headers (doesn't work when writing to a file)
+# cmd << "-#" # progress bar
+# cmd << "-v" # verbosity
+
+# case args.size
+# when 2
+#   cmd += [args.first, "-o", args.last]
+# else
+#   unless args.include? "-o"
+#     cmd << "-O" # write to file named after remote name
+#   end
+#   cmd += args
+# end

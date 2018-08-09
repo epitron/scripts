@@ -664,24 +664,10 @@ if __FILE__ == $0
   end
 
   # INDEX file
-  if opts.reindex?
-    indexfile = zimfile.with(ext: "tsv")
-    puts "* Indexing #{zimfile}..."
-    IO.popen(["zimdump", "-L", zimfile.to_s]) do |inp|
-      indexfile.open("w") do |outp|
-        inp.each_line.with_index do |line, i|
-          outp.puts line
-          print "\e[G  |_ #{i.commatize}" if i % 357 == 0
-        end
-      end
-    end
-    puts "* #{indexfile} created (#{indexfile.size.commatize} bytes)"
+  if index = opts[:index]
+    indexfile = Path[index]
   else
-    if index = opts[:index]
-      indexfile = Path[index]
-    else
-      indexfile = zimfile.with(ext: "tsv")
-    end
+    indexfile = zimfile.with(ext: "tsv")
   end
 
   error("Couldn't find #{indexfile}") unless indexfile.exists?

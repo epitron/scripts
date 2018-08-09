@@ -53,24 +53,6 @@ TRACKERS = %w[
 
 ###########################################################
 
-def parse_options
-  opts = Slop.parse(help: true, strict: true) do
-    banner "Usage: tz [options] <query>"
-
-    on 'd',  'date',    'Sort by date'
-    on 'r',  'rating',  'Sort by rating'
-    on 'm',  'mirror',  'Retrieve all torrents'
-    on 'p',  'print',   'Print URLs'
-    on 'n=', 'num',     'Number of results (default: #{Settings.page_size})'
-    on 'a=', 'add',     'Add MD5 hash'
-    on 'v',  'verbose', 'Show details and stuff'
-  end
-
-  [opts, ARGV]
-end
-
-###########################################################
-
 module Settings
   extend self
 
@@ -300,6 +282,23 @@ end
 
 ###########################################################
 
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: tz [options] <query>"
+
+    on 'd',  'date',    'Sort by date'
+    on 'r',  'rating',  'Sort by rating'
+    on 'm',  'mirror',  'Retrieve all torrents'
+    on 'n=', 'num',     'Number of results (default: #{Settings.page_size})'
+    on 'a=', 'add',     'Add MD5 hash'
+    on 'v',  'verbose', 'Show details and stuff'
+  end
+
+  [opts, ARGV]
+end
+
+###########################################################
+
 def open_url(url)
   puts "open url"
   # Make sure the torrent client exists
@@ -315,7 +314,7 @@ def open_url(url)
 
   # # Fork into the background before running the client
   # fork { exec(*cmd, url) }
-
+  
   # Daemonize to kill the console spam
   Process.daemon(true)
   system(*cmd, url)
@@ -336,11 +335,11 @@ if __FILE__ == $0
   md5s.compact!
 
   if md5s.any?
-    # Process.daemon(true)
+    Process.daemon(true)
     md5s.each do |md5|
-      # puts "#{md5}"
+      puts "#{md5}"
       url = Result.new(md5).magnet_url
-      opts.print? ? (puts url) : (open_url url)
+      open_url(url)
     end
   elsif opts.mirror?
     mirror(query)
@@ -360,7 +359,7 @@ if __FILE__ == $0
 
     chosen = choose_torrents(results)
     chosen.each do |t|
-      opts.print? ? (puts t.magnet_url) : (open_url t.magnet_url)
+      open_url(t.magnet_url)
     end
   end
 end

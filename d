@@ -5,19 +5,18 @@ require 'slop'
 require 'epitools/rash'
 require 'epitools/path'
 require 'epitools/colored'
+require 'epitools/clitools'
 ###############################################################################
 
 TYPE_INFO = [
-  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :light_yellow],
-  [:data,    /\.(json|ya?ml)$/i,                           :yellow],
-  [:config,  /\.(conf|ini)$/i,                             :cyan],
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :white],
   [:music,   /\.(mp3|ogg|m4a)$/i,                          :purple],
   [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
-  [:sidecar, /\.(srt|idx|sub|asc|sig|log)$/i,              :grey],
+  [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
-  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc|log))$/i,:light_white],
+  [:doc,     /\.(txt|pdf)$/i,                              :light_white],
   [:dotfile, /^\../i,                                      :grey],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.gz|tar\.bz2|tgz|pixz|gem)$/i, :light_yellow]
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|bz2|xz)|gem)$/i, :light_yellow]
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -112,7 +111,7 @@ end
 
 ###############################################################################
 
-def print_paths(paths, long: false, regex: nil, hidden: false)
+def print_paths(paths, long: false, regex: nil, hidden: false, output: $stdout)
   paths = paths.select { |path| path.filename =~ regex } if regex
   paths = paths.reject &:hidden? unless hidden
 
@@ -121,11 +120,11 @@ def print_paths(paths, long: false, regex: nil, hidden: false)
       fn = path.colorized(regex: regex, wide: true)
       time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
       size = path.size rescue nil
-      puts "#{size.commatized_and_colorized} #{time} #{fn}"
+      output.puts "#{size.commatized_and_colorized} #{time} #{fn}"
     end
   else
     colorized_paths = paths.map { |path| path.colorized(regex: regex) }
-    puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
+    output.puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
   end
 end
 
@@ -156,11 +155,12 @@ opts = Slop.parse(help: true, strict: true) do
   on "l", "long",         'Long mode (with sizes and dates)'
   on "r", "recursive",    'Recursive'
   on "D", "dirs-first",   'Show directories first'
-  on "H", "hidden",       'Show hidden files'
+  on "a", "all"   ,       'Show all files (including hidden)'
   on "t", "time",         'Sort by modification time'
   on "T", "reverse-time", 'Sort by modification time (reversed)'
   on "s", "size",         'Sort by size'
   on "S", "reverse-size", 'Sort by size (reversed)'
+  on "p", "paged",        'Pipe output to "less"'
   on "n", "dryrun",       'Dry-run', false
   on "g=","grep",         'Search filenames'
   on "f=","find",         'Find in directory tree'
@@ -205,22 +205,22 @@ grouped.each do |dir, paths|
     paths = paths.select { |path| selected_types.include? path.type }
   end
 
-  if opts["time"]
+  if opts[:time] or opts["reverse-time"]
     paths.sort_by!(&:mtime)
-  elsif opts["reverse-time"]
-    paths.sort_by!(&:mtime).reverse!
-  elsif opts["size"]
+  elsif opts[:size] or opts["reverse-size"]
     paths.sort_by!(&:size)
-  elsif opts["reverse-size"]
-    paths.sort_by!(&:size).reverse!
   else
-    paths.sort_by! { |path| path.path.downcase }
+    paths.sort_by!(&:path)
   end
 
   if opts.dirs_first?
-    dirs, paths = paths.partition &:dir?
-    print_paths(dirs, long: opts.long?, regex: regex, hidden: opts.hidden?)
+    dirs, paths = paths.partition(&:dir?)
+    paths = dirs + paths
   end
 
-  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?)
+  if opts.paged?
+    lesspipe { |less| print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?, output: less) }
+  else
+    print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?)
+  end
 end

@@ -1,1 +1,0 @@
-grep --color '' /sys/devices/system/cpu/vulnerabilities/*

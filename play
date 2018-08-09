@@ -1,112 +1,73 @@
 #!/usr/bin/env ruby
-###################################################################################################
-# TODOs:
-# * Multi-keyword search (eg: "b 52" should find "B-52s")
-###################################################################################################
+
 require 'json'
-require 'ostruct'
-###################################################################################################
-LOGFILE           = File.expand_path("~/play.log")
-JSON_LOGFILE      = File.expand_path("~/play.json")
-REQUIRED_BINARIES = %w[youtube-dl mpv ffmpeg]
-###################################################################################################
+
+###########################################################
+
+LOGFILE      = File.expand_path("~/play.log")
+JSON_LOGFILE = File.expand_path("~/play.json")
+
+# PLAYERS  = [
+#   [          "mpv", proc { |url, title| ["mpv", "--force-media-title", title, url] } ],
+#   [ "baka-mplayer", proc { |url, title| ["baka-mplayer", "-title", title, url] } ],
+#   [       "parole", proc { |url, title| ["parole", "-i", xspf_file(title, url)] } ],
+#   [        "totem", proc { |url, title| ["totem", xspf_file(title, url).path] } ],
+#   [      "mplayer", proc { |url, title| ["mplayer", "-title", title, "-cache", "20000", "-cache-min", "0.0128", url] } ],
+# ]
+
+# PLAYER_NAMES = PLAYERS.map(&:first)
+
+###########################################################
+
+def which(bin)
+  ENV["PATH"].split(":").each do |dir|
+    full_path = File.join(dir, bin)
+    return full_path if File.exists? full_path
+  end
+  nil
+end
+
+unless YOUTUBE_DL = which("youtube-dl")
+  puts "Error: youtube-dl not found in the path; please install it."
+  exit 1
+end
+
+# def best_player
+#   PLAYERS.each do |bin, command|
+#     return bin if which(bin)
+#   end
+#   nil
+# end
+
+# #
+# # Returns a proc that takes two args: "url" and "title"
+# #
+# def player_proc(bin)
+#   Hash[PLAYERS][bin]
+# end
 
 def parse_options
   gem 'slop', "~> 3.6"
   require 'slop'
 
-  opts = Slop.parse(help: true, strict: true) do
+  Slop.parse(help: true, strict: true) do
     banner 'Usage: play [options] <video URL, or history number>'
 
     on 'l',  'list',      "List <n> previously viewed videos"
-    on 'a',  'audio',     "Play/download audio only"
+    on 'a',  'all',       "List all videos (piped to less)"
     on 'd',  'download',  "Download video <n>"
-    on 'i',  'info',      "Detailed info about <n>"
-    on 's',  'search',    "Search youtube"
-    on 'c',  'cast',      "Cast to Chromecast"
-    on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
-    on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
-    on 'v',  'verbose',   "Show more info"
   end
-
-  [opts, ARGV]
 end
 
-###################################################################################################
+###########################################################
 
-class String
-  def number?; self =~ /^\d+$/; end
-  def url?; self =~ %r{^https?://}i; end
-end
-
-###################################################################################################
-
-def which(bin)
-  return bin if bin[0] == "/" and File.exists?(bin)
-
-  ENV["PATH"].split(":").each do |dir|
-    full_path = File.join(dir, bin)
-    return full_path if File.exists? full_path
-  end
-
-  nil
-end
-
-def which_is_best?(*bins)
-  bins.flatten.each do |bin|
-    if location = which(bin)
-      return location
-    end
-  end
-  nil
-end
-
-def youtube_dl_path
-  which("youtube-dl")
-end
-
-###################################################################################################
-
-missing_binaries = REQUIRED_BINARIES.reject { |bin| which(bin) }
-
-if missing_binaries.any?
-  puts "ERROR: Can't find the following programs: #{missing_binaries.join(", ")}"
-  puts "       Please install them."
-  exit 1
-end
-
-###################################################################################################
-
-class LogEntry < OpenStruct
-
-  def self.from_line(line, pos)
+class LogEntry < Struct.new(:date, :time, :url, :title, :pos)
+  def initialize(line, pos)
     timestamp, url, title = line.strip.split(" | ", 3)
     date, time            = timestamp.split
 
-    new(date: date, time: time, url: url, title: title, pos: pos)
-  end
-
-  def self.from_json(line, pos)
-    # {"timestamp":"2017-04-09 00:58:59","url":"https://www.youtube.com/watch?v=j556MWGVVqI","title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","upload_date":"20160208","uploader":"huluDotCom","extra":{"id":"j556MWGVVqI","uploader":"Hulu","uploader_id":"huluDotCom","uploader_url":"http://www.youtube.com/user/huluDotCom","upload_date":"20160208","license":"Standard YouTube License","creator":null,"title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","alt_title":null,"thumbnail":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","description":"Triumph discusses gender identity, micro aggressions and trigger warnings with young college voters as part of Triumph's Election Special 2016, now streaming on Hulu.\n\nWatch Triumph on Hulu at http://www.hulu.com/Triumph\nLike Hulu on Facebook at http://www.facebook.com/Hulu/\nFollow Hulu on Twitter at http://www.twitter.com/Hulu\nFollow Hulu on Instagram at http://www.instagram.com/Hulu\nSubscribe to our YouTube channel at http://www.youtube.com/hulu\n\nIn Triumph's Election Special 2016, Triumph the Insult Comic Dog hits the 2016 presidential campaign trail.  Viewers will be taken from Iowa to New Hampshire to South Carolina in a tenacious news-gathering journey in the heat of the primary election season.  Triumph has already visited a Democratic Debate, a Tea Party Convention, and followed a string of Ted Cruz bus appearances.  In addition to crashing campaign events and mocking the press for their thirst for controversy, Triumph will take on hard-hitting issues of concern to voters on each side of the spectrum.","categories":["Entertainment"],"tags":["hulu"],"automatic_captions":{},"duration":641,"age_limit":0,"annotations":null,"webpage_url":"https://www.youtube.com/watch?v=j556MWGVVqI","view_count":3204771,"like_count":36135,"dislike_count":1104,"average_rating":4.88141441345,"is_live":null,"start_time":null,"end_time":null,"series":null,"season_number":null,"episode_number":null,"extractor":"youtube","webpage_url_basename":"watch","extractor_key":"Youtube","playlist":null,"playlist_index":null,"thumbnails":[{"url":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","id":"0"}],"display_id":"j556MWGVVqI","format":"137 - 1920x1080 (DASH video)+140 - audio only (DASH audio)","format_id":"137+140","width":1920,"height":1080,"resolution":null,"fps":24,"vcodec":"avc1.640028","vbr":null,"stretched_ratio":null,"acodec":"mp4a.40.2","abr":128,"ext":"mp4","fulltitle":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","_filename":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu-j556MWGVVqI.mp4"}}
-    json = JSON.parse(line)
-    date, time = json["timestamp"].split
-    json.merge!(
-      pos: pos,
-      date: date,
-      time: time
-    )
-    new(json)
-  end
-
-  # Converts nested hashes into OpenStructs
-  def initialize(hash)
-    super(
-      hash.map do |k,v|
-        v = super(v) if v.is_a? Hash
-        [k, v]
-      end.to_h
-    )
+    super(date, time, url, title, pos)
   end
 
   def to_s
@@ -114,7 +75,7 @@ class LogEntry < OpenStruct
   end
 end
 
-###################################################################################################
+###########################################################
 
 require 'uri'
 require 'cgi'
@@ -141,7 +102,7 @@ module URI
   end
 end
 
-###################################################################################################
+###########################################################
 
 def notify(type, title, body, time: 5)
   require 'cgi'
@@ -163,31 +124,42 @@ end
 def run(*cmd)
   require 'open3'
   # stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
-  # p running: cmd
   out, err, status = Open3.capture3(*cmd)
   [out.strip, err.strip, status]
 end
 
 def play_click_sound
   file = File.expand_path("~/scripts/sounds/click.mp3")
-
-  if best = which_is_best?("/bin/play", "mplayer", "mpg123", "mpv")
-    fork { run(best, file).last.success? }
-  end
+  fork { %w[mplayer mpg123 mpv].any? { |player| run(player, file).last.success? } }
+  # fork { run("mplayer", file) }
 end
 
-###################################################################################################
+# def xspf_file(title, media_url)
+#   require 'tempfile'
+#   require 'cgi'
+
+#   xml = %{<?xml version="1.0" encoding="UTF-8"?>
+# <playlist version="1" xmlns="http://xspf.org/ns/0/">
+#  <trackList>
+#   <track>
+#    <title>#{CGI.escape_html title}</title>
+#    <location>#{CGI.escape_html  media_url}</location>
+#   </track>
+#  </trackList>
+# </playlist>}
+
+#   file = Tempfile.create ["play", ".xspf"]
+#   file.puts xml
+#   file.close
+#   file
+# end
+
+###########################################################
 
 def log_entries
-  if File.exists? JSON_LOGFILE
-    log = open(JSON_LOGFILE)
-    meth = :from_json
-  else
-    open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
-    log = open(LOGFILE)
-    meth = :from_line
-  end
-  log.reverse_each.lazy.with_index.map { |logline, i| LogEntry.send(meth, logline, i+1) }
+  open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
+  log = open(LOGFILE)
+  log.reverse_each.lazy.with_index.map {|logline, i| LogEntry.new(logline, i+1) }
 end
 
 def entries_for_nums(nums)
@@ -210,63 +182,7 @@ end
 
 ###########################################################
 
-def info(nums)
-  require 'epitools/colored'
-
-  fields = %w[
-    uploader
-    description
-    upload_date
-    tags
-    categories
-    view_count
-    like_count
-    dislike_count
-    average_rating
-    webpage_url
-    format
-    fps
-    duration
-    vcodec
-    acodec
-    uploader_url
-  ]
-
-  # TODO: Format duration as hh:mm:ss
-
-  log_entries.select { |e| nums.include? e.pos }.each do |e|
-    puts "<8>=== <10>#{e.pos}<7>: <14>#{e.title} <8>====================".colorize
-    puts
-    fields.each do |k|
-      v = e.extra[k]
-
-      next if v.nil? or (v.respond_to?(:empty?) and v.empty?)
-
-      print "<11>#{k}<8>: ".colorize
-
-      v = case v
-      when Numeric then "<15>#{v}"
-      when Hash then v.to_s
-      when String
-        if v["\n"]
-          "\n" + v.each_line.map {|l| "    #{l}" }.join
-        else
-          v
-        end
-      when Array
-        v.join("<8>, </8>")
-      end
-
-      puts v.colorize
-
-    end
-    puts
-  end
-end
-
-###########################################################
-
-def search_history(query: nil, amount: 10, reverse: true, paged: false)
+def search(query=nil, n=10, reverse=true, paged=false)
   require 'epitools/colored'
 
   if query
@@ -293,14 +209,14 @@ def search_history(query: nil, amount: 10, reverse: true, paged: false)
   if query
     output.puts " <15>Searching for: <14>#{query.inspect}".colorize
   else
-    output.puts " #{amount == 0 ? "All" : amount} most recent plays:".light_white
+    output.puts " #{n == 0 ? "All" : n} most recent plays:".light_white
   end
   output.puts "----------------------------------".grey
   output.puts
 
   entries = log_entries
   entries = entries.select { |entry| entry.title =~ regexp || entry.url =~ regexp } if query
-  entries = entries.take(amount) unless amount == 0
+  entries = entries.take(n) unless n == 0
 
   if reverse
     results = entries.to_a.reverse
@@ -321,28 +237,16 @@ def search_history(query: nil, amount: 10, reverse: true, paged: false)
     output.print "#{pos.to_s.rjust(max_pos_width)}. ".bright_yellow
     indent += " " * (max_pos_width + 2)
 
-    headline = "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}"
-    if result.respond_to?(:uploader) and result.uploader
-      headline << " <8>(<1>#{result.uploader}<8>)"
-    end
-
-    output.puts headline.colorize
+    output.puts "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}".colorize
     output.puts "<2>#{indent}#{result.time} <4>| <9>#{regexp ? result.url.gsub(regexp, &:on_blue) : result.url}".colorize
     output.puts
   end
 
-rescue Errno::EPIPE
-ensure
   output.close if paged
+rescue Errno::EPIPE
 end
 
-###################################################################################################
-
-def search_youtube(query)
-  exec("yt", *query)
-end
-
-###################################################################################################
+###########################################################
 
 def write_to_log(url, json)
   timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
@@ -367,39 +271,34 @@ def write_to_log(url, json)
   end
 end
 
-###################################################################################################
 
-def download(*urls, audio_only: false)
+def download(*urls)
   urls << log_entries.first if urls.empty?
 
   urls.each do |url|
-    cmd = [
-      youtube_dl_path,
+    system YOUTUBE_DL,
       "--no-mtime",
       "--xattrs",
+      "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
+      "--sub-format", "srt/ass/vtt/best",
       "--no-playlist",
       "-o", "%(title)s.%(ext)s",
-    ]
-
-    if audio_only
-      cmd += [
-        "--extract-audio",
-        "-f", "bestaudio[ext=m4a]",
-      ]
-    else
-      cmd += [
-        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
-        "--sub-format", "srt/ass/vtt/best",
-      ]
-    end
-
-    cmd << url.to_s
-
-    system *cmd
+      url.to_s
   end
 end
 
-###################################################################################################
+# def youtube_dl(url)
+#   out, err, status = run YOUTUBE_DL, "-f", "best", "-o", "%(title)s (%(upload_date)s)", "--no-playlist", "-g", "--get-filename", url
+
+#   if not status.success? or out.empty?
+#     notify(:error, "youtube-dl error #{status.exitstatus}:", "#{err}\n( #{url} )")
+#     exit 1
+#   end
+
+#   media_url, title = out.lines.take(2).map(&:strip)
+
+#   [media_url, title]
+# end
 
 def youtube_json(url)
 
@@ -407,16 +306,16 @@ def youtube_json(url)
   # ERROR: kK1E2nB_Nu4: YouTube said: This video contains content from WMG, who has blocked it in your country on copyright grounds.
   # ( https://www.youtube.com/watch?v=kK1E2nB_Nu4 )
 
-  cmd = [
-    youtube_dl_path,
+
+  cmd = YOUTUBE_DL,
     "-j",
     "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+    # "-f", "bestvideo[ext=mp4,height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4]/best", # limit to 1080p
     "--sub-format", "srt/ass/vtt/best",
     "--sub-lang", "en",
     "--write-sub",
     "--no-playlist",
     url
-  ]
 
   out, err, status = run *cmd
 
@@ -428,95 +327,35 @@ def youtube_json(url)
   JSON.parse(out)
 end
 
-###################################################################################################
-
-def cast(*urls, enqueue: false, device: nil)
-  if urls.size > 1
-    # recursively cast/enqueue urls
-    unless enqueue
-      cast(urls.shift, enqueue: false, device: device)
-    end
-
-    urls.each do |url|
-      cast(url, enqueue: true, device: device)
-    end
-  else
-    url = urls.first
-    cmd  = ["catt"]
-    cmd += ["-d", device] if device
-
-    if enqueue
-      cmd << "add"
-      msg = "Enqueueing:"
-    else
-      cmd << "cast"
-      msg = "Casting:"
-    end
-    cmd << url.to_s
-
-    if url.is_a? LogEntry
-      notify(:video, msg, url.title, time: 4)
-    else
-      notify(:info, "Looking up:", url.to_s, time: 3)
-      fork do
-        json = youtube_json(url.to_s)
-        write_to_log(url.to_s, json)
-        notify(:video, msg, json["title"], time: 4)
-      end
-    end
-
-    # Process.daemon(true) unless foreground
-    system(*cmd)
-  end
-end
-
-###################################################################################################
-
-def play(url, foreground: false, verbose: false, audio_only: false)
+def play(url, foreground=false)
   if url.is_a? LogEntry
     notify(:info, "Loading:", url.title, time: 4)
   else
     notify(:info, "Processing:", url.to_s, time: 3)
   end
 
-  # Fork into the background (to give the commandline back to the user asap)
-  Process.daemon(true) unless foreground
-
-  # Click! (useful when run with a hotkey, to tell that it's working)
   play_click_sound
 
-  # Detailed video information (including media URLs)
-  json = youtube_json(url.to_s)
+  Process.daemon(true) unless foreground
 
-  # Watched-history log
+  json = youtube_json(url.to_s)
+  # media_url, title = youtube_dl(url.to_s)
   write_to_log(url, json) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
 
-  # Command to execute
-  if audio_only
-    cmd = ["ffplay", "-window_title", "#{json["title"]} (#{json["upload_date"]})"]
-  else
-    cmd = ["mpv", "--force-media-title", "#{json["title"]} (#{json["upload_date"]})"]
-  end
+  cmd = ["mpv", "--force-media-title", "#{json["title"]} (#{json["upload_date"]})"]
+  # cmd = player_proc(player).call(media_url, title)
 
-  # Pull audio/video URLs from JSON
+  # Video/Audio URLs
   if rf = json["requested_formats"]
     video, audio = rf
-    if audio_only
-      cmd << audio["url"]
-    else
-      cmd += [
-        video["url"],
-        "--audio-file",
-        audio["url"],
-      ]
-    end
+    cmd += [video["url"], "--audio-file", audio["url"]]
   elsif url = json["url"]
     cmd << url
   else
     raise "Dunno!"
   end
 
-  # Pull subtitles from JSON
+  # Subtitles
   if subs = json["requested_subtitles"] || json["subtitles"]
     subs.each do |lang, sub_info|
       # "en" => [{"ext"=>"vtt","url"=>"https://vimeo.com/texttrack/4085370.vtt"}],
@@ -527,8 +366,7 @@ def play(url, foreground: false, verbose: false, audio_only: false)
     end
   end
 
-  ## Seek to time in video
-
+  # Seek to time
   uri = URI.parse(url.to_s)
 
   case uri.params["t"]
@@ -547,67 +385,69 @@ def play(url, foreground: false, verbose: false, audio_only: false)
 
   cmd += ["--start", seek.to_s] if seek
 
-  ## Run mpv
-
+  # Run mpv
   # notify(:video, "Playing:", json["title"], time: 4)
-  p running: cmd if verbose
   system(*cmd)
 end
 
-###################################################################################################
+###########################################################
 
 
 if $0 == __FILE__
 
-  opts, args = parse_options
+  if ARGV.any? { |arg| arg[/^--?\w/] }
+    opts = parse_options
+  else
+    # opts = {player: PLAYER_NAMES.first}
+    opts = {}
+  end
 
-  if args.empty? and not opts.list?
-    search_history
+  args = ARGV
+
+  if opts[:all]
+    search(nil, 0, false, true)
     exit
   end
 
-  if args.all? &:number?
-    # all args are numbers
+  if args.empty?
+    search
+    exit
+  elsif args.all? { |arg| arg =~ /^\d+$/ } # all args are numbers?
     nums = args.map(&:to_i)
-  elsif args.all? &:url?
-    # all args are urls
+  elsif args.all? { |arg| arg =~ %r{^https?://}i } # all args are urls?
     urls = args
-  else
-    # to simplify things, let's just treat every other case as a search query
+  else # must be a search query
     query = args
   end
 
-  if opts.list?
-    amount = nums.any? ? nums.first : 0
-    search_history(amount: amount, reverse: false, paged: true)
-    exit
-  end
-
-  if opts.info?
-    info(nums)
-    exit
+  if opts[:list]
+    if nums
+      search(nil, nums.first, false, true)
+      exit
+    end
   end
 
   urls = entries_for_nums(nums) if nums
 
   if query
 
-    if opts.search? # serach youtube
-      search_youtube(query: query)
-    else
-      search_history(query: query)
-    end
+    search(query)
 
   elsif urls
 
-    if opts.cast? or opts.enqueue? or opts.device?
-      cast(*urls, enqueue: opts.enqueue?, device: opts[:device])
-    else
-      urls.each do |url|
-        if opts.download?
-          download(url, audio_only: opts.audio?)
-        elsif which("mpv")
-          play(url, foreground: opts["no-daemon"], verbose: opts.verbose?, audio_only: opts.audio?)
+    urls.each do |url|
+      if opts[:download]
+        download(url)
+      else
+        # if opts[:player]
+        #   play(url, opts[:player])
+        # else
+        #   notify(:error, "Could not find a player!", "You must install one of the following: #{PLAYER_NAMES.join(", ")}")
+        #   exit 1
+        # end
+
+        if which("mpv")
+          play(url, opts["no-daemon"])
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
         end

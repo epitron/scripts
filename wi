@@ -1,2 +1,14 @@
-`which whois` -h whois.opensrs.net -H $* | less -S -b 0
-#links "http://whois.domaintools.com/$1"
+#!/usr/bin/env ruby
+
+def whois(domain)
+  # system "whois -h whois.opensrs.net -H #{domain} | less -S -b 0"
+  system "links http://whois.domaintools.com/#{domain}"
+end
+
+ARGV.each do |arg|
+  if arg =~ %r{^https?://(?:www\.?)(.+)/}
+    whois $1
+  else
+    whois arg
+  end
+end

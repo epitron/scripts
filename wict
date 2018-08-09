@@ -1,37 +1,49 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
-###################################################################
+
 require 'epitools'
-###################################################################
+require "tokyocabinet"
 
-CACHE_DIR  = File.expand_path("~/.cache/wict")
-INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
-TSV_FILE   = File.join CACHE_DIR, "enwikt.tsv"
+include TokyoCabinet
 
 ###################################################################
 
-def parse_options
+# http://toolserver.org/~enwikt/definitions/?sortby=7
+# ENGLISH   = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz"
+# ALL       = "http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz"
+ENGLISH   = "http://chris.ill-logic.com/files/enwikt-defs-latest-en.tsv.gz"
+ALL       = "http://chris.ill-logic.com/files/enwikt-defs-latest-all.tsv.gz"
+
+CACHE_DIR = File.expand_path("~/.cache/wict")
+INDEX     = File.join CACHE_DIR, "enwikt-defs.idx"
+
+###################################################################
+
+def options
   gem "slop", "~> 3.6"
   require 'slop' # lazy loaded
 
-  opts = Slop.parse(help: true, strict: true) do
+  @opts ||= Slop.parse(help: true, strict: true) do
     banner 'Usage: wict [options] <word(s)...>'
 
     on 'u',  'update',  'Download the English wikipedia dictionary'
     on 'a',  'all',     'Download the wikipedia dictionary for all languages'
-    on 's',  'stats',   'Dictionary statistics'
   end
-
-  [opts, ARGV]
 end
 
-###################################################################
-# Utils
+def bdb_open(filename, opts=nil)
+  bdb = BDB::new  # B-Tree database; keys may have multiple values
 
-def ensure_database!
-  unless File.exist? TSV_FILE and File.exist? INDEX_FILE
-    $stderr.puts "You must first download a database. Run 'wict -u'."
-    exit 1
+  if !bdb.open(filename, opts)
+    raise "open error: #{bdb.errmsg(bdb.ecode)} (filename: #{filename.inspect})"
+  end
+
+  if block_given?
+    result = yield bdb
+    bdb.close
+    result
+  else
+    bdb
   end
 end
 
@@ -52,81 +64,68 @@ def backup(src)
 end
 
 ###################################################################
-# Update TSV and generate index
 
-def latest_tsv_url(lang="en")
-  #
-  # Old URLs:
-  # http://toolserver.org/~enwikt/definitions/?sortby=7
-  # http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-en.tsv.gz
-  # http://tools.wmflabs.org/enwiktdefns/enwikt-defs-latest-all.tsv.gz
-  #
-  # New URLs:
-  # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz
-  # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz
-  #
-  json = `curl -s https://archive.org/details/enwikt-tsv?output=json`.from_json
-  files = json["files"].map(&:first).select { |fn| fn[%r{^/enwikt-defs-\d+-#{lang}\.tsv\.gz$}] }
-  latest = files.sort.last
-  "https://archive.org/download/enwikt-tsv#{latest}"
-end
+def update
 
-def update(lang="en")
-  puts "* Updating Wictionary..."
-  print "  |_ latest dump: "
-  url = latest_tsv_url(lang="en")
-  puts url.inspect
+  url = options.a? ? ALL : ENGLISH
 
-  FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
-  backup(INDEX_FILE)
-  backup(TSV_FILE)
+  puts "* Re-importing database..."
+  puts "  |_ source: #{url.inspect}"
 
-  begin
-    require 'rbtree'
-    word_index = RBTree.new
-  rescue LoadError
-    word_index = []
-    def word_index.store(k,v); self << [k,v]; end
-  end
+  backup(INDEX)
 
-  count      = 0
-  last_word  = nil
+  IO.popen("curl -s #{url} | gunzip -c", "r") do |tsv|
 
-  open(TSV_FILE, "w") do |out|
-    IO.popen("curl -s -L #{url} | gunzip -c", "rb") do |tsv|
-      tsv.each_line_with_offset do |line, offset|
-        out.write(line)
+    bdb_open(INDEX, BDB::OWRITER | BDB::OCREAT) do |bdb|
+
+      tsv.each.with_index do |line, n|
         lang, word, type, definition = line.strip.split("\t")
+        #p [:lang, lang, :word, word, :type, type, :definition, definition]
 
-        next if last_word == word
+        # TODO: figure out how to do case-insensitive searches without downcasing the actual key
+        bdb.putdup(word.downcase, definition)
 
-        word_index.store word, offset
-
-        last_word = word
-        count    += 1
-
-        print "\e[1G  |_ words retrieved: #{count.commatize}\e[J" if count % 137 == 0
+        print "\e[1G  |_ words imported: #{n.commatize}\e[J" if n % 137 == 0
       end
+
       puts
+      puts "* Done!"
+
     end
   end
 
-  if word_index.is_a? Array
-    puts "  |_ sorting index (#{word_index.size.commatize} words)"
-    word_index.sort!
-  end
-
-  puts "  |_ writing index to #{INDEX_FILE}..."
-  open(INDEX_FILE, "w") do |index|
-    word_index.each { |word, offset| index.write "#{word}\t#{offset}\n" }
-  end
-
-  puts
-  puts "* Done!"
-end
+end  
 
 ###################################################################
-# Lookup words
+
+def lookup(args)
+
+  bdb_open(INDEX) do |bdb|
+    lesspipe(wrap: true) do |less|
+
+      args.map(&:downcase).each do |arg|
+
+        words = bdb.fwmkeys(arg)
+        
+        words.each do |word|
+          defs = bdb.getlist(word)
+          if defs.any?
+            less.puts "<14>#{word}</14>".colorize
+            defs.each { |defn| less.puts "   #{highlight(defn).colorize}" }
+            less.puts
+          end
+        end
+
+      end
+
+    end
+  end
+
+end
+
+def wordcount
+  bdb_open(INDEX) { |bdb| bdb.size }
+end
 
 def highlight(defn)
 
@@ -134,18 +133,22 @@ def highlight(defn)
 
   xforms = {
     /^#\s*/ => proc { "<8>*</8> " },
-
-    # p [:squiggle, $1]
-    /\{\{([^\|\}]+?)\}\}/ => proc { "<9>[#{$1}]</9>" },
-
-    # p [:squiggle_pair, $1, $2]
-    /\{\{([^\|\}]+?)\|([^\}]+?)\}\}/ => proc { "<9>[#{$1}]</9> #{highlight $2}" },
-
-    # p [:brackets, $1, $2]
-    /\[\[([^\|]+?)\]\]/ => proc { "<15>#{$1}</15>" },
-
-    # p [:alternate_brackets, $1, $2]
-    /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc { highlight "[[#{$2}]]" },
+    /\{\{([^\|\}]+?)\}\}/ => proc do
+      # p [:squiggle, $1]
+      "<9>[#{$1}]</9>"
+    end,
+    /\{\{([^\|\}]+?)\|([^\}]+?)\}\}/ => proc do
+      # p [:squiggle_pair, $1, $2]
+      "<9>[#{$1}]</9> #{highlight $2}"
+    end,
+    /\[\[([^\|]+?)\]\]/ => proc do
+      # p [:brackets, $1, $2]
+      "<15>#{$1}</15>"
+    end,
+    /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc do
+      # p [:alternate_brackets, $1, $2]
+      highlight "[[#{$2}]]"
+    end,
   }
 
   xforms.each do |pattern,block|
@@ -178,150 +181,31 @@ def test_highlighter
   exit
 end
 
-def greparound(io, pos, query)
-  index_lines = []
-
-  grep_proc = proc do |line|
-    if line[/^#{query}/]
-      index_lines << line
-    else
-      raise :done
-    end
-  end
-
-  io.seek pos
-  io.reverse_each_from_current_pos(&grep_proc) rescue nil
-
-  index_lines.reverse!
-
-  io.seek pos
-  io.gets
-  io.each_line(&grep_proc) rescue nil
-
-  index_lines
-end
-
-def lookup_bsearch(args)
-  query = args.join.downcase
-  f     = open(INDEX_FILE, "r")
-  range = (0...f.size)
-
-  loop do
-    return if range.size < 5
-
-    f.seek(range.middle)
-    f.seek_backwards_to("\n", 80)
-
-    line                 = f.each_line.first
-    current_word, offset = line.split("\t")
-
-    if current_word[/^#{query}/]
-      index_lines = greparound(f, range.middle, query)
-      print_results(index_lines)
-      return
-    elsif query < current_word
-      range = range.first...range.middle
-    else
-      range = range.middle...range.last
-    end
-  end
-
-ensure
-  f.close
-end
-
-def lookup_grep(args)
-  query = args.join
-
-  lines = `grep -iE '^#{query}' #{INDEX_FILE}`.each_line.to_a
-
-  print_results(lines)
-end
-
-def get_results(matches)
-  open(TSV_FILE, "r") do |tsv|
-    matches.map do |word, offset|
-      defs = []
-      tsv.seek(offset)
-      last_word = nil
-      loop do
-        lang, tsv_word, type, definition = tsv.gets.split("\t")
-        break if word != tsv_word
-        defs << definition.chomp
-      end
-      [word, defs]
-    end
-  end
-end
-
-def print_results(index_lines)
-  if index_lines.empty?
-    puts "No results found."
-    return
-  end
-
-  word_offsets = index_lines.map do |line|
-    word, offset = line.split("\t")
-    offset = offset.to_i
-    [word, offset]
-  end
-
-  results = get_results(word_offsets)
-
-  lesspipe(wrap: true) do |less|
-    results.each do |word, defs|
-      less.puts "<14>#{word}</14>".colorize
-      defs.each { |defn| less.puts "   #{highlight(defn).colorize}" }
-      less.puts
-    end
-  end
-end
-
-
-# alias lookup lookup_grep
-alias lookup lookup_bsearch
-
-###################################################################
-
-def stats
-  puts "----------------------------------"
-  puts "   Wiktionary Statistics:"
-  puts "----------------------------------"
-
-  index_size = File.size INDEX_FILE
-  tsv_size   = File.size TSV_FILE
-
-  puts "    TSV size: #{tsv_size.commatize} bytes"
-  puts "  Index size: #{index_size.commatize} bytes"
-
-  words = open(INDEX_FILE) { |f| f.each_line.count }
-  puts "Unique words: #{words.commatize}"
-end
-
 ###################################################################
 
 
 if $0 == __FILE__
 
-  opts, args = parse_options
+  # test_highlighter
 
-  if opts[:update] or opts[:all]
+  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
 
-    lang = opts[:all] ? "all" : "en"
-    update(lang)
+  if options.u? or options.a?
+
+    update
 
   else
 
-    ensure_database!
-
-    if opts.stats?
-      stats
-    elsif args.empty?
+    if not File.exists? INDEX
+      puts "You must first download a database. Run 'wict -u'."
+      exit 1
+    elsif ARGV.empty?
       puts "Pass the word(s) you want to look up as (an) argument(s)."
+      puts "(#{wordcount} words in dictionary)"
     else
-      lookup(args)
+      lookup(ARGV)
     end
-
+    
   end
 
 end

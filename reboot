@@ -1,6 +1,0 @@
-#!/bin/bash
-if which systemctl > /dev/null; then
-  systemctl reboot
-else
-  shutdown -r now
-fi

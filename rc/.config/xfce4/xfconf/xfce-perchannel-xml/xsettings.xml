@@ -2,8 +2,8 @@
 
 <channel name="xsettings" version="1.0">
   <property name="Net" type="empty">
-    <property name="ThemeName" type="string" value="Blue-Submarine"/>
-    <property name="IconThemeName" type="string" value="HighContrast"/>
+    <property name="ThemeName" type="string" value="TraditionalOk"/>
+    <property name="IconThemeName" type="string" value="default.kde4"/>
     <property name="DoubleClickTime" type="empty"/>
     <property name="DoubleClickDistance" type="empty"/>
     <property name="DndDragThreshold" type="empty"/>
@@ -15,8 +15,8 @@
   </property>
   <property name="Xft" type="empty">
     <property name="DPI" type="int" value="96"/>
-    <property name="Antialias" type="int" value="1"/>
-    <property name="Hinting" type="empty"/>
+    <property name="Antialias" type="empty"/>
+    <property name="Hinting" type="int" value="1"/>
     <property name="HintStyle" type="string" value="hintfull"/>
     <property name="RGBA" type="string" value="rgb"/>
   </property>

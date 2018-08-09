@@ -1,4 +1,1 @@
-#!/bin/bash
-for output in `xrandr | grep " connected" | fields 1`; do
-  xrandr --output $output --gamma 1:1:1
-done
+bright

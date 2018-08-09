@@ -1,8 +1,15 @@
 [
+  { "keys": ["ctrl+v"],       "command": "paste_and_indent" },
+  { "keys": ["shift+insert"], "command": "paste_and_indent" },
+  { "keys": ["ctrl+shift+v"],      "command": "paste" },
+  { "keys": ["ctrl+shift+insert"], "command": "paste" },
+
   { "keys": ["ctrl+t", "ctrl+r"], "command": "rebuild_tags" },
-  { "keys": ["alt+p"], "command": "git_push" },
+
   { "keys": ["alt+s"], "command": "git_status" },
   { "keys": ["alt+d"], "command": "git_diff" },
+  { "keys": ["ctrl+alt+p"], "command": "git_push" },
+  { "keys": ["alt+p"], "command": "git_pull" },
   { "keys": ["alt+w"], "command": "toggle_setting", "args": {"setting": "word_wrap"} },
 
   {

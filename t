@@ -1,2 +1,2 @@
 #!/bin/bash
-tree -Ca $* | less -SRXFi
+tree -C $* | less -SRXFi

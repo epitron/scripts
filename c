@@ -11,100 +11,27 @@
 #
 #   python packages:
 #     pygments
-#     rst2ansi & docutils
+#     rst2ansi
+#     docutils
 #
 #   ...and many more! (the script will blow up when you need that program! :D)
 #
 #
 # TODOs:
-#   * Add gem/program dependencies to functions (using a DSL)
-#     |_ "install all dependencies" can use it
-#     |_ error/warning when dependency isn't installed, plus a fallback codepath
-#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
-#     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
-#     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
-#   * Fix "magic" (use hex viewer when format isn't recognized)
-#   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
-#   * Easy fix: Change `print_*` methods to receive a string (raw data) *or* a Pathname/File
+#   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
+#   * Follow symlinks by default
+#   * Command to install all dependencies (automatically installs gems/packages to provide maximum functionality)
+#   * '--format=...'/'--as=...' options for manually speficying the file type (ie: necessary when piping data to STDIN, and 'file' can't recognize it)
+#   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
+#   * Print [eof] between files when in multi-file mode
+#   * Make .ANS files work in 'less' (less -S -R, cp437)
+#   * Refactor into "filters" and "renderers", with one core loop to dispatch
+#     (eg: special rules for when a shebang starts the file)
 #
 ##############################################################################
 require 'pathname'
 require 'coderay'
 require 'coderay_bash'
-##############################################################################
-
-def pygmentize(lexer=nil, style="native", formatter="terminal256")
-  # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
-  #       Style gallery: https://help.farbox.com/pygments.html
-  #                     (good ones: monokai, native, emacs)
-  cmd = [
-    "pygmentize",
-    "-O", "style=#{style}",
-    "-f", formatter,
-  ]
-  cmd += ["-l", lexer] if lexer
-
-  cmd
-end
-
-def rougify(lexer=nil)
-  cmd = ["rougify"]
-  cmd += ["-l", lexer] if lexer
-  cmd
-end
-
-### Converters ###############################################################
-
-EXT_HIGHLIGHTERS = {
-  ".cr"             => :ruby,
-  ".jl"             => :ruby,
-  ".pl"             => :ruby,
-  ".cmake"          => :ruby,
-  ".mk"             => :bash,
-  ".install"        => :bash,
-  ".desktop"        => :bash,
-  ".conf"           => :bash,
-  ".prf"            => :bash,
-  ".ini"            => :bash,
-  ".service"        => :bash,
-  ".hs"             => :text,
-  ".cl"             => :c,
-  ".rl"             => :c, # ragel definitions
-  ".ino"            => :c, # arduino sdk files
-  ".gradle"         => :groovy,
-  ".sage"           => :python,
-  ".lisp"           => :clojure,
-  ".scm"            => :clojure,
-  ".qml"            => :php,
-  ".pro"            => :sql,
-  ".ws"             => :xml,
-  ".ui"             => :xml,
-  ".opml"           => :xml,
-  ".dfxp"           => :xml,
-  ".stp"            => :javascript, # systemtap
-  ".ml"             => pygmentize,
-  ".nim"            => rougify,
-  ".nimble"         => rougify("nim"),
-  ".diff"           => pygmentize,
-  ".patch"          => pygmentize,
-  ".rs"             => pygmentize,
-  ".toml"           => rougify,
-  ".tmLanguage"     => :xml,
-  ".sublime-syntax" => :yaml,
-}
-
-FILENAME_HIGHLIGHTERS = {
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
-  "Gemfile.lock" => :c,
-  "database.yml" => :yaml,
-}
-
 ##############################################################################
 
 THEMES = {
@@ -132,10 +59,19 @@ HTML_ENTITIES = {
   '&#174;'  => '(R)',
   '&#8220;' => '"',
   '&#8221;' => '"',
+  '&#8211;' => "-",
   '&#8212;' => '--',
+  '&#8230;' => '...',
   '&#39;'   => "'",
   '&#8217;' => "'",
+  '&#8216;' => "'",
+  '&#62;'   => ">",
+  '&#60;'   => "<",
 }
+
+def convert_htmlentities(s)
+  s.gsub(/&[#\w]+;/) { |m| HTML_ENTITIES[m] || m }
+end
 
 ##############################################################################
 
@@ -198,6 +134,20 @@ class Object
     is_a?(String) ? self : to_s
   end
 
+end
+
+
+##############################################################################
+
+def print_header(title, level=nil)
+  colors = ["\e[33m\e[1m%s\e[0m", "\e[36m\e[1m%s\e[0m", "\e[34m\e[1m%s\e[0m", "\e[35m%s\e[0m"]
+  level  = level ? (level-1) : 0
+  color  = colors[level] || colors[-1]
+  grey   = "\e[30m\e[1m%s\e[0m"
+
+  bar = grey % ("-"*(title.size+4))
+
+  "#{bar}\n  #{color % title}\n#{bar}\n\n"
 end
 
 ##############################################################################
@@ -301,6 +251,49 @@ def tmp_filename(prefix="c", length=20)
   name
 end
 
+### Converters ###############################################################
+
+CODERAY_EXT_MAPPING = {
+  ".cr"          => :ruby,
+  ".jl"          => :ruby,
+  ".pl"          => :ruby,
+  ".cmake"       => :ruby,
+  ".mk"          => :bash,
+  ".install"     => :bash,
+  ".desktop"     => :bash,
+  ".conf"        => :bash,
+  ".prf"         => :bash,
+  ".ini"         => :bash,
+  ".service"     => :bash,
+  ".hs"          => :text,
+  ".cl"          => :c,
+  ".gradle"      => :groovy,
+  ".sage"        => :python,
+  ".lisp"        => :clojure,
+  ".scm"         => :clojure,
+  ".qml"         => :php,
+  ".pro"         => :sql,
+  ".ws"          => :xml,
+  ".ui"          => :xml,
+  ".opml"        => :xml,
+  ".nim"         => :pygmentize,
+  ".ml"          => :pygmentize,
+  ".stp"         => :javascript, # systemtap
+}
+
+CODERAY_FILENAME_MAPPING = {
+  "Rakefile"     => :ruby,
+  "Gemfile"      => :ruby,
+  "Makefile"     => :bash,
+  "makefile"     => :bash,
+  "PKGBUILD"     => :bash,
+  "configure.in" => :bash,
+  "configure"    => :bash,
+  "Gemfile.lock" => :c,
+  "database.yml" => :yaml,
+}
+
+
 ##############################################################################
 
 def shebang_lang(filename)
@@ -318,32 +311,26 @@ end
 
 ##############################################################################
 
-def render_source(data, format)
-  CodeRay.scan(data, format).term
-end
-
 def print_source(arg)
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
   filename = path.filename
 
   lang =  shebang_lang(path) ||
-          EXT_HIGHLIGHTERS[ext] ||
-          FILENAME_HIGHLIGHTERS[filename]
+          CODERAY_EXT_MAPPING[ext] ||
+          CODERAY_FILENAME_MAPPING[filename]
 
   if ext == ".json"
     require 'json'
     begin
-      data = File.read(arg)
+      data = File.read(filename)
       json = JSON.parse(data)
       CodeRay.scan(JSON.pretty_generate(json), :json).term
     rescue JSON::ParserError
       data
     end
-  elsif lang.is_a? Array
-    run(*lang, arg)
-  elsif %i[pygmentize rugmentize rougify].include? lang
-    run(lang, filename)
+  elsif lang == :pygmentize
+    run("pygmentize", path.to_s)
   elsif lang
     CodeRay.scan_file(path, lang).term
   else
@@ -363,6 +350,14 @@ end
 #
 
 BLACKCARPET_INIT = proc do
+
+  begin
+    require 'epitools/colored'
+    require 'redcarpet'
+  rescue LoadError
+    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
+      + print_source(filename)
+  end
 
   class BlackCarpet < Redcarpet::Render::Base
   private
@@ -513,40 +508,7 @@ BLACKCARPET_INIT = proc do
 end
 
 
-HTMLENTITIES = {
-  'nbsp'  => ' ',
-  'ndash' => '-',
-  'mdash' => '-',
-  'amp'   => '&',
-  'raquo' => '>>',
-  'laquo' => '<<',
-  'quot'  => '"',
-  'micro' => 'u',
-  'copy'  => '(c)',
-  'trade' => '(tm)',
-  'reg'   => '(R)',
-  '#174'  => '(R)',
-  '#8212' => '--',
-  '#8230' => '--',
-  '#8220' => '"',
-  '#8221' => '"',
-  '#39'   => "'",
-  '#8217' => "'",
-}
-
-def convert_htmlentities(s)
-  s.gsub(/&([#\w]+);/) { HTMLENTITIES[$1] || $0 }
-end
-
 def print_markdown(markdown)
-  begin
-    require 'epitools/colored'
-    require 'redcarpet'
-  rescue LoadError
-    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
-      + markdown
-  end
-
   # Lazily load markdown renderer
   BLACKCARPET_INIT.call unless defined? BlackCarpet
 
@@ -563,13 +525,6 @@ def print_markdown(markdown)
   end
 
   convert_htmlentities carpet.render(markdown)
-end
-
-##############################################################################
-
-def print_asciidoc(data)
-  # TODO: Use Asciidoctor to convert it to a man page, then print that
-  data
 end
 
 ##############################################################################
@@ -621,6 +576,7 @@ def print_moin(moin)
     gsub(/^#acl .+$/, '').                        # remove ACLs
     gsub(/^<<TableOfContents.+$/, '').            # remove TOCs
     gsub(/^## page was renamed from .+$/, '').    # remove 'page was renamed'
+    # TODO: use `html-renderer` to convert it to ANSI
     gsub(/^\{\{\{\n^#!raw\n(.+)\}\}\}$/m, "\\1"). # remove {{{#!raw}}}s
     # TODO: convert {{{\n#!highlight lang}}}s (2-phase: match {{{ }}}'s, then match first line inside)
     gsub(/\{\{\{\n?#!(?:highlight )?(\w+)\n(.+)\n\}\}\}$/m, "```\\1\n\\2\n```"). # convert {{{#!highlight lang }}} to ```lang ```
@@ -659,22 +615,6 @@ def print_wikidump(filename)
       # parsed_page = WikiCloth::Parser.new(params: { "PAGENAME" => title }, data: body)
       # out << parsed_page.to_html
       out << ""
-      out << ""
-    end
-  end
-end
-
-##############################################################################
-
-def print_bookmarks(filename)
-  require 'nokogiri'
-
-  doc = Nokogiri::HTML(open(filename))
-
-  Enumerator.new do |out|
-    doc.search("a").each do |a|
-      out << "\e[1;36m#{a.inner_text}\e[0m"
-      out << "  #{a["href"]}"
       out << ""
     end
   end
@@ -747,8 +687,6 @@ def print_torrent(filename)
 
   data = BEncode.load_file(filename)
 
-  # require 'awesome_print'; return data.ai
-
   date        = data["creation date"] && Time.at(data["creation date"])
   name        = data.dig "info", "name"
   infohash    = Digest::SHA1.hexdigest(BEncode.dump data["info"])
@@ -799,13 +737,6 @@ end
 
 ##############################################################################
 
-def print_media(arg)
-  result = run("ffprobe", "-hide_banner", arg, stderr: true)
-  highlight_lines_with_colons(result)
-end
-
-##############################################################################
-
 def print_cp437(filename)
   open(filename, "r:cp437:utf-8", &:read).gsub("\r", "")
 end
@@ -818,20 +749,44 @@ end
 
 ##############################################################################
 
+# def print_sqlite(filename)
+#   stats  = run("sqlite3", filename, ".dbinfo").read
+#   schema = run("sqlite3", filename, ".schema --indent").read
+
+#   print_header("Statistics:",1) +
+#     stats + "\n" +
+#   print_header("Schema:",2) +
+#     CodeRay.scan(schema, :sql).term
+# end
+
+def print_sqlite(filename)
+  return to_enum(:print_sqlite, filename) unless block_given?
+
+  require 'sequel'
+  require 'pp'
+
+  Sequel.sqlite(filename) do |db|
+    db.tables.each do |table|
+      yield print_header("#{table}", 1)
+      schemas = db[:sqlite_master].where(tbl_name: "#{table}").select(:sql).map(&:values).flatten.join("\n")
+      yield CodeRay.scan(schemas, :sql).term
+      yield ""
+      begin
+        db[table].each { |row| yield CodeRay.scan(row.pretty_inspect, :ruby).term }
+      rescue Sequel::DatabaseError => e
+        yield e.inspect
+      end
+      yield ""
+      yield ""
+    end
+  end
+end
+
+##############################################################################
+
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
-  result = nil
-  %w[pem der net].each do |cert_format|
-    result = run("openssl", "x509",
-        "-fingerprint", "-text", "-noout",
-        "-inform", cert_format,
-        "-in", filename,
-        stderr: true).read
-
-    break unless result =~ /unable to load certificate/
-  end
-
-  highlight_lines_with_colons(result)
+  highlight_lines_with_colons(run("openssl", "x509", "-fingerprint", "-text", "-noout", "-in", filename, ))
 end
 
 ##############################################################################
@@ -959,7 +914,7 @@ def print_http(url)
 end
 
 def print_html(file)
-  # TODO: Is it better to use Term.width as html2text's -b option?
+  # TODO: Switch to using 'html-renderer'
   ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
     markdown.write File.read(file)
     markdown.close_write
@@ -982,7 +937,6 @@ end
 ##############################################################################
 
 def highlight(enum, &block)
-  enum = enum.each_line if enum.is_a? String
   Enumerator.new do |y|
     enum.each do |line|
       y << block.call(line)
@@ -992,8 +946,8 @@ end
 
 def highlight_lines_with_colons(enum)
   highlight(enum) do |line|
-    if line =~ /^(\s*)(\S+):(.*)/
-      "#{$1}\e[37;1m#{$2}\e[0m: #{$3}"
+    if line =~ /^(\S+.*):(.*)/
+      "\e[37;1m#{$1}\e[0m: #{$2}"
     else
       line
     end
@@ -1002,11 +956,12 @@ end
 
 ##############################################################################
 
-DECOMPRESSORS = {
+COMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
 }
+
 
 def convert(arg)
 
@@ -1041,20 +996,16 @@ def convert(arg)
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
        ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem)$/
       print_archive(arg)
-    elsif cmd = DECOMPRESSORS[ext]
+    elsif cmd = COMPRESSORS[ext]
       run(*cmd, arg)
     elsif path.filename =~ /.+-current\.xml$/
       print_wikidump(arg)
-    elsif path.filename =~ /bookmark.+\.html$/i
-      print_bookmarks(arg)
     else
       case ext
       when *%w[.html .htm]
         print_html(arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
-      when *%w[.adoc]
-        print_asciidoc(File.read arg)
       when *%w[.moin]
         print_moin(File.read arg)
       when *%w[.ipynb]
@@ -1075,14 +1026,10 @@ def convert(arg)
         print_rtf(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
-      # when *%w[.dfxp .xml]
-      #   pretty_xml(arg)
       when *%w[.xml]
-        print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
+        convert_htmlentities(print_source(arg))
       when *%w[.csv .xls]
         print_csv(arg)
-      when *%w[.mp3 .ogg .mkv .mp4 .avi .mov .qt .rm .wma .wmv]
-        print_media(arg)
       when ".tsv"
         print_csv(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
@@ -1094,6 +1041,8 @@ def convert(arg)
         format = run('file', arg).read
 
         case format
+        when /SQLite 3.x database/
+          print_sqlite(arg)
         when /POSIX shell script/
           print_source(arg)
         when /:.+?(executable|shared object)[^,]*,/
@@ -1117,13 +1066,11 @@ if $0 == __FILE__
   args = ARGV
 
   if args.size == 0 or %w[-h --help].include? args.first
-
     puts "usage: c [options] <filename(s)>"
     puts
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
     puts
-
   else # 1 or more args
 
     wrap = !args.any? { |arg| arg[/\.csv$/i] }
@@ -1140,10 +1087,10 @@ if $0 == __FILE__
         begin
           result = convert(arg)
         rescue Errno::EACCES
-          less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+          puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
           next
         rescue Errno::ENOENT
-          less.puts "\e[31m\e[1mFile not found.\e[0m"
+          puts "\e[31m\e[1mFile not found.\e[0m"
           next
         end
 
