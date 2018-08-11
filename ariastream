@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: ariastream"
+  exit 1
+fi
+
+aria2c --continue --split=12 --min-split-size=3M --max-connection-per-server=12 --file-allocation=falloc --stream-piece-selector=inorder --enable-http-pipelining "$1"
