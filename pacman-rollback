@@ -11,7 +11,7 @@ Package = Struct.new(:root, :file, :desc, :date, :size)
 class Package
   include Comparable
 
-  ARM_ROOT="http://ala.seblu.net/packages/"
+  ARM_ROOT="https://archive.archlinux.org/packages/"
 
   attr_reader :name, :ver, :rev, :arch, :sig
 
@@ -66,7 +66,7 @@ class Package
 end
 
 
-def pick(items)  
+def pick(items)
   choices = (1..items.size).zip(items.reverse).reverse
   max_item_size = items.size.to_s.size
 
@@ -110,8 +110,8 @@ end
 #####################################################################
 
 DOWNLOADERS = [
-  %w[http --download], 
-  %w[curl -O --xattr], 
+  %w[http --download],
+  %w[curl -O --xattr],
   %w[wget]
 ]
 
@@ -140,7 +140,7 @@ if args.size != 1
   puts "Download an old arch package using the Arch Rollback Machine!"
   puts
   puts "Usage: #{scriptname} <packagename>"
-  puts 
+  puts
 else
   puts "<8>* <7>Finding the last <15>#{n_vers}</15> versions of <11>#{pkg}</11>...".colorize
 
