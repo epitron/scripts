@@ -59,13 +59,15 @@
 #
 # You can add extra rules just for your specific machine by putting them in ~/.webrc.
 #
-# (The .webrc's contents are treated as regular Ruby code, and evaluated inside a
-# "routes do; ...; end" block.)
+# (The .webrc's contents are treated as regular Ruby code that are executed in the
+# context of the script.)
 #
 # Example .webrc:
 #
-#    match host: "another-video-site.com", path: "/videos/", &play_video
-#    match(host: "another-url-shortener.com") { |uri| route uri.follow_redirect }
+#   routes do
+#     match host: "another-video-site.com", path: "/videos/", &play_video
+#     match(host: "another-url-shortener.com") { |uri| route uri.follow_redirect }
+#   end
 #
 ######################################################################################
 
@@ -317,8 +319,8 @@ BEGIN {
   def load_rc_file
     rc = File.expand_path("~/.webrc")
     if File.exists? rc
-      $router.instance_eval File.read(rc)
-      # eval File.read(rc)
+      # $router.instance_eval File.read(rc)
+      eval File.read(rc)
     end
   end
 
