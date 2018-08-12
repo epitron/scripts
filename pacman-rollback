@@ -30,19 +30,18 @@ class Package
     data = open(root).read
 
     pkgs = data.each_line.map do |l|
-      ((file, desc, datesize)) = l.chomp.scan(/<a href="(.+)">(.+)<\/a>(.+)/)
-
+      ((file, desc, datesize)) = l.chomp.scan(%r{<a href="(.+)">([^<]+)</a>(.+)})
       next unless file and desc and datesize and !file[/^\.\./]
       next if file[/\.sig$/]
 
-      date, size = datesize.strip.split(/\s{2,}/).map(&:strip)
+      date, time, size = datesize.strip.split(/\s+/)
 
-      Package.new(root, file, desc, DateTime.parse(date), size)
+      Package.new(root, file, desc, DateTime.parse("#{date} #{time}"), size)
     end.compact
   end
 
   def self.versions_for_arch(name, arch="x86_64")
-    versions(name).select { |pkg| pkg.arch == arch }.sort
+    versions(name).select { |pkg| pkg.arch == arch or pkg.arch == "any"}.sort
   end
 
   def url
