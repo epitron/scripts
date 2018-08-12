@@ -79,7 +79,7 @@ VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 routes do
 
   default do |uri|
-    open_in_best_browser uri, BROWSERS
+    open_in_best_browser uri
   end
 
   # Strip click trackers
@@ -87,7 +87,7 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirect }
+  match(host: %w[t.co bit.ly is.gd ow.ly]) { |uri| route uri.follow_redirect }
 
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
@@ -158,11 +158,20 @@ BEGIN {
     end
     alias_method :fullpath, :path_with_query
 
-    def follow_redirect
-      require 'http'
+    def get
+      require 'net/http'
+      Net::HTTP.get_response(self)
+    end
 
-      response = ::HTTP.get(self)
-      response.headers["Location"] || self
+    def follow_redirect
+      response = get
+
+      if response.code_type < Net::HTTPRedirection
+        puts "following redirect: #{self}"
+        response["location"]
+      else
+        self
+      end
     end
 
     def escaped
@@ -237,7 +246,7 @@ BEGIN {
       uri = URI.parse(url.gsub("[", "%5B").gsub("]", "%5D"))
 
       # Make sure the default is set...
-      @default ||= proc.new { open_in_best_browser uri, BROWSERS }
+      @default ||= proc.new { open_in_best_browser uri }
 
       # URI.parse doesn't handle file:/// urls properly, so we'll have to bypass it...
       return @default.(url) if url.to_s[%r{^file://}i]
@@ -382,7 +391,7 @@ BEGIN {
     IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
   end
 
-  def open_in_best_browser(uri, browsers)
+  def open_in_best_browser(uri, browsers=BROWSERS)
     name, browser = best_browser_for(uri, browsers)
 
     unless browser
