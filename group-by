@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+# TODO:
+# - implement the -d and -f options
+#            OR
+# - add group-by support to 'fields' and make this
+#   script a stub that calls 'fields' with the
+#   appropriate arguments
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: group-by [options] <field number(s)>"
+  # on "d=",  "delimiter", "Set the field separator"
+  # on "f=",  "file",      "Read input from a file"
+end
+
+args = ARGV
+
+########################################################
+
+col = args.first.to_i - 1
+
+$stdin.each_line.map { |line| line.split }.group_by { |row| row[col] }.each do |group, rows|
+  puts "## #{group}"
+  rows.each do |row|
+    without_col = row[0...col] + row[col+1..-1]
+
+    puts "  #{without_col.join(" ")}"
+  end
+end

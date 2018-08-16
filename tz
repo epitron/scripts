@@ -351,8 +351,8 @@ if __FILE__ == $0
       $1
     end
   end
-
   md5s << opts[:add] if opts[:add]
+
   magnets += md5s.map { |md5| Result.new(md5).magnet_url }
 
   if magnets.any?

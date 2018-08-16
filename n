@@ -17,6 +17,7 @@ opts = Slop.parse(help: true, strict: true) do
   on "d",  "down",  "Take interface down"
   on "u",  "up",    "Put interface up"
   on "i=", "ip",    "Set IP address"
+  on "s",  "scan",  "WIFI Scan"
 end
 
 args = ARGV
@@ -52,28 +53,50 @@ class Dev
 
   attr_accessor :name, :flags, :mac, :addrs, :state
 
-  def self.all
-    `ip addr`.each_line.split_before(/^\d+: /).map do |chunk|
+  def self.all(sorted: false)
+    devs = `ip addr`.each_line.split_before(/^\d+: /).map do |chunk|
       new(chunk) unless chunk.empty?
     end.compact
+
+    if sorted
+      devs.sort_by! do |dev|
+        score = 0
+        score += 100 if dev.up?
+        score += 10  if dev.name[/^e/]
+        score += 11  if dev.name[/^w/]
+        score += 10  if dev.routes.any?
+        score += 10  if dev.routes.any? {|n, type| type == :gateway }
+
+        -score
+      end
+
+    end
+
+    devs
+  end
+
+  def self.wireless
+    all.select(&:wireless?)
   end
 
   def self.routes
-    routes = Hash.of_arrays
+    @routes ||= begin
+      routes = Hash.of_arrays
 
-    # default via 192.168.0.1 dev wlp3s0 proto dhcp src 192.168.0.12 metric 303
-    # 192.168.0.0/24 dev wlp3s0 proto dhcp scope link src 192.168.0.12 metric 303
-    `ip route`.each_line do |line|
-      if line =~ /^default via (\S+) dev (\S+)/
-        routes[$2] << [$1, :gateway]
-      elsif line =~ %r{(\S+) dev (\S+)}
-        routes[$2] << [$1, :range]
-      else
-        raise "Unrecognized: #{line}"
+      # default via 192.168.0.1 dev wlp3s0 proto dhcp src 192.168.0.12 metric 303
+      # 192.168.0.0/24 dev wlp3s0 proto dhcp scope link src 192.168.0.12 metric 303
+      `ip route`.each_line do |line|
+        if line =~ /^default via (\S+) dev (\S+)/
+          routes[$2] << [$1, :gateway]
+        elsif line =~ %r{(\S+) dev (\S+)}
+          routes[$2] << [$1, :range]
+        else
+          raise "Unrecognized: #{line}"
+        end
       end
-    end
 
-    routes
+      routes
+    end
   end
 
   def initialize(lines)
@@ -96,9 +119,18 @@ class Dev
     @state = up? ? "UP" : "DOWN"
   end
 
-  def up?
-    @up ||= @flags.include?("UP")
+
+  def up?; @up ||= @flags.include?("UP"); end
+  def down?; not up?; end
+
+  def routes
+    Dev.routes[name]
   end
+
+  def wireless?
+    name[/^(wlp|wlan)/]
+  end
+
 end
 
 ########################################################
@@ -178,7 +210,7 @@ def print_interfaces
   rows              = []
   routes            = Dev.routes
 
-  Dev.all.each do |dev|
+  Dev.all(sorted: true).each do |dev|
     configs_for_dev = configs.
       select { |config| config.dev == dev.name }.
       map do |config|
@@ -203,7 +235,23 @@ end
 
 ########################################################
 
-if args.empty?
+if opts.scan?
+
+  devs = Dev.wireless
+  if devs.size > 1
+    raise "Error: not sure which device to use (found: #{devs.map(&:name).join(", ")})"
+  end
+
+  dev = devs.first
+  puts "Scanning #{dev.name}..."
+  cmd = ["iw", "dev", dev.name, "scan"]
+  IO.popen(cmd) do |io|
+    lesspipe do |less|
+      less.puts io.read
+    end
+  end
+
+elsif args.empty?
 
   print_interfaces
   puts
@@ -216,7 +264,13 @@ else
 
   args.each do |arg|
 
-    if selected_config = configs.find { |c| c.name == arg }
+    if selected_config = configs.find { |c| c.name == arg } # arg is a netctl config name
+
+      if opts.down?
+        selected_config.stop!
+        exit
+      end
+
       @all_connected_config_names ||= Config.connected_names
 
       configs_for_dev        = configs.select { |c| c.dev == selected_config.dev }
