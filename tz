@@ -95,6 +95,25 @@ end
 
 ###########################################################
 
+module Enumerable
+
+  def partition_map
+    a, b = [], []
+    each do |e|
+      if mapped = yield(e)
+        a << mapped
+      else
+        b << e
+      end
+    end
+
+    [a, b]
+  end
+
+end
+
+###########################################################
+
 class Result
   attr_accessor :title, :hash, :votes, :age, :date, :size, :seeds, :peers # :tags
 
@@ -301,8 +320,6 @@ end
 ###########################################################
 
 def open_url(url)
-  puts "open url"
-  # Make sure the torrent client exists
   cmd = Settings.client.split
 
   unless Path.which(cmd.first)
@@ -310,15 +327,14 @@ def open_url(url)
     exit 1
   end
 
-  puts url if $verbose
-  puts
-
-  # # Fork into the background before running the client
-  # fork { exec(*cmd, url) }
+  if $verbose
+    puts url
+    puts
+  end
 
   # Daemonize to kill the console spam
-  Process.daemon(true)
-  system(*cmd, url)
+  # Process.daemon(true)
+  exec(*cmd, url)
 end
 
 ###########################################################
@@ -327,22 +343,29 @@ if __FILE__ == $0
   opts, args = parse_options
   $verbose = opts.verbose?
 
-  query = args.join(" ")
+  magnets, args = args.partition { |arg| arg[%r{^magnet:.}] }
 
   # when %r{^https?://torrentz2\.eu/(\w{40})}, %r{^https?://idope\.se/torrent/[^/]+/(\w{40})/?}, %r{^https?://torrentproject\.se/(\w{40})/}
-  # Detect
-  md5s = args.map { |arg| arg.strip =~ %r{^https?://.+/([a-f0-9]{40})}i ? $1 : nil }.compact + [opts[:add]]
+  md5s, args = args.partition_map do |arg|
+    if arg.strip =~ %r{^https?://.+/([a-f0-9]{40})}i
+      $1
+    end
+  end
 
-  md5s.compact!
+  md5s << opts[:add] if opts[:add]
+  magnets += md5s.map { |md5| Result.new(md5).magnet_url }
 
-  if md5s.any?
+  if magnets.any?
     # Process.daemon(true)
-    md5s.each do |md5|
-      # puts "#{md5}"
-      url = Result.new(md5).magnet_url
+    magnets.each do |url|
       opts.print? ? (puts url) : (open_url url)
     end
-  elsif opts.mirror?
+    exit
+  end
+
+  query = args.join(" ")
+
+  if opts.mirror?
     mirror(query)
   else
     if opts.date?
@@ -363,4 +386,5 @@ if __FILE__ == $0
       opts.print? ? (puts t.magnet_url) : (open_url t.magnet_url)
     end
   end
+
 end
