@@ -70,7 +70,7 @@ alias .......='cd ../../../../../..'
 
 mkcd() {
   if [ ! -d "$@" ]; then
-    mkdir "$@"
+    mkdir -p "$@"
   fi
   cd "$@"
 }
