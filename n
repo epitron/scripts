@@ -40,7 +40,7 @@ def ifnames
 end
 
 def nameservers
-  Path["/etc/resolv.conf"].each_line.map do |line|
+  Path["/etc/resolv.conf"].io.each_line.map do |line|
     if line =~ /^nameserver (.+)$/
       $1
     end

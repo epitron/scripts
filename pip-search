@@ -100,6 +100,6 @@ if opts.include?("-i")
   args.each { |arg| print_pkg_info(arg) }
 else
   query = args.join("+")
-  puts "<8>* <7>Searching rubygems.org for <14>#{query.inspect}<7>...".colorize
+  puts "<8>* <7>Searching pypi for <14>#{query.inspect}<7>...".colorize
   print_search_results(query)
 end

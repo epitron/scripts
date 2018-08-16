@@ -114,19 +114,24 @@ files.each do |inp|
   cmd += ["-i", inp]
 
   vcodec = opts[:vcodec]
-  vcodec = "#{vcodec}_nvenc" if opts.nvidia? and vcodec != "copy" and not vcodec["nvenc"]
-
-  # cmd += %w[-crf 20] if opts.hq?
-  cmd += ["-c:v", vcodec]
+  if opts.nvidia? and ["h264", "hevc"].include?(vcodec) # != "copy" and not vcodec["nvenc"]
+    vcodec = "#{vcodec}_nvenc"
+    cmd += ["-c:v", vcodec]
+    cmd += ["-preset:v", "slow"]
+    cmd += ["-rc:v", "constqp"]
+    cmd += ["-rc-lookahead:v", "32"]
+    opts[:quality] ||= 27
+  else
+    cmd += ["-c:v", vcodec]
+  end
 
   unless opts.mute?
     acodec = opts[:acodec]
-    acodec = "libfdk_aac" if acodec == "aac"
     cmd += ["-c:a", acodec]
   end
 
   # cmd += ["-crf", opts[:quality]] if opts.quality?
-  cmd += ["-qp", opts[:quality]] if opts.quality?
+  cmd += ["-qp:v", opts[:quality]] if opts.quality?
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
 
