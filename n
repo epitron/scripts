@@ -17,6 +17,7 @@ opts = Slop.parse(help: true, strict: true) do
   on "d",  "down",  "Take interface down"
   on "u",  "up",    "Put interface up"
   on "i=", "ip",    "Set IP address"
+  on "s",  "scan",  "WIFI Scan"
 end
 
 args = ARGV
@@ -74,6 +75,10 @@ class Dev
     devs
   end
 
+  def self.wireless
+    all.select(&:wireless?)
+  end
+
   def self.routes
     @routes ||= begin
       routes = Hash.of_arrays
@@ -120,6 +125,10 @@ class Dev
 
   def routes
     Dev.routes[name]
+  end
+
+  def wireless?
+    name[/^(wlp|wlan)/]
   end
 
 end
@@ -226,7 +235,23 @@ end
 
 ########################################################
 
-if args.empty?
+if opts.scan?
+
+  devs = Dev.wireless
+  if devs.size > 1
+    raise "Error: not sure which device to use (found: #{devs.map(&:name).join(", ")})"
+  end
+
+  dev = devs.first
+  puts "Scanning #{dev.name}..."
+  cmd = ["iw", "dev", dev.name, "scan"]
+  IO.popen(cmd) do |io|
+    lesspipe do |less|
+      less.puts io.read
+    end
+  end
+
+elsif args.empty?
 
   print_interfaces
   puts
