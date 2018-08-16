@@ -42,7 +42,7 @@ alias l='ls -al'
 alias la='ls -la'
 alias ll='ls -l'
 alias lh='ls -lh'
-alias lts='lt -s'
+alias lts='d -ls'
 alias lt='d -lt'
 
 
