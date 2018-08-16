@@ -17,14 +17,15 @@ function possibly_prepend_path() {
 }
 
 # Things for the PATH (in reverse order of precedence)
+possibly_prepend_path ~/.nimble/bin
+possibly_prepend_path ~/.luarocks/bin
 possibly_prepend_path ~/node_modules/.bin
+possibly_prepend_path ~/.cabal/bin
+possibly_prepend_path ~/go/bin
 for i in ~/.gem/ruby/*/bin; do
   possibly_prepend_path $i
 done
 possibly_prepend_path ~/.gem/bin
-possibly_prepend_path ~/.nimble/bin
-possibly_prepend_path ~/.luarocks/bin
-possibly_prepend_path ~/go/bin
 possibly_prepend_path ~/.local/bin
 possibly_prepend_path $SCRIPTDIR
 possibly_prepend_path ~/bin

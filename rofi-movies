@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+require 'epitools/path'
+
+root = Path["~/m/movies"]
+
+paths = root.
+          ls_R.
+          select  { |path| path.ext =~ /(mp4|mkv|avi|mpe?g|vob|flv|wmv)/ }.
+          map     { |path| [path.relative_to(root).to_s, path] }.
+          reject  { |rel, path| rel[%r{^(\.Trash|\[featurettes\])}] }.
+          sort_by { |rel, path| rel.downcase }
+
+paths =
+  paths.sample(10) +  # Put some random movies at the top of the list
+  [["-"*50,nil]] +    # An ASCII separator
+  paths               # The rest of the movies
+
+path_lookup_table = paths.to_h
+
+path =
+  IO.popen(%w[rofi -dmenu -i -async-pre-read 0 -p Movie:], "r+") do |f|
+    f.puts paths.map(&:first).join("\n")
+    f.close_write
+
+    picked = f.gets.strip
+    path_lookup_table[picked]
+  end
+
+exec("mpv", path.to_s)
