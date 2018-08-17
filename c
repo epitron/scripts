@@ -342,8 +342,8 @@ def print_source(arg)
   filename = path.filename
 
   lang =  shebang_lang(path) ||
-          CODERAY_EXT_MAPPING[ext] ||
-          CODERAY_FILENAME_MAPPING[filename]
+          EXT_HIGHLIGHTERS[ext] ||
+          FILENAME_HIGHLIGHTERS[filename]
 
   if ext == ".json"
     require 'json'
