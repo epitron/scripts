@@ -14,7 +14,7 @@ def parse_options
 end
 
 opts    = parse_options
-infiles = ARGV.map(&:to_Path)
+infiles = ARGV.map { |arg| Path.new(arg) }
 
 if infiles.empty?
   puts opts

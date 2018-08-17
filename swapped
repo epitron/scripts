@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
+#
+# TODO: Almost identical, but _much_ faster: `grep VmSwap /proc/*/status`
+#
+
 require 'epitools'
 
 lesspipe do |less|

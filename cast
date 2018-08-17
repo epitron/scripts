@@ -1,0 +1,223 @@
+#!/usr/bin/env ruby
+########################################################
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+########################################################
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: cast [options]"
+
+  on "p",  "pause",   "Pause/unpause"
+  on "a",  "add",     "Enqueue URL"
+  on "s",  "scan",    "Scan devices"
+  on "d=", "device",  "Set Chromecast device"
+  on "t=", "seek",    "Seek to time"
+  on "n",  "next",    "Go to next playlist entry"
+  on "u=", "url",     "Show an URL"
+  on "i",  "info",    "Info about the currently playing thing"
+  on "v",  "verbose", "Show extended info"
+end
+
+args = ARGV
+
+########################################################
+
+def catt(command, *args, device: nil, stderr: true)
+  cmd = ["catt"]
+  cmd += ["-d", device] if device
+  cmd << command
+  cmd += args
+
+  # p cmd; puts
+  system *cmd
+end
+
+########################################################
+
+def help
+  @help ||= `catt --help`
+end
+
+def help_commands
+  help.split_after(/Commands:/).to_a.last.each_line.map { |line| line.strip.split }.compact
+end
+
+def valid_commands
+  help_commands.map &:first
+end
+
+def config_lines
+  path = Path["~/.config/catt/catt.cfg"]
+  if path.exists?
+    path.each_line
+  else
+    []
+  end
+end
+
+def devices
+  @devices ||= `catt scan`.each_line.reject { |l| l["Scanning"] }
+end
+
+def aliases
+  config_lines.split_after("[aliases]").to_a.last
+end
+
+def playing?
+  `catt status`.each_line.grep(/State: PLAYING/).any?
+end
+
+def playpause
+  if playing?
+    puts "Pausing..."
+    catt("pause")
+  else
+    puts "Playing..."
+    catt("play")
+  end
+end
+
+def monitor(delay=1, device: nil)
+  begin
+    last_update = Time.now
+
+    print "\e[H\e[J" # clear
+    loop do
+      print "\e[1;1H" # home
+      process_command("status", device: device)
+
+      elapsed = Time.now-last_update
+      sleep(delay-elapsed) if elapsed < delay
+
+      last_update = Time.now
+    end
+  rescue Interrupt
+  end
+end
+
+########################################################
+
+def status(device=nil)
+  `catt #{"-d #{device} " if device}status`
+end
+
+def process_command(cmd, *args, device: nil)
+  case cmd
+  when "help", "?"
+    puts help
+    puts "  device        Set Chromecast device"
+    puts "  alises        Show device aliases"
+    puts "  devices       Show available devices and aliases"
+    puts "  seek/pos      Show/set seek position"
+    puts "  volume        Show/set volume"
+    puts "  commands      Show available commands"
+    puts "  help          This!"
+
+  when "device"
+    if args.empty?
+      if device
+        puts "device: #{device}"
+      else
+        config_lines.grep(/^device/).each &:displayln
+      end
+    else
+      device = args.join(" ")
+      puts "Device changed to: #{device.inspect}"
+    end
+
+  when "aliases"
+    puts aliases
+
+  when "devices"
+    puts "Aliases:"
+    puts aliases
+    puts
+    puts "Devices:"
+    puts devices
+
+  when "seek", "pos"
+    if args.empty?
+      puts status(device).each_line.grep(/^Time:/)
+    else
+      catt("seek", args.first, device: device)
+    end
+
+  when "volume", "vol"
+    if args.empty?
+      puts status(device).each_line.grep(/^Volume:/)
+    else
+      volume = args.first.to_i.clamp(0..100)
+      puts "Setting volume to #{volume}"
+      catt("volume", volume.to_s, device: device)
+    end
+
+  when "s"
+    process_command("status", device: device)
+
+  when "monitor", "mon"
+    monitor(device: device)
+
+  when "next"
+    process_command("skip", device: device)
+
+  when "commands"
+    p valid_commands
+
+  else
+    if valid_commands.include? cmd
+      catt(cmd, *args, device: device)
+    else
+      puts "Error: #{cmd.inspect} is not a valid command"
+    end
+
+  end
+end
+
+########################################################
+
+def repl(opts={})
+  require 'readline'
+
+  Thread.new { help } # pre-cache help
+
+  device = opts[:device]
+
+  loop do
+    input = Readline.readline("> ", true)
+    unless input and not input.empty?
+      puts
+      return
+    end
+
+    cmd, args = input.split
+    args      = [args].flatten.compact
+
+    process_command(cmd, *args, device: device)
+  end
+end
+
+########################################################
+
+if opts.scan?
+  catt("scan", device: opts[:device])
+elsif opts.info?
+  catt("status", device: opts[:device])
+elsif opts.verbose?
+  catt("info", device: opts[:device])
+elsif opts.next?
+  catt("skip", device: opts[:device])
+elsif opts.pause?
+  playpause
+elsif time = opts[:seek]
+  catt("seek", time, device: opts[:device])
+elsif url = opts[:url]
+  catt("cast_site", url, device: opts[:device])
+else
+  if args.empty?
+    repl(opts)
+  else
+    catt("cast", args.pop, device: opts[:device]) unless opts.add?
+    args.each { |arg| catt("add", arg, device: opts[:device]) }
+  end
+end

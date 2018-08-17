@@ -9,14 +9,17 @@ require 'epitools/clitools'
 ###############################################################################
 
 TYPE_INFO = [
-  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :white],
-  [:music,   /\.(mp3|ogg|m4a)$/i,                          :purple],
-  [:video,   /\.(mp4|mkv|avi|m4v)$/i,                      :light_purple],
-  [:sub,     /\.(srt|idx|sub)$/i,                          :grey],
+  [:data,    /\.(json|ya?ml)$/i,                           :yellow],
+  [:config,  /\.(conf|ini)$/i,                             :cyan],
+  [:music,   /\.(mp3|ogg|m4a|aac)$/i,                      :purple],
+  [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,          :grey],
   [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
-  [:doc,     /\.(txt|pdf)$/i,                              :light_white],
   [:dotfile, /^\../i,                                      :grey],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|bz2|xz)|gem)$/i, :light_yellow]
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :light_yellow],
+  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc|log))$/i,           :light_white],
+  [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv)$/i,              :light_purple],
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|xz|bz2)|tgz|pixz|gem)$/i, :light_yellow]
+
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -25,7 +28,7 @@ FILENAME2TYPE  = Rash.new TYPE_INFO.map { |name, regex, color| [regex, name] }
 ARG2TYPE = Rash.new({
   /^(code|source|src)$/   => :code,
   /^(music|audio)$/       => :music,
-  /^videos?$/             => :video,
+  /^vid(eo)?s?$/          => :video,
   /^(subs?)$/             => :sub,
   /^(image?s|pics?|pix)$/ => :image,
   /^(text|docs?)$/        => :doc,
@@ -111,20 +114,28 @@ end
 
 ###############################################################################
 
-def print_paths(paths, long: false, regex: nil, hidden: false, output: $stdout)
-  paths = paths.select { |path| path.filename =~ regex } if regex
-  paths = paths.reject &:hidden? unless hidden
+def print_paths(paths, long: false, regex: nil, hidden: false, tail: false)
+  paths  = paths.select { |path| path.filename =~ regex } if regex
+  paths  = paths.reject &:hidden? unless hidden
 
-  if long
-    paths.each do |path|
-      fn = path.colorized(regex: regex, wide: true)
-      time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
-      size = path.size rescue nil
-      output.puts "#{size.commatized_and_colorized} #{time} #{fn}"
+  printer = proc do |output|
+    if long
+      paths.each do |path|
+        fn = path.colorized(regex: regex, wide: true)
+        time = (path.mtime.strftime("%Y-%m-%d") rescue "").ljust(10)
+        size = path.size rescue nil
+        output.puts "#{size.commatized_and_colorized} #{time} #{fn}"
+      end
+    else
+      colorized_paths = paths.map { |path| path.colorized(regex: regex) }
+      output.puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
     end
+  end
+
+  if tail
+    printer[$stdout]
   else
-    colorized_paths = paths.map { |path| path.colorized(regex: regex) }
-    output.puts Term::Table.new(colorized_paths, :ansi=>true).by_columns
+    lesspipe(&printer)
   end
 end
 
@@ -156,6 +167,7 @@ opts = Slop.parse(help: true, strict: true) do
   on "r", "recursive",    'Recursive'
   on "D", "dirs-first",   'Show directories first'
   on "a", "all"   ,       'Show all files (including hidden)'
+  on "H", "hidden",       'Show hidden files'
   on "t", "time",         'Sort by modification time'
   on "T", "reverse-time", 'Sort by modification time (reversed)'
   on "s", "size",         'Sort by size'
@@ -205,12 +217,19 @@ grouped.each do |dir, paths|
     paths = paths.select { |path| selected_types.include? path.type }
   end
 
-  if opts[:time] or opts["reverse-time"]
+  start_pager_at_the_end = false
+  if opts["time"]
     paths.sort_by!(&:mtime)
-  elsif opts[:size] or opts["reverse-size"]
+    start_pager_at_the_end = true
+  elsif opts["reverse-time"]
+    paths.sort_by!(&:mtime).reverse!
+  elsif opts["size"]
     paths.sort_by!(&:size)
+    start_pager_at_the_end = true
+  elsif opts["reverse-size"]
+    paths.sort_by!(&:size).reverse!
   else
-    paths.sort_by!(&:path)
+    paths.sort_by! { |path| path.path.downcase }
   end
 
   if opts.dirs_first?
@@ -218,9 +237,5 @@ grouped.each do |dir, paths|
     paths = dirs + paths
   end
 
-  if opts.paged?
-    lesspipe { |less| print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?, output: less) }
-  else
-    print_paths(paths, long: opts.long?, regex: regex, hidden: opts.a?)
-  end
+  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?, tail: start_pager_at_the_end)
 end

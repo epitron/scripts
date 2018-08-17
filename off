@@ -1,0 +1,6 @@
+#!/bin/bash
+if which systemctl > /dev/null; then
+  systemctl poweroff
+else
+  shutdown -h now
+fi

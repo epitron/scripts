@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+args = ARGV
+
+if ARGV == ["--help"]
+  puts "usage: git-pushdiff [git-diff options] <remote (defaults to origin/master)>"
+  puts
+  puts "Display what you're about to push as a git diff."
+  exit 1
+end
+
+opts, args = args.partition { |arg| arg[/^-.+/] }
+
+if args.empty?
+  args << "origin/master"
+end
+
+cmd = %w[git diff --cached]
+cmd += opts
+cmd += args
+
+system(*cmd)

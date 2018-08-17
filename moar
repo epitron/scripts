@@ -312,7 +312,7 @@ class Pager
 
   def percent
     pct = (bottom.to_f / lines) * 100
-    "%0.1f%" % pct
+    "%0.1f%%" % pct
   end
 
   def top

@@ -49,20 +49,22 @@ end
 
 dir = File.absolute_path dir
 
-localfiles = Set.new Dir["#{dir}/**/*"]
+localfiles = Set.new `find #{dir}`.split("\n")
+# localfiles = Set.new Dir["#{dir}/**/*"]
 
 $stderr.puts "in #{dir}: #{localfiles.size} files"
 
 $stderr.print "in packages: "
 
+# pkgfiles = Set.new `pacman -Ql | grep -E ' #{dir}' | cut -d ' ' -f 2`.split("\n")
 pkgfiles = IO.popen("pacman -Ql") do |inp|
   Set.new inp.map(&:cleanup).select { |path| path.startswith dir }
 end
 
 $stderr.puts "#{pkgfiles.size} files"
 
-$stderr.puts "orphans:"
+$stderr.puts "\norphans (not in packages):"
+(localfiles - pkgfiles).each { |o| puts o.with_slash }
 
-orphans = localfiles - pkgfiles
-orphans.each { |o| puts o.with_slash }
-# orphans.each { |o| print o; $stderr.print " (#{o.type})"; puts }
+$stderr.puts "\nmissing (no longer on filesystem):"
+(pkgfiles - localfiles).each { |f| puts f.with_slash }

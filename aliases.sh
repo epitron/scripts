@@ -13,6 +13,10 @@
 
 # alias open='xdg-open "$@" 2>/dev/null'
 
+function we_have() {
+  which "$@" > /dev/null 2>&1
+}
+
 function alias_all_as_sudo() {
   for var in "$@"
   do
@@ -23,7 +27,7 @@ function alias_all_as_sudo() {
 ## if CLICOLOR doesn't work, this can hard-wire color-ls
 if [ "$TERM" != "dumb" ]; then
   #export LS_OPTIONS='--color=auto'
-  if which dircolors > /dev/null 2>&1
+  if we_have dircolors
   then
     eval `dircolors -b`
   fi
@@ -38,11 +42,18 @@ alias l='ls -al'
 alias la='ls -la'
 alias ll='ls -l'
 alias lh='ls -lh'
-alias lts='lt -s'
+alias lts='d -ls'
 alias lt='d -lt'
 alias da='d -a'
 
-alias fd='f -d'
+function fd() {
+  query="$@"
+  $(which fd) --color=always "$query" | less -RS "+/$query"
+}
+
+#if which fd > /dev/null; then
+#  alias f='fd -IH'
+#fi
 
 # cd
 alias up='cd ..'
@@ -59,7 +70,7 @@ alias .......='cd ../../../../../..'
 
 mkcd() {
   if [ ! -d "$@" ]; then
-    mkdir "$@"
+    mkdir -p "$@"
   fi
   cd "$@"
 }
@@ -83,9 +94,15 @@ alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
 alias cls='clear'
+alias r="ren"
 
 # text
-alias nano="nano -w"
+if ! we_have nano && we_have pico; then
+  alias nano="pico -w"
+else
+  alias nano="nano -w"
+fi
+
 alias s.='s .'
 alias c.='c .'
 alias egrep='egrep --color=auto'
@@ -100,7 +117,7 @@ rgrep() {
   rcat "$@" | grep -Ei $expression
 }
 
-if which ag > /dev/null 2>&1
+if we_have ag
 then
   alias ag='ag --pager "less -RSFXi"'
 else
@@ -109,6 +126,10 @@ fi
 
 alias less='less -X -F -i'
 alias diff='diff -u'
+
+if we_have scc; then
+  alias cloc='scc'
+fi
 
 # media
 alias o="open"
@@ -129,15 +150,23 @@ alias whois='whois -H'
 alias geoip='geoiplookup'
 alias geoip6='geoiplookup6'
 alias iptraf='sudoifnotroot iptraf-ng'
+alias ip6='ip -6'
 
 # disks
 alias_all_as_sudo fdisk blkid
 alias fatrace="sudoifnotroot fatrace | grep -v xfce4-terminal"
 alias md='mdadm'
+
 alias df='df -h'
 alias df.='df .'
 alias screen='screen -U'
-alias dd='dcfldd'
+
+if we_have dcfldd; then
+  alias dd='dcfldd'
+elif we_have ddrescue; then
+  alias dd='ddrescue'
+fi
+
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 
@@ -146,18 +175,19 @@ alias_all_as_sudo sysdig swapped perf
 alias dmesg='dmesg -T --color=always|less -S -R +\>'
 alias dmesg-tail='\dmesg -T --color -w'
 alias dstat-wide='dstat -tcyifd'
-alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
+#alias off='sudoifnotroot shutdown -h now || sudoifnotroot systemctl poweroff'
 #alias reboot='sudoifnotroot shutdown -r now || sudoifnotroot systemctl reboot'
-alias reboot='sudoifnotroot systemctl reboot'
+#alias reboot='sudoifnotroot systemctl reboot'
 alias sus='ssu'
 
 # systemd
-alias_all_as_sudo systemctl journalctl
+# alias_all_as_sudo systemctl journalctl
 alias jc='journalctl'
 alias jt='journalctl -f'
 alias sys='systemctl'
 alias j='journalctl'
 alias iu='i --user'
+alias suspend='systemctl suspend -i'
 
 # misc
 alias dict='dictless'
@@ -210,6 +240,8 @@ gc() {
 }
 
 aur() {
+  if [ ! -d ~/aur ]; then mkdir ~/aur; fi
+  cd ~/aur
   aur-get "$@"
   if [ -d "$@" ]; then
     cd "$@"
@@ -230,12 +262,12 @@ kill-bg-jobs() {
 }
 alias gcs="gc --depth=1"
 
-# ruby
-alias r="ren"
+# scripting languagey things
 alias be="bundle exec"
-alias pad="padrino"
-# alias cr='crystal'
 alias rock='luarocks'
+alias pi='pip install --user'
+alias piu='pip uninstall'
+alias py=python2
 
 gem-cd() {
   local gem_dir
@@ -245,8 +277,14 @@ gem-cd() {
   fi
 }
 
-# python
-alias py=python2
+pip-cd() {
+  if [ -d ~/.local/lib/python*/site-packages/$1 ]; then
+    cd ~/.local/lib/python*/site-packages/$1
+  elif [ -d /usr/lib/python*/site-packages/$1 ]; then
+    cd /usr/lib/python*/site-packages/$1
+  fi
+}
+alias pycd=pip-cd
 
 # # 64/32bit specific aliases
 # case `uname -m` in
@@ -262,9 +300,19 @@ alias py=python2
 alias yd='youtube-dl --xattrs --no-mtime'
 alias ydu='youtube-dl --update'
 
+# upm
+alias u=upm
+alias uu='upm update'
+alias up='upm upgrade'
+alias ui='upm install'
+alias ur='upm remove'
+alias uf='upm files'
+alias ul='upm list'
+alias us='upm search'
+
 # arch
 alias pacman='sudoifnotroot pacman'
-alias pacs='\pacman -Ss'   # search for package
+# alias pacs='\pacman -Ss'   # search for package
 alias pacf='\pacman -Ql|grep' # which package contains this file?
 alias pacq='\pacman -Q|grep'  # find a package
 alias pacg='\pacman -Qg'   # show groups
@@ -280,8 +328,8 @@ alias abs='sudoifnotroot abs'
 alias mp='makepkg -s'
 
 # npm
-alias ni="sudoifnotroot npm install -g"
-alias nl="npm list -g --color=always |& less -S"
+# alias ni="sudoifnotroot npm install -g"
+# alias nl="npm list -g --color=always |& less -S"
 
 #
 # Usage:

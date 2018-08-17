@@ -18,7 +18,7 @@ class Result
     :user,
     :desc,
     :highlighted_desc
-  
+
   def initialize(li)
     @length       = li.at(".video-time").text
     link          = li.at(".yt-lockup-title a")
@@ -64,7 +64,13 @@ def youtube_search(query)
   lis = page.search("#results ol.section-list ol.item-section > li")
   results = lis.map do |li|
     next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
-    Result.new li
+
+    result = Result.new(li) rescue nil
+
+    next if result.nil?
+    next if result.url.to_s["googleadservices.com"]
+
+    result
   end.compact
 end
 
@@ -79,10 +85,10 @@ puts "Results: #{results.size}"
 results = Hash[ (1..results.size).zip(results) ]
 
 results.to_a.reverse.each do |n, r|
-  puts "<11>#{n}. <15>#{r.title}".colorize
+  puts "<11>#{n}. <15>#{r.title} <8>[<7>#{r.length}<8>]".colorize
 
   indent = " " * (n.to_s.size + 2)
- 
+
   puts "#{indent}<8>by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
   puts "#{indent}#{r.url}".light_blue
   # puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc

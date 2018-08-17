@@ -1,0 +1,24 @@
+#!/bin/bash
+
+[ "$UID" = "0" ] || exec sudo $0 $@
+
+function print_sys_stuff() {
+  echo "== $1 ====="
+  pushd $1 > /dev/null
+  grep . * 2> /dev/null
+  popd > /dev/null
+  echo
+}
+
+function zdebug_info() {
+  print_sys_stuff /sys/kernel/debug/zswap
+  echo -n "Swap used: "
+  free -h | grep -E '^Swap' | awk '{print $3 "/" $2}'
+  echo
+}
+
+function zslab_info() {
+  print_sys_stuff /sys/kernel/slab/zswap_entry
+}
+
+pr -m -t -w `tput cols` <(zdebug_info) <(zslab_info)

@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require 'epitools/colored'
+require 'open-uri'
+
+SVNURL = "svn://svn.FreeBSD.org/ports/head/%s/%s"
+NUM_RESULTS = 20
+SEARCH_URL = "https://www.freshports.org/search.php?query=%s&num=#{NUM_RESULTS}&stype=name&method=match&deleted=excludedeleted&start=1&casesensitivity=caseinsensitive"
+
+def search(query)
+  html = open(SEARCH_URL % query, &:read)
+  # html = File.read("freshports.html")
+  html.scan(%r{<DT>\s*<BIG><B><a href="([^"]+)/">.+?</BIG>\s*<span class="[^"]+">([^<]+)</span><br>\s*<b>\s*([^<]+)\s*</b>}im)
+end
+
+if ARGV.empty?
+  puts "usage: portsearch <query>"
+  exit 1
+end
+
+query = ARGV.join(" ")
+
+puts "<8>* <7>Searching for <15>#{query}<7>...".colorize
+
+results = search(query)
+puts
+results.each do |path, desc, version|
+  _, category, package = path.split("/")
+  puts "<9>#{category}<8>/<11>#{package} <8>(<7>#{version}<8>)".colorize
+  puts "  #{desc}"
+  puts "  #{SVNURL % [category, package]}".light_green
+end

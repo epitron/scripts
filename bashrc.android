@@ -1,5 +1,4 @@
 unalias rm
-unalias git
 unalias dpkg
 
 alias ai="apt install"

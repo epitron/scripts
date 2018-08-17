@@ -1,0 +1,9 @@
+keycode 135 = Super_R
+
+! Use Caps Lock button for compose key
+clear lock
+keycode 66 = Multi_key
+
+keysym XF86Back = Prior
+keysym XF86Forward = Next
+
