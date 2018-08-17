@@ -1,0 +1,2 @@
+#!/bin/bash
+git fsck --no-reflog | awk '/dangling commit/ {print $3}' | xargs git log --no-walk --format="%H" --grep="WIP on"
