@@ -1,14 +1,16 @@
 #!/usr/bin/env ruby
 require 'epitools/path'
 
-root = Path["~/m/movies"]
+media_dirs = %w[~/m/movies ~/m/documentaries]
 
-paths = root.
-          ls_R.
-          select  { |path| path.ext =~ /(mp4|mkv|avi|mpe?g|vob|flv|wmv)/ }.
-          map     { |path| [path.relative_to(root).to_s, path] }.
-          reject  { |rel, path| rel[%r{^(\.Trash|\[featurettes\])}] }.
-          sort_by { |rel, path| rel.downcase }
+paths = media_dirs.flat_map do |media_dir|
+          root = Path[media_dir]
+          root.ls_R.
+            select  { |path| path.ext =~ /(mp4|mkv|avi|mpe?g|vob|flv|wmv)/ }.
+            map     { |path| [path.relative_to(root).to_s, path] }.
+            reject  { |rel, path| rel[%r{^(\.Trash|\[featurettes\])}] }.
+            sort_by { |rel, path| rel.downcase }
+        end
 
 paths =
   paths.sample(10) +  # Put some random movies at the top of the list

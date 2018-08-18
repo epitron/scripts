@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+def to_human(t)
+  ms   = ((t-t.floor)*10).floor
+  sec  = t.floor
+  hour = (sec/3600).floor
+  sec -= hour * 3600
+  min  = (sec/60).floor
+  sec -= min * 60
+  sprintf "%02d:%02d:%02d.%01d", hour, min, sec, ms
+end
+
+Kernel.trap('INT') { Kernel.exit }
+start = Time.now
+
+loop do
+  elapsed = Time.now - start
+  sleep 0.1
+  print "\b"*30
+  print to_human(elapsed)
+  print " "*5
+  STDOUT.flush
+end
