@@ -1,1 +1,2 @@
-exec wine msiexec /i "$@"
+#!/bin/bash
+wine msiexec /i "$*"

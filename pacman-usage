@@ -21,17 +21,17 @@ class Package
   attr_accessor :hash
 
   PACKAGE_FIELDS = [
-    "Provides", 
-    "Depends On", 
-    # "Optional Deps", 
-    "Required By", 
+    "Provides",
+    "Depends On",
+    # "Optional Deps",
+    "Required By",
     "Optional For",
-    "Conflicts With", 
+    "Conflicts With",
     "Replaces",
-    "Groups", 
+    "Groups",
   ]
 
-  DATE_FIELDS = ["Build Date", "Install Date"] 
+  DATE_FIELDS = ["Build Date", "Install Date"]
 
   def self.all
     return to_enum(:all) unless block_given?
@@ -127,8 +127,6 @@ def link_deps(packages)
   end
 end
 
-
-
 puts "* Parsing pacakges..."
 
 packages    = []
@@ -139,11 +137,10 @@ Package.all.each do |pkg|
 end
 puts "  |_ Done! (#{packages.size.commatize} packages found)"
 
-# puts "* Linking packages..."
-# link_deps(packages)
-# puts "  |_ Done!"
-
 packages.sort_by(&:size).each do |pkg|
   # puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize} <8>(<7>deps: <15>#{pkg.recursive_dep_size}<8>)".colorize
   puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize}".colorize
 end
+
+## TODO: Make this work
+# puts Term::Table.new(rows: packages.sort_by(&:size).map { |pkg| [pkg.name.light_blue, pkg.size.commatize.light_cyan] })

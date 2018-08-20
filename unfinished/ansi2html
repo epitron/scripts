@@ -311,10 +311,9 @@ def ansi2html(ansi)
       output << state.html_for(entities(token))
     end
   end
-  puts
 
 
-  output.join("")#.gsub("\n", "<br/>\n")
+  output.join("").gsub("\n", "<br/>\n")
 end
 
 def ansi2file(ansi, f)

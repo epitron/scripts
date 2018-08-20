@@ -29,8 +29,8 @@ end
 
 
 def to_row(row)
-  "  <tr>\n" + 
-    row.map {|cell| "    <td>#{cell}</td>" }.join("\n") + 
+  "  <tr>\n" +
+    row.map {|cell| "    <td>#{cell}</td>" }.join("\n") +
     "\n  </tr>\n"
 end
 
@@ -104,7 +104,7 @@ class DirectoryLister
 
       html << to_row([link, size, date])
     end
-  
+
     html << "</table>"
 
     html.join("\n")
@@ -144,9 +144,11 @@ end
 
 puts
 puts "* Serving files in: #{root}"
-puts "                on: http://localhost:8888/"
+puts "                on: http://0.0.0.0:8888/"
 puts
 
 # server = Rack::Handler.pick ['thin', 'webrick']
 server = Rack::Handler.pick ['webrick']
 server.run DirectoryLister.new(root), Port: 8888
+
+

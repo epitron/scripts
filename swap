@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 require 'fileutils'
 
+# TODO: If a or b are symlinks to each other, swap their respective symlink relationships
+
 args = ARGV
 
 if args.empty?
@@ -18,6 +20,7 @@ args.each do |arg|
     exit 1
   end
 end
+
 
 a, b = args
 
