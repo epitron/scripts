@@ -126,8 +126,7 @@ Unsorted:
   play: Universal video player (with a searchable history, and the ability to download them or send them to the Chromecast)
   minimize-others: Minimize all the other windows on the current desktop
   xfwm-compositing: Toggle the XFCE4 Window Manager's compositing support
-  cols: Display whatever you pipe into it as a table
-  pacgroups: Shows all the packages in pacman's package groups as a series of tables
+  pacman-groups: Shows all the packages in pacman's package groups as a series of tables (aka. pacgroups)
   wayback-mirror: Download a site from the wayback machine
   run: Execute a binary that doesn't have the executable bit set
   group-by-quarter: Groups all files in the current directory into subdirectories labelled by year and quarter (eg. 2015-Q3/)
@@ -152,7 +151,6 @@ Unsorted:
   pacf: Search for files in installed pacman packages
   extract-keyframes: Extract the keyframes from a video file to individual image files
   vpk: Run Valve's VPK extractor
-  vfio-bind: Bind PCI devices to a specific vfio
   vulnerability-check: Print out CPU vulnerabilities that are known Linux and whether workarounds are enabled (aka. meltdown-check, spectre-check)
   iommu-groups: Display the currently configured IOMMU groups
   xephyr: Launch a new nested Xephyr X11 server (and optionally run an X11 program inside of it)
@@ -170,7 +168,6 @@ Unsorted:
   striphtml: Strips extraneous tags from an HTML document, leaving only the bare minimum tags necessary to read the document.
   ren: An interactive file renamer
   bring-window-forward: Searches through all the titles of windows on the desktop and brings matching windows to the foreground
-  moredim: Make the screen very dim
   faststart: Add a faststart section to an .mp4 file (makes it load very quickly when in an HTML5 <video> tag)
   wifiscan: Display all wireless hotspots
   yank: Replaces a symlink with the file it's pointing at, removing the target
@@ -210,7 +207,7 @@ Unsorted:
   wget-mirror-page: Mirror a page using wget
   switch: Swich to another window using dmenu
   xfsettingsd-debug: Replace xfsettingsd with a new copy, running in debug mode, on the current terminal
-  transcribe: Recognize speech using google's API (aka. wreck-a-nice-beach)
+  transcribe: Recognize speech using google's API (aka. recognize-speech, wreck-a-nice-beach)
   handbrake: Runs HandbrakeCLI (incase you forget the name of it)
   ffmpeg-concat: Concatenate multiple videos into a single file
   hyperthreading: Enable/disable hyperthreading
@@ -219,23 +216,22 @@ Unsorted:
   scan: Scans STDIN/files for a regular expression pattern, and prints just the matched sections of text (as opposed to 'grep', which prints the whole line that contains the match)
   dir.sh: Determine the directory that the current bash script is being run from (to be sourced by other bash scripts)
   spec: rspec wrapper
-  sublime-handler:
-  pac:
-  table:
-  README-generator:
-  vfio-unbind:
-  timestamp:
-  c-x-r:
-  rawk:
-  recognize-speech:
-  agf:
-  wineprefix:
-  cast:
-  discs:
-  lessdim:
-  iptables-log-dropped-packets.sh:
-  runmrxvt:
-  pacman-groups:
+  pac: 'pacman -S' wrapper (can take remote packages or local files as arguments, and maybe AUR packages someday!)
+  table: Display whatever you pipe into it as a table (aka. cols)
+  vfio-bind: Bind PCI devices to a specific vfio
+  vfio-unbind: Unind PCI devices from a specific vfio
+  timestamp: Either put a time stamp on every line piped to its STDIN, or print the seconds-since-unix-epoch
+  c-x-r: recursively 'chmod -x'
+  rawk: "A thought experiment: What if Ruby was Awk? (It 'eval's the argument(s) you pass it on each line of STDIN)"
+  agf: apt-get fix
+  wineprefix: A short script for managing wine prefixes
+  cast: Cast to the Chromecast from the command-line (depends on 'catt', which is in pypi)
+  discs: Search discs
+  dim: Make the screen dim
+  moredim: Make the screen very dim
+  lessdim: Make the screen less dim
+  undim: Make the screen not dim at all
+  iptables-log-dropped-packets.sh: Log dropped iptables packets
   'null':
   shorten:
   lightson:
@@ -349,7 +345,6 @@ Unsorted:
   treeify:
   gb:
   freenode-ping:
-  dim:
   ssh-forward:
   h:
   rtspdump:
@@ -576,7 +571,6 @@ Unsorted:
   drives:
   mp3-remove-ratings:
   sample:
-  undim:
   keychar:
   aur:
   git-dangling-commits:

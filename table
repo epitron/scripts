@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-words = STDIN.lines.map(&:strip)
-puts Term::Table.new(words).by_columns
+cells = ARGF.each_line.map(&:strip)
+puts Term::Table.new(cells).by_columns

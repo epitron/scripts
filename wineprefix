@@ -1,6 +1,14 @@
 #!/bin/bash
 BASE="$HOME/.local/share/wineprefixes"
 
+if [ "$1" == "" ]; then
+  echo "Usage: wineprefix <prefix name> [command/.exe]"
+  echo
+  echo "Prefixes are created in '$BASE'"
+  echo "(If only a prefix name is passed, it runs 'winecfg' on that prefix)"
+  exit 1
+fi
+
 if [ ! -d "$BASE" ]; then
   mkdir -p "$BASE"
 fi

@@ -1,1 +1,22 @@
-pacgroups
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+tree = {}
+
+`pacman -Qg`.each_line.with_index do |l,i|
+  tree.mkdir_p l.split()
+  if i % 5 == 0
+    $stdout.print "."
+    $stdout.flush
+  end
+end
+
+puts
+
+tree.each do |parent, children|
+  puts "<8>== <14>#{parent} <8>===".colorize
+  table = Term::Table.new(children.keys, indent: 1)
+  puts table.in_columns.white
+  puts
+end
