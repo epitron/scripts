@@ -13,6 +13,7 @@ opts = Slop.parse(help: true, strict: true) do
 
   on "m",  "mhtml",  "Capture page and assets as an MHTML file (requires 'urlsnap')"
   on "o=", "output", "Output filename (defaults to guessing based on URL)"
+  on "f",  "force",  "Overwrite existing file"
 end
 
 args = ARGV
@@ -26,7 +27,8 @@ def run(*cmd)
   puts
 end
 
-def urlsnap(url, output: nil)
+def urlsnap(url, opts)
+  output = opts[:output]
   uri = URI.parse(url)
 
   if output
@@ -46,7 +48,9 @@ def urlsnap(url, output: nil)
   puts
 end
 
-def curl(url, output: nil)
+def curl(url, opts)
+  output = opts[:output]
+
   puts " Curling:"
   puts " |_ input: #{url}"
   puts " |_ output: #{output}" if output
@@ -55,8 +59,8 @@ def curl(url, output: nil)
     "curl",
     "-L",       # follow redirects
     "--xattr",  # xattrs
-    "-C", "-",  # resume at whatever the output file size is
   ]
+  cmd += ["-C", "-"] unless opts.force? # resume at whatever the output file size is
 
   if output
     cmd += ["-o", output]
@@ -74,6 +78,6 @@ end
 getter = opts.mhtml? ? :urlsnap : :curl
 
 args.each do |arg|
-  send(getter, arg, output: opts[:output])
+  send(getter, arg, opts)
 end
 
