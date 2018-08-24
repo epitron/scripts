@@ -94,7 +94,6 @@ alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
 alias cls='clear'
-alias r="ren"
 
 # text
 if ! we_have nano && we_have pico; then
@@ -265,6 +264,7 @@ alias gcs="gc --depth=1"
 # scripting languagey things
 alias be="bundle exec"
 alias rock='luarocks'
+alias gi='gem install --user'
 alias pi='pip install --user'
 alias piu='pip uninstall'
 alias py=python2
