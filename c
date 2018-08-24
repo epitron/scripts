@@ -58,6 +58,12 @@ def rougify(lexer=nil)
   cmd
 end
 
+# def bat(lexer=nil)
+#   cmd = ["bat", "--color=always"]
+#   cmd += ["-l", lexer] if lexer
+#   cmd
+# end
+
 ### Converters ###############################################################
 
 # NOTE: Defaults to 'coderay'
@@ -99,6 +105,8 @@ EXT_HIGHLIGHTERS = {
   ".toml"           => rougify,
   ".tmLanguage"     => :xml,
   ".sublime-syntax" => :yaml,
+  ".m"              => pygmentize(:matlab),
+  ".asv"            => pygmentize(:matlab),
 }
 
 FILENAME_HIGHLIGHTERS = {
@@ -705,6 +713,25 @@ end
 
 ##############################################################################
 
+def print_srt(filename)
+  return to_enum(:print_srt, filename) unless block_given?
+
+  enum = open(filename).each_line
+
+  loop do
+    num   = enum.next
+    stamp = enum.next
+
+    loop do
+      line = enum.next.chomp!
+      break if line.empty?
+      yield line
+    end
+  end
+end
+
+##############################################################################
+
 def print_ipynb(filename)
   require 'json'
   require 'tempfile'
@@ -981,7 +1008,7 @@ def print_http(url)
   IO.popen(["lynx", "-dump", url]) { |io| io.read }
 end
 
-def print_html(file)
+def render_html(file)
   # TODO: Switch to using 'html-renderer'
   ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
     markdown.write File.read(file)
@@ -1073,7 +1100,7 @@ def convert(arg)
     else
       case ext
       when *%w[.html .htm]
-        print_html(arg)
+        render_html(arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
       when *%w[.adoc]
@@ -1090,6 +1117,8 @@ def convert(arg)
         print_cp437(arg)
       when *%w[.rst]
         print_rst(arg)
+      when *%w[.srt]
+        print_srt(arg)
       when *%w[.pdf]
         print_pdf(arg)
       when *%w[.doc]
