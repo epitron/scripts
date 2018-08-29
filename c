@@ -82,6 +82,7 @@ EXT_HIGHLIGHTERS = {
   ".service"        => :bash,
   ".hs"             => :text,
   ".cl"             => :c,
+  ".rc"             => :c,
   ".rl"             => :c, # ragel definitions
   ".ino"            => :c, # arduino sdk files
   ".shader"         => :c,
