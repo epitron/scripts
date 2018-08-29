@@ -80,7 +80,7 @@ def print_search_results(query)
           "<11>#{info["name"]} " +
           "<7>(<3>v#{info["version"]}<7>)" +
           "<8>==============").colorize
-    puts info["summary"].indent.bright_white
+    puts info["summary"].indent.bright_white unless info["summary"].empty?
     puts "    <3>https://pypi.org/project/#{info["name"]}/".colorize
     puts
   end
