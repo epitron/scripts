@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+import lz4.block, json, sys
+
+args = sys.argv[1:]
+
+if len(args) == 0:
+  print("usage: jsonlz4cat <.jsonlz4 file(s)>")
+  sys.exit(1)
+
+for arg in args:
+  with open(arg, "rb") as f:
+
+    if f.read(8) != b'mozLz40\x00':
+      print("error: invalid header")
+      sys.exit(1)
+
+    else:
+      print(
+        json.dumps(
+          json.loads(
+            lz4.block.decompress(f.read()
+          )
+        ), indent=2)
+      )
