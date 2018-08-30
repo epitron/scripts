@@ -42,7 +42,7 @@ Path.tmpfile do |tmp|
   end
 
   tmp.open("w") do |io|
-    lines = infiles.map { |infile| "file '#{infile}'\n" }
+    lines = infiles.map { |infile| "file #{infile.to_s.shellescape}\n" }
     io.write lines.join
   end
 
