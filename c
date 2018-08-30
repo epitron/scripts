@@ -86,6 +86,7 @@ EXT_HIGHLIGHTERS = {
   ".rl"             => :c, # ragel definitions
   ".ino"            => :c, # arduino sdk files
   ".shader"         => :c,
+  ".glsl"           => :c,
   ".gradle"         => :groovy,
   ".sage"           => :python,
   ".lisp"           => :clojure,
