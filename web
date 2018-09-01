@@ -87,7 +87,7 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd ow.ly]) { |uri| route uri.follow_redirect }
+  match(host: %w[t.co bit.ly is.gd ow.ly buff.ly]) { |uri| route uri.follow_redirect }
 
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
