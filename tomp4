@@ -188,7 +188,6 @@ files.each do |inp|
   end
 
   cmd += ["-filter:v", vfilters.join(",")] if vfilters.any?
-  cmd += ["-vf", vfilters.join(",")] if vfilters.any?
 
   cmd << out
   puts "   out: #{out}"
