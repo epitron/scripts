@@ -50,7 +50,11 @@ class Systemd
   end
 
   def reload
-    systemctl("daemon-reload", msg: "Reloading")
+    systemctl("daemon-reload", msg: "Reloading systemd configuration")
+  end
+
+  def reexec
+    systemctl("daemon-reexec", msg: "Reexecuting systemd")
   end
 
   # "command1>command2" means to call command2 whenever command1 is called
