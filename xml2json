@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+########################################################
+require 'active_support/core_ext/hash/conversions'
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: xml2json [options] <xml file(s)>"
+
+  on "f",  "force",  "Le force"
+  on "c",  "stdout", "Do not write a file, but instead, write a STDOUT"
+end
+
+args = ARGV
+
+########################################################
+
+paths = args.map &:to_Path
+
+paths.each do |infile|
+  unless infile.exists?
+    puts "Error: #{infile} not found. Skipping."
+    next
+  end
+
+  if opts.stdout?
+    output = $stdout
+  else
+    output = infile.with(ext: "json")
+    if output.exists? and not opts.force?
+      puts "Error: #{output} already exists. Skipping"
+      next
+    end
+    puts "* #{infile.filename} => #{output.filename}"
+  end
+
+  json = Hash.from_xml(infile.read).to_json
+  output.write(json)
+end
