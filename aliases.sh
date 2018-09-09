@@ -278,11 +278,12 @@ gem-cd() {
 }
 
 pip-cd() {
-  if [ -d ~/.local/lib/python*/site-packages/$1 ]; then
-    cd ~/.local/lib/python*/site-packages/$1
-  elif [ -d /usr/lib/python*/site-packages/$1 ]; then
-    cd /usr/lib/python*/site-packages/$1
-  fi
+  for dir in `ls -1rd ~/.local/lib/python*/site-packages/` `ls -1rd /usr/lib/python*/site-packages/`; do
+    if [ -d $dir/$1 ]; then
+      cd $dir/$1
+      break
+    fi
+  done
 }
 alias pycd=pip-cd
 
