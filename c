@@ -99,6 +99,7 @@ EXT_HIGHLIGHTERS = {
   ".dfxp"           => :xml,
   ".stp"            => :javascript, # systemtap
   ".ml"             => pygmentize,
+  ".rkt"            => pygmentize,
   ".nim"            => rougify,
   ".nimble"         => rougify("nim"),
   ".diff"           => pygmentize,
