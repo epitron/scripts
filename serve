@@ -296,7 +296,8 @@ get '/*' do |path|
       when ".haml"
         haml @path.read, layout: false
       when ".md"
-        markdown @path.read, layout: false
+        output = markdown @path.read, layout: false
+        "<style>code { white-space: pre-wrap; }</style>\n" + output
       when ".swf"
         if params[:file]
           send_file @path

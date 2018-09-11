@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
+#####################################################################################
+require 'pp'
+require 'strscan'
+#####################################################################################
+
+BLOCK_SIZE = 4096
 
 #####################################################################################
 
@@ -15,35 +21,24 @@ end
 #####################################################################################
 
 class String
-  #
-  # Wrap the lines in the string so they're at most "width" wide.
-  # (If no width is specified, defaults to the width of the terminal.)
-  #
-  def wrap(width=nil)
-    return self if size <= width
+  def each_line_with_remainder(remainder="")
+    return to_enum(:each_line_with_remainder, remainder) unless block_given?
 
-    strings = []
+    s    = ""
+    enum = each_line
 
-    start_pos = 0
-    end_pos   = width
+    yield remainder + enum.next
 
     loop do
-      split_pos = rindex(/\s/, end_pos)
-
-      strings << self[start_pos...split_pos]
-
-      start_pos = index(/\S/, split_pos)
-      break if start_pos == nil
-      end_pos   = start_pos + width
-
-      if end_pos > size
-        strings << self[start_pos..-1]
+      s = enum.next
+      if s[-1] == "\n"
+        yield s
+      else
         break
       end
     end
 
-    strings.join("\n")
-
+    s
   end
 end
 
@@ -69,6 +64,8 @@ for opt in opts
   end
 end
 
+p width
+
 if args.empty?
   f = $stdin
 else
@@ -77,9 +74,22 @@ end
 
 #####################################################################################
 
-require 'pp'
+remainder = ""
+words     = []
+chunk_re  = /.{1,#{width}}(\s|$|)/m
 
-f.each_line do |line|
-  # line.strip!; pp line: line, wrapped: line.wrap(width)
-  puts line.wrap(width)
+loop do
+  data = f.read(BLOCK_SIZE)
+
+  break unless data
+
+  remainder = data.each_line_with_remainder(remainder) do |line|
+    ss = StringScanner.new(line)
+    while chunk = ss.scan(chunk_re)
+      puts chunk
+    end
+  end
 end
+
+puts remainder
+
