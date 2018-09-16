@@ -1,0 +1,7 @@
+#!/bin/bash
+pkg=linux-hardened
+running=`uname -r`
+installed=`pacman -Qi $pkg | grep Version | fields 3`
+
+echo "  Running: $running"
+echo "Installed: $installed ($pkg)"
