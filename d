@@ -9,16 +9,16 @@ require 'epitools/clitools'
 ###############################################################################
 
 TYPE_INFO = [
-  [:data,    /\.(json|ya?ml)$/i,                           :yellow],
-  [:config,  /\.(conf|ini)$/i,                             :cyan],
-  [:music,   /\.(mp3|ogg|m4a|aac)$/i,                      :purple],
-  [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,          :grey],
-  [:image,   /\.(jpe?g|bmp|png)$/i,                        :green],
-  [:dotfile, /^\../i,                                      :grey],
-  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php)$/i, :light_yellow],
-  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc|log))$/i,           :light_white],
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php|ipynb)$/i,          :light_yellow],
+  [:image,   /\.(jpe?g|bmp|png)$/i,                                       :green],
   [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv)$/i,              :light_purple],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|xz|bz2)|tgz|pixz|gem)$/i, :light_yellow]
+  [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|xz|bz2)|tgz|pixz|gem)$/i, :light_yellow],
+  [:doc,     /(README|LICENSE|TODO|\.(txt|pdf|md|rdoc|log))$/i,           :light_white],
+  [:config,  /\.(conf|ini)$/i,                                            :cyan],
+  [:dotfile, /^\../i,                                                     :grey],
+  [:data,    /\.(json|ya?ml)$/i,                                          :yellow],
+  [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
 
 ]
 
@@ -177,9 +177,10 @@ opts = Slop.parse(help: true, strict: true) do
   on "g=","grep",         'Search filenames'
   on "f=","find",         'Find in directory tree'
 
-  # on "f=", "type",    "File types to select (eg: #{types.join(', ')})"
+  separator "        --<type name>       List files of this type (possibilities: #{types.join(', ')})"
 
-  separator "        --<type name>       List files of this type (eg: #{types.join(', ')})"
+  # re_matchers = ARG2TYPE.keys.map { |re| re.to_s.scan(/\^(.+)\$/) }
+  # separator "        --<type name>       List files of this type (will match: #{re_matchers.join(", ")})"
 end
 
 # List the current directory if no files/dirs were specified
