@@ -1,1 +1,145 @@
-pipesum
+#!/usr/bin/env ruby
+################################################################
+require 'digest'
+require 'zlib'
+################################################################
+
+module Digest
+  class CRC32 < Digest::Class
+    def initialize
+      reset
+    end
+
+    def reset
+      @crc = 0
+    end
+
+    def update(str)
+      @crc = Zlib::crc32_combine(@crc, Zlib::crc32(str), str.size)
+    end
+    alias << update
+
+    def digest_length; 4; end
+    def finish; [@crc].pack("N"); end
+  end
+end
+
+################################################################
+
+HASHERS = {
+  "--crc"    => Digest::CRC32,
+  "--md5"    => Digest::MD5,
+  "--sha1"   => Digest::SHA1,
+  "--sha256" => Digest::SHA256,
+  "--sha512" => Digest::SHA512,
+}
+
+DEFAULTS = ["--md5", "--sha1", "--sha256"]
+
+################################################################
+
+BLOCKSIZE=2**16 # 64k read size
+
+################################################################
+
+def usage
+  puts "Usage:"
+  puts "  #{File.basename __FILE__} <hashers...> [<file(s)...>]"
+  puts
+  puts "Purpose:"
+  puts "  Hashes data streamed through a pipe to STDIN, or files specified on the command line."
+  puts "  The computed hash(es) are output to STDERR."
+  puts
+  puts "Options/Hashers:"
+  HASHERS.each do |opt, klass|
+    puts "  #{opt.ljust(10)} => #{klass}"
+  end
+  puts "  -a / --all      => All of the above!"
+  puts
+  puts "  -p / --parallel => Compute each hash in its own process (uses multiple CPUs)"
+  puts
+  puts "(Note: Defaults to #{DEFAULTS.join(", ")} if no hashers specified)"
+  puts
+  puts "Example:"
+  puts "  curl http://hostname.website/file.iso | pipesum --sha1 > file.iso"
+  puts
+end
+
+################################################################
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if opts.delete("--help") or opts.delete("-h")
+  usage
+  exit
+end
+
+opts += DEFAULTS if opts.empty?
+
+if opts.delete("--all") or opts.delete("-a")
+  opts += HASHERS.keys
+end
+
+################################################################
+
+def sum(digests, input, output=nil, messages=$stderr, parallel=false)
+  if parallel
+    puts "ERROR: Parallel mode not yet implemented."
+    exit 1
+  end
+
+  while data = input.read(BLOCKSIZE)
+    digests.each {|digest| digest << data }
+    output.write(data) if output
+  end
+
+  digests.each do |digest|
+    algo = digest.class.to_s.split("::").last
+    messages.puts "#{algo.rjust(9)}: #{digest}"
+  end
+
+  output.close if output
+end
+
+def create_digests(opts)
+  opts.uniq.map do |opt|
+    if klass = HASHERS[opt]
+      klass.new
+    else
+      puts "Unrecognized option: #{opt}"
+      exit 1
+    end
+  end
+end
+
+require 'epitools'
+
+if args.any?
+  paths = args.flat_map do |arg|
+    path = arg.to_Path
+    if path.dir?
+      path.ls
+    else
+      path
+    end
+  end
+
+  paths.each do |path|
+    # puts "=== #{path} ========================================="
+    puts path
+    puts "#{"size".rjust(9)}: #{path.size.commatize} bytes"
+
+    digests = create_digests(opts)
+
+    begin
+      open(path, "rb") { |f| sum(digests, f, nil, $stdout) }
+    rescue => e
+      puts "   #{e.inspect}"
+    end
+
+    puts
+  end
+else
+  parallel = (opts.delete("--parallel") or opts.delete("-p"))
+  sum(create_digests(opts), $stdin, $stdout, $stderr, parallel)
+end
