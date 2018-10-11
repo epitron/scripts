@@ -53,6 +53,10 @@ class Dev
 
   attr_accessor :name, :flags, :mac, :addrs, :state
 
+  def self.[](name)
+    all.find { |dev| dev.name == name }
+  end
+
   def self.all(sorted: false)
     devs = `ip addr`.each_line.split_before(/^\d+: /).map do |chunk|
       new(chunk) unless chunk.empty?
@@ -123,6 +127,14 @@ class Dev
   def up?; @up ||= @flags.include?("UP"); end
   def down?; not up?; end
 
+  def up!
+   ip("link", "set", name, "up")
+  end
+
+  def down!
+   ip("link", "set", name, "down")
+  end
+
   def routes
     Dev.routes[name]
   end
@@ -136,7 +148,7 @@ end
 ########################################################
 
 class Config
-  attr_accessor :name, :dev, :ip
+  attr_accessor :name, :devname, :ip
 
   def self.[](name)
     all.find { |c| c.name == name }
@@ -160,11 +172,15 @@ class Config
 
     path.each_line do |line|
       if line =~ /^Interface=(.+)/
-        @dev = $1
+        @devname = $1
       elsif line =~ /^IP=(.+)/
         @ip = $1
       end
     end
+  end
+
+  def dev
+    @dev ||= Dev[devname]
   end
 
   def connected?
@@ -180,6 +196,7 @@ class Config
   end
 
   def start!
+    dev.down! if dev.up?
     netctl("start", name)
   end
 
@@ -212,7 +229,7 @@ def print_interfaces
 
   Dev.all(sorted: true).each do |dev|
     configs_for_dev = configs.
-      select { |config| config.dev == dev.name }.
+      select { |config| config.devname == dev.name }.
       map do |config|
         config_color = connected_configs.include?(config.name) ? 14 : 6
         "<#{config_color}>#{config.name}"
@@ -237,19 +254,22 @@ end
 
 if opts.scan?
 
-  devs = Dev.wireless
-  if devs.size > 1
-    raise "Error: not sure which device to use (found: #{devs.map(&:name).join(", ")})"
+  Dev.wireless.each do |dev|
+    system("wifiscan", dev)
   end
 
-  dev = devs.first
-  puts "Scanning #{dev.name}..."
-  cmd = ["iw", "dev", dev.name, "scan"]
-  IO.popen(cmd) do |io|
-    lesspipe do |less|
-      less.puts io.read
-    end
-  end
+  # if devs.size > 1
+  #   raise "Error: not sure which device to use (found: #{devs.map(&:name).join(", ")})"
+  # end
+
+  # dev = devs.first
+  # puts "Scanning #{dev.name}..."
+  # cmd = ["iw", "dev", dev.name, "scan"]
+  # IO.popen(cmd) do |io|
+  #   lesspipe do |less|
+  #     less.puts io.read
+  #   end
+  # end
 
 elsif args.empty?
 
@@ -273,7 +293,7 @@ else
 
       @all_connected_config_names ||= Config.connected_names
 
-      configs_for_dev        = configs.select { |c| c.dev == selected_config.dev }
+      configs_for_dev        = configs.select { |c| c.devname == selected_config.devname }
       connected_config_names = @all_connected_config_names & configs_for_dev.map(&:name)
 
       if connected_config_names.include?(selected_config.name) # this one is connected
@@ -308,9 +328,11 @@ else
       end
 
       if opts.up?
-        ip("link", "set", arg, "up")
+        # ip("link", "set", arg, "up")
+        Dev[arg].up!
       elsif opts.down?
-        ip("link", "set", arg, "down")
+        # ip("link", "set", arg, "down")
+        Dev[arg].down!
       end
 
       print_interfaces
