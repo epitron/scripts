@@ -255,7 +255,7 @@ end
 if opts.scan?
 
   Dev.wireless.each do |dev|
-    system("wifiscan", dev)
+    system("wifiscan", dev.name)
   end
 
   # if devs.size > 1
