@@ -27,7 +27,7 @@ for arg in args
   puts "\e[1;33;1m#{arg} \e[0m(\e[1;37m#{date}\e[0m, \e[1;36m#{size} \e[0;36mbytes\e[0m)\e[0m"
   IO.popen(["ffprobe", "-hide_banner", arg], "rb", err: [:child, :out]) do |io|
     lines = io.each_line
-    lines = io.grep(/^\s+Stream/) unless verbose
+    lines = io.grep(/^\s+(Duration|Stream)/) unless verbose
     lines.each { |line| puts line }
   end
   puts
