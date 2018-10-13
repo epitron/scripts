@@ -5,8 +5,8 @@ require 'epitools'
 ###################################################################
 
 CACHE_DIR  = File.expand_path("~/.cache/wict")
-INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
-TSV_FILE   = File.join CACHE_DIR, "enwikt.tsv"
+INDEX_FILE = File.join CACHE_DIR, "wikt.idx"
+TSV_FILE   = File.join CACHE_DIR, "wikt.tsv"
 
 ###################################################################
 
@@ -65,10 +65,10 @@ def latest_tsv_url(lang="en")
   # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz
   # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz
   #
-  json = `curl -s https://archive.org/details/enwikt-tsv?output=json`.from_json
-  files = json["files"].map(&:first).select { |fn| fn[%r{^/enwikt-defs-\d+-#{lang}\.tsv\.gz$}] }
+  json = `curl -s https://archive.org/details/wikt-tsv?output=json`.from_json
+  files = json["files"].map(&:first).select { |fn| fn[%r{^/wikt-defs-\d+-#{lang}\.tsv\.gz$}] }
   latest = files.sort.last
-  "https://archive.org/download/enwikt-tsv#{latest}"
+  "https://archive.org/download/wikt-tsv#{latest}"
 end
 
 def update(lang="en")
@@ -107,13 +107,15 @@ def update(lang="en")
 
         print "\e[1G  |_ words retrieved: #{count.commatize}\e[J" if count % 137 == 0
       end
-      puts
+
+      puts "\e[1G  |_ words retrieved: #{count.commatize}\e[J"
     end
   end
 
   if word_index.is_a? Array
-    puts "  |_ sorting index (#{word_index.size.commatize} words)"
+    print "  |_ sorting index..."
     word_index.sort!
+    puts
   end
 
   puts "  |_ writing index to #{INDEX_FILE}..."

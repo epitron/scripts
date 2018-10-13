@@ -7,3 +7,5 @@ keycode 66 = Multi_key
 keysym XF86Back = Prior
 keysym XF86Forward = Next
 
+! Shift-Space becomes Underscore
+keycode 65 = space underscore space
