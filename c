@@ -114,15 +114,16 @@ EXT_HIGHLIGHTERS = {
 }
 
 FILENAME_HIGHLIGHTERS = {
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
-  "Gemfile.lock" => :c,
-  "database.yml" => :yaml,
+  "Rakefile"       => :ruby,
+  "Gemfile"        => :ruby,
+  "CMakeLists.txt" => :ruby,
+  "Makefile"       => :bash,
+  "makefile"       => :bash,
+  "PKGBUILD"       => :bash,
+  "configure.in"   => :bash,
+  "configure"      => :bash,
+  "Gemfile.lock"   => :c,
+  "database.yml"   => :yaml,
 }
 
 HTML_ENTITIES = {
