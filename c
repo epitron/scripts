@@ -18,6 +18,7 @@
 #
 #
 # TODOs:
+#   * "--summary" option to only print basic information about each file
 #   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
 #   * Follow symlinks by default
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
@@ -730,7 +731,7 @@ def print_srt(filename)
 
     loop do
       line = enum.next.chomp!
-      break if line.empty?
+      break if line.nil? or line.empty?
       yield line
     end
   end
@@ -1136,7 +1137,7 @@ def convert(arg)
         convert_htmlentities(print_source(arg))
       when *%w[.csv .xls]
         print_csv(arg)
-      when *%w[.mp3 .ogg .mkv .mp4 .avi .mov .qt .rm .wma .wmv]
+      when *%w[.mp3 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
         print_media(arg)
       when ".tsv"
         print_csv(arg)
