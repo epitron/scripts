@@ -16,6 +16,7 @@ def parse_options
     on "c",  "console",  "Output serial to the console"
     on "C",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
+    on "V",  "version",  "Show version information"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
 
@@ -23,6 +24,13 @@ def parse_options
 end
 
 opts, args = parse_options
+
+if opts.version?
+  %w[qemu-system-x86_64 qemu-system-i386 qemu-system-arm qemu-img].any? do |bin|
+    system(bin, "--version")
+  end
+  exit
+end
 
 if args.empty?
   puts opts
