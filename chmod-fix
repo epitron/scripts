@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  path="."
+else
+  path="$1"
+fi
+
+chmod -R u=rwX,go=rX "$path"

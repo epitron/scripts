@@ -59,7 +59,7 @@ class Systemd
 
   # "command1>command2" means to call command2 whenever command1 is called
   # something starting with a ":" means to call a method
-  %w[start>status stop>status restart>status disable>stop enable>:start mask>status unmask>status].each do |command|
+  %w[start>status stop>status restart>status disable>stop enable>:start mask>stop>status unmask>status].each do |command|
     commands = command.split(">")
 
     define_method commands.first do |service|

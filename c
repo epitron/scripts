@@ -80,6 +80,7 @@ EXT_HIGHLIGHTERS = {
   ".prf"            => :bash,
   ".ini"            => :bash,
   ".service"        => :bash,
+  ".ovpn"           => :bash,
   ".hs"             => :text,
   ".cl"             => :c,
   ".rc"             => :c,
@@ -87,6 +88,7 @@ EXT_HIGHLIGHTERS = {
   ".ino"            => :c, # arduino sdk files
   ".shader"         => :c,
   ".glsl"           => :c,
+  ".zig"            => pygmentize(:rust),
   ".gradle"         => :groovy,
   ".sage"           => :python,
   ".lisp"           => :clojure,
@@ -795,26 +797,23 @@ end
 
 def print_ipynb(filename)
   require 'json'
-  require 'tempfile'
 
   json = JSON.load(open(filename))
-  tmp = Tempfile.new('c-')
+  output = []
 
   json["cells"].each do |c|
     case c["cell_type"]
     when "markdown"
-      tmp.write "#{c["source"].join}\n\n"
+      output << "#{c["source"].join}\n\n"
     when "code"
       # FIXME: Hardwired to python; check if a cell's metadata attribute supports other languages
-      tmp.write "\n```python\n#{c["source"].join}\n```\n\n"
+      output << "\n```python\n#{c["source"].join}\n```\n\n"
     else
       raise "unknown cell type: #{c["cell_type"]}"
     end
   end
 
-  at_exit { tmp.unlink }
-
-  print_markdown(File.read tmp.path)
+  print_markdown(output.join)
 end
 
 ##############################################################################

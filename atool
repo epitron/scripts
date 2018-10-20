@@ -747,17 +747,23 @@ sub runcmds($$$;@) {
   elsif ($format eq 'rpm') {
     return undef if ($mode eq 'extract' && !defined ($outdir = makeoutdir()));
     if ($mode eq 'list') {
-      push @cmd, $::cfg_path_rpm;
-      push @cmd, '-qlp';
-      push @cmd, '-v' if $::opt_verbosity >= 1;
-      push @cmd, $archive, @args;
-      return multiarchivecmd($archive, $outdir, $mode, 0, 0, \@args, @cmd);
+      # push @cmd, $::cfg_path_rpm;
+      # push @cmd, '-qlp';
+      # push @cmd, '-v' if $::opt_verbosity >= 1;
+      # push @cmd, $archive, @args;
+      # return multiarchivecmd($archive, $outdir, $mode, 0, 0, \@args, @cmd);
+      push @cmd, $::cfg_path_rpm2cpio;
+      push @cmd, makeabsolute($archive);
+      push @cmd, ['|'];
+      push @cmd, $::cfg_path_tar, 'tf', '-', @args;
+      return multiarchivecmd($archive, $outdir, $mode, 0, 1, \@args, @cmd);
     }
     elsif ($mode eq 'extract' || $mode eq 'extract-to') {
       push @cmd, $::cfg_path_rpm2cpio;
       push @cmd, makeabsolute($archive);
       push @cmd, ['|'];
-      push @cmd, $::cfg_path_cpio, '-imd', '--quiet', @args;
+      push @cmd, $::cfg_path_tar, 'xvf', '-', @args;
+      # push @cmd, $::cfg_path_cpio, '-imd', '--quiet', @args;
       return multiarchivecmd($archive, $outdir, $mode, 0, 1, \@args, @cmd);
     }
     else { # add and cat
