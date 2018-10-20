@@ -167,10 +167,37 @@ CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
 
 class Pathname
 
+  include Enumerable
+
+  def each
+    return to_enum(:each) unless block_given?
+    each_line { |line| yield line.chomp }
+  end
+
   def filename
     basename.to_s
   end
   alias_method :name, :filename
+
+end
+
+##############################################################################
+
+class String
+
+  #
+  # Converts time duration strings (mm:ss, mm:ss.dd, hh:mm:ss, or dd:hh:mm:ss) to seconds.
+  # (The reverse of Integer#to_hms)
+  #
+  def from_hms
+    nums = split(':')
+
+    nums[-1] = nums[-1].to_f if nums[-1] =~ /\d+\.\d+/ # convert fractional seconds to a float
+    nums.map! { |n| n.is_a?(String) ? n.to_i : n } # convert the rest to integers
+
+    nums_and_units = nums.reverse.zip %w[seconds minutes hours days]
+    nums_and_units.map { |num, units| num.send(units) }.sum
+  end
 
 end
 
@@ -183,6 +210,24 @@ class Numeric
     int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
 
     frac ? "#{int}.#{frac}" : int
+  end
+
+  #
+  # Time methods
+  #
+  {
+
+    'second'  => 1,
+    'minute'  => 60,
+    'hour'    => 60 * 60,
+    'day'     => 60 * 60 * 24,
+    'week'    => 60 * 60 * 24 * 7,
+    'month'   => 60 * 60 * 24 * 30,
+    'year'    => 60 * 60 * 24 * 365,
+
+  }.each do |unit, scale|
+    define_method(unit)     { self * scale }
+    define_method(unit+'s') { self * scale }
   end
 
 end
@@ -721,17 +766,28 @@ end
 def print_srt(filename)
   return to_enum(:print_srt, filename) unless block_given?
 
-  enum = open(filename).each_line
+  last_time = 0
+
+  enum = Pathname.new(filename).each
 
   loop do
-    num   = enum.next
-    stamp = enum.next
+    n     = enum.next
+    times = enum.next
+    a, b  = times.split(" --> ").map { |s| s.gsub(",", ".").from_hms }
+    gap   = -last_time + a
+
+    yield "" if gap > 1
+    yield "" if gap > 6
+    yield "" if gap > 40
+    yield "------------------\n\n" if gap > 100
 
     loop do
-      line = enum.next.chomp!
+      line = enum.next
       break if line.empty?
       yield line
     end
+
+    last_time = b
   end
 end
 
