@@ -70,6 +70,7 @@ EXT_HIGHLIGHTERS = {
   ".scm"         => :clojure,
   ".qml"         => :php,
   ".pro"         => :sql,
+  ".xspf"        => :xml,
   ".ws"          => :xml,
   ".ui"          => :xml,
   ".opml"        => :xml,
@@ -1049,7 +1050,7 @@ def convert(arg)
         print_rst(arg)
       when *%w[.pdf]
         print_pdf(arg)
-      when *%w[.doc]
+      when *%w[.doc .docx]
         print_doc(arg)
       when *%w[.rtf]
         print_rtf(arg)
