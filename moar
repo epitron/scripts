@@ -80,9 +80,10 @@ class Pager
       PgUp/PgDn:  Scroll up/down by a page\r
       Space:      Scroll down by a page\r
       Home/End:   Scroll to beginning/end\r
+      Ctrl-Left/Right:   Scroll to beginning/end of line\r
       \r
       t: Toggle tail-mode\r
-      w: Toggle word-wrap\r
+      w: Toggle wrapping of lines\r
       n: Toggle line numbers\r
       r: Refresh\r
       \r
@@ -312,7 +313,7 @@ class Pager
 
   def percent
     pct = (bottom.to_f / lines) * 100
-    "%0.1f%" % pct
+    "%0.1f%%" % pct
   end
 
   def top

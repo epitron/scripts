@@ -5,8 +5,8 @@ require 'epitools'
 ###################################################################
 
 CACHE_DIR  = File.expand_path("~/.cache/wict")
-INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
-TSV_FILE   = File.join CACHE_DIR, "enwikt.tsv"
+INDEX_FILE = File.join CACHE_DIR, "wikt.idx"
+TSV_FILE   = File.join CACHE_DIR, "wikt.tsv"
 
 ###################################################################
 
@@ -65,10 +65,10 @@ def latest_tsv_url(lang="en")
   # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz
   # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz
   #
-  json = `curl -s https://archive.org/details/enwikt-tsv?output=json`.from_json
-  files = json["files"].map(&:first).select { |fn| fn[%r{^/enwikt-defs-\d+-#{lang}\.tsv\.gz$}] }
+  json = `curl -s https://archive.org/details/wikt-tsv?output=json`.from_json
+  files = json["files"].map(&:first).select { |fn| fn[%r{^/wikt-defs-\d+-#{lang}\.tsv\.gz$}] }
   latest = files.sort.last
-  "https://archive.org/download/enwikt-tsv#{latest}"
+  "https://archive.org/download/wikt-tsv#{latest}"
 end
 
 def update(lang="en")
@@ -107,13 +107,15 @@ def update(lang="en")
 
         print "\e[1G  |_ words retrieved: #{count.commatize}\e[J" if count % 137 == 0
       end
-      puts
+
+      puts "\e[1G  |_ words retrieved: #{count.commatize}\e[J"
     end
   end
 
   if word_index.is_a? Array
-    puts "  |_ sorting index (#{word_index.size.commatize} words)"
+    print "  |_ sorting index..."
     word_index.sort!
+    puts
   end
 
   puts "  |_ writing index to #{INDEX_FILE}..."
@@ -202,7 +204,7 @@ def greparound(io, pos, query)
 end
 
 def lookup_bsearch(args)
-  query = args.join
+  query = args.join.downcase
   f     = open(INDEX_FILE, "r")
   range = (0...f.size)
 
@@ -211,7 +213,7 @@ def lookup_bsearch(args)
 
     f.seek(range.middle)
     f.seek_backwards_to("\n", 80)
-    
+
     line                 = f.each_line.first
     current_word, offset = line.split("\t")
 
@@ -219,7 +221,7 @@ def lookup_bsearch(args)
       index_lines = greparound(f, range.middle, query)
       print_results(index_lines)
       return
-    elsif query < current_word 
+    elsif query < current_word
       range = range.first...range.middle
     else
       range = range.middle...range.last
@@ -275,7 +277,7 @@ def print_results(index_lines)
       less.puts
     end
   end
-end  
+end
 
 
 # alias lookup lookup_grep
@@ -321,7 +323,7 @@ if $0 == __FILE__
     else
       lookup(args)
     end
-    
+
   end
 
 end

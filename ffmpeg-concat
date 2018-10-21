@@ -14,7 +14,7 @@ def parse_options
 end
 
 opts    = parse_options
-infiles = ARGV.map(&:to_Path)
+infiles = ARGV.map { |arg| Path.new(arg) }
 
 if infiles.empty?
   puts opts
@@ -42,7 +42,7 @@ Path.tmpfile do |tmp|
   end
 
   tmp.open("w") do |io|
-    lines = infiles.map { |infile| "file '#{infile}'\n" }
+    lines = infiles.map { |infile| "file #{infile.to_s.shellescape}\n" }
     io.write lines.join
   end
 

@@ -2,6 +2,7 @@
 ########################################################################
 gem 'slop', "~> 3.6"
 require 'slop'
+require 'pty'
 ########################################################################
 
 def parse_options
@@ -10,6 +11,7 @@ def parse_options
 
     on "s",  "shallow",      "Shallow clone (without history)"
     on "r",  "no-recursion", "Don't automatically clone submodules"
+    on "w",  "wiki",         "Also get the wiki (placed in {reponame}/wiki)"
     on "e",  "edit",         "Open cloned repo in editor (hardwired to 'subl')"
     on "b=", "branch",       "Clone a specific branch"
     on "h",  "help",         "What you're looking at right now!"
@@ -21,6 +23,41 @@ end
 class Object
   def in?(a); a.include? self; end
   def not_in?(a); not self.in? a; end
+end
+
+def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true)
+  print "\e[37m\e[1mCloning \e[0m\e[33m\e[1m#{repo}\e[0m"
+  print " into \e[0m\e[36m\e[1m#{dest}\e[0m\e[37m\e[0m" if dest
+  puts
+
+  cmd = ["git", "clone"]
+  cmd << "--depth=1"    if shallow
+  cmd << "--recursive"  if recursive
+  cmd += ["-b", branch] if branch
+  cmd << repo
+
+  cmd << dest if dest
+
+  # Clone it
+  reponame = nil
+
+  PTY.spawn(*cmd) do |r, w, pid|
+    begin
+      loop do
+        line = r.readpartial(4096)
+        print line
+
+        if line =~ /Cloning into '([^']+)'/
+          reponame ||= $1
+        elsif line =~ /destination path .+ already exists/
+          exit 1
+        end
+      end
+    rescue Errno::EIO
+    end
+  end
+
+  reponame
 end
 
 ########################################################################
@@ -53,34 +90,13 @@ if dest and File.exists?(dest)
   exit 1
 end
 
-cmd = ["git", "clone"]
-cmd << "--depth=1" if opts.shallow?
-cmd << "--recursive" unless opts[:r]
-cmd += ["-b", opts[:branch]] if opts[:branch]
-cmd << repo
-cmd << dest if dest
-
-########################################################################
-# Clone it
-
-reponame = nil
-
-require 'pty'
-PTY.spawn(*cmd) do |r, w, pid|
-  begin
-    loop do
-      line = r.readpartial(4096)
-      print line
-
-      if line =~ /Cloning into '([^']+)'/
-        reponame ||= $1
-      elsif line =~ /destination path .+ already exists/
-        exit 1
-      end
-    end
-  rescue Errno::EIO
-  end
-end
+reponame = clone(
+  repo,
+  dest,
+  branch: opts[:branch],
+  recursive: !opts["no-recursion"],
+  shallow: opts[:shallow]
+  )
 
 ########################################################################
 # Open editor, show README
@@ -88,8 +104,17 @@ end
 if reponame
   fork { exec("subl", reponame) } if opts.edit?
   readmes = Dir.foreach(reponame).select { |f| f[/^readme/i] }.sort_by(&:size)
+
   if readme = readmes.first
     Dir.chdir(reponame)
-    system("c", readme)
+    if opts.wiki?
+      wiki = repo.sub(/(\/$|\.git$|$)/, ".wiki.git")
+      clone(wiki, "wiki", shallow: opts[:shallow])
+    end
+
+    args = [readme]
+    args << "wiki" if opts.wiki?
+
+    system("c", *args)
   end
 end

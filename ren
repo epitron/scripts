@@ -110,9 +110,9 @@ def edit_filename(prompt, filename)
     end
 
     #
-    # ^d: delete everything from the cursor to the file extension
+    # ^k: delete everything from the cursor to the file extension
     #
-    c.bind "\x04" do |inst|
+    c.bind "\v" do |inst|
       start  = inst.pos
       finish = inst.line.rindex(".") || inst.line.size
 

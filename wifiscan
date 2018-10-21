@@ -12,6 +12,13 @@ for dev in devs
   puts "Wifi device: #{dev}"
   puts "-"*50
   puts
+
+  if `ip link show #{dev}`["state DOWN"]
+   system("ip", "link", "set", dev, "up")
+   wasdown = true
+  else
+   wasdown = false
+  end     
   
   puts "* Scanning for access points..."
   data = `sudo iwlist #{dev} scan`
@@ -86,6 +93,9 @@ for dev in devs
     puts
   end
   puts 
-  
+
+  if wasdown
+    system("ip", "link", "set", dev, "down")
+  end
 end
 

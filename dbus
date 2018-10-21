@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+module DBus
+
+  extend self
+
+  def message(*command, type: :session)
+    raise "Error: Not a valid type" unless [:system, :session].include? type
+
+    cmd = ["dbus-send", "--#{type}"]
+    cmd += command
+    system(*cmd)
+  end
+
+  def list
+    puts message(
+      "--dest=org.freedesktop.DBus",
+      "--type=method_call",
+      "--print-reply",
+      "/org/freedesktop/DBus",
+      "org.freedesktop.DBus.ListNames")
+  end
+
+  def flavors
+    puts message(
+      "--dest=org.freedesktop.thumbnails.Thumbnailer1",
+      "--type=method_call",
+      "--print-reply",
+      "/org/freedkestop/thumbnails/Thumbnailer1",
+      "org.freedesktop.thumbnails.Thumbnailer1.GetFlavors")
+  end
+
+end
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: dbus [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+DBus.list
+# DBus.flavors

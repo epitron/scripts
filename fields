@@ -1,1 +1,101 @@
-field
+#!/usr/bin/env ruby
+
+#
+# TODO:
+# - Give it group-by functionality, so the 'group-by' script can just use this tool
+# - Switch to 'slop' for parsing args
+# - Multiple delimiters (ie: `fields -d / -d :` will split on both `/` and `:`)
+# - Comma-separated spans
+# - Enhance `sort-by` with a fieldlist, so `fields` can be combined with `sort-by`
+#
+
+def help!
+  puts DATA.read
+  exit
+end
+
+def to_field(str)
+  n = str.to_i
+  n < 0 ? n : n-1
+end
+
+args       = ARGV
+delim      = /\s+/
+fields     = []
+output_csv = false
+
+while args.any?
+
+  arg = args.shift
+
+  case arg
+  when "--help"
+    help!
+
+  when "--csv", "-c"
+    output_csv = true
+
+  when "-d"
+    delim = args.shift
+
+  when "-e"
+    delim = Regexp.new(args.shift)
+
+  when /^(-?\d+)$/
+    fields << to_field($1)
+
+  when /^(-?\d+)(?:\.\.\.?|-)(-?\d+)$/ # match "a..b" or "a-b"
+    a = to_field($1)
+    b = to_field($2)
+    if a <= b
+      fields << (a..b)
+    else
+      fields += a.downto(b).to_a
+    end
+
+  when /^(\d+,)+(\d+)$/
+    fields += arg.split(",").map {|f| to_field(f) }
+
+  # else
+    # input = open(arg)
+  end
+
+end
+
+help! unless fields.any?
+
+# pp fields
+
+if output_csv
+  require 'csv'
+  csv = CSV.new($stdout)
+  emitter = proc { |result| csv << result }
+else
+  emitter = proc { |result| puts result.join(" ") }
+end
+
+$stdin.each_line do |line|
+  pieces = line.strip.split(delim)
+  result = fields.map { |field| pieces[field] }
+
+  emitter.(result)
+end
+
+
+__END__
+purpose:
+  Extract field number <n> from the input stream.
+
+usage:
+  fields [-d <delimiter>] <fieldspec>
+
+examples:
+  echo $PATH | fields -d : 1
+  fields -d : < /etc/passwd
+  fields 1 3 7 < file.txt
+  fields 1,3,7 8-12 < file.txt
+  fields 1-5 < file.txt
+  fields 2..3 5..9 < file.txt
+  fields 3..1 < file.txt
+  fields -1 < file.txt
+  fields -1..-3 < file.txt

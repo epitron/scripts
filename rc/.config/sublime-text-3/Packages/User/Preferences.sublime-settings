@@ -1,8 +1,11 @@
 {
 	"auto_complete": false,
+	"auto_complete_commit_on_tab": true,
+	"auto_find_in_selection": true,
 	"color_scheme": "Packages/Theme - Nil/Big Duo.tmTheme",
 	"colored_folder_glyphs": true,
 	"enable_telemetry": false,
+	"figlet_font": "roman",
 	"file_exclude_patterns":
 	[
 		".tags",
@@ -19,29 +22,13 @@
 		"CVS",
 		"tmp/cache"
 	],
-	"font_size": 12,
+	"font_size": 13,
 	"ha_style": "filled",
+	"highlight_line": true,
 	"highlight_modified_tabs": true,
-	"ignored_packages":
-	[
-		"Gem Browser",
-		"SublimeGit",
-		"GitGutter",
-		"ColorPicker",
-		"CTags",
-		"Simple Rails Navigator",
-		"Tomorrow Color Schemes",
-		"GitGutter-Edge",
-		"INI",
-		"Markdown Extended",
-		"ApacheConf.tmLanguage",
-		"Vintage",
-		"Julia",
-		"Pony Language"
-	],
 	"tab_size": 2,
-	"theme": "Cobalt2.sublime-theme",
+	"theme": "Adaptive.sublime-theme",
 	"translate_tabs_to_spaces": true,
-	"trim_trailing_white_space_on_save": false,
+	"trim_trailing_white_space_on_save": true,
 	"update_check": true
 }

@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+class Hash
+  def +(other)
+    merge(other)
+  end
+end
+
+class Prog < Struct.new(:bin, :desc, :cat)
+end
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: readme-sync [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+Path.cd("~/scripts") do
+  readme = Path["README.yml"]
+  yaml = readme.parse
+
+  # existing = yaml.values.reduce(:+)
+  # pp existing
+  progs = yaml.flat_map { |cat,vs| vs.map { |bin, desc| Prog.new(bin, desc, cat) } }
+  lut = progs.map {|prog| [prog.bin, prog] }.to_h
+
+  missing = Path["*"].reject { |path| path.dir? or path.ext.in?(["md", "c"]) or lut[path.filename] }
+  yaml["Unsorted"] = missing.map { |path| [path.filename, nil] }.to_h
+
+  readme.backup!
+  readme.write(yaml.to_yaml)
+end

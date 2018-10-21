@@ -53,6 +53,24 @@
 #     query  = "query=yes"
 ######################################################################################
 
+######################################################################################
+# .webrc (Local Config)
+######################################################################################
+#
+# You can add extra rules just for your specific machine by putting them in ~/.webrc.
+#
+# (The .webrc's contents are treated as regular Ruby code that are executed in the
+# context of the script.)
+#
+# Example .webrc:
+#
+#   routes do
+#     match host: "another-video-site.com", path: "/videos/", &play_video
+#     match(host: "another-url-shortener.com") { |uri| route uri.follow_redirect }
+#   end
+#
+######################################################################################
+
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
 BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
@@ -61,7 +79,7 @@ VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 routes do
 
   default do |uri|
-    open_in_best_browser uri, BROWSERS
+    open_in_best_browser uri
   end
 
   # Strip click trackers
@@ -69,11 +87,12 @@ routes do
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirect }
+  match(host: %w[t.co bit.ly is.gd ow.ly buff.ly]) { |uri| route uri.follow_redirect }
 
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
   match host: %w[youtube.com], path: %r{^/(watch|embed|attribution_link)}, &play_video
+  match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
   match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
@@ -139,11 +158,20 @@ BEGIN {
     end
     alias_method :fullpath, :path_with_query
 
-    def follow_redirect
-      require 'http'
+    def get
+      require 'net/http'
+      Net::HTTP.get_response(self)
+    end
 
-      response = ::HTTP.get(self)
-      response.headers["Location"] || self
+    def follow_redirect
+      response = get
+
+      if response.code_type < Net::HTTPRedirection
+        puts "following redirect: #{self}"
+        response["location"]
+      else
+        self
+      end
     end
 
     def escaped
@@ -218,7 +246,7 @@ BEGIN {
       uri = URI.parse(url.gsub("[", "%5B").gsub("]", "%5D"))
 
       # Make sure the default is set...
-      @default ||= proc.new { open_in_best_browser uri, BROWSERS }
+      @default ||= proc.new { open_in_best_browser uri }
 
       # URI.parse doesn't handle file:/// urls properly, so we'll have to bypass it...
       return @default.(url) if url.to_s[%r{^file://}i]
@@ -297,6 +325,14 @@ BEGIN {
 
   ######################################################################################
 
+  def load_rc_file
+    rc = File.expand_path("~/.webrc")
+    if File.exists? rc
+      # $router.instance_eval File.read(rc)
+      eval File.read(rc)
+    end
+  end
+
   def select_parents(query, &block)
     process = Sys.ps($$).first.parent
 
@@ -355,7 +391,7 @@ BEGIN {
     IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
   end
 
-  def open_in_best_browser(uri, browsers)
+  def open_in_best_browser(uri, browsers=BROWSERS)
     name, browser = best_browser_for(uri, browsers)
 
     unless browser
@@ -416,11 +452,6 @@ BEGIN {
   end
 
 }
-
-def load_rc_file
-  rc = File.expand_path("~/.web-rules")
-  eval File.read(rc) if File.exists? rc
-end
 
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }

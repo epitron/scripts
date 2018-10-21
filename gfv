@@ -26,6 +26,7 @@ cmd = %w[
   --xattrs
   --sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub
 ]
+
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
 
@@ -40,11 +41,7 @@ end
 
 if args.delete("-a")
   cmd << "--extract-audio"
-  
-  cmd += ["-f", "bestaudio[ext=m4a]"] unless args.include?("-f")
-  # cmd += ["-f", "bestaudio[ext=m4a]", "--audio-format", "aac"] unless args.include?("-f")
-  
-  # cmd += %w[--extract-audio -f bestaudio]
+  cmd += ["-f", "bestaudio[ext=m4a]"] unless args.include?("-f") # allow user to override the format options
 elsif args.delete("-s")
   cmd << "--skip-download"
 elsif args.delete("-l")

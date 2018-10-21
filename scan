@@ -33,7 +33,7 @@ end
 
 __END__
 purpose:
-  Scan a file for a regular exprssion pattern, and print each match.
+  Scan a file for a regular expression, and print each match.
   If no file is specified, STDIN is used.
 
 usage:

@@ -17,7 +17,7 @@ def parse_options
     on 'c',  'codecs',   'List the availiable codecs'
     on 'b',  'bob',      'Bob deinterlace (using yadif)'
     on 'q=', 'quantizer','How quantized do you like it? (only matters when using vcodec)'
-    on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)', default: "00:00"
+    on 's=', 'start',    'Start of clip (HH:MM:SS or SS format)'
     on 'e=', 'end',      'End of clip'
     on 'l=', 'length',   'Length of clip'
     on 'u=', 'use',      'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
@@ -101,7 +101,11 @@ if $0 == __FILE__
   length = opts[:length]
 
   if length.nil? and opts[:end]
-    length = timediff(start, opts[:end])
+    if start
+      length = timediff(start, opts[:end])
+    else
+      length = opts[:end]
+    end
   end
 
 
@@ -119,7 +123,7 @@ if $0 == __FILE__
       cmd += ["-codec:v", opts[:vcodec]]
       cmd += ["-crf", opts[:quantizer]] if opts.quantizer?
       cmd += ["-codec:a", opts[:acodec]]
-      cmd += ["-ss", start]
+      cmd += ["-ss", start] if start
       cmd += ["-t", length] if length
       cmd += ["-vf", "yadif=1"] if opts.bob?
 

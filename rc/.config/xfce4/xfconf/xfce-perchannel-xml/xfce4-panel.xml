@@ -5,30 +5,19 @@
   <property name="panels" type="array">
     <value type="int" value="1"/>
     <property name="panel-1" type="empty">
-      <property name="position" type="string" value="p=8;x=960;y=1050"/>
+      <property name="position" type="string" value="p=8;x=960;y=1042"/>
       <property name="length" type="uint" value="100"/>
       <property name="position-locked" type="bool" value="false"/>
-      <property name="size" type="uint" value="28"/>
+      <property name="size" type="uint" value="32"/>
       <property name="plugin-ids" type="array">
         <value type="int" value="1"/>
         <value type="int" value="3"/>
         <value type="int" value="15"/>
-        <value type="int" value="5"/>
-        <value type="int" value="4"/>
+        <value type="int" value="8"/>
         <value type="int" value="7"/>
-        <value type="int" value="2"/>
+        <value type="int" value="4"/>
         <value type="int" value="6"/>
-        <value type="int" value="11"/>
-        <value type="int" value="9"/>
-      </property>
-      <property name="background-style" type="int" value="0"/>
-      <property name="background-image" type="string" value=""/>
-      <property name="background-alpha" type="int" value="100"/>
-      <property name="background-color" type="array">
-        <value type="uint" value="56540"/>
-        <value type="uint" value="56026"/>
-        <value type="uint" value="54741"/>
-        <value type="uint" value="65535"/>
+        <value type="int" value="5"/>
       </property>
       <property name="nrows" type="uint" value="2"/>
     </property>
@@ -42,7 +31,14 @@
     </property>
     <property name="plugin-4" type="string" value="pager">
       <property name="rows" type="uint" value="2"/>
-      <property name="miniature-view" type="bool" value="true"/>
+    </property>
+    <property name="plugin-5" type="string" value="clock">
+      <property name="timezone" type="string" value="America/Toronto"/>
+      <property name="digital-format" type="string" value="%j | %A%n%b %d, %Y%n%l:%M:%S %P"/>
+      <property name="mode" type="uint" value="2"/>
+      <property name="show-military" type="bool" value="false"/>
+      <property name="show-seconds" type="bool" value="true"/>
+      <property name="flash-separators" type="bool" value="false"/>
     </property>
     <property name="plugin-6" type="string" value="systray">
       <property name="names-visible" type="array">
@@ -149,12 +145,8 @@
         <value type="string" value="wicd-client.py"/>
         <value type="string" value="fusion-icon"/>
       </property>
-      <property name="show-frame" type="bool" value="true"/>
     </property>
     <property name="plugin-7" type="string" value="cpugraph"/>
-    <property name="plugin-9" type="string" value="xfce4-orageclock-plugin"/>
-    <property name="plugin-5" type="string" value="netload"/>
-    <property name="plugin-11" type="string" value="weather"/>
-    <property name="plugin-2" type="string" value="xfce4-timer"/>
+    <property name="plugin-8" type="string" value="netload"/>
   </property>
 </channel>

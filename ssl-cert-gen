@@ -5,7 +5,7 @@ if [ "$1" == "" ]; then
   exit 1
 fi
 
-[ "$UID" = "0" ] || exec sudo $0 $@
+# [ "$UID" = "0" ] || exec sudo $0 $@
 
 ID="$1"
 

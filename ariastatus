@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require 'xmlrpc/client'
+########################################################
+
+# [{"bitfield"=>
+#    "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+#   "completedLength"=>"1717780480",
+#   "connections"=>"2",
+#   "dir"=>"/home/pip/media/tv/Democracy Now",
+#   "downloadSpeed"=>"148191",
+#   "files"=>
+#    [{"completedLength"=>"1716518912",
+#      "index"=>"1",
+#      "length"=>"3028289536",
+#      "path"=>"/home/pip/media/tv/Democracy Now/dn2012-0420.mpeg",
+#      "selected"=>"true",
+#      "uris"=>
+#       [{"status"=>"used",
+#         "uri"=>
+#          "https://archive.org/download/dn2012-0420_vid/dn2012-0420.mpeg"},
+#   "gid"=>"c9f2ee5ab81d7f18",
+#   "numPieces"=>"2889",
+#   "pieceLength"=>"1048576",
+#   "status"=>"active",
+#   "totalLength"=>"3028289536",
+#   "uploadLength"=>"0",
+#   "uploadSpeed"=>"0"}]
+
+def puts_clear(str=nil)
+  print str if str
+  Term.clear_eol
+  puts
+end
+
+blocks = ['█', '▉', '▊', '▋', '▌', '▍', '▎', '▏', '.'].reverse
+
+server = XMLRPC::Client.new2("http://localhost:6800/rpc")
+info   = server.call("aria2.tellActive").first rescue nil
+
+if info.nil?
+  puts "Nothing!"
+end
+
+Term.clear
+
+loop do
+  begin
+    if info and info["bitfield"]
+      progress_bar = info["bitfield"].each_slice(2).flat_map do |hex|
+        # "%0.8b" % hex.to_i(16)
+        # i = Ratio[hex.to_i(16), 2**8].to_f * blocks.size
+        i = hex.to_i(16).bits.count(1)
+        blocks[i]
+      end.join
+
+      speed    = info["downloadSpeed"].to_i
+      complete = Ratio.new(info["completedLength"].to_i, info["totalLength"].to_i)
+
+      Term.home
+      info["files"].each do |f|
+        uris        = f["uris"]
+        path        = f["path"]
+        conns       = uris.size
+        # uristates   = uris.map {|u| u["status"] }
+        unique_uris = uris.map {|u| u["uri"] }.uniq
+
+        puts_clear "sources:"
+        unique_uris.each {|uri| puts_clear "  #{uri}" }
+        puts_clear "  (#{conns} connections)"
+        puts_clear "destination:"
+        puts_clear "  #{path}"
+      end
+
+      puts_clear
+      puts_clear "progress: #{complete.percent} (#{speed.commatize} bytes/sec)"
+      puts_clear progress_bar
+    end
+
+    sleep 1
+
+    info = server.call("aria2.tellActive").first
+  rescue Errno::ECONNREFUSED, EOFError
+    puts "Connection lost..."
+  end
+end

@@ -48,20 +48,20 @@ end
 #####################################################################################
 
 POPULAR_KEYS = %w[
-  user.dublincore.title 
+  user.dublincore.title
   user.dublincore.creator
-  user.dublincore.subject 
-  user.dublincore.description 
-  user.dublincore.publisher 
-  user.dublincore.contributor 
-  user.dublincore.date 
-  user.dublincore.type 
-  user.dublincore.format 
-  user.dublincore.identifier 
-  user.dublincore.source 
+  user.dublincore.subject
+  user.dublincore.description
+  user.dublincore.publisher
+  user.dublincore.contributor
+  user.dublincore.date
+  user.dublincore.type
+  user.dublincore.format
+  user.dublincore.identifier
+  user.dublincore.source
   user.dublincore.language
-  user.dublincore.relation 
-  user.dublincore.coverage 
+  user.dublincore.relation
+  user.dublincore.coverage
   user.dublincore.rights
   user.xdg.referrer.url
   user.xdg.origin.url
@@ -236,9 +236,13 @@ if $0 == __FILE__
       puts "* Setting '#{key}' to '#{val}'"
 
       path[key] = val
-    elsif opts.url?
+    end
+
+    if opts.url?
       path["user.xdg.origin.url"] = opts[:url]
-    elsif opts.referrer?
+    end
+
+    if opts.referrer?
       path["user.xdg.referrer.url"] = opts[:referrer]
     end
 

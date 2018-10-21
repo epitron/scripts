@@ -1,0 +1,22 @@
+#!/bin/bash
+CONNS=8
+PIECE_SIZE=10M
+# ALLOC=prealloc
+# ALLOC=none
+ALLOC=trunc
+# ALLOC=falloc # on linux filesystems only
+
+if [ "$1" == "" ]; then
+  echo "usage: ariastream"
+  exit 1
+fi
+
+aria2c \
+  --continue \
+  --enable-rpc \
+  --enable-http-pipelining \
+  --max-connection-per-server=$CONNS --split=$CONNS \
+  --min-split-size=$PIECE_SIZE \
+  --stream-piece-selector=inorder \
+  --file-allocation=$ALLOC \
+  "$@"

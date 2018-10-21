@@ -17,12 +17,34 @@ MEDIA_DEFS = [
                                         "amarok -e"],                            %w[mp3 flac mp4 aac ogg] ],
 ]
 
-opts = {
-  :num => 69,
-  :latest => false,
-}
+###################################################################################
 
-ARGV.each do |arg|
+args = ARGV
+opts = {num: 69, latest: false}
+
+if args.empty?
+  puts "Usage:"
+  puts "  shuffle <name type of media> <amount>"
+
+  puts "Purpose:"
+  puts "  Randomly plays media from the current directory tree."
+  puts
+  puts "Examples:"
+  puts "   shuffle pics"
+  puts "   shuffle 10 movies"
+  puts "   shuffle music 500"
+  puts
+  puts "Types:"
+  MEDIA_DEFS.each do |names, bins, exts|
+    puts "  Regex to match the name of the media type:\n    #{names.map(&:inspect).join(", ")}"
+    puts "  Extensions that it will try to load:\n    #{exts.join(", ")}"
+    puts "  The program it'll try to use (in order):\n    #{bins.join(", ")}"
+    puts
+  end
+  exit 1
+end
+
+args.each do |arg|
 
   case arg
   when /^(\d+)$/

@@ -2,12 +2,6 @@
 require 'epitools'
 require 'http'
 
-unless ARGV.any?
-  puts "Usage: yt <query>"
-  exit 1
-end
-
-
 class Result
   attr_accessor \
     :title,
@@ -18,7 +12,7 @@ class Result
     :user,
     :desc,
     :highlighted_desc
-  
+
   def initialize(li)
     @length       = li.at(".video-time").text
     link          = li.at(".yt-lockup-title a")
@@ -55,6 +49,22 @@ class Result
     "<#{color}>#{translated.join}</#{color}>"
   end
 
+  def to_json(state)
+    h = [
+      :title,
+      :url,
+      :date,
+      :length,
+      :views,
+      :user,
+      :desc,
+    ].map {|k| [k, send(k)] }.to_h
+
+    h[:views] = h[:views].scan(/\d+/).join.to_i
+
+    h.to_json(state)
+  end
+
 end
 
 def youtube_search(query)
@@ -64,28 +74,52 @@ def youtube_search(query)
   lis = page.search("#results ol.section-list ol.item-section > li")
   results = lis.map do |li|
     next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
-    Result.new(li) rescue nil
+
+    result = Result.new(li) rescue nil
+
+    next if result.nil?
+    next if result.url.to_s["googleadservices.com"]
+
+    result
   end.compact
 end
 
-query = ARGV.join(" ")
+############################################################################################################
 
-puts "Searching for: <14>#{query}".colorize
+opts, args = ARGV.partition { |arg| arg[/^--?\w/]}
+
+unless args.any? or opts.delete("-h") or opts.delete("--help")
+  puts "usage:"
+  puts "  yt [options] <query>"
+  puts
+  puts "options:"
+  puts "    -j --json    Output results as JSON"
+  puts
+  exit 1
+end
+
+query = args.join(" ")
+
+$stderr.puts "Searching for: <14>#{query}".colorize
 
 results = youtube_search(query)
 
-puts "Results: #{results.size}"
+if opts.delete("-j") or opts.delete("--json")
+  # binding.pry
+  puts JSON.pretty_generate(results)
+else
+  $stderr.puts "Results: #{results.size}"
+  results = Hash[ (1..results.size).zip(results) ]
 
-results = Hash[ (1..results.size).zip(results) ]
+  results.to_a.reverse.each do |n, r|
+    puts "<11>#{n}. <15>#{r.title} <8>[<7>#{r.length}<8>]".colorize
 
-results.to_a.reverse.each do |n, r|
-  puts "<11>#{n}. <15>#{r.title}".colorize
+    indent = " " * (n.to_s.size + 2)
 
-  indent = " " * (n.to_s.size + 2)
- 
-  puts "#{indent}<8>by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
-  puts "#{indent}#{r.url}".light_blue
-  # puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc
-  puts r.desc.wrapdent(indent) if r.desc
-  puts
+    puts "#{indent}<8>by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
+    puts "#{indent}#{r.url}".light_blue
+    # puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc
+    puts r.desc.wrapdent(indent) if r.desc
+    puts
+  end
 end

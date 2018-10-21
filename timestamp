@@ -1,11 +1,15 @@
 #!/usr/bin/env ruby
 
+def usage
+  puts __DATA__
+end
+
 FORMAT="%Y-%m-%d %H:%M:%S"
 
 args = ARGV
 
 if STDIN.tty?
-  if args.delete("--help")
+  if args.delete("--help") or args.delete("-h")
     usage
     exit
   else
@@ -16,3 +20,11 @@ else
     puts "[#{Time.now.strftime(FORMAT)}] #{line}"
   end
 end
+
+
+__END__
+usage:
+  $ timestamp
+    => print the number of seconds since Jan 1 1970
+  $ some command | timestamp
+    => print each line of the input, prefixed with "[YYYY-MM-DD HH:MM:SS] "

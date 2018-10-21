@@ -1,0 +1,145 @@
+#!/usr/bin/env ruby
+############################################################################
+require 'epitools'
+require 'open-uri'
+############################################################################
+
+class Time
+  def elapsed
+    Time.now - self
+  end
+end
+
+############################################################################
+
+class Package < Struct.new(:name, :version_str)
+  def version
+    parse_version(version_str)
+  end
+
+  def to_s
+    "<15>#{name} <13>#{version_str}".colorize
+  end
+end
+
+############################################################################
+
+class Vuln
+  def initialize(json)
+    @json = json
+  end
+
+  def affected
+    parse_version @json["affected"]
+  end
+
+  def fixed
+    parse_version @json["fixed"]
+  end
+
+  def names
+    @json["packages"]
+  end
+
+  def covers?(package)
+    if (affected.nil? and fixed.nil?) or package.version.nil?
+      true
+    else
+      (package.version >= affected) and (fixed ? package.version < fixed : true)
+    end
+  end
+
+  def type
+    @json["type"]
+  end
+
+  def severity
+    @json["severity"]
+  end
+
+  def codes
+    @json["issues"].join(", ")
+  end
+
+  def status
+    case s = @json["status"]
+    when "Vulnerable"
+      "<12>#{s}"
+    when "Fixed", "Not affected"
+      "<10>#{s}"
+    else
+      "<14>#{s}"
+    end
+  end
+
+  def url
+    "https://security.archlinux.org/#{@json["name"]}"
+  end
+
+  def to_s
+    "<11>#{@json["affected"]}<8>...<11>#{@json["fixed"]} <8>(<10>#{status}<8>) <3>=> <14>#{severity}<7>: <9>#{type} <8>(<7>#{codes}<8>)".colorize
+  end
+end
+
+############################################################################
+
+def parse_version(str)
+  str && SemanticVersion.new(str)
+end
+
+############################################################################
+
+# initialize the cache
+
+cache_dir = Path["~/.cache/upm/"]
+cache_dir.mkdir_p unless cache_dir.exists?
+
+# download the json
+
+json = cache_dir/"pacman-vulns.json"
+
+if !json.exists? or (json.mtime.elapsed > 20.minutes)
+  open("https://security.archlinux.org/issues/all.json") do |io|
+    json.write io.read
+  end
+end
+
+# parse the json
+
+vulns = Hash.of_arrays
+
+json.parse.each do |json|
+  vuln = Vuln.new(json)
+  vuln.names.each do |name|
+    vulns[name] << vuln
+  end
+end
+
+# parse the installed pacakges
+
+installed_packages = `pacman -Q`.each_line.map do |line|
+  Package.new(*line.strip.split)
+end
+
+# find vulnerable packages
+
+vulnerable_packages = Hash.of_arrays
+
+installed_packages.each do |package|
+  vulns[package.name].each do |vuln|
+    if vuln.covers?(package)
+      vulnerable_packages[package] << vuln
+    end
+  end
+end
+
+# print vulnerable packages
+
+vulnerable_packages.each do |package, vulns|
+  puts package
+  vulns.each do |vuln|
+    puts "  #{vuln}"
+    puts "        #{vuln.url}".green
+  end
+  puts
+end

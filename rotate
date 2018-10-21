@@ -21,7 +21,7 @@ opts, args = parse_options
 # "DVI-D-0 connected primary 1080x1920+0+0 left (normal left inverted right x axis y axis) 598mm x 336mm"
 # "DVI-D-0 connected primary 1920x1080+0+0 inverted (normal left inverted right x axis y axis) 598mm x 336mm"
 
-devs = `xrandr`.scan /^(\S+) connected .+ (\d+x\d+)\+(\d+\+\d+) (left|right|inverted|) ?\(/
+devs = `xrandr`.scan /^(\S+) connected (?:primary )?(\d+x\d+)\+(\d+\+\d+) (left|right|inverted|) ?\(/
 
 unless devs.any?
   raise "Error: Couldn't find any connected devices, or couldn't parse the xrandr output"

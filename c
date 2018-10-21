@@ -18,12 +18,19 @@
 #
 #
 # TODOs:
+#   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
+#   * Follow symlinks by default
+#   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
+#   * Print [eof] between files when in multi-file mode
+#   * Make .ANS files work in 'less' (less -S -R, cp437)
+#   * Add gem/program dependencies to functions (using a DSL)
+#     |_ "install all dependencies" can use it
+#     |_ error/warning when dependency isn't installed, plus a fallback codepath
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Fix "magic" (use hex viewer when format isn't recognized)
 #   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
-#   * Easy fix: Change `print_*` methods to receive a string (raw data) *or* a Pathname/File 
 #
 ##############################################################################
 require 'pathname'
@@ -31,7 +38,7 @@ require 'coderay'
 require 'coderay_bash'
 ##############################################################################
 
-def pygmentize_cmd(lexer=nil, style="native", formatter="terminal256")
+def pygmentize(lexer=nil, style="native", formatter="terminal256")
   # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
   #       Style gallery: https://help.farbox.com/pygments.html
   #                     (good ones: monokai, native, emacs)
@@ -45,65 +52,82 @@ def pygmentize_cmd(lexer=nil, style="native", formatter="terminal256")
   cmd
 end
 
+def rougify(lexer=nil)
+  cmd = ["rougify"]
+  cmd += ["-l", lexer] if lexer
+  cmd
+end
+
+# def bat(lexer=nil)
+#   cmd = ["bat", "--color=always"]
+#   cmd += ["-l", lexer] if lexer
+#   cmd
+# end
 
 ### Converters ###############################################################
 
+# NOTE: Defaults to 'coderay'
+
 EXT_HIGHLIGHTERS = {
-  ".cr"          => :ruby,
-  ".jl"          => :ruby,
-  ".pl"          => :ruby,
-  ".cmake"       => :ruby,
-  ".mk"          => :bash,
-  ".install"     => :bash,
-  ".desktop"     => :bash,
-  ".conf"        => :bash,
-  ".prf"         => :bash,
-  ".ini"         => :bash,
-  ".service"     => :bash,
-  ".hs"          => :text,
-  ".cl"          => :c,
-  ".rl"          => :c, # ragel definitions
-  ".ino"         => :c, # arduino sdk files
-  ".gradle"      => :groovy,
-  ".sage"        => :python,
-  ".lisp"        => :clojure,
-  ".scm"         => :clojure,
-  ".qml"         => :php,
-  ".pro"         => :sql,
-  ".xspf"        => :xml,
-  ".ws"          => :xml,
-  ".ui"          => :xml,
-  ".opml"        => :xml,
-  ".stp"         => :javascript, # systemtap
-  ".ml"          => :pygmentize,
-  ".nim"         => :pygmentize,
-  ".diff"        => :pygmentize,
-  ".patch"       => :pygmentize,
-  ".rs"          => :pygmentize,
-  ".toml"        => pygmentize_cmd(:ini),
+  ".cr"             => :ruby,
+  ".jl"             => :ruby,
+  ".pl"             => :ruby,
+  ".cmake"          => :ruby,
+  ".mk"             => :bash,
+  ".install"        => :bash,
+  ".desktop"        => :bash,
+  ".conf"           => :bash,
+  ".prf"            => :bash,
+  ".ini"            => :bash,
+  ".service"        => :bash,
+  ".ovpn"           => :bash,
+  ".hs"             => :text,
+  ".cl"             => :c,
+  ".rc"             => :c,
+  ".rl"             => :c, # ragel definitions
+  ".ino"            => :c, # arduino sdk files
+  ".shader"         => :c,
+  ".glsl"           => :c,
+  ".zig"            => pygmentize(:rust),
+  ".gradle"         => :groovy,
+  ".sage"           => :python,
+  ".lisp"           => :clojure,
+  ".scm"            => :clojure,
+  ".qml"            => :php,
+  ".pro"            => :sql,
+  ".ws"             => :xml,
+  ".ui"             => :xml,
+  ".opml"           => :xml,
+  ".dfxp"           => :xml,
+  ".xspf"           => :xml,
+  ".gd"             => rougify("nim"),
+  ".stp"            => :javascript, # systemtap
+  ".ml"             => pygmentize,
+  ".rkt"            => pygmentize,
+  ".nim"            => rougify,
+  ".nimble"         => rougify("nim"),
+  ".diff"           => pygmentize,
+  ".patch"          => pygmentize,
+  ".rs"             => pygmentize,
+  ".toml"           => rougify,
+  ".tmLanguage"     => :xml,
+  ".sublime-syntax" => :yaml,
+  ".m"              => pygmentize(:matlab),
+  ".asv"            => pygmentize(:matlab),
 }
 
 FILENAME_HIGHLIGHTERS = {
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
-  "Gemfile.lock" => :c,
-  "database.yml" => :yaml,
+  "Rakefile"       => :ruby,
+  "Gemfile"        => :ruby,
+  "CMakeLists.txt" => :ruby,
+  "Makefile"       => :bash,
+  "makefile"       => :bash,
+  "PKGBUILD"       => :bash,
+  "configure.in"   => :bash,
+  "configure"      => :bash,
+  "Gemfile.lock"   => :c,
+  "database.yml"   => :yaml,
 }
-
-##############################################################################
-
-THEMES = {
-  siberia:   {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
-  ocean:     {:class=>"\e[38;5;11m", :class_variable=>"\e[38;5;131m", :comment=>"\e[38;5;8m", :constant=>"\e[38;5;11m", :error=>"\e[38;5;0;48;5;131m", :float=>"\e[38;5;173m", :global_variable=>"\e[38;5;131m", :inline_delimiter=>"\e[38;5;137m", :instance_variable=>"\e[38;5;131m", :integer=>"\e[38;5;173m", :keyword=>"\e[38;5;139m", :method=>"\e[38;5;4m", :predefined_constant=>"\e[38;5;131m", :symbol=>"\e[38;5;10m", :regexp=>{:modifier=>"\e[38;5;10m", :self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;152m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :shell=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :string=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}},
-  modern:    {:class=>"\e[38;5;207;1m", :class_variable=>"\e[38;5;80m", :comment=>"\e[38;5;24m", :constant=>"\e[38;5;32;1;4m", :error=>"\e[38;5;31m", :float=>"\e[38;5;204;1m", :global_variable=>"\e[38;5;220m", :inline_delimiter=>"\e[38;5;41;1m", :instance_variable=>"\e[38;5;80m", :integer=>"\e[38;5;37;1m", :keyword=>"\e[38;5;167;1m", :method=>"\e[38;5;70;1m", :predefined_constant=>"\e[38;5;14;1m", :symbol=>"\e[38;5;83;1m", :regexp=>{:modifier=>"\e[38;5;204;1m", :self=>"\e[38;5;208m", :char=>"\e[38;5;208m", :content=>"\e[38;5;213m", :delimiter=>"\e[38;5;208;1m", :escape=>"\e[38;5;41;1m"}, :shell=>{:self=>"\e[38;5;70m", :char=>"\e[38;5;70m", :content=>"\e[38;5;70m", :delimiter=>"\e[38;5;15m", :escape=>"\e[38;5;41;1m"}, :string=>{:self=>"\e[38;5;41m", :char=>"\e[38;5;41m", :content=>"\e[38;5;41m", :delimiter=>"\e[38;5;41;1m", :escape=>"\e[38;5;41;1m"}},
-  solarized: {:class=>"\e[38;5;136m", :class_variable=>"\e[38;5;33m", :comment=>"\e[38;5;240m", :constant=>"\e[38;5;136m", :error=>"\e[38;5;254m", :float=>"\e[38;5;37m", :global_variable=>"\e[38;5;33m", :inline_delimiter=>"\e[38;5;160m", :instance_variable=>"\e[38;5;33m", :integer=>"\e[38;5;37m", :keyword=>"\e[38;5;246;1m", :method=>"\e[38;5;33m", :predefined_constant=>"\e[38;5;33m", :symbol=>"\e[38;5;37m", :regexp=>{:modifier=>"\e[38;5;160m", :self=>"\e[38;5;64m", :char=>"\e[38;5;160m", :content=>"\e[38;5;64m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;160m"}, :shell=>{:self=>"\e[38;5;160m", :char=>"\e[38;5;160m", :content=>"\e[38;5;37m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;160m"}, :string=>{:self=>"\e[38;5;160m", :char=>"\e[38;5;160m", :content=>"\e[38;5;37m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;37m"}},
-}
-CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
 
 HTML_ENTITIES = {
   '&lt;'    => '<',
@@ -122,19 +146,61 @@ HTML_ENTITIES = {
   '&#174;'  => '(R)',
   '&#8220;' => '"',
   '&#8221;' => '"',
+  '&#8211;' => "-",
   '&#8212;' => '--',
+  '&#8230;' => '...',
   '&#39;'   => "'",
   '&#8217;' => "'",
+  '&#8216;' => "'",
+  '&#62;'   => ">",
+  '&#60;'   => "<",
 }
 
+THEMES = {
+  siberia:   {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
+  ocean:     {:class=>"\e[38;5;11m", :class_variable=>"\e[38;5;131m", :comment=>"\e[38;5;8m", :constant=>"\e[38;5;11m", :error=>"\e[38;5;0;48;5;131m", :float=>"\e[38;5;173m", :global_variable=>"\e[38;5;131m", :inline_delimiter=>"\e[38;5;137m", :instance_variable=>"\e[38;5;131m", :integer=>"\e[38;5;173m", :keyword=>"\e[38;5;139m", :method=>"\e[38;5;4m", :predefined_constant=>"\e[38;5;131m", :symbol=>"\e[38;5;10m", :regexp=>{:modifier=>"\e[38;5;10m", :self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;152m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :shell=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}, :string=>{:self=>"\e[38;5;10m", :char=>"\e[38;5;152m", :content=>"\e[38;5;10m", :delimiter=>"\e[38;5;10m", :escape=>"\e[38;5;137m"}},
+  modern:    {:class=>"\e[38;5;207;1m", :class_variable=>"\e[38;5;80m", :comment=>"\e[38;5;24m", :constant=>"\e[38;5;32;1;4m", :error=>"\e[38;5;31m", :float=>"\e[38;5;204;1m", :global_variable=>"\e[38;5;220m", :inline_delimiter=>"\e[38;5;41;1m", :instance_variable=>"\e[38;5;80m", :integer=>"\e[38;5;37;1m", :keyword=>"\e[38;5;167;1m", :method=>"\e[38;5;70;1m", :predefined_constant=>"\e[38;5;14;1m", :symbol=>"\e[38;5;83;1m", :regexp=>{:modifier=>"\e[38;5;204;1m", :self=>"\e[38;5;208m", :char=>"\e[38;5;208m", :content=>"\e[38;5;213m", :delimiter=>"\e[38;5;208;1m", :escape=>"\e[38;5;41;1m"}, :shell=>{:self=>"\e[38;5;70m", :char=>"\e[38;5;70m", :content=>"\e[38;5;70m", :delimiter=>"\e[38;5;15m", :escape=>"\e[38;5;41;1m"}, :string=>{:self=>"\e[38;5;41m", :char=>"\e[38;5;41m", :content=>"\e[38;5;41m", :delimiter=>"\e[38;5;41;1m", :escape=>"\e[38;5;41;1m"}},
+  solarized: {:class=>"\e[38;5;136m", :class_variable=>"\e[38;5;33m", :comment=>"\e[38;5;240m", :constant=>"\e[38;5;136m", :error=>"\e[38;5;254m", :float=>"\e[38;5;37m", :global_variable=>"\e[38;5;33m", :inline_delimiter=>"\e[38;5;160m", :instance_variable=>"\e[38;5;33m", :integer=>"\e[38;5;37m", :keyword=>"\e[38;5;246;1m", :method=>"\e[38;5;33m", :predefined_constant=>"\e[38;5;33m", :symbol=>"\e[38;5;37m", :regexp=>{:modifier=>"\e[38;5;160m", :self=>"\e[38;5;64m", :char=>"\e[38;5;160m", :content=>"\e[38;5;64m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;160m"}, :shell=>{:self=>"\e[38;5;160m", :char=>"\e[38;5;160m", :content=>"\e[38;5;37m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;160m"}, :string=>{:self=>"\e[38;5;160m", :char=>"\e[38;5;160m", :content=>"\e[38;5;37m", :delimiter=>"\e[38;5;160m", :escape=>"\e[38;5;37m"}},
+}
+CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
+
+##############################################################################
+# Monkeypatches
 ##############################################################################
 
 class Pathname
+
+  include Enumerable
+
+  def each
+    return to_enum(:each) unless block_given?
+    each_line { |line| yield line.chomp }
+  end
 
   def filename
     basename.to_s
   end
   alias_method :name, :filename
+
+end
+
+##############################################################################
+
+class String
+
+  #
+  # Converts time duration strings (mm:ss, mm:ss.dd, hh:mm:ss, or dd:hh:mm:ss) to seconds.
+  # (The reverse of Integer#to_hms)
+  #
+  def from_hms
+    nums = split(':')
+
+    nums[-1] = nums[-1].to_f if nums[-1] =~ /\d+\.\d+/ # convert fractional seconds to a float
+    nums.map! { |n| n.is_a?(String) ? n.to_i : n } # convert the rest to integers
+
+    nums_and_units = nums.reverse.zip %w[seconds minutes hours days]
+    nums_and_units.map { |num, units| num.send(units) }.sum
+  end
 
 end
 
@@ -147,6 +213,24 @@ class Numeric
     int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
 
     frac ? "#{int}.#{frac}" : int
+  end
+
+  #
+  # Time methods
+  #
+  {
+
+    'second'  => 1,
+    'minute'  => 60,
+    'hour'    => 60 * 60,
+    'day'     => 60 * 60 * 24,
+    'week'    => 60 * 60 * 24 * 7,
+    'month'   => 60 * 60 * 24 * 30,
+    'year'    => 60 * 60 * 24 * 365,
+
+  }.each do |unit, scale|
+    define_method(unit)     { self * scale }
+    define_method(unit+'s') { self * scale }
   end
 
 end
@@ -192,6 +276,21 @@ end
 
 ##############################################################################
 
+def convert_htmlentities(s)
+  s.gsub(/&[#\w]+;/) { |m| HTML_ENTITIES[m] || m }
+end
+
+def print_header(title, level=nil)
+  colors = ["\e[33m\e[1m%s\e[0m", "\e[36m\e[1m%s\e[0m", "\e[34m\e[1m%s\e[0m", "\e[35m%s\e[0m"]
+  level  = level ? (level-1) : 0
+  color  = colors[level] || colors[-1]
+  grey   = "\e[30m\e[1m%s\e[0m"
+
+  bar = grey % ("-"*(title.size+4))
+
+  "#{bar}\n  #{color % title}\n#{bar}\n\n"
+end
+
 def run(*args)
   opts = (args.last.is_a? Hash) ? args.pop : {}
   args = [args.map(&:ensure_string)]
@@ -207,8 +306,6 @@ def run(*args)
 
   IO.popen(*args)
 end
-
-##############################################################################
 
 def lesspipe(*args)
   if args.any? and args.last.is_a?(Hash)
@@ -245,8 +342,6 @@ rescue Errno::EPIPE, Interrupt
   # less just quit -- eat the exception.
 end
 
-##############################################################################
-
 def which(bin)
   ENV["PATH"].split(":").find do |path|
     result = File.join(path, bin)
@@ -255,14 +350,10 @@ def which(bin)
   nil
 end
 
-##############################################################################
-
 def term_width
   require 'io/console'
   STDOUT.winsize.last
 end
-
-##############################################################################
 
 def concatenate_enumerables(*enums)
   Enumerator.new do |y|
@@ -272,14 +363,10 @@ def concatenate_enumerables(*enums)
   end
 end
 
-##############################################################################
-
 def show_image(filename)
   system("feh", filename)
   ""
 end
-
-##############################################################################
 
 def tmp_filename(prefix="c", length=20)
   chars = [*'a'..'z'] + [*'A'..'Z'] + [*'0'..'9']
@@ -290,8 +377,6 @@ def tmp_filename(prefix="c", length=20)
   end
   name
 end
-
-##############################################################################
 
 def shebang_lang(filename)
   if File.read(filename, 256) =~ /\A#!(.+)/
@@ -331,9 +416,7 @@ def print_source(arg)
       data
     end
   elsif lang.is_a? Array
-    run(*lang)
-  elsif %i[pygmentize rugmentize rougify].include? lang
-    run(lang, filename)
+    run(*lang, arg)
   elsif lang
     CodeRay.scan_file(path, lang).term
   else
@@ -353,6 +436,14 @@ end
 #
 
 BLACKCARPET_INIT = proc do
+
+  begin
+    require 'epitools/colored'
+    require 'redcarpet'
+  rescue LoadError
+    return "\e[31m\e[1mNOTE: For colorized Markdown files, 'gem install epitools redcarpet'\e[0m\n\n" \
+      + print_source(filename)
+  end
 
   class BlackCarpet < Redcarpet::Render::Base
   private
@@ -503,31 +594,6 @@ BLACKCARPET_INIT = proc do
 end
 
 
-HTMLENTITIES = {
-  'nbsp'  => ' ',
-  'ndash' => '-',
-  'mdash' => '-',
-  'amp'   => '&',
-  'raquo' => '>>',
-  'laquo' => '<<',
-  'quot'  => '"',
-  'micro' => 'u',
-  'copy'  => '(c)',
-  'trade' => '(tm)',
-  'reg'   => '(R)',
-  '#174'  => '(R)',
-  '#8212' => '--',
-  '#8230' => '--',
-  '#8220' => '"',
-  '#8221' => '"',
-  '#39'   => "'",
-  '#8217' => "'",
-}
-
-def convert_htmlentities(s)
-  s.gsub(/&([#\w]+);/) { HTMLENTITIES[$1] || $0 }
-end
-
 def print_markdown(markdown)
   begin
     require 'epitools/colored'
@@ -553,6 +619,13 @@ def print_markdown(markdown)
   end
 
   convert_htmlentities carpet.render(markdown)
+end
+
+##############################################################################
+
+def print_asciidoc(data)
+  # TODO: Use Asciidoctor to convert it to a man page, then print that
+  data
 end
 
 ##############################################################################
@@ -604,6 +677,7 @@ def print_moin(moin)
     gsub(/^#acl .+$/, '').                        # remove ACLs
     gsub(/^<<TableOfContents.+$/, '').            # remove TOCs
     gsub(/^## page was renamed from .+$/, '').    # remove 'page was renamed'
+    # TODO: use `html-renderer` to convert it to ANSI
     gsub(/^\{\{\{\n^#!raw\n(.+)\}\}\}$/m, "\\1"). # remove {{{#!raw}}}s
     # TODO: convert {{{\n#!highlight lang}}}s (2-phase: match {{{ }}}'s, then match first line inside)
     gsub(/\{\{\{\n?#!(?:highlight )?(\w+)\n(.+)\n\}\}\}$/m, "```\\1\n\\2\n```"). # convert {{{#!highlight lang }}} to ```lang ```
@@ -613,12 +687,6 @@ def print_moin(moin)
 
   print_markdown(markdown)
 end
-
-##############################################################################
-
-# def print_textile(filename)
-#   require 'redcloth'
-# end
 
 ##############################################################################
 
@@ -655,7 +723,7 @@ def print_bookmarks(filename)
   doc = Nokogiri::HTML(open(filename))
 
   Enumerator.new do |out|
-    doc.search("a").each do |a| 
+    doc.search("a").each do |a|
       out << "\e[1;36m#{a.inner_text}\e[0m"
       out << "  #{a["href"]}"
       out << ""
@@ -698,28 +766,55 @@ end
 
 ##############################################################################
 
+def print_srt(filename)
+  return to_enum(:print_srt, filename) unless block_given?
+
+  last_time = 0
+
+  enum = Pathname.new(filename).each
+
+  loop do
+    n     = enum.next
+    times = enum.next
+    a, b  = times.split(" --> ").map { |s| s.gsub(",", ".").from_hms }
+    gap   = -last_time + a
+
+    yield "" if gap > 1
+    yield "" if gap > 6
+    yield "" if gap > 40
+    yield "------------------\n\n" if gap > 100
+
+    loop do
+      line = enum.next
+      break if line.empty?
+      yield line
+    end
+
+    last_time = b
+  end
+end
+
+##############################################################################
+
 def print_ipynb(filename)
   require 'json'
-  require 'tempfile'
 
   json = JSON.load(open(filename))
-  tmp = Tempfile.new('c-')
+  output = []
 
   json["cells"].each do |c|
     case c["cell_type"]
     when "markdown"
-      tmp.write "#{c["source"].join}\n\n"
+      output << "#{c["source"].join}\n\n"
     when "code"
       # FIXME: Hardwired to python; check if a cell's metadata attribute supports other languages
-      tmp.write "\n```python\n#{c["source"].join}\n```\n\n"
+      output << "\n```python\n#{c["source"].join}\n```\n\n"
     else
       raise "unknown cell type: #{c["cell_type"]}"
     end
   end
 
-  at_exit { tmp.unlink }
-
-  print_markdown(File.read tmp.path)
+  print_markdown(output.join)
 end
 
 ##############################################################################
@@ -729,8 +824,6 @@ def print_torrent(filename)
   require 'digest/sha1'
 
   data = BEncode.load_file(filename)
-
-  # require 'awesome_print'; return data.ai
 
   date        = data["creation date"] && Time.at(data["creation date"])
   name        = data.dig "info", "name"
@@ -801,14 +894,49 @@ end
 
 ##############################################################################
 
+# def print_sqlite(filename)
+#   stats  = run("sqlite3", filename, ".dbinfo").read
+#   schema = run("sqlite3", filename, ".schema --indent").read
+
+#   print_header("Statistics:",1) +
+#     stats + "\n" +
+#   print_header("Schema:",2) +
+#     CodeRay.scan(schema, :sql).term
+# end
+
+def print_sqlite(filename)
+  return to_enum(:print_sqlite, filename) unless block_given?
+
+  require 'sequel'
+  require 'pp'
+
+  Sequel.sqlite(filename) do |db|
+    db.tables.each do |table|
+      yield print_header("#{table}", 1)
+      schemas = db[:sqlite_master].where(tbl_name: "#{table}").select(:sql).map(&:values).flatten.join("\n")
+      yield CodeRay.scan(schemas, :sql).term
+      yield ""
+      begin
+        db[table].each { |row| yield CodeRay.scan(row.pretty_inspect, :ruby).term }
+      rescue Sequel::DatabaseError => e
+        yield e.inspect
+      end
+      yield ""
+      yield ""
+    end
+  end
+end
+
+##############################################################################
+
 def print_ssl_certificate(filename)
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   result = nil
   %w[pem der net].each do |cert_format|
-    result = run("openssl", "x509", 
+    result = run("openssl", "x509",
         "-fingerprint", "-text", "-noout",
-        "-inform", cert_format, 
-        "-in", filename, 
+        "-inform", cert_format,
+        "-in", filename,
         stderr: true).read
 
     break unless result =~ /unable to load certificate/
@@ -941,8 +1069,8 @@ def print_http(url)
   IO.popen(["lynx", "-dump", url]) { |io| io.read }
 end
 
-def print_html(file)
-  # TODO: Is it better to use Term.width as html2text's -b option?
+def render_html(file)
+  # TODO: Switch to using 'html-renderer'
   ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
     markdown.write File.read(file)
     markdown.close_write
@@ -1033,9 +1161,11 @@ def convert(arg)
     else
       case ext
       when *%w[.html .htm]
-        print_html(arg)
+        render_html(arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
+      when *%w[.adoc]
+        print_asciidoc(File.read arg)
       when *%w[.moin]
         print_moin(File.read arg)
       when *%w[.ipynb]
@@ -1048,6 +1178,8 @@ def convert(arg)
         print_cp437(arg)
       when *%w[.rst]
         print_rst(arg)
+      when *%w[.srt]
+        print_srt(arg)
       when *%w[.pdf]
         print_pdf(arg)
       when *%w[.doc .docx]
@@ -1056,8 +1188,10 @@ def convert(arg)
         print_rtf(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
+      # when *%w[.dfxp .xml]
+      #   pretty_xml(arg)
       when *%w[.xml]
-        print_source(arg).gsub(/&[\w\d#]+?;/, HTML_ENTITIES)
+        convert_htmlentities(print_source(arg))
       when *%w[.csv .xls]
         print_csv(arg)
       when *%w[.mp3 .ogg .mkv .mp4 .avi .mov .qt .rm .wma .wmv]
@@ -1073,6 +1207,8 @@ def convert(arg)
         format = run('file', arg).read
 
         case format
+        when /SQLite 3.x database/
+          print_sqlite(arg)
         when /POSIX shell script/
           print_source(arg)
         when /:.+?(executable|shared object)[^,]*,/
@@ -1096,7 +1232,6 @@ if $0 == __FILE__
   args = ARGV
 
   if args.size == 0 or %w[-h --help].include? args.first
-
     puts "usage: c [options] <filename(s)>"
     puts
     puts "options:"
@@ -1120,9 +1255,11 @@ if $0 == __FILE__
           result = convert(arg)
         rescue Errno::EACCES
           less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+          # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
           next
-        rescue Errno::ENOENT
-          less.puts "\e[31m\e[1mFile not found.\e[0m"
+        rescue Errno::ENOENT => e
+          # less.puts "\e[31m\e[1mFile not found.\e[0m"
+          less.puts "\e[31m\e[1m#{e}\e[0m"
           next
         end
 
