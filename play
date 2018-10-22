@@ -369,7 +369,8 @@ end
 
 ###################################################################################################
 
-def download(*urls, audio_only: false)
+# def download(*urls, audio_only: false)
+def download(*urls, opts: nil)
   urls << log_entries.first if urls.empty?
 
   urls.each do |url|
@@ -381,19 +382,21 @@ def download(*urls, audio_only: false)
       "-o", "%(title)s.%(ext)s",
     ]
 
-    if audio_only
+    if opts&.audio_only?
       cmd += [
         "--extract-audio",
-        "-f", "bestaudio[ext=m4a]",
+        "-f", "bestaudio[ext=m4a]/bestaudio",
       ]
     else
       cmd += [
-        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
+        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best",
         "--sub-format", "srt/ass/vtt/best",
       ]
     end
 
     cmd << url.to_s
+
+    p cmd if opts&.verbose?
 
     system *cmd
   end
@@ -473,7 +476,12 @@ end
 
 ###################################################################################################
 
-def play(url, foreground: false, verbose: false, audio_only: false)
+# def play(url, foreground: false, verbose: false, audio_only: false)
+def play(url, opts)
+  foreground = opts["no-daemon"]
+  verbose    = opts.verbose?
+  audio_only = opts.audio?
+
   if url.is_a? LogEntry
     notify(:info, "Loading:", url.title, time: 4)
   else
@@ -606,9 +614,10 @@ if $0 == __FILE__
     else
       urls.each do |url|
         if opts.download?
-          download(url, audio_only: opts.audio?)
+          download(url, opts: opts)
         elsif which("mpv")
-          play(url, foreground: opts["no-daemon"], verbose: opts.verbose?, audio_only: opts.audio?)
+          # play(url, foreground: opts["no-daemon"], verbose: opts.verbose?, audio_only: opts.audio?)
+          play(url, opts)
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
         end
