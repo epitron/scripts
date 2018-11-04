@@ -1,2 +1,2 @@
 #!/bin/bash
-inxi -F
+inxi -F 2>/dev/null || neofetch
