@@ -89,7 +89,7 @@ if $0 == __FILE__
   infile  = Path[files.first]
   outfile = Path[opts[:output]]
 
-  if not infile.exists?
+  unless infile.exists? or infile.url?
     puts "ERROR: Input file not found: #{infile}"
     exit 1
   end
@@ -112,14 +112,15 @@ if $0 == __FILE__
   ## Create commandline
 
   unless outfile
-    outfile = infile.with(basename: infile.basename + "_clip-#{start}-#{length}")
+    outfile = infile.url? ? Path[infile.filename] : infile
+    outfile = outfile.with(basename: outfile.basename + "_clip-#{start}-#{length}")
   end
 
-  if infile.ext.in? (VIDEO_EXTS+AUDIO_EXTS)
+  if (VIDEO_EXTS+AUDIO_EXTS).include? infile.ext
 
     case opts[:use]
     when "ffmpeg"
-      cmd = ["ffmpeg", "-i", infile]
+      cmd = ["ffmpeg", "-i", infile.to_s]
       cmd += ["-codec:v", opts[:vcodec]]
       cmd += ["-crf", opts[:quantizer]] if opts.quantizer?
       cmd += ["-codec:a", opts[:acodec]]
