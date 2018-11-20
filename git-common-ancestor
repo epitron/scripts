@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$2" == "" ]; then
+  echo "usage: git-common-ancestor <branch1> <branch2>"
+  exit 1
+fi
+
+git merge-base "$1" "$2"
