@@ -47,9 +47,8 @@ if we_have exa
 then
   alias l='exa --long --header --git'
   function t() {
-    l --tree --color=always $* | less -SRXFi
+    exa --long --header --git --tree --color=always $* | less -SRXFi
   }
-  alias t=''
 else
   alias l='ls -al'
   function t() {
