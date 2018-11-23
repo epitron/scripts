@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: vfio [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+groups = Path["/sys/kernel/iommu_groups/*"].sort_by { |path| path.dirs.last.to_i}
+
+groups.each do |group|
+  num = group.dirs.last
+  puts "<8>=== <2>Group <10>#{num} <8>===".colorize
+
+  device_ids = (group/"devices/*").map { |path| path.dirs.last }
+  device_ids.each do |device_id|
+    addr, desc = `lspci -nns #{device_id}`.strip.split(/\s+/, 2)
+    puts "  <11>#{addr} <9>#{desc}".colorize
+  end
+  puts
+end

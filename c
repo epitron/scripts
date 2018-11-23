@@ -89,6 +89,7 @@ EXT_HIGHLIGHTERS = {
   ".ino"            => :c, # arduino sdk files
   ".shader"         => :c,
   ".glsl"           => :c,
+  ".dart"           => :java,
   ".zig"            => pygmentize(:rust),
   ".gradle"         => :groovy,
   ".sage"           => :python,

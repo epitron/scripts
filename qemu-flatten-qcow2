@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: qemu-flatten-qcow2 <image>"
+  exit 1
+fi
+
+qemu-img rebase -F qcow2 -b '' -f qcow2 "$1"
