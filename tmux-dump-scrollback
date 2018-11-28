@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# tmux capture-pane [option]s:
+#   -p = stdout
+#   -e = escape sequences
+#   -S = starting line
+
+if [ "$1" == "" ]; then
+  tmux capture-pane -pe -S -1000000
+else
+  if [ "$1" == "--help" ]; then
+    echo "usage: tmux-dump-scrollback [<target pane>]"
+    exit 1
+  else
+    tmux capture-pane -pe -S -1000000 -t "$1"
+  fi
+fi
