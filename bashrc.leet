@@ -48,8 +48,15 @@ if we_have fzf; then
     export FZF_DEFAULT_OPTS="--ansi"
   fi
 
-  . /usr/share/fzf/completion.bash
-  . /usr/share/fzf/key-bindings.bash
+  if [ -f /usr/share/fzf/completion.bash ]; then
+    . /usr/share/fzf/completion.bash
+    . /usr/share/fzf/key-bindings.bash
+  elif [ -f ~/.fzf/shell/completion.bash ]; then
+    . ~/.fzf/shell/completion.bash
+    . ~/.fzf/shell/key-bindings.bash
+  else
+    echo "can't find fzf's bash scripts"
+  fi
 fi
 
 # misc
