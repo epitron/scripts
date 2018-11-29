@@ -625,9 +625,22 @@ end
 
 ##############################################################################
 
+def print_html(data)
+  IO.popen(["html2ansi"], "r+") do |io|
+    io.write(data)
+    io.close_write
+    io.read
+  end
+end
+
+##############################################################################
+
 def print_asciidoc(data)
-  # TODO: Use Asciidoctor to convert it to a man page, then print that
-  data
+  IO.popen(["asciidoctor", "-o", "-", "-"], "r+") do |io|
+    io.write(data)
+    io.close_write
+    print_html(io.read)
+  end
 end
 
 ##############################################################################
