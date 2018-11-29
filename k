@@ -78,7 +78,7 @@ end
 def to_kodipath(url)
   case url
   when %r{https?://(?:www\.)?youtube\.com/(?:embed|watch)\?v=([^&]+)}, %r{https?://youtu\.be/(.+)}
-    "plugin://plugin.video.youtube/?action=play_video&videoid=#{$1}"
+    "plugin://plugin.video.youtube/play/?video_id=#{$1}"
   when %r{https?://(?:www\.)?thoughtmaybe\.com/}
     IO.popen(["youtube-dl", "-g", url], &:read).chomp
   else
