@@ -1,0 +1,2 @@
+#!/bin/bash
+html2csv -v "https://newgtlds.icann.org/en/program-status/delegated-strings"
