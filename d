@@ -14,7 +14,7 @@ TYPE_INFO = [
   [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv)$/i,              :light_purple],
   [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
   [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|xz|bz2)|tgz|pixz|gem)$/i, :light_yellow],
-  [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk))$/i, :light_white],
+  [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk|epub))$/i, :light_white],
   [:config,  /\.(conf|ini)$/i,                                            :cyan],
   [:dotfile, /^\../i,                                                     :grey],
   [:data,    /\.(json|ya?ml|h)$/i,                                        :yellow],
