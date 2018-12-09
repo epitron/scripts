@@ -95,6 +95,65 @@ def edit_filename(prompt, filename)
     end
 
     #
+    # ^r: Ruby REPL
+    #
+    c.bind "\x12" do |inst|
+      dir, basename, ext = inst.line.path_parts
+      stack              = [basename]
+      pos                = 0
+      println            = proc { |line| puts "#{line}\r" }
+      clamp              = proc { |n| [[n,0].max, stack.size-1].min }
+      ruby_coolline      = Coolline.new {|d| d.history_file = "#{Coolline::HistoryFile}-repl" }
+
+      println["\r\n\n=== REPL mode ==="]
+
+      loop do
+        println["\rFilename: #{stack[pos]}"]
+
+        expr = ruby_coolline.readline
+
+        case expr
+        when "help", "?"
+          println[""]
+          println["Usage:"]
+          println["  Type some Ruby, and it'll be evaluated on the filename."]
+          println[""]
+          println["Special Commands:"]
+          println["  exit/^D/blank line -> finish REPLing"]
+          println["  undo -> revert latest change"]
+          println["  redo -> unrevert latest change"]
+          println[""]
+        when "history", "hist"
+          print "\r"
+          stack.each_with_index do |line, i|
+            println["#{i} #{i == pos ? "=>" : "  "} #{line}"]
+          end
+        when "undo"
+          pos = clamp[pos-1]
+        when "redo"
+          pos = clamp[pos+1]
+        when nil, "", "exit", "commit"
+          break
+        else
+          begin
+            # println[{eval: stack[pos], stack: stack, pos: pos}.inspect]
+            result = stack[pos].dup.instance_eval(expr)
+            pos += 1
+            stack[pos..-1] = [result]
+          rescue => e
+            println["\rError: #{e}"]
+          end
+        end
+      end
+
+      println[]
+      println["Rename: #{filename}"]
+
+      inst.line        = "#{dir}#{stack[pos]}#{ext}"
+      inst.menu.string = "(REPLed string)"
+    end
+
+    #
     # ^u: remove underscores and stuff
     #
     c.bind "\x15" do |inst|
