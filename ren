@@ -38,7 +38,8 @@ class String
     gsub(/(?<!\()\b(?:19|20)\d\d\b(?!\))/, "(\\0)")
   end
 
-  LOWERCASE_WORDS = Set.new %w[of to or the and an a at is for from in]
+  LOWERCASE_WORDS = Set.new %w[of to or the and an a at is for from in with]
+  UPPERCASE_WORDS = Set.new %w[AI]
 
   #
   # Return a new string converted to "Title Case" (first letter of each word capitalized)
@@ -48,8 +49,11 @@ class String
     words = downcase.split(/(?<!\w')\b/)
 
     words.map.with_index do |word,i|
-      if LOWERCASE_WORDS.include?(word) and i > 0 # leave LOWERCASE_WORDS lowercase, unless it's the first word.
+      prev_word = (i > 0) ? words[i-1] : nil
+      if LOWERCASE_WORDS.include?(word) and (i > 0 or prev_word != " - ") # leave LOWERCASE_WORDS lowercase, unless it's the first word, or it comes after a " - "
         word
+      elsif UPPERCASE_WORDS.include?(word)
+        word.upcase
       else
         word.gsub(/^\w/) { |c| c.upcase } # capitalize first letter
       end
@@ -94,6 +98,86 @@ def edit_filename(prompt, filename)
       inst.menu.string = "(Swapped left/right side of the '-')"
     end
 
+    c.bind "\x14" do |inst|
+      system("trsh", filename)
+      puts "\r\n[Trashed]\r"
+      inst.line = filename
+      inst.input.ungetc "\r"
+    end
+
+    #
+    # ^r: Ruby REPL
+    #
+    c.bind "\x12" do |inst|
+      dir, basename, ext = inst.line.path_parts
+
+      stack              = [basename]
+      pos                = 0
+      println            = proc { |line| puts "#{line}\r" }
+      clamp              = proc { |n| [[n,0].max, stack.size-1].min }
+      ruby_coolline      = Coolline.new {|d| d.history_file = "#{Coolline::HistoryFile}-repl" }
+
+      println["\r\n\n=== REPL mode ==="]
+
+      loop do
+        println["\rFilename: #{stack[pos]}"]
+
+        expr = ruby_coolline.readline
+
+        case expr
+        when "help", "?"
+          println[""]
+          println["Usage:"]
+          println["  Type some Ruby, and it'll be evaluated on the filename."]
+          println[""]
+          println["Special Commands:"]
+          println["  exit/^D/blank line -> finish REPLing"]
+          println["  undo -> revert latest change"]
+          println["  redo -> unrevert latest change"]
+          println[""]
+        when "history", "hist"
+          print "\r"
+          stack.each_with_index do |line, i|
+            println["#{i} #{i == pos ? "=>" : "  "} #{line}"]
+          end
+        when "undo"
+          pos = clamp[pos-1]
+        when "redo"
+          pos = clamp[pos+1]
+        when nil, "", "exit", "commit"
+          break
+        else
+          begin
+            # println[{eval: stack[pos], stack: stack, pos: pos}.inspect]
+            result = stack[pos].dup.instance_eval(expr)
+            pos += 1
+            stack[pos..-1] = [result]
+          rescue => e
+            println["\rError: #{e}"]
+          end
+        end
+      end
+
+      println[]
+      println["Rename: #{filename}"]
+
+      inst.line        = "#{dir}#{stack[pos]}#{ext}"
+      inst.menu.string = "(REPLed string)"
+    end
+
+    #
+    # Alt--: Remove -'s
+    #
+    c.bind "\e-" do |inst|
+      dir, basename, ext = inst.line.path_parts
+      pos                = inst.pos
+
+      inst.line          = "#{dir}#{basename.gsub("-", " ")}#{ext}"
+      inst.pos           = pos
+
+      inst.menu.string   = "(Hyphens removed)"
+    end
+
     #
     # ^u: remove underscores and stuff
     #
@@ -109,6 +193,16 @@ def edit_filename(prompt, filename)
       inst.menu.string   = "(Underscores removed)"
     end
 
+    #
+    # ^o: open file
+    #
+    c.bind "\x0F" do |inst|
+      fork do
+        Process.daemon(true)
+        system("xdg-open", filename)
+      end
+      inst.menu.string = "(Opening file)"
+    end
     #
     # ^k: delete everything from the cursor to the file extension
     #
