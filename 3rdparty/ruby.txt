@@ -1,0 +1,18 @@
+epitools
+slop -v 3.6
+coderay_bash
+coolline
+
+pry
+pry-stack_explorer
+
+sinatra
+haml
+
+nokogiri
+oga
+ox
+
+xmlrpc
+
+
