@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: git-own [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+def get_git_dir
+  path = Path.pwd
+  loop do
+    return nil if path.to_s == "/"
+
+    gitdir = path/".git"
+    return gitdir if gitdir.dir?
+
+    path = path.parent
+  end
+end
+
+if dotgit = get_git_dir
+  config = (dotgit/"config")
+
+  puts "* Owning #{config}..."
+  old_config = config.read
+  new_config = old_config.
+    gsub(%r{https?://github\.com/epitron/(.+)$}) { "git@github.com:epitron/#{$1}#{$1['.git'] ? '' : '.git'}" }.
+    gsub(%r{https://aur.archlinux.org/(.+)$}) { "aur@aur.archlinux.org:/#{$1}#{$1['.git'] ? '' : '.git'}" }
+
+  if old_config == new_config
+    puts "* You can already push to this repo."
+  else
+    puts "* Successfully owned! You can now push to this repo.".light_yellow
+    puts
+
+    tmp = Path.tmpfile
+    tmp.write new_config
+    cmd = ["diff", "-u", "--color", config, tmp]
+    # p cmd
+    system(*cmd)
+    puts
+  end
+
+  config.write new_config
+else
+  puts "Error: couldn't find a .git directory in any parent dir"
+  exit 1
+end
+
