@@ -54,6 +54,10 @@ urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
 cmd += args
 
 urls.each do |url|
+  if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
+    url = "https://youtu.be/#{$1}"
+  end
+
   if url =~ /(youtu\.be|youtube\.com)/
     unless cmd.include?("-f") or args.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
