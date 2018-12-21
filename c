@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 ##############################################################################
 #
-# SuperCat! Print every file format, in beautiful ansi colour!
+# StarCat (aka. *cat) -- print every file format, in beautiful ANSI colour!
 #
 # Optional dependencies:
 #
@@ -123,6 +123,8 @@ FILENAME_HIGHLIGHTERS = {
   "Gemfile"        => :ruby,
   "CMakeLists.txt" => :ruby,
   "Makefile"       => :bash,
+  "Kconfig"        => :bash,
+  "Kconfig.name"   => :bash,
   "makefile"       => :bash,
   "PKGBUILD"       => :bash,
   "configure.in"   => :bash,

@@ -38,7 +38,7 @@ class String
     gsub(/(?<!\()\b(?:19|20)\d\d\b(?!\))/, "(\\0)")
   end
 
-  LOWERCASE_WORDS = Set.new %w[of to or the and an a at is for from in with]
+  LOWERCASE_WORDS = Set.new %w[of to or the and an a at is for from in with are]
   UPPERCASE_WORDS = Set.new %w[AI]
 
   #

@@ -12,7 +12,21 @@ require 'slop'
 # Parse options
 
 opts = Slop.parse(help: true, strict: true) do
-  banner "Usage: git-own [options]"
+  b = <<~END
+    Usage:
+        git-own [<repo path(s)>]
+
+    Purpose:
+        Change all the URLs for a git repo's remotes from public https URLs to private SSH URLs.
+          eg:
+            https://github.com/user/repo => git@github.com:user/repo.git
+
+        (Supports github, gitlab and AUR.)
+
+    Options:
+  END
+
+  banner b.chomp
 
   # on "a",  "along",  "desc"
   # on "b=", "blong",  "desc", default: ""
@@ -22,8 +36,13 @@ args = ARGV
 
 ########################################################
 
-def get_git_dir
-  path = Path.pwd
+def ensure_dot_git(str)
+  # str.sub(/(?!=\.git)$/, '.git')
+  # str[/.+\.git/] || "#{str}.git"
+  str[/\.git$/] ? str : "#{str}.git"
+end
+
+def get_git_dir(path=Path.pwd)
   loop do
     return nil if path.to_s == "/"
 
@@ -34,32 +53,37 @@ def get_git_dir
   end
 end
 
-if dotgit = get_git_dir
-  config = (dotgit/"config")
+paths = args.any? ? args.map(&:to_Path) : [Path.pwd]
 
-  puts "* Owning #{config}..."
-  old_config = config.read
-  new_config = old_config.
-    gsub(%r{https?://github\.com/epitron/(.+)$}) { "git@github.com:epitron/#{$1}#{$1['.git'] ? '' : '.git'}" }.
-    gsub(%r{https://aur.archlinux.org/(.+)$}) { "aur@aur.archlinux.org:/#{$1}#{$1['.git'] ? '' : '.git'}" }
+paths.each do |path|
 
-  if old_config == new_config
-    puts "* You can already push to this repo."
+  if dotgit = get_git_dir(path)
+    config = (dotgit/"config")
+
+    puts "<8>* <9>Owning <11>#{config}<9>...".colorize
+    old_config = config.read
+    new_config = old_config.
+      gsub(%r{https?://git(hub|lab)\.com/(\w+)/(.+)$}) { "git@git#{$1}.com:#{$2}/#{ensure_dot_git($3)}" }.
+      gsub(%r{https://aur.archlinux.org/(.+)$}) { "aur@aur.archlinux.org:/#{ensure_dot_git($1)}" }
+
+    if old_config == new_config
+      puts "  <8>|_ <7>No changes made.".colorize
+    else
+      puts "  <8>|_ <14>Successfully owned! You can now push to this repo.".colorize
+      puts
+
+      tmp = Path.tmpfile
+      tmp.write new_config
+      cmd = ["diff", "-u", "--color", config, tmp]
+      # p cmd
+      system(*cmd)
+      puts
+    end
+
+    config.write new_config
   else
-    puts "* Successfully owned! You can now push to this repo.".light_yellow
-    puts
-
-    tmp = Path.tmpfile
-    tmp.write new_config
-    cmd = ["diff", "-u", "--color", config, tmp]
-    # p cmd
-    system(*cmd)
-    puts
+    puts "Error: couldn't find a .git directory in any parent dir"
+    exit 1
   end
 
-  config.write new_config
-else
-  puts "Error: couldn't find a .git directory in any parent dir"
-  exit 1
 end
-

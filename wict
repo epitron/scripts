@@ -148,6 +148,9 @@ def highlight(defn)
 
     # p [:alternate_brackets, $1, $2]
     /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc { highlight "[[#{$2}]]" },
+
+    # p [:emphasis, $1]
+    /''([^']+?)''/ => proc { highlight "<15>#{$1}</15>" },
   }
 
   xforms.each do |pattern,block|
