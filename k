@@ -134,8 +134,8 @@ def playlist_clear(id=1)
 end
 
 def active_player_id
-  result = rpc(method: "Player.GetActivePlayers")
-  result&.first&.[]("playerid")
+  @result ||= rpc(method: "Player.GetActivePlayers")
+  @result&.first&.[]("playerid")
 end
 
 def playlist_jump(pos)
@@ -189,6 +189,11 @@ end
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w+/] }
 
+if opts.delete("-c")
+  playlist_clear
+  player_stop
+end
+
 if opts.delete("-i")
   ph jsonrpc_introspect
 elsif opts.include?("-I")
@@ -204,9 +209,6 @@ elsif opts.delete("-n")
   playlist_next
 elsif opts.delete("-b")
   playlist_prev
-elsif opts.delete("-c")
-  playlist_clear
-  player_stop
 elsif opts.delete("-p")
   player_playpause
 elsif opts.delete("-s")
