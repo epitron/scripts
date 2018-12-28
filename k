@@ -68,7 +68,6 @@ end
 
 def help!
   puts DATA.read
-  exit
 end
 
 ########################################################
@@ -189,29 +188,34 @@ end
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w+/] }
 
-if opts.delete("-c")
+if (opts.empty? and args.empty?) or (opts.include?("-h") or opts.include?("--help"))
+  help!
+  exit
+end
+
+if opts.include?("-c")
   playlist_clear
   player_stop
 end
 
-if opts.delete("-i")
+if opts.include?("-i")
   ph jsonrpc_introspect
 elsif opts.include?("-I")
   CodeRay::Encoders::Terminal::TOKEN_COLORS[:comment] = {} # ugly hack
   require 'pry'
   binding.pry
   exit
-elsif opts.delete("-L")
+elsif opts.include?("-L")
   playlists
-elsif opts.delete("-l")
+elsif opts.include?("-l")
   playlist
-elsif opts.delete("-n")
+elsif opts.include?("-n")
   playlist_next
-elsif opts.delete("-b")
+elsif opts.include?("-b")
   playlist_prev
-elsif opts.delete("-p")
+elsif opts.include?("-p")
   player_playpause
-elsif opts.delete("-s")
+elsif opts.include?("-s")
   player_stop
 else
   if args.empty?
