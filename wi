@@ -13,16 +13,24 @@ end
 ################################################################
 
 def run_chunks(cmd, strip_junk: true, strip_comments: true)
-  lines = IO.popen(cmd, &:readlines)
+  begin
+    lines = IO.popen(cmd, &:readlines)
 
-  chunks = lines.chunk do |line|
-    line.blank? or
-      (strip_comments and line.match?(/^\#/)) # or
-      !!line["The Registry database contains ONLY .COM, .NET, .EDU domains"] or
-      line == "Registrars.\n"
+    chunks = lines.chunk do |line|
+      blank    = line.blank?
+      comments = strip_comments && line.match?(/^\#/)
+      junk     = strip_junk && (!!line["The Registry database contains ONLY .COM, .NET, .EDU domains"] or line == "Registrars.\n")
+
+      blank || comments || junk
+    end
+
+    # pp chunks.to_a
+
+    chunks.reject(&:first).map(&:last)
+  rescue => e
+    puts e
+    puts e.backtrace
   end
-
-  chunks.reject(&:first).map(&:last)
 end
 
 ################################################################
@@ -42,16 +50,18 @@ end
 
 ################################################################
 
-def whois(thing, host=nil)
+def whois(thing, whois_server: nil, strip_junk: true)
   puts "<8>=== <9>whois <11>#{thing} <8>=====================".colorize
   puts
 
   cmd = ["whois"]
-  cmd += ["-h", host] if host
+  cmd += ["-h", whois_server] if whois_server
   cmd << thing
-  chunks = run_chunks(cmd)
+  chunks = run_chunks(cmd, strip_junk: strip_junk)
 
-  chunks = chunks.select { |lines| lines.first =~ /(.+?): / and not $1.match?(/(NOTICE|TERMS OF USE)/) }
+  # pp chunks
+
+  # chunks = chunks.select { |lines| lines.first =~ /(.+?): / and not $1.match?(/(NOTICE|TERMS OF USE)/) }
 
 
   ## simple output (one table per chunk)
@@ -96,8 +106,8 @@ def whois(thing, host=nil)
       attrs[key] << val unless val.nil?
     end
 
-    if statuses = attrs["Domain Status"]
-      attrs["Domain Status"] = statuses.map {|status| status.split.first }
+    if attrs.has_key? "Domain Status"
+      attrs["Domain Status"].map! { |status| status.split.first }
     end
 
     attrs.delete_if do |k,vs|
@@ -113,6 +123,12 @@ def whois(thing, host=nil)
     puts Terminal::Table.new(rows: rows)
   end
 
+end
+
+################################################################
+
+def arin(thing)
+  whois(thing, whois_server: "whois.arin.net")
 end
 
 ################################################################
@@ -141,7 +157,11 @@ lesspipe do |less|
     puts
     host(arg)
     geoip(arg)
-    whois(arg)
+    if arg.ip?
+      arin(arg)
+    else
+      whois(arg)
+    end
   end
 
   $stdout = oldstdout
