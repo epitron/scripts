@@ -44,6 +44,7 @@ if args.delete("-a")
   cmd += ["-f", "bestaudio[ext=m4a]"] unless args.include?("-f") # allow user to override the format options
 elsif args.delete("-s")
   cmd << "--skip-download"
+  cmd << "--write-auto-sub"
 elsif args.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]
@@ -59,7 +60,7 @@ urls.each do |url|
   end
 
   if url =~ /(youtu\.be|youtube\.com)/
-    unless cmd.include?("-f") or args.delete("-h")
+    unless cmd.include?("--skip-download") or cmd.include?("-f") or args.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end

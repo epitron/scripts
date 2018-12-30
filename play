@@ -23,7 +23,8 @@ def parse_options
     on 'd',  'download',  "Download video <n>"
     on 'i',  'info',      "Detailed info about <n>"
     on 's',  'search',    "Search youtube"
-    on 'c',  'cast',      "Cast to Chromecast"
+    on 'c',  'cast',      "Open in Chromecast"
+    on 'k',  'kodi',      "Open in Kodi"
     on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
     on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
@@ -404,7 +405,7 @@ end
 
 ###################################################################################################
 
-def youtube_json(url)
+def yd_json(url)
 
   # FIXME: Proxy when this happens:
   # ERROR: kK1E2nB_Nu4: YouTube said: This video contains content from WMG, who has blocked it in your country on copyright grounds.
@@ -463,7 +464,7 @@ def cast(*urls, enqueue: false, device: nil)
     else
       notify(:info, "Looking up:", url.to_s, time: 3)
       fork do
-        json = youtube_json(url.to_s)
+        json = yd_json(url.to_s)
         write_to_log(url.to_s, json)
         notify(:video, msg, json["title"], time: 4)
       end
@@ -472,6 +473,25 @@ def cast(*urls, enqueue: false, device: nil)
     # Process.daemon(true) unless foreground
     system(*cmd)
   end
+end
+
+###################################################################################################
+
+def kodi(*urls)
+  msg = "Sending to Kodi:"
+  urls.each do |url|
+    if url.is_a? LogEntry
+      notify(:video, msg, url.title, time: 4)
+    else
+      notify(:info, "Looking up:", url.to_s, time: 3)
+      fork do
+        json = yd_json(url.to_s)
+        write_to_log(url.to_s, json)
+        notify(:video, msg, json["title"], time: 4)
+      end
+    end
+  end
+  system("k", *urls.map(&:to_s))
 end
 
 ###################################################################################################
@@ -495,7 +515,7 @@ def play(url, opts)
   play_click_sound
 
   # Detailed video information (including media URLs)
-  json = youtube_json(url.to_s)
+  json = yd_json(url.to_s)
 
   # Watched-history log
   write_to_log(url, json) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
@@ -611,6 +631,8 @@ if $0 == __FILE__
 
     if opts.cast? or opts.enqueue? or opts.device?
       cast(*urls, enqueue: opts.enqueue?, device: opts[:device])
+    elsif opts.kodi?
+      kodi(*urls)
     else
       urls.each do |url|
         if opts.download?

@@ -1,14 +1,168 @@
 #!/usr/bin/env ruby
+################################################################
+require 'epitools'
+require 'terminal-table'
+################################################################
 
-def whois(domain)
-  # system "whois -h whois.opensrs.net -H #{domain} | less -S -b 0"
-  system "links http://whois.domaintools.com/#{domain}"
+class String
+  def ip?
+    match(/^(\d{1,3}\.){3}\d{1,3}$/)
+  end
 end
 
-ARGV.each do |arg|
-  if arg =~ %r{^https?://(?:www\.?)(.+)/}
-    whois $1
-  else
-    whois arg
+################################################################
+
+def run_chunks(cmd, strip_junk: true, strip_comments: true)
+  begin
+    lines = IO.popen(cmd, &:readlines)
+
+    chunks = lines.chunk do |line|
+      blank    = line.blank?
+      comments = strip_comments && line.match?(/^\#/)
+      junk     = strip_junk && (!!line["The Registry database contains ONLY .COM, .NET, .EDU domains"] or line == "Registrars.\n")
+
+      blank || comments || junk
+    end
+
+    # pp chunks.to_a
+
+    chunks.reject(&:first).map(&:last)
+  rescue => e
+    puts e
+    puts e.backtrace
   end
+end
+
+################################################################
+
+def run(cmd, *opts)
+  puts "<8>=== <9>#{cmd.join(" ")} <8>=====================".colorize
+  puts
+
+  run_chunks(cmd, *opts).each do |lines|
+    lines.each do |line|
+      puts line.chomp.gsub(/(.+): /, "<15>\\1: <7>").colorize
+    end
+
+    puts
+  end
+end
+
+################################################################
+
+def whois(thing, whois_server: nil, strip_junk: true)
+  puts "<8>=== <9>whois <11>#{thing} <8>=====================".colorize
+  puts
+
+  cmd = ["whois"]
+  cmd += ["-h", whois_server] if whois_server
+  cmd << thing
+  chunks = run_chunks(cmd, strip_junk: strip_junk)
+
+  # pp chunks
+
+  # chunks = chunks.select { |lines| lines.first =~ /(.+?): / and not $1.match?(/(NOTICE|TERMS OF USE)/) }
+
+
+  ## simple output (one table per chunk)
+  # chunks.each do |lines|
+  #   rows = lines.map do |line|
+  #     key, val = line.strip.split(/:\s*/, 2)
+  #     [key.bright_cyan, val]
+  #   end
+
+  #   puts Terminal::Table.new(rows: rows)
+  # end
+
+  ## merged output (one table for all chunks)
+  # attrs = Hash.of_arrays
+
+  # chunks.each do |lines|
+  #   lines.map do |line|
+  #     key, val = line.strip.split(/:\s+/, 2)
+  #     attrs[key] << val
+  #   end
+  # end
+
+  # rows = attrs.map do |k,vs|
+  #   vs = vs.uniq do |v|
+  #     words = v.split
+  #     v = words.first if words.first["Prohibited"]
+  #     v.downcase
+  #   end
+
+  #   [k.bright_cyan, vs.join("\n")]
+  # end
+
+  # puts Terminal::Table.new(rows: rows.sort)
+
+
+  ## simple merged output (one table per chunk, but combine fields)
+  chunks.each do |lines|
+    attrs = Hash.of_arrays
+
+    lines.map do |line|
+      key, val = line.strip.split(/:\s+/, 2)
+      attrs[key] << val unless val.nil?
+    end
+
+    if attrs.has_key? "Domain Status"
+      attrs["Domain Status"].map! { |status| status.split.first }
+    end
+
+    attrs.delete_if do |k,vs|
+      k[/(problem reporting system$|complaint form$|terms of use$|^notice$)/i] or
+      vs.any? { |v| v["allow, enable, or otherwise support"] }
+    end
+
+    rows = attrs.map do |k,vs|
+      vs = vs.uniq(&:downcase)
+      [k.bright_cyan, vs.join("\n")]
+    end
+
+    puts Terminal::Table.new(rows: rows)
+  end
+
+end
+
+################################################################
+
+def arin(thing)
+  whois(thing, whois_server: "whois.arin.net")
+end
+
+################################################################
+
+def geoip(thing)
+  run(["geoiplookup", thing])
+end
+
+################################################################
+
+def host(thing)
+  run(["host", "-a", thing])
+end
+
+################################################################
+
+lesspipe do |less|
+  oldstdout = $stdout; $stdout = less
+
+  ARGV.each do |arg|
+    if arg =~ %r{^https?://([^/]+)}
+      arg = $1
+    end
+
+    puts "<8>### <14>#{arg} <8>#################".colorize
+    puts
+    host(arg)
+    geoip(arg)
+    if arg.ip?
+      arin(arg)
+    else
+      whois(arg)
+    end
+  end
+
+  $stdout = oldstdout
 end

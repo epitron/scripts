@@ -811,6 +811,50 @@ def print_srt(filename)
   end
 end
 
+def print_vtt(filename)
+  return to_enum(:print_vtt, filename) unless block_given?
+
+  grey = "\e[1;30m"
+  white = "\e[0m"
+
+  strip_colors = proc do |line|
+    line.gsub(%r{<[^>]+>}i, '').strip
+  end
+
+  last_time = 0
+  enum = Pathname.new(filename).each
+
+  loop { break if enum.next =~ /^\#\#$/ }
+
+  enum.next
+
+  prev = nil
+
+  loop do
+    times             = enum.next
+    a, b              = times.split.values_at(0,2) #.map(&:from_hms)
+    printed_timestamp = false
+
+    loop do
+      break if (line = enum.next).empty?
+
+      stripped = strip_colors[line]
+
+      unless stripped.empty? or stripped == prev
+        unless printed_timestamp
+          yield "#{grey}#{a} #{white}#{stripped}"
+          printed_timestamp = true
+        else
+          yield "#{grey}#{" " * a.size} #{white}#{stripped}"
+        end
+
+        prev = stripped
+      end
+    end
+
+  end
+end
+
 ##############################################################################
 
 def print_ipynb(filename)
@@ -1197,6 +1241,8 @@ def convert(arg)
         print_rst(arg)
       when *%w[.srt]
         print_srt(arg)
+      when *%w[.vtt]
+        print_vtt(arg)
       when *%w[.pdf]
         print_pdf(arg)
       when *%w[.doc .docx]
