@@ -11,15 +11,20 @@ end
 
 # Find a terminal to use
 cmd = [ TERMS.find { |term| which(term) } ]
-cmd << "--geometry=90x42"
+
+if ARGV.first and ARGV.first[/^--geometry=.+/]
+  cmd << ARGV.shift
+else
+  cmd << "--geometry=90x42"
+end
 
 # Hold terminal after command is finished
-cmd << ARGV.shift if ARGV.first == "-H" 
+cmd << ARGV.shift if ARGV.first == "-H"
 
-if ARGV.any? 
+if ARGV.any?
   # Run a command
   require 'shellwords'
-  cmd << "--command=#{Shellwords.shelljoin ARGV}" 
+  cmd << "--command=#{Shellwords.shelljoin ARGV}"
 end
 
 # Launch the terminal
