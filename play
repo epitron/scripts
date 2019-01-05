@@ -22,13 +22,14 @@ def parse_options
     on 'a',  'audio',     "Play/download audio only"
     on 'd',  'download',  "Download video <n>"
     on 'i',  'info',      "Detailed info about <n>"
-    on 's',  'search',    "Search youtube"
+    on 's=', 'subs',      "Use specified file or URL as subtitles"
     on 'c',  'cast',      "Open in Chromecast"
     on 'k',  'kodi',      "Open in Kodi"
     on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
     on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
     on 'v',  'verbose',   "Show more info"
+    on 'y',  'youtube',   "Search youtube"
   end
 
   [opts, ARGV]
@@ -509,7 +510,7 @@ def play(url, opts)
   end
 
   # Fork into the background (to give the commandline back to the user asap)
-  Process.daemon(true) unless foreground
+  Process.daemon(true) unless foreground || verbose
 
   # Click! (useful when run with a hotkey, to tell that it's working)
   play_click_sound
@@ -545,8 +546,11 @@ def play(url, opts)
     raise "Dunno!"
   end
 
-  # Pull subtitles from JSON
-  if subs = json["requested_subtitles"] || json["subtitles"]
+  if subs = opts[:subs]
+    # Get subtitles from the commandline
+    cmd += ["--sub-file", subs]
+  elsif subs = json["requested_subtitles"] || json["subtitles"]
+    # Pull subtitles from JSON
     subs.each do |lang, sub_info|
       # "en" => [{"ext"=>"vtt","url"=>"https://vimeo.com/texttrack/4085370.vtt"}],
       sub_info = sub_info.first if sub_info.is_a? Array
@@ -621,7 +625,7 @@ if $0 == __FILE__
 
   if query
 
-    if opts.search? # serach youtube
+    if opts.youtube? # serach youtube
       search_youtube(query: query)
     else
       search_history(query: query)
@@ -638,7 +642,6 @@ if $0 == __FILE__
         if opts.download?
           download(url, opts: opts)
         elsif which("mpv")
-          # play(url, foreground: opts["no-daemon"], verbose: opts.verbose?, audio_only: opts.audio?)
           play(url, opts)
         else
           notify(:error, "Could not find mpv!", "You must install mpv to play videos.")
