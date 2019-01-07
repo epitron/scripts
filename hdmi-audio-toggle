@@ -3,6 +3,11 @@
 # 'hdmi-audio-toggle' automagically switches pulseaudio output the best sink (HDMI or internal)
 #
 
+msg() {
+  echo "$*"
+  notify-send "$*"
+}
+
 CARD_PATH="/sys/class/drm/card0/"
 
 # AUDIO_OUTPUT="analog-surround-40"
@@ -12,7 +17,7 @@ for OUTPUT in $(cd "$CARD_PATH" && echo card*); do
   OUT_STATUS=$(<"$CARD_PATH"/"$OUTPUT"/status)
   if [[ $OUT_STATUS == connected ]]
   then
-    echo $OUTPUT connected
+    echo "$OUTPUT connected"
     case "$OUTPUT" in
       "card0-HDMI-A-1")
         AUDIO_OUTPUT="hdmi-stereo" # Digital Stereo (HDMI 1)
@@ -24,7 +29,7 @@ for OUTPUT in $(cd "$CARD_PATH" && echo card*); do
   fi
 done
 
-echo selecting output $AUDIO_OUTPUT
+msg "HDMI output: $AUDIO_OUTPUT"
 pactl set-card-profile 0 output:$AUDIO_OUTPUT+input:analog-stereo
 
 ## Use this if you're not the user who controls the pulse session
