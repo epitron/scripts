@@ -22,7 +22,7 @@ def parse_options
     on 'a',  'audio',     "Play/download audio only"
     on 'd',  'download',  "Download video <n>"
     on 'i',  'info',      "Detailed info about <n>"
-    on 's=', 'subs',      "Use specified file or URL as subtitles"
+    on 's=', 'subs',      "Use specified file or URL as subtitles (or 'auto' to add .srt to the filename)"
     on 'c',  'cast',      "Open in Chromecast"
     on 'k',  'kodi',      "Open in Kodi"
     on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
@@ -547,7 +547,11 @@ def play(url, opts)
   end
 
   if subs = opts[:subs]
-    # Get subtitles from the commandline
+    if subs == "auto"
+      subs = url.sub(/\.\w+$/, '.srt')
+    end
+
+    # User supplied the subtitles from the commandline
     cmd += ["--sub-file", subs]
   elsif subs = json["requested_subtitles"] || json["subtitles"]
     # Pull subtitles from JSON
