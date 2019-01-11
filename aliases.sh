@@ -45,7 +45,7 @@ alias da='d -a'
 
 if we_have exa
 then
-  alias l='exa --long --header --git'
+  alias l='exa -a --long --header --git'
   function t() {
     exa --long --header --git --tree --color=always $* | less -SRXFi
   }
