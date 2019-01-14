@@ -41,9 +41,9 @@ def which_bin(bin)
 end
 
 def find_bin(bins)
-  bins.each do |fn| 
-    if fn[%r{[~/]}] 
-      fn = File.expand_path(fn) 
+  bins.each do |fn|
+    if fn[%r{[~/]}]
+      fn = File.expand_path(fn)
       return fn if File.exists? fn
     else
       if bin = which_bin(fn)
@@ -53,7 +53,7 @@ def find_bin(bins)
   end
   nil
 end
-    
+
 
 def sublime_on_current_desktop?
   require 'epitools/wm'
@@ -65,7 +65,7 @@ end
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
 files = args.map do |arg|
-  if File.exists? arg
+  if File.exists?(arg) or arg[%r{^\./.}]
     arg
   else
     which_dir(arg) || which_bin(arg) || arg
