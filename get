@@ -65,7 +65,7 @@ def curl(url, opts)
   if output
     cmd += ["-o", output]
   else
-    cmd << "-O" # write to file named after remote name
+    cmd += ["-O", "-J"] # Output to the filename in the URL, or to the filename in the Content-Disposition header (-J) if it's available
   end
 
   cmd << url
