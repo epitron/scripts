@@ -76,14 +76,32 @@ if [ -f /proc/cpuinfo ]; then
   export MAKEFLAGS="$MAKEOPTS"
 fi
 
-# Enable recursive glob (eg: **/*.txt)
-shopt -s globstar > /dev/null 2>&1
 
-# make readline know that the window has resized
+## Bash options
+
+# Make readline know that the window has resized
 shopt -s checkwinsize
 
 # Verify ! history expansions
 shopt -s histverify
+
+# Append to the Bash history file, rather than overwriting it
+shopt -s histappend
+
+# Case-insensitive globbing (used in pathname expansion)
+# shopt -s nocaseglob
+
+# Autocorrect typos in path names when using `cd`
+# shopt -s cdspell
+
+
+## Bash >= 4 options
+
+# Enable recursive glob (eg: **/*.txt)
+shopt -s globstar 2> /dev/null
+
+# `autocd`, e.g. `**/qux` will enter `./foo/bar/baz/qux`
+shopt -s autocd 2> /dev/null
 
 
 ## Platform-specific customizations
