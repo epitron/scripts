@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+require 'epitools/lcs'
+require 'pry'
+require 'sequel'
+
+class WP
+
+  def mysql_url
+    @mysql_url ||= begin
+      vars = {}
+      open("wp-config.php").each_line do |line|
+        if line =~ %r{define\('DB_(NAME|USER|PASSWORD|HOST)', '([^']+)'\)}
+          vars[$1] = $2
+        end
+      end
+
+      "mysql2://#{vars["USER"]}:#{vars["PASSWORD"]}@#{vars["HOST"]}/#{vars["NAME"]}"
+    end
+  end
+
+  def db
+    @db ||= Sequel.connect(mysql_url)
+  end
+  
+  def prefix
+    @prefix ||= longest_common_prefix db.tables.map(&:to_s)
+  end
+
+  def tables
+    db.tables.map { |name| db[name] }
+  end
+
+  def table(name)
+    db["#{prefix}#{name}".to_sym]
+  end
+
+  def sizes
+    tables.map { |t| [t, t.count] }.sort_by { |t, c| -c }
+  end
+
+  %w[postmeta options users].each do |table|
+    eval %{
+      def #{table}
+        @#{table} ||= table("#{table}")
+      end
+    }
+  end
+
+  def posts
+    @posts ||= table("posts").order(Sequel.desc :post_modified)
+  end
+
+  def pages
+    posts.where(post_type: "page")
+  end
+
+  def post_types
+    posts.select(:post_type).uniq.to_a
+  end
+
+end
+
+WP.new.pry
+puts "y'all come back now"
