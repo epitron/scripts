@@ -5,23 +5,30 @@ require 'sequel'
 
 class WP
 
-  def mysql_url
-    @mysql_url ||= begin
+  def mysql_connect_params
+    @mysql_connect_params ||= begin
       vars = {}
+
       open("wp-config.php").each_line do |line|
         if line =~ %r{define\('DB_(NAME|USER|PASSWORD|HOST)', '([^']+)'\)}
-          vars[$1] = $2
+          vars[$1.downcase] = $2
         end
       end
 
-      "mysql2://#{vars["USER"]}:#{vars["PASSWORD"]}@#{vars["HOST"]}/#{vars["NAME"]}"
+      {
+        adapter: 'mysql2',
+        host: vars["host"],
+        database: vars["name"],
+        user: vars["user"],
+        password: vars["password"],
+      }
     end
   end
 
   def db
-    @db ||= Sequel.connect(mysql_url)
+    @db ||= Sequel.connect(mysql_connect_params)
   end
-  
+
   def prefix
     @prefix ||= longest_common_prefix db.tables.map(&:to_s)
   end
