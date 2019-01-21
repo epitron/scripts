@@ -5,7 +5,6 @@ alias ai="apt install"
 alias as="apt search"
 alias ar="apt remove"
 alias au="apt update && apt upgrade"
-alias al="apt list"
 alias agdu="au"
 
 alias agar="apt-get autoremove"
