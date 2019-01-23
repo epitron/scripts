@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if ! which openssl > /dev/null
+then
+  echo "'openssl' not found. Install openssl."
+  exit 1
+fi
+
+if [ "$1" == "" ]; then
+
+  echo "usage:"
+  echo "  ssl-cert-print remote.host.name [port]"
+  echo
+  echo "Note: 'port' defaults to 443"
+
+else
+
+  REMHOST=$1
+  REMPORT=${2:-443}
+
+  echo | openssl s_client -showcerts -servername $REMHOST -connect $REMHOST:$REMPORT 2> /dev/null | openssl x509 -text | less
+
+fi
+
