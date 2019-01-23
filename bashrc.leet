@@ -76,10 +76,12 @@ if [ -f /proc/cpuinfo ]; then
   export MAKEFLAGS="$MAKEOPTS"
 fi
 
+# Don't put duplicate lines or lines starting with space in the history
+export HISTCONTROL=ignoreboth
 
 ## Bash options
 
-# Make readline know that the window has resized
+# Check the window size after every command and update LINES and COLUMNS (fixes readline misbehaviour)
 shopt -s checkwinsize
 
 # Verify ! history expansions
