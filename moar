@@ -102,7 +102,7 @@ class Pager
 
   end
 
-  def initialize(io)
+  def initialize(io, opts)
     @display_lock            = Mutex.new
     @scrollback              = []
     @queue                   = Queue.new
@@ -115,6 +115,7 @@ class Pager
     @refresh_throttle        = 1.0 / (@max_fps)
     @last_refresh            = Time.now - @refresh_throttle
     @last_display_status_bar = Time.now - @refresh_throttle
+    @tail_mode               = opts[:tail_mode]
 
     @height = @termheight - 1
 
@@ -383,8 +384,11 @@ class Pager
   end
 
 
+  # TODO: Swap names of scroll up/down (should reflect the movement of the visible region within the buffer, and the arrow keys)
+  # TODO: Create functions for \e[S and \e[T
+
   #
-  # Page moves up (new lines added at bottom)
+  # Down arrow: page moves up (new lines added at bottom)
   #
   def scroll_up(n=1)
     n = move_pos(n)
@@ -392,7 +396,7 @@ class Pager
     if n != 0
       bottom_line = height-n+1
       clear_status_bar
-      print "\e[#{n}S"
+      print "\e[#{n}S" # scroll whole page up by <n>
       move_to(row: bottom_line)
       debug(scrolled_up: n)
       lines_on_screen.last(n).each_with_index do |(line,num),i|
@@ -403,13 +407,13 @@ class Pager
   end
 
   #
-  # Page moves down (new lines added at top)
+  # Up arrow: page moves down (new lines added at top)
   #
   def scroll_down(n=1)
     n = move_pos(-n).abs
     if n != 0
       move_to(row: 1)
-      print "\e[#{n}T"
+      print "\e[#{n}T" # scroll whole page down by <n>
       debug(scrolled_down: n)
       lines_on_screen.first(n).each_with_index do |(line,num), i|
         display(line, row: 1+i, num: num)
@@ -584,27 +588,30 @@ if $0 == __FILE__
     exit
   end
 
-  opts, args = ARGV.partition { |arg| arg[/^-\w$/] }
+  flags, args = ARGV.partition { |arg| arg[/^-\w$/] }
+  opts = {}
 
-  opts.each do |opt|
-    case opt
+  flags.each do |flag|
+    case flag
     when "-d" then $debug = true
+    when "-t" then opts[:tail_mode] = true
     else
-      $stderr.puts "Unrecognized option: #{opt}"
+      $stderr.puts "Unrecognized option: #{flag}"
     end
   end
 
   case args.size
   when 0
     # TODO: Use a PTY to avoid buffering
-    Pager.new($stdin).page!
+    pager = Pager.new($stdin, opts)
   when 1
-    Pager.new(open(args.first)).page!
+    pager = Pager.new(open(args.first), opts)
   else
-    IO.popen(["c", *args], :err=>[:child, :out]) do |io|
-      Pager.new(io).page!
-    end
+    io = IO.popen(["c", *args], :err=>[:child, :out])
+    pager = Pager.new(io, opts)
   end
+
+  pager.page!
 
   exit!
 end
