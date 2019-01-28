@@ -6,16 +6,15 @@
 #    TODOs:
 # -------------------------
 #
-# + Tagline:
+# + Search
+# + Other possible names: "most", "least", "pager"
 #   - moar is more moar than less is more
 #   - more is more by being less than less is less than more
-# + Other possible names: "most", "least", "pager"
-# + "Log" mode (tail, and deduplicate lines)
-# + Wrap ANSI properly (strip ANSI codes)
-# + Search
-# + Mouse wheel
+# + "Log" mode (tail, *and* deduplicate lines)
+# + ANSI-compatible "wrap" mode (strip ANSI codes before wrapping)
+# + Mouse wheel support
 # + Syntax highlighting (see the "c" script)
-# + Read gzip/xz files
+# + Display compressed files (like zless)
 #
 # -------------------------
 #    TODONEs:
@@ -122,8 +121,8 @@ class Pager
     pager = self
 
     @keymap = KeyMap.new do
-      key(:up)      { pager.scroll_down }
-      key(:down)    { pager.scroll_up }
+      key(:up)      { pager.scroll_output_up }
+      key(:down)    { pager.scroll_output_down }
       key(:left)    { pager.scroll_right }
       key(:right)   { pager.scroll_left }
 
@@ -269,9 +268,9 @@ class Pager
 
 
 
-
-
-
+  #
+  # Terminal control sequences (reference: http://man7.org/linux/man-pages/man5/terminfo.5.html)
+  #
 
   def clear
     print "\e[H\e[J"
@@ -309,6 +308,22 @@ class Pager
     print "\e[?25h"
   end
 
+  #
+  # Scroll the text up the screen
+  #
+  def scroll_text(n)
+    move_to_row(@termheight)
+    clear_eol
+    n.times { print "\n" }
+  end
+
+  #
+  # Scroll the text down the screen
+  #
+  def reverse_scroll_text(n)
+    move_to_top
+    n.times { print "\eM" }
+  end
 
 
 
@@ -390,13 +405,13 @@ class Pager
   #
   # Down arrow: page moves up (new lines added at bottom)
   #
-  def scroll_up(n=1)
+  def scroll_output_down(n=1)
     n = move_pos(n)
 
     if n != 0
       bottom_line = height-n+1
       clear_status_bar
-      print "\e[#{n}S" # scroll whole page up by <n>
+      scroll_text(n)
       move_to(row: bottom_line)
       debug(scrolled_up: n)
       lines_on_screen.last(n).each_with_index do |(line,num),i|
@@ -409,11 +424,11 @@ class Pager
   #
   # Up arrow: page moves down (new lines added at top)
   #
-  def scroll_down(n=1)
+  def scroll_output_up(n=1)
     n = move_pos(-n).abs
     if n != 0
       move_to(row: 1)
-      print "\e[#{n}T" # scroll whole page down by <n>
+      reverse_scroll_text(n)
       debug(scrolled_down: n)
       lines_on_screen.first(n).each_with_index do |(line,num), i|
         display(line, row: 1+i, num: num)
@@ -439,7 +454,7 @@ class Pager
     lines_from_end = lines - bottom
 
     if lines_from_end < height
-      scroll_up(lines_from_end)
+      scroll_output_down(lines_from_end)
     else
       @pos = end_pos
       refresh!
@@ -447,11 +462,11 @@ class Pager
   end
 
   def pageup
-    scroll_down(height/2)
+    scroll_output_up(height/2)
   end
 
   def pagedown
-    scroll_up(height/2)
+    scroll_output_down(height/2)
   end
 
 
