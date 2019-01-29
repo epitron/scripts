@@ -3,6 +3,13 @@ require 'coolline'
 require 'fileutils'
 require 'set'
 
+# TODO: Add bracketed paste to coolline --
+  # Enable bracketed paste: printf "\e[?2004h"
+  # Disable bracketed paste: printf "\e[?2004l"
+  # At start of paste, you'll see "\e[200~" on STDIN
+  # At end of paste, you'll see "\e[201~" on STDIN
+
+
 class String
 
   #
