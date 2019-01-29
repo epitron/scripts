@@ -314,7 +314,7 @@ class Pager
   def scroll_text(n)
     move_to_row(@termheight)
     clear_eol
-    n.times { print "\n" }
+    print "\n"*n
   end
 
   #
@@ -322,7 +322,7 @@ class Pager
   #
   def reverse_scroll_text(n)
     move_to_top
-    n.times { print "\eM" }
+    print "\eM"*n
   end
 
 
