@@ -278,6 +278,10 @@ alias gi='gem install --user'
 alias pi='pip install --user'
 alias piu='pip uninstall'
 alias py=python2
+alias ipy=ipython
+alias ipy3=ipython3
+alias ipy2=ipython2
+
 
 gem-cd() {
   local gem_dir
