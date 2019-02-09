@@ -76,8 +76,8 @@ def edit_filename(prompt, filename)
 
   Coolline.new do |c|
 
-    c.word_boundaries = [" ", "\t", ".", ",", ";", '"', "'", "`", "<", ">",
-                         "=", ";", "|", "{", "}", "(", ")", "-", "/"]
+    c.word_boundaries = [" ", ".", ",", ";", '"', "'", "`", "<", ">", "\t",
+                         "=", ";", "|", "{", "}", "(", ")", "-", "/", "_"]
 
     #
     # Alt-u: capitalize everything
