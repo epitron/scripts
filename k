@@ -152,6 +152,13 @@ def playlist_prev
   playlist_jump("previous")
 end
 
+def player_play
+  ph rpc(
+    method: "Player.Open",
+    params: { item: { playlistid: 1 } },
+  )
+end
+
 def player_playpause
   if id = active_player_id
     ph rpc(
@@ -161,10 +168,7 @@ def player_playpause
       }
     )
   else
-    ph rpc(
-      method: "Player.Open",
-      params: { item: { playlistid: 1 } },
-    )
+    player_play
   end
 end
 
@@ -182,6 +186,10 @@ end
 def player_seek(time_string)
   time_hash = %i[seconds minutes hours].zip(time_string.split(":").reverse).to_h
   rpc(method: "Player.Seek", params: {playerid: 1, value: time_hash})
+end
+
+def set_volume(value)
+  rpc(method: "Application.SetVolume", params: {volume: value})
 end
 
 ########################################################
@@ -217,13 +225,21 @@ elsif opts.include?("-p")
   player_playpause
 elsif opts.include?("-s")
   player_stop
+elsif opts.include?("-v")
+  if volume = args.find { |arg| arg[/^\d+/] }
+    set_volume(volume.to_i)
+  end
 else
-  if args.empty?
+  if args.empty? and opts.empty?
     help!
   else
     args.each do |arg|
       puts "Adding: #{arg}"
       playlist_add(arg)
+    end
+
+    if args.any? and opts.include?("-c")
+      player_play
     end
   end
 end
