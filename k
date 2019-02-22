@@ -265,3 +265,5 @@ options:
   -L  Show playlists
   -I  Interactive repl
   -i  Full RPC function list
+  -v <volume>
+      Set the volume (0-100)
