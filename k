@@ -230,7 +230,7 @@ elsif opts.include?("-b")
 elsif opts.include?("-p")
   player_playpause
 elsif opts.include?("-a")
-  playlist_add(`audtool current-song-filename`)
+  playlist_add(`audtool current-song-filename`.strip)
 elsif opts.include?("-s")
   player_stop
 elsif opts.include?("-v")
