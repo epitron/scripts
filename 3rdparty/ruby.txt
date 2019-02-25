@@ -15,4 +15,5 @@ oga
 ox
 xmlrpc
 
-
+t
+delicious-cli
