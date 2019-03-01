@@ -275,6 +275,8 @@ options:
   -b  Play previous item
   -v <volume>
       Set the volume (0-100)
+  -t <timestamp>
+      Seek to timestamp (eg: "5:21")
   -c  Clear playlist
   -a  Add whatever's playing in Audacious to the playlist
   -L  Show playlists
