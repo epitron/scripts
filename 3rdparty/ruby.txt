@@ -2,6 +2,7 @@ epitools
 slop -v 3.6
 coderay_bash
 coolline
+terminal-table
 
 pry
 pry-stack_explorer
@@ -10,9 +11,11 @@ sinatra
 haml
 
 nokogiri
+http
 oga
 ox
-
 xmlrpc
 
+t
+delicious-cli
 

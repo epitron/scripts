@@ -85,6 +85,7 @@ EXT_HIGHLIGHTERS = {
   ".hs"             => :text,
   ".cl"             => :c,
   ".rc"             => :c,
+  ".inc"            => :c,
   ".rl"             => :c, # ragel definitions
   ".ino"            => :c, # arduino sdk files
   ".shader"         => :c,
@@ -111,6 +112,7 @@ EXT_HIGHLIGHTERS = {
   ".diff"           => pygmentize,
   ".patch"          => pygmentize,
   ".rs"             => pygmentize,
+  ".s"              => pygmentize, # assembler
   ".toml"           => rougify,
   ".tmLanguage"     => :xml,
   ".sublime-syntax" => :yaml,
@@ -1274,7 +1276,7 @@ def convert(arg)
           print_sqlite(arg)
         when /POSIX shell script/
           print_source(arg)
-        when /:.+?(executable|shared object)[^,]*,/
+        when /:.+?(ELF|executable|shared object)[^,]*,/
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)

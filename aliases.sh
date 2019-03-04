@@ -45,6 +45,7 @@ alias da='d -a'
 
 if we_have exa
 then
+  alias e='exa'
   alias l='exa -a --long --header --git'
   function t() {
     exa --long --header --git --tree --color=always $* | less -SRXFi
@@ -278,6 +279,10 @@ alias gi='gem install --user'
 alias pi='pip install --user'
 alias piu='pip uninstall'
 alias py=python2
+alias ipy=ipython
+alias ipy3=ipython3
+alias ipy2=ipython2
+
 
 gem-cd() {
   local gem_dir

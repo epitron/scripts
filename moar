@@ -288,6 +288,10 @@ class Pager
     print "\e[#{row};#{col}H"
   end
 
+  def move_to_col(n)
+    print "\e[#{n}H"
+  end
+
   def move_to_row(n)
     move_to(row: n)
   end
@@ -382,8 +386,8 @@ class Pager
     end
 
     move_to_row(row) if row
-    clear_eol
     print cropped
+    clear_eol
   end
 
   def move_pos(delta)
@@ -404,9 +408,6 @@ class Pager
     change
   end
 
-
-  # TODO: Swap names of scroll up/down (should reflect the movement of the visible region within the buffer, and the arrow keys)
-  # TODO: Create functions for \e[S and \e[T
 
   #
   # Down arrow: page moves up (new lines added at bottom)
@@ -510,8 +511,10 @@ class Pager
   end
 
   #
-  # Throttles (limited to @max_fps updates per second)
+  # Creates throttled version of the `refresh!` and `display_status_bar!` methods
+  # (The ones with the exclamation mark happen instantly, while the ones without are limited to @max_fps updates per second)
   #
+
   %w[refresh display_status_bar].each do |meth|
     class_eval %{
       def #{meth}

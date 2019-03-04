@@ -152,6 +152,13 @@ def playlist_prev
   playlist_jump("previous")
 end
 
+def player_play
+  ph rpc(
+    method: "Player.Open",
+    params: { item: { playlistid: 1 } },
+  )
+end
+
 def player_playpause
   if id = active_player_id
     ph rpc(
@@ -161,10 +168,7 @@ def player_playpause
       }
     )
   else
-    ph rpc(
-      method: "Player.Open",
-      params: { item: { playlistid: 1 } },
-    )
+    player_play
   end
 end
 
@@ -180,8 +184,14 @@ def player_stop
 end
 
 def player_seek(time_string)
-  time_hash = %i[seconds minutes hours].zip(time_string.split(":").reverse).to_h
+  time_hash = %i[seconds minutes hours].zip(time_string.split(":").reverse.map(&:to_i)).to_h
+  time_hash[:hours] ||= 0
+  time_hash[:milliseconds] = 0
   rpc(method: "Player.Seek", params: {playerid: 1, value: time_hash})
+end
+
+def set_volume(value)
+  rpc(method: "Application.SetVolume", params: {volume: value})
 end
 
 ########################################################
@@ -201,6 +211,10 @@ end
 if opts.include?("-i")
   ph jsonrpc_introspect
 elsif opts.include?("-I")
+  puts "Usage:"
+  puts "  rpc(method: 'Some.Method', params: {value: 'woot'})"
+  puts "  jsonrpc_introspect"
+  puts
   CodeRay::Encoders::Terminal::TOKEN_COLORS[:comment] = {} # ugly hack
   require 'pry'
   binding.pry
@@ -215,15 +229,29 @@ elsif opts.include?("-b")
   playlist_prev
 elsif opts.include?("-p")
   player_playpause
+elsif opts.include?("-a")
+  playlist_add(`audtool current-song-filename`.strip)
 elsif opts.include?("-s")
   player_stop
+elsif opts.include?("-v")
+  if volume = args.find { |arg| arg[/^\d+/] }
+    set_volume(volume.to_i)
+  end
+elsif opts.include?("-t")
+  if time = args.find { |arg| arg =~ /\d?\d(:\d\d){1,2}/ }
+    player_seek(time)
+  end
 else
-  if args.empty?
+  if args.empty? and opts.empty?
     help!
   else
     args.each do |arg|
       puts "Adding: #{arg}"
       playlist_add(arg)
+    end
+
+    if args.any? and opts.include?("-c")
+      player_play
     end
   end
 end
@@ -245,7 +273,12 @@ options:
   -s  Stop
   -n  Play next item
   -b  Play previous item
+  -v <volume>
+      Set the volume (0-100)
+  -t <timestamp>
+      Seek to timestamp (eg: "5:21")
   -c  Clear playlist
+  -a  Add whatever's playing in Audacious to the playlist
   -L  Show playlists
   -I  Interactive repl
   -i  Full RPC function list
