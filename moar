@@ -315,6 +315,9 @@ class Pager
   #
   # Scroll the text up the screen
   #
+  # scroll_forward              ind       sf     scroll text up (P)   ind=\n
+  # parm_index                  indn      SF     scroll forward #1 lines (P)
+  #
   def scroll_text(n)
     move_to_row(@termheight)
     clear_eol
@@ -323,6 +326,9 @@ class Pager
 
   #
   # Scroll the text down the screen
+  #
+  # scroll_reverse              ri        sr     scroll text down (P) ri=\eM
+  # parm_rindex                 rin       SR     scroll back #1 lines (P)
   #
   def reverse_scroll_text(n)
     move_to_top
