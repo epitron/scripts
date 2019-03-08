@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+require 'readline'
+require 'net/ssh'
+
+Net::SSH.start('chat.shazow.net', 'epi', port: 22) do |ssh|
+
+  channel = ssh.open_channel do |ch|
+    ch.on_data do |c, data|
+      # $stdout.print data
+      p data
+    end
+
+    # "on_extended_data" is called when the process writes something to stderr
+    ch.on_extended_data do |c, type, data|
+      $stderr.print data
+    end
+
+    ch.on_close do
+      puts "done!"
+    end
+  end
+
+  Thread.new do
+    ssh.loop(0.05) rescue nil
+  end
+
+  loop do
+    # line = Readline.readline("> ", true)
+    line = $stdin.gets&.chomp
+
+    break if line.nil? or line.empty?
+
+    channel.send_data(line + "\r")
+  end
+
+end rescue nil
