@@ -177,6 +177,8 @@ elif we_have ddrescue; then
   alias dd='ddrescue'
 fi
 
+alias um='unmount'
+
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 
