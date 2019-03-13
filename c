@@ -28,6 +28,7 @@
 #     |_ "install all dependencies" can use it
 #     |_ error/warning when dependency isn't installed, plus a fallback codepath
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
+#     |_ methods take a File or String (of file contents) -- never a filename!
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Fix "magic" (use hex viewer when format isn't recognized)
@@ -1068,18 +1069,18 @@ end
 
 ##############################################################################
 
-def pretty_xml(data)
-  require "rexml/document"
+# def pretty_xml(data)
+#   require "rexml/document"
 
-  result    = ""
-  doc       = REXML::Document.new(data)
-  formatter = REXML::Formatters::Pretty.new
+#   result    = ""
+#   doc       = REXML::Document.new(data)
+#   formatter = REXML::Formatters::Pretty.new
 
-  formatter.compact = true # use as little whitespace as possible
-  formatter.write(doc, result)
+#   formatter.compact = true # use as little whitespace as possible
+#   formatter.write(doc, result)
 
-  result
-end
+#   result
+# end
 
 ##############################################################################
 
@@ -1093,6 +1094,38 @@ def print_archived_xml_file(archive, internal_file)
   when ".k3b"
     data = IO.popen(["unzip", "-p", archive.to_s, internal_file]) { |io| io.read }
     CodeRay.scan(pretty_xml(data), :xml).term
+  end
+end
+
+##############################################################################
+# Pretty-print XML
+
+def nice_xml(xml)
+  require "rexml/document"
+
+  doc       = REXML::Document.new(xml)
+  formatter = REXML::Formatters::Pretty.new
+
+  formatter.compact = true # use as little whitespace as possible
+
+  result = ""
+  formatter.write(doc, result)
+
+  result
+end
+
+##############################################################################
+
+def print_xml(filename)
+  header = open(filename, "rb") { |f| f.each_byte.take(4) }
+
+  if header == [3, 0, 8, 0]
+    # Android binary XML
+    xml = IO.popen(["axmlprinter", filename], &:read)
+    convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
+  else
+    # Regular XML
+    convert_htmlentities(print_source(arg))
   end
 end
 
@@ -1256,7 +1289,7 @@ def convert(arg)
       # when *%w[.dfxp .xml]
       #   pretty_xml(arg)
       when *%w[.xml]
-        convert_htmlentities(print_source(arg))
+        print_xml(arg)
       when *%w[.csv .xls]
         print_csv(arg)
       when *%w[.mp3 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
