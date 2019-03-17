@@ -10,7 +10,9 @@ XMLRPC::Config.const_set(:ENABLE_NIL_PARSER, true)
 $VERBOSE = original_verbose
 
 def pypi_api
-  # https://wiki.python.org/moin/PyPIXmlRpc
+  # PyPI XML-RPC API Reference:
+  #   https://warehouse.pypa.io/api-reference/xml-rpc/
+  #   https://wiki.python.org/moin/PyPIXmlRpc
   @pypi_api ||= XMLRPC::Client.new('pypi.python.org', '/pypi', 80)
 end
 
