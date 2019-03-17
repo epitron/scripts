@@ -47,10 +47,14 @@ current_modules.each do |k|
 end
 
 # Unprotect and remove the old module dirs
-puts "[*] Removing old kernel modules:"
-cmd("chattr", "-R", "-i", *old_modules)
-cmd("rm", "-rf", *old_modules)
+if old_modules.any?
+  puts "[*] Removing old kernel modules:"
+  cmd("chattr", "-R", "-i", *old_modules)
+  cmd("rm", "-rf", *old_modules)
+end
 
 # Protect the new module dirs
-puts "[*] Protecting new kernel modules:"
-cmd("chattr", "-R", "+i", *current_modules)
+if current_modules.any?
+  puts "[*] Protecting new kernel modules:"
+  cmd("chattr", "-R", "+i", *current_modules)
+end
