@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+#
+# Arch Linux Kernel Module Maintenance Script (by epitron)
+#
+# Purpose: When you upgrade the kernel in Arch, this script will ensure that the old kernel modules
+#          don't get deleted, allowing the system to keep fuctioning normally until the next reboot,
+#          at which time the old modules will be removed.
+#
+# Usage: Run this script as root when the machine starts.
+#
+
+
+def cmd(*args)
+  puts "    => #{args.join(" ")}"
+  print "       "
+
+  unless system(*args)
+    $stderr.puts "[!] Command failed; terminating."
+    exit 1
+  end
+end
+
+
+# Make sure the script is running as root
+if Process.uid != 0
+  $stderr.puts "[!] Error: This script must be run as the root user."
+  exit 1
+end
+
+
+Dir.chdir("/lib/modules")
+
+
+# Detect new and old kernel module directories
+everything      = Dir["*"]
+extra_modules   = Dir["extramodules-*"]
+current_modules = Dir["extramodules-*/version"].map { |v| File.read(v).strip }
+old_modules     = everything - (current_modules + extra_modules)
+
+# Make sure the current kernel modules directories are present!
+current_modules.each do |k|
+  unless File.directory? k
+    $stderr.puts "[!] Error: The modules directory /lib/modules/#{k} is missing. Something has gone awry; please investigate."
+    exit 1
+  end
+end
+
+# Unprotect and remove the old module dirs
+puts "[*] Removing old kernel modules:"
+cmd("chattr", "-R", "-i", *old_modules)
+cmd("rm", "-rf", *old_modules)
+
+# Protect the new module dirs
+puts "[*] Protecting new kernel modules:"
+cmd("chattr", "-R", "+i", *current_modules)
