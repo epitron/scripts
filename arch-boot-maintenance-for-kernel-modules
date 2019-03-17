@@ -11,6 +11,10 @@
 #
 
 
+#
+# Verbosely run a shell command
+# (Prints the command it runs, and if there's an error, it tells the user and terminates the script.)
+#
 def cmd(*args)
   puts "    => #{args.join(" ")}"
   print "       "
