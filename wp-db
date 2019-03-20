@@ -10,7 +10,7 @@ class WP
       vars = {}
 
       open("wp-config.php").each_line do |line|
-        if line =~ %r{define\('DB_(NAME|USER|PASSWORD|HOST)', '([^']+)'\)}
+        if line =~ %r{define\(['"]DB_(NAME|USER|PASSWORD|HOST)["'], ["']([^["']]+)["']\)}
           vars[$1.downcase] = $2
         end
       end
