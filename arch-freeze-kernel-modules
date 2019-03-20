@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 #
-# Arch Linux Kernel Module Maintenance Script (by epitron)
+# Freeze Kernel Modules (Arch Boot Maintenance Script) by epitron
 #
 # Purpose: When you upgrade the kernel in Arch, this script will ensure that the old kernel modules
 #          don't get deleted, allowing the system to keep fuctioning normally until the next reboot,
