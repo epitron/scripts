@@ -10,9 +10,11 @@ def parse_options
     on "m=", "memory",   "How much memory to use?", default: "2G"
     on "s=", "size",     "Disk size", default: "5G"
     on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
+    on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k",  "kvm",      "Enable KVM"
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "r",  "restrict", "Restrict the network (firewall)"
+    on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
     on "c",  "console",  "Output serial to the console"
     on "C",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
@@ -109,6 +111,7 @@ else
 end
 
 cmd << "-show-cursor" if opts.cursor?
+cmd += ["-serial", "stdio"] if opts.serial?
 
 disks.each do |disk|
   unless disk.exists?
@@ -147,6 +150,7 @@ end
 
 cmd += ["-netdev", netopts]
 cmd += ["-net", "nic,netdev=usernet"]
+cmd += ["-boot", opts[:boot]] if opts[:boot]
 
 p cmd if opts.verbose?
 
