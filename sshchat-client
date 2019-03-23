@@ -1,13 +1,85 @@
 #!/usr/bin/env ruby
+
+#
+# TODOs:
+#   * Parse input into "lines"
+#   * Filter out [name] prompt
+#   * Use 'moar' to make a scrollable buffer
+#
+
+gem "ed25519" # (>= 1.2, < 2.0)
+gem "bcrypt_pbkdf" # (>= 1.0, < 2.0)
+gem "net-ssh"
+
 require 'readline'
 require 'net/ssh'
+require 'fileutils'
 
-Net::SSH.start('chat.shazow.net', 'epi', port: 22) do |ssh|
+def help!
+  puts "Usage:"
+  puts "  sshchat-client [<user>@][<host>][:<port>]"
+  puts
+  puts "Note:"
+  puts "  user, host, and port are all optional -- the defaults are ${USER}@chat.shazow.net:22"
+  puts
+  puts "Alternately, the commandline arguments can be stored in a config file located at:"
+  puts "  #{CONFIG_FILE}"
+  puts
+  exit
+end
+
+class KeyVerifier
+  def verify(hash)
+    # :fingerprint=>"SHA256:taFeEb+mUSr4m5tU4/ObcYuWfCh36JyfNJ6/PZy5CSo"
+    puts "Fingerprint: #{hash[:fingerprint]}"
+    true
+  end
+
+  def verify_signature
+    yield
+  end
+end
+
+CONFIG_DIR  = "#{ENV['HOME']}/.config/sshchat-client"
+CONFIG_FILE = "#{CONFIG_DIR}/config"
+LOG_FILE    = "#{CONFIG_DIR}/chat.log"
+args        = ARGV
+
+if (args & %w[-h --help]).any?
+  help!
+elsif ARGV.any?
+  addr = ARGV.first
+elsif File.exists? CONFIG_FILE
+  addr = File.read(CONFIG_FILE).each_line.first.strip
+end
+
+unless matches = addr.match(%r{(?:(?<user>\w+)@)?(?<host>\w+)(?::(?<port>\d+))?})
+  puts "Error: couldn't parse address: #{addr.inspect}"
+  exit 1
+end
+
+user =  matches[:user] || ENV["USER"]
+host =  matches[:host] || "chat.shazow.net"
+port = (matches[:port] || 22).to_i
+
+FileUtils.mkdir_p(CONFIG_DIR) unless File.directory?(CONFIG_DIR)
+
+puts "* Connecting to: #{user}@#{host}:#{port}"
+
+## Extra options:
+# verify_host_key: :accept_new
+# verify_host_key: KeyVerifier.new,
+# logger: Logger.new(STDERR), verbose: :debug
+
+Net::SSH.start(host, user, port: port, non_interactive: true, verify_host_key: :accept_new) do |ssh|
+
+  log = open(LOG_FILE, "a")
 
   channel = ssh.open_channel do |ch|
     ch.on_data do |c, data|
-      # $stdout.print data
-      p data
+      $stdout.print(data)
+      log.write(data)
+      # p data
     end
 
     # "on_extended_data" is called when the process writes something to stderr
@@ -25,11 +97,7 @@ Net::SSH.start('chat.shazow.net', 'epi', port: 22) do |ssh|
   end
 
   loop do
-    # line = Readline.readline("> ", true)
-    line = $stdin.gets&.chomp
-
-    break if line.nil? or line.empty?
-
+    line = Readline.readline("", true)
     channel.send_data(line + "\r")
   end
 
