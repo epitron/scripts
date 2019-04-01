@@ -1125,7 +1125,7 @@ def print_xml(filename)
     convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
   else
     # Regular XML
-    convert_htmlentities(print_source(arg))
+    convert_htmlentities(print_source(filename))
   end
 end
 
