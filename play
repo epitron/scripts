@@ -525,7 +525,7 @@ def play(url, opts)
   if audio_only
     cmd = ["ffplay", "-window_title", "#{json["title"]} (#{json["upload_date"]})"]
   else
-    cmd = ["mpv", "--force-media-title", "#{json["title"]} (#{json["upload_date"]})"]
+    cmd = ["mpv", "--force-media-title", "#{json["title"]} (#{json["upload_date"]})", "--force-window=immediate"]
   end
 
   # Pull audio/video URLs from JSON
