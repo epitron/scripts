@@ -1167,7 +1167,8 @@ end
 
 def render_html(file)
   # TODO: Switch to using 'html-renderer'
-  ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
+  # ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
+  ansi = IO.popen(["html2ansi"], "r+") do |markdown|
     markdown.write File.read(file)
     markdown.close_write
     print_markdown(markdown.read)
