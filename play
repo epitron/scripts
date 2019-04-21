@@ -478,21 +478,34 @@ end
 
 ###################################################################################################
 
+def yd_extract_video_url(url)
+  IO.popen(["youtube-dl", "-g", url], &:read).strip
+end
+
+
 def kodi(*urls)
+  # How to fix this:
+  # - if it's a youtube url, send it to k directly [cached or not]
+  # - otherwise, re-run yd_json to get a fresh valid json["url"], then send that to k
   msg = "Sending to Kodi:"
   urls.each do |url|
     if url.is_a? LogEntry
       notify(:video, msg, url.title, time: 4)
     else
       notify(:info, "Looking up:", url.to_s, time: 3)
-      fork do
-        json = yd_json(url.to_s)
-        write_to_log(url.to_s, json)
-        notify(:video, msg, json["title"], time: 4)
-      end
     end
+
+    url = url.to_s
+    system("k", url)
+    # url = url.to_s
+    # case url
+    # when /youtu\.be/, /youtube\.com/
+    #   system("k", url)
+    # else
+    #   yd_extract_video_url
+    #   system("k", )
+    # end
   end
-  system("k", *urls.map(&:to_s))
 end
 
 ###################################################################################################
