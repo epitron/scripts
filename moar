@@ -130,8 +130,8 @@ class Pager
       key(:pgdown)  { pager.pagedown }
       key(" ")      { pager.pagedown }
 
-      key(:home)    { pager.scroll_home }
-      key(:end)     { pager.scroll_end }
+      key(:home, "<") { pager.scroll_home }
+      key(:end,  ">") { pager.scroll_end }
 
       # key("/")      { pager.searchmode }
       # key("n")      { pager.next_match }
