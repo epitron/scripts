@@ -1,7 +1,49 @@
 #!/usr/bin/env ruby
 require 'fileutils'
+require 'pathname'
 
-# TODO: If a or b are symlinks to each other, swap their respective symlink relationships
+include FileUtils
+#include FileUtils::Verbose
+
+def swap_files(a, b)
+	tmp = a + ".swapping"
+
+	mv a,   tmp
+	mv b,   a
+	mv tmp, b
+end
+
+def swap(a, b)
+	puts "Swapping #{a.inspect} and #{b.inspect}..."
+
+	paths = [a,b]
+	linked, unlinked = paths.partition { |path| File.symlink? path }
+
+	case linked.size
+	when 2
+		# If the links are pointing at each other...
+		if File.readlink(linked.first) == linked.last and File.readlink(linked.last) == linked.first
+			puts "Files are pointing at each other. Swapping will have no effect."
+		else
+			swap_files(a, b)
+		end
+	when 1
+		# Is the symlink pointing at the other file?
+		if File.realpath(linked.first) == File.realpath(unlinked.first)
+			# Swap symlinks
+			File.unlink(linked.first) 									# delete symlink
+			File.rename(unlinked.first, linked.first) 	# rename unlinked to linked
+			File.symlink(linked.first, unlinked.first) 	# link unlinked to linked
+		else
+			swap_files(a, b)
+		end
+	when 0
+		swap_files(a, b)
+	end
+
+end
+
+
 
 args = ARGV
 
@@ -15,7 +57,7 @@ elsif args.size != 2
 end
 
 args.each do |arg|
-  unless File.exists? arg
+  unless File.symlink?(arg) or File.exists?(arg)
     puts "Error: #{arg.inspect} doesn't exist."
     exit 1
   end
@@ -24,13 +66,4 @@ end
 
 a, b = args
 
-#include FileUtils::Verbose
-include FileUtils
-
-puts "Swapping #{a.inspect} and #{b.inspect}..."
-
-tmp = a + ".swapping"
-
-mv a,   tmp
-mv b,   a
-mv tmp, b
+swap(a, b)
