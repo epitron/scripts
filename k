@@ -94,33 +94,44 @@ def players
 end
 
 def playlists
-  ph rpc(
+  rpc(
     method: "Playlist.GetPlaylists",
   )
 end
 
 def playlist(id=1)
-  ph rpc(
+  rpc(
     method: "Playlist.Getitems",
     params: {playlistid: id, properties: %w[title duration file]},
   )
 end
 
-def playlist_add(url)
-  result = rpc(
-    method: "Playlist.Add",
-    params: {
-      playlistid: 1,
-      item: {
-        file: to_kodipath(url),
-        # label: "A video",
-        # title: "",
-      }
-    },
-  )
-  ph result
+def playlist_add(*urls)
+  items = urls.map { |url|  }
+
+  urls.each do |url|
+    next if url[/\.mov$/]
+
+    item = {file: to_kodipath(url)}
+
+    result = rpc(
+      method: "Playlist.Add",
+      params: {
+        playlistid: 1,
+        item: item,
+      },
+    )
+
+    ph result
+  end
 
   player_playpause unless active_player_id
+end
+
+def shuffle_current_playlist
+  shuffled = playlist["items"].map { |item| item["file"] }.shuffle
+  playlist_clear
+  playlist_add(*shuffled)
 end
 
 def playlist_clear(id=1)
@@ -212,17 +223,17 @@ if opts.include?("-i")
   ph jsonrpc_introspect
 elsif opts.include?("-I")
   puts "Usage:"
-  puts "  rpc(method: 'Some.Method', params: {value: 'woot'})"
-  puts "  jsonrpc_introspect"
+  puts "  > rpc(method: 'Some.Method', params: {value: 'woot'})"
+  puts "  > jsonrpc_introspect"
   puts
   CodeRay::Encoders::Terminal::TOKEN_COLORS[:comment] = {} # ugly hack
   require 'pry'
   binding.pry
   exit
 elsif opts.include?("-L")
-  playlists
+  ph playlists
 elsif opts.include?("-l")
-  playlist
+  ph playlist
 elsif opts.include?("-n")
   playlist_next
 elsif opts.include?("-b")
@@ -233,6 +244,8 @@ elsif opts.include?("-a")
   playlist_add(`audtool current-song-filename`.strip)
 elsif opts.include?("-s")
   player_stop
+elsif opts.include?("-S")
+  shuffle_current_playlist
 elsif opts.include?("-v")
   if volume = args.find { |arg| arg[/^\d+/] }
     set_volume(volume.to_i)
@@ -271,6 +284,7 @@ options:
   -l  List playlist
   -p  Play/Pause
   -s  Stop
+  -S  Shuffle current playlist
   -n  Play next item
   -b  Play previous item
   -v <volume>
