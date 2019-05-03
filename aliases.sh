@@ -235,6 +235,7 @@ alias g+="git add"
 alias gr="git remote -v"
 alias gf="git fetch --prune"
 alias fetch="gf"
+alias whose-line-is-it-anyway="git blame"
 
 # functions
 functions() {
