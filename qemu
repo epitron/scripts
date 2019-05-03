@@ -94,7 +94,10 @@ end
 memory = opts[:memory]
 
 cmd = ["qemu-system-x86_64"]
-cmd << "-enable-kvm" if opts.kvm?
+
+if File.exist?("/dev/kvm") or opts.kvm?
+  cmd << "-enable-kvm" 
+end
 
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
