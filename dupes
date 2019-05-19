@@ -5,6 +5,11 @@ require 'slop'
 require 'epitools'
 ################################################################
 
+#
+# TODOs:
+# - ignore symlinks
+#
+
 ################################################################
 # Utility functions
 
@@ -24,6 +29,7 @@ def title(msg); puts "<8>* <15>#{msg}".colorize; end
 def subtitle(msg); puts "  <8>|_ <7>#{msg}".colorize; end
 
 def common_prefix(files)
+  # FIXME: cuts directory names in half if there's a partial prefix match; truncate to /
   x, *xs = files.map &:to_s
 
   x.each_char.with_index do |c, i|
@@ -115,6 +121,8 @@ elsif opts.interactive?
   grouped_dupes.each do |group|
 
     prefix = common_prefix(group.map(&:last))
+
+    puts prefix
 
     group.each_with_index do |(size, file), i|
       puts "<7>#{i+1}<8>) <9>#{size.commatize} <8>| <11>#{file.relative_to(prefix)}".colorize
