@@ -1,25 +1,30 @@
-#!/bin/bash
-if [ "$*" == "" ]; then
-  DIRS=.
-else
-  DIRS="$*"
-fi
+#!/usr/bin/env ruby
 
-for i in $DIRS; do
-  echo
-  echo -n "=== Updating $i "
-  
-  pushd $i > /dev/null
-  
-  if [ -d .git ]; then
-    echo "(git push) ==="
-    echo
-  	git push
-  else
-  	echo "No repo found..."
-  fi
-  
-  popd > /dev/null
-  
-  echo
-done
+def push_it_good(dir)
+  Dir.chdir dir
+
+  while Dir.pwd != "/"
+    if File.directory? ".git"
+      puts "* Pushing: #{Dir.pwd}"
+      puts "  |_ remote: #{`git remote get-url --push origin`.strip}: "
+      print "  |_ "
+      system("git", "push")
+      return
+    end
+    Dir.chdir ".."
+  end
+
+  puts "* Dir: #{Dir.pwd}"
+  puts "  |_ Bunko! No .git dir found"
+end
+
+if ARGV.any?
+  dirs=ARGV
+else
+  dirs=["."]
+end
+
+# WARNING: Does not check "/.git"
+for dir in dirs
+  push_it_good(dir)
+end
