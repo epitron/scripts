@@ -6,7 +6,7 @@ def push_it_good(dir)
   while Dir.pwd != "/"
     if File.directory? ".git"
       puts "* Pushing: #{Dir.pwd}"
-      puts "  |_ remote: #{`git remote get-url --push origin`.strip}: "
+      puts "  |_ remote: #{`git remote get-url --push origin`.strip}"
       print "  |_ "
       system("git", "push")
       return
