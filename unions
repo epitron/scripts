@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 shares = {
-  "media/movies" => ["movies-*"],
-  "media/tv"     => ["tv-*"],
-  "media/music"  => ["mp3-*"],
-  "media/iso"    => ["iso-*"],
+  "media/movies"        => ["movies-*"],
+  "media/tv"            => ["tv-*"],
+  "media/music"         => ["mp3-*"],
+  "media/iso"           => ["iso-*"],
+  "media/documentaries" => ["documentaries-*"],
 
   #"media/talks"  => ["talks*"],
 }
