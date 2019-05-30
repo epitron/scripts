@@ -36,6 +36,8 @@ ARG2TYPE = Rash.new({
   /^(dir|directory)$/     => :dir,
   /^(bin|exe|program)s?$/ => :bin,
   /^dotfiles?$/           => :dotfile,
+  /^files?$/              => :file?,
+  /^dirs?$/               => :dir?,
 })
 
 SIZE_COLORS = Rash.new(
