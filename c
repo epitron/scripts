@@ -105,6 +105,7 @@ EXT_HIGHLIGHTERS = {
   ".dfxp"           => :xml,
   ".xspf"           => :xml,
   ".gd"             => rougify("nim"),
+  ".ll"             => rougify,
   ".stp"            => :javascript, # systemtap
   ".ml"             => pygmentize,
   ".rkt"            => pygmentize,
@@ -1335,12 +1336,14 @@ if $0 == __FILE__
     puts
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
+    puts "      -i   Auto-indent file"
     puts
 
   else # 1 or more args
 
-    wrap = !args.any? { |arg| arg[/\.csv$/i] }
+    wrap       = !args.any? { |arg| arg[/\.csv$/i] }
     scrollable = args.delete("-s")
+    indent     = args.delete("-i")
 
     lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
