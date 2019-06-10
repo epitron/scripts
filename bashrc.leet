@@ -9,16 +9,23 @@ source "$SCRIPTDIR/aliases.sh"
 
 ## Environment Variables
 
-# Push a directory onto the path (if it exists)
+# Prepend a directory to the path (if it exists)
 function possibly_prepend_path() {
   if [ -d "$@" ]; then
     export PATH="$@:$PATH"
   fi
 }
 
+# Append a directory to the path (if it exists)
+function possibly_append_path() {
+  if [ -d "$@" ]; then
+    export PATH="$PATH:$@"
+  fi
+}
+
 # Things for the PATH (in reverse order of precedence)
+possibly_append_path ~/opt/graal/bin
 possibly_prepend_path ~/perl5/bin
-possibly_prepend_path ~/opt/graal/bin
 possibly_prepend_path ~/.nimble/bin
 possibly_prepend_path ~/.pub-cache/bin
 possibly_prepend_path ~/.luarocks/bin
