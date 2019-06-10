@@ -11,10 +11,22 @@
 # * Config file
 
 ######################################################################################
-# "web" by Chris Gahan (chris@ill-logic.com)
+# "web" router, by Chris Gahan (chris@ill-logic.com)
 ######################################################################################
-# This script intelligently opens URLs in the best browser on the current desktop,
-# or on another desktop.
+# Call this script on an URL to forward it to the appropriate application (using
+# routing rules).
+#
+# You can specify the rules in a Ruby DSL (documented in the "ROUTING RULES" section
+# below). The DSL provides advanced matching against the URL and all of its sub-parts
+# (scheme, host, port, path, query params, etc.) using Regexes or sets.
+
+# executed on the URL
+# send the URL to a specific browser if multiple are open (on a specific desktop),
+# or to a program.
+
+#
+# The configuration uses a DSL which allows for detailed matching on any part of an
+# URL, and full URL rewriting using plain old Ruby.
 #
 # Now you can have as many browsers open on as many desktops as you want, and you'll
 # never have to worry when clicking on a link that it'll go to the wrong one.
@@ -101,7 +113,8 @@ routes do
   match host: %w[media.ccc.de], path: %r{^/v/.+}, &play_video
   match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
   match host: "ted.com", path: "/talks/", &play_video
-  match host: "tvo.org", path: "/programs/", &play_video
+  match host: "tvo.org", path: ["/programs/", "/video/", "/documentaries/"], &play_video
+  match host: "c-span.org", path: "/video/", &play_video
   match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
