@@ -299,7 +299,9 @@ def print_header(title, level=nil)
   "#{bar}\n  #{color % title}\n#{bar}\n\n"
 end
 
-def run(*args)
+def run(*args, &block)
+  return run(*args, &:read) unless block_given?
+
   opts = (args.last.is_a? Hash) ? args.pop : {}
   args = [args.map(&:ensure_string)]
 
@@ -312,7 +314,7 @@ def run(*args)
     args.unshift env
   end
 
-  IO.popen(*args)
+  IO.popen(*args, &block)
 end
 
 def lesspipe(*args)
@@ -1304,7 +1306,7 @@ def convert(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
-        format = run('file', arg).read
+        format = run('file', arg)
 
         case format
         when /SQLite 3.x database/
