@@ -1101,6 +1101,28 @@ def print_archived_xml_file(archive, internal_file)
 end
 
 ##############################################################################
+
+def print_xpi_info(filename)
+  require 'json'
+  manifest = run("atool", "-c", filename, "manifest.json")
+  h        = JSON.parse(manifest)
+  perms    = h["permissions"]
+  matches  = h["content_scripts"]&.map { |cs| cs["matches"] }&.flatten&.uniq
+
+  result = []
+  result << "#"*40
+  result << "   #{h["name"]} v#{h["version"]}"
+  result << "#"*40
+  result << ""
+  result << "Permissions: #{perms.join(", ")}"                if perms
+  result << "URLs matched: #{matches.join(", ")}"   if matches
+  result << run("atool", "-l", filename)
+  result << ""
+
+  result
+end
+
+##############################################################################
 # Pretty-print XML
 
 def nice_xml(xml)
@@ -1250,7 +1272,7 @@ def convert(arg)
     ext = path.extname.downcase
 
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
-       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem)$/
+       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|apk|pk3|jar|gem)$/
       print_archive(arg)
     elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
@@ -1303,6 +1325,8 @@ def convert(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
       when ".bib"
         print_bibtex(arg)
+      when ".xpi"
+        print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
