@@ -88,7 +88,8 @@ Git:
   gg: 'git grep' wrapper
   gp: 'git push' wrapper
   gl: 'git log' wrapper
-  gb: git branch manager (simple display/creation/deletion/renaming/pushing/tracking)
+  gb: 'git branch' wrapper
+    (display/create/track/fetch/push/rename/delete)
   push: 'git push' wrapper
   pull: 'git pull' wrapper
   ppull: 'git pull' a number of repositories in parallel (using 12 threads by default)
