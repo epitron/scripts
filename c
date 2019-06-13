@@ -401,6 +401,30 @@ def shebang_lang(filename)
   end
 end
 
+def create_tmpdir(prefix="c-")
+  alphabet = [*?a..?z, *?A..?Z, *?0..?9]
+  suffix_size = 8
+  tmp_root = "/tmp"
+  raise "Error: #{tmp_root} doesn't exist" unless File.directory? tmp_root
+  
+  loop do
+    random_suffix = suffix_size.times.map { alphabet[rand(alphabet.size)] }.join('')
+    random_dir = "#{prefix}#{random_suffix}"
+    potential = File.join(tmp_root, random_dir)
+    if File.exists? potential
+      puts "#{potential} exists, trying another..."
+    else
+      Dir.mkdir(potential)
+      return potential
+    end
+  end
+end
+
+def youtube_info(url)
+  require 'json'
+  JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url))
+end
+
 ##############################################################################
 
 def render_source(data, format)
@@ -1187,7 +1211,16 @@ def print_bibtex(filename)
 end
 
 def print_http(url)
-  IO.popen(["lynx", "-dump", url]) { |io| io.read }
+  require 'pp'
+  require 'uri'
+  uri = URI.parse(url)
+
+  if which("youtube-dl") and uri.host =~ /(youtube\.com|youtu\.be)$/
+    # TODO: Pretty-print video title/description/date/etc, and render subtitles (if available)
+    youtube_info(url).pretty_inspect
+  else
+    IO.popen(["lynx", "-dump", url]) { |io| io.read }
+  end
 end
 
 def render_html(file)
