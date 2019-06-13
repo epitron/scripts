@@ -14,7 +14,11 @@ require 'slop'
 opts = Slop.parse(help: true, strict: true) do
   b = <<~END
     Usage:
-        git-own [<repo path(s)>]
+        git-own [options] [<repo path(s)>]
+
+    Options:
+        --aur
+        --github / --hub
 
     Purpose:
         Change all the URLs for a git repo's remotes from public https URLs to private SSH URLs.
