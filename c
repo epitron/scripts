@@ -657,16 +657,6 @@ end
 
 ##############################################################################
 
-def print_html(data)
-  IO.popen(["html2ansi"], "r+") do |io|
-    io.write(data)
-    io.close_write
-    io.read
-  end
-end
-
-##############################################################################
-
 def print_asciidoc(data)
   IO.popen(["asciidoctor", "-o", "-", "-"], "r+") do |io|
     io.write(data)
@@ -1219,30 +1209,31 @@ def print_http(url)
     # TODO: Pretty-print video title/description/date/etc, and render subtitles (if available)
     youtube_info(url).pretty_inspect
   else
-    IO.popen(["lynx", "-dump", url]) { |io| io.read }
+    # IO.popen(["lynx", "-dump", url]) { |io| io.read }
+    require 'open-uri'
+    html = open(url, &:read)
+    print_html(html)
   end
 end
 
-def render_html(file)
-  # TODO: Switch to using 'html-renderer'
-  # ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
-  ansi = IO.popen(["html2ansi"], "r+") do |markdown|
-    markdown.write File.read(file)
-    markdown.close_write
-    print_markdown(markdown.read)
+##############################################################################
+
+def print_html(html)
+  IO.popen(["html2ansi"], "r+") do |io|
+    io.write html
+    io.close_write
+    io.read
   end
 end
 
 ##############################################################################
 
 def print_pdf(file)
-  # TODO: Is it better to use Term.width as html2text's -b option?
-  html = run("pdftohtml", "-stdout", "-noframes", file).read
-  ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
-    markdown.write html
-    markdown.close_write
-    print_markdown(markdown.read)
-  end
+  raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
+  raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
+  
+  html = run("pdftohtml", "-stdout", "-noframes", "-i", file)
+  print_html(html)
 end
 
 ##############################################################################
@@ -1316,7 +1307,7 @@ def convert(arg)
     else
       case ext
       when *%w[.html .htm]
-        render_html(arg)
+        print_html(File.read arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
       when *%w[.adoc]
