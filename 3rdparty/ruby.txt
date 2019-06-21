@@ -10,11 +10,12 @@ pry-stack_explorer
 sinatra
 haml
 
-nokogiri
 http
+nokogiri
 oga
 ox
 xmlrpc
+html-renderer
 
 t
 delicious-cli
