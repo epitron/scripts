@@ -14,6 +14,8 @@ def parse_options
     on "k",  "kvm",      "Enable KVM"
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "r",  "restrict", "Restrict the network (firewall)"
+    on "1",  "pi",       "Raspberry PI mode"
+    on "2",  "pi2",      "Raspberry PI 2 mode"
     on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
     on "c",  "console",  "Output serial to the console"
     on "C",  "cursor",   "Show the mouse cursor"
@@ -93,10 +95,15 @@ end
 ###############################
 memory = opts[:memory]
 
-cmd = ["qemu-system-x86_64"]
-
-if File.exist?("/dev/kvm") or opts.kvm?
-  cmd << "-enable-kvm" 
+if opts.pi?
+  cmd = ["qemu-system-arm", "-cpu", "arm1176", "-M", "versatilepb"]
+elsif opts.pi2?
+  cmd = ["qemu-system-arm", "-cpu", "arm1176", "-M", "raspi2"]
+else
+  cmd = ["qemu-system-x86_64"]
+  if File.exist?("/dev/kvm") or opts.kvm?
+    cmd << "-enable-kvm" 
+  end
 end
 
 cmd += ["-rtc", "base=localtime"]
