@@ -285,6 +285,7 @@ alias py=python2
 alias ipy=ipython
 alias ipy3=ipython3
 alias ipy2=ipython2
+alias ni='npm install'
 
 
 gem-cd() {
@@ -328,6 +329,7 @@ alias ur='upm remove'
 alias uf='upm files'
 alias ul='upm list'
 alias us='upm search'
+
 
 # arch
 alias pacman='sudoifnotroot pacman'
