@@ -1,0 +1,20 @@
+#!/bin/bash
+# depends: dvdbackup libdvdcss
+
+if [ "$1" == "--help" ]; then
+  echo "usage: dvdrip [output dir]"
+  exit 1
+fi
+
+if ! which dvdbackup &> /dev/null; then
+  echo "'dvdbackup' not found; please install it."
+  exit 1
+fi
+
+CMD="dvdbackup -p -M -i /dev/sr0"
+
+if [ "$1" == "" ]; then
+  $CMD
+else
+  $CMD -o "$@"
+fi
