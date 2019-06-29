@@ -23,6 +23,7 @@ def parse_options
     on 'd',  'download',  "Download video <n>"
     on 'i',  'info',      "Detailed info about <n>"
     on 's=', 'subs',      "Use specified file or URL as subtitles (or 'auto' to add .srt to the filename)"
+    on 't=', 'seek',      "Seek to timestamp"
     on 'c',  'cast',      "Open in Chromecast"
     on 'k',  'kodi',      "Open in Kodi"
     on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
@@ -38,8 +39,27 @@ end
 ###################################################################################################
 
 class String
+
   def number?; self =~ /^\d+$/; end
+
   def url?; self =~ %r{^https?://}i; end
+
+  #
+  # Parse a timestamp and convert it to seconds (as an integer)
+  #
+  def to_seconds
+    case self
+    when /^(\d+)$/
+      $1.to_i
+    when /^(\d+):(\d+)$/, /^(\d+)m(?:(\d+)s)?$/ # ?t=#m#s
+      ($1.to_i * 60) + $2.to_i
+    when /^(\d+):(\d+):(\d+)$/, /^(\d+)h(\d+)m(\d+)s$/ # ?t=#h#m#s
+      ($1.to_i * 60 * 60) + ($2.to_i * 60) + $3.to_i
+    else
+      nil
+    end
+  end
+
 end
 
 ###################################################################################################
@@ -577,22 +597,21 @@ def play(url, opts)
     end
   end
 
+
   ## Seek to time in video
 
-  uri = URI.parse(url.to_s)
+  if time = opts[:seek]
+    seek = time.to_seconds
+  else
+    uri = URI.parse(url.to_s)
 
-  case uri.params["t"]
-  when /^(\d+)$/ # t=#
-    seek = $1.to_i
-  when /^(\d+)m(?:(\d+)s)?$/ # ?t=#m#s
-    seek = ($1.to_i * 60) + $2.to_i
-  when /^(\d+)h(\d+)m(\d+)s$/ # ?t=#h#m#s
-    seek = ($1.to_i * 60 * 60) + ($2.to_i * 60) + $3.to_i
-  end
+    if time = uri.params["t"]
+      seek = time.to_seconds
+    end
 
-  case uri.fragment
-  when /^t=([\d\.]+)/
-    seek = $1.to_i
+    if uri.fragment =~ /^t=([\d\.]+)/
+      seek = $1.to_i
+    end
   end
 
   cmd += ["--start", seek.to_s] if seek
