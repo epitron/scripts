@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 ################################################
 
-def quotes
-  open("#{__dir__}/fortunes/quotes") do |f|
-    f.read.split("\n%\n")
+def quotes(files=nil)
+  files.flat_map do |file|
+    open(file) { |f| f.read.split("\n%\n") }
   end
 end
 
@@ -11,10 +11,16 @@ end
 
 args = ARGV
 
-if args.any? { |arg| ["-c", "--count", "-s", "--stats", "--stat"].include? arg }
+if args.delete("-f")
+  files = Dir["/usr/share/fortune/**/*"].select { |fn| File.file?(fn) and not fn[/\.dat$/] }
+else
+  files = ["#{__dir__}/fortunes/quotes"]
+end
+
+if args.any? { |arg| %w[-c --count -s --stats --stat].include? arg }
 
   # Show statistics
-  puts "#{quotes.count} quotes"
+  puts "#{quotes(files).count} quotes"
 
 elsif args.any?
 
@@ -23,7 +29,7 @@ elsif args.any?
 
   matchers = args.map { |arg| /#{Regexp.escape(arg)}/i }
 
-  quotes.select do |quote|
+  quotes(files).select do |quote|
     if matchers.all? { |m| m =~ quote }
       h = quote.dup
       # h.gsub!(/^\s+-- .+$/) { |s| "<9>#{s}</9>"} # highlight author name
@@ -35,5 +41,5 @@ elsif args.any?
 
 else
   # Show random quote
-  puts quotes.sample
+  puts quotes(files).sample
 end
