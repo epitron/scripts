@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  DIR="."
+else
+  DIR="$@"
+fi
+
+darkhttpd "$DIR" --port 8888
+
