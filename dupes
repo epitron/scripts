@@ -19,6 +19,7 @@ def parse_opts_and_args
 
     on 'd',  'delete',      'Delete dupes (keeping the oldest)'
     on 'i',  'interactive', 'Interactively delete dupes'
+    on 's',  'size-only',   'Don\'t checksum files (can be much faster, but inaccurate)'
     on 'a',  'all',         "Process all files (don't ignore .git)"
     on 'e=', 'exclude',     'Exclude a path'
   end
@@ -78,16 +79,17 @@ title "Found <9>#{files.size}</9> files..."
 # Find duplicates by first grouping by file size,
 # then grouping those groups by the file's SHA256 hash.
 #
+group_proc = opts["size-only"] ? proc { |s,f| s } : proc { |s,f| f.sha256 } 
+
 grouped_dupes = sized_files.group_by(&:first). # group by file size
   flat_map do |filesize, group|
     if group.size > 1
-      group.group_by { |s,f| f.sha256 }.
+      group.group_by(&group_proc).
       map { |sha,subgroup| subgroup.size > 1 ? subgroup : nil }.compact
     else
       nil
     end
   end.compact.sort
-
 
 if grouped_dupes.empty?
   subtitle "no duplicates"
