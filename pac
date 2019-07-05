@@ -13,5 +13,5 @@ fi
 if [ -f "$1" ]; then
   sudoifnotroot pacman -U "$1"
 else
-  sudoifnotroot pacman -S "$@"
+  sudoifnotroot /usr/bin/pacman -S -- "$@"
 fi
