@@ -24,6 +24,7 @@ def parse_options
     on 'i',  'info',      "Detailed info about <n>"
     on 's=', 'subs',      "Use specified file or URL as subtitles (or 'auto' to add .srt to the filename)"
     on 't=', 'seek',      "Seek to timestamp"
+    on 'r',  'rofi',      "Rofi Opener"
     on 'c',  'cast',      "Open in Chromecast"
     on 'k',  'kodi',      "Open in Kodi"
     on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
@@ -110,7 +111,7 @@ class LogEntry < OpenStruct
   end
 
   def self.from_json(line, pos)
-    # {"timestamp":"2017-04-09 00:58:59","url":"https://www.youtube.com/watch?v=j556MWGVVqI","title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","upload_date":"20160208","uploader":"huluDotCom","extra":{"id":"j556MWGVVqI","uploader":"Hulu","uploader_id":"huluDotCom","uploader_url":"http://www.youtube.com/user/huluDotCom","upload_date":"20160208","license":"Standard YouTube License","creator":null,"title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","alt_title":null,"thumbnail":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","description":"Triumph discusses gender identity, micro aggressions and trigger warnings with young college voters as part of Triumph's Election Special 2016, now streaming on Hulu.\n\nWatch Triumph on Hulu at http://www.hulu.com/Triumph\nLike Hulu on Facebook at http://www.facebook.com/Hulu/\nFollow Hulu on Twitter at http://www.twitter.com/Hulu\nFollow Hulu on Instagram at http://www.instagram.com/Hulu\nSubscribe to our YouTube channel at http://www.youtube.com/hulu\n\nIn Triumph's Election Special 2016, Triumph the Insult Comic Dog hits the 2016 presidential campaign trail.  Viewers will be taken from Iowa to New Hampshire to South Carolina in a tenacious news-gathering journey in the heat of the primary election season.  Triumph has already visited a Democratic Debate, a Tea Party Convention, and followed a string of Ted Cruz bus appearances.  In addition to crashing campaign events and mocking the press for their thirst for controversy, Triumph will take on hard-hitting issues of concern to voters on each side of the spectrum.","categories":["Entertainment"],"tags":["hulu"],"automatic_captions":{},"duration":641,"age_limit":0,"annotations":null,"webpage_url":"https://www.youtube.com/watch?v=j556MWGVVqI","view_count":3204771,"like_count":36135,"dislike_count":1104,"average_rating":4.88141441345,"is_live":null,"start_time":null,"end_time":null,"series":null,"season_number":null,"episode_number":null,"extractor":"youtube","webpage_url_basename":"watch","extractor_key":"Youtube","playlist":null,"playlist_index":null,"thumbnails":[{"url":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","id":"0"}],"display_id":"j556MWGVVqI","format":"137 - 1920x1080 (DASH video)+140 - audio only (DASH audio)","format_id":"137+140","width":1920,"height":1080,"resolution":null,"fps":24,"vcodec":"avc1.640028","vbr":null,"stretched_ratio":null,"acodec":"mp4a.40.2","abr":128,"ext":"mp4","fulltitle":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","_filename":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu-j556MWGVVqI.mp4"}}
+    # {"timestamp":"2017-04-09 00:58:59","url":"https://www.youtube.com/watch?v=j556MWGVVqI","title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","upload_date":"20160208","uploader":"huluDotCom","extra":{"id":"j556MWGVVqI","uploader":"Hulu","uploader_id":"huluDotCom","uploader_url":"http://www.youtube.com/user/huluDotCom","upload_date":"20160208","license":"Standard YouTube License","creator":nil,"title":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","alt_title":nil,"thumbnail":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","description":"Triumph discusses gender identity, micro aggressions and trigger warnings with young college voters as part of Triumph's Election Special 2016, now streaming on Hulu.\n\nWatch Triumph on Hulu at http://www.hulu.com/Triumph\nLike Hulu on Facebook at http://www.facebook.com/Hulu/\nFollow Hulu on Twitter at http://www.twitter.com/Hulu\nFollow Hulu on Instagram at http://www.instagram.com/Hulu\nSubscribe to our YouTube channel at http://www.youtube.com/hulu\n\nIn Triumph's Election Special 2016, Triumph the Insult Comic Dog hits the 2016 presidential campaign trail.  Viewers will be taken from Iowa to New Hampshire to South Carolina in a tenacious news-gathering journey in the heat of the primary election season.  Triumph has already visited a Democratic Debate, a Tea Party Convention, and followed a string of Ted Cruz bus appearances.  In addition to crashing campaign events and mocking the press for their thirst for controversy, Triumph will take on hard-hitting issues of concern to voters on each side of the spectrum.","categories":["Entertainment"],"tags":["hulu"],"automatic_captions":{},"duration":641,"age_limit":0,"annotations":nil,"webpage_url":"https://www.youtube.com/watch?v=j556MWGVVqI","view_count":3204771,"like_count":36135,"dislike_count":1104,"average_rating":4.88141441345,"is_live":nil,"start_time":nil,"end_time":nil,"series":nil,"season_number":nil,"episode_number":nil,"extractor":"youtube","webpage_url_basename":"watch","extractor_key":"Youtube","playlist":nil,"playlist_index":nil,"thumbnails":[{"url":"https://i.ytimg.com/vi/j556MWGVVqI/maxresdefault.jpg","id":"0"}],"display_id":"j556MWGVVqI","format":"137 - 1920x1080 (DASH video)+140 - audio only (DASH audio)","format_id":"137+140","width":1920,"height":1080,"resolution":nil,"fps":24,"vcodec":"avc1.640028","vbr":nil,"stretched_ratio":nil,"acodec":"mp4a.40.2","abr":128,"ext":"mp4","fulltitle":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu","_filename":"Triumph the Insult Comic Dog Talks to Young Voters • Triumph on Hulu-j556MWGVVqI.mp4"}}
     json = JSON.parse(line)
     date, time = json["timestamp"].split
     json.merge!(
@@ -288,26 +289,36 @@ end
 
 ###########################################################
 
-def search_history(query: nil, amount: 10, reverse: true, paged: false)
+def rofi_picker
+  esc = proc do |s|
+    s.gsub("&", "&amp;")
+  end
+
+  loop do
+    result = IO.popen(%w[rofi -dmenu -markup-rows -i -async-pre-read 0 -theme DarkBlue -lines 32 -width 80 -p Play], "r+") do |f|
+      entries = log_entries
+      entries.each_with_index do |e,i| 
+        parenstuff = [e.date, e.uploader].compact
+        f.puts "%2d. <b>#{esc[e.title]}</b> (#{parenstuff.join(", ")})" % (i+1)
+      end
+
+      f.close_write
+      
+      f.gets&.split(".")&.first
+    end
+
+    return result
+  end
+end
+
+###########################################################
+
+def show_history(query: nil, amount: 10, reverse: true, paged: false, rofi: false)
   require 'epitools/colored'
 
-  if query
-    if query.is_a? Array
-      if query.any?
-        query = query.join(" ")
-      else
-        query = nil
-      end
-    end
-  end
-
-  regexp = /#{query}/i if query
-
-  if paged
-    output = IO.popen("less -RXFi", "w")
-  else
-    output = $stdout
-  end
+  query  = query.join(" ")  if Array === query and query.any?
+  regexp = /#{query}/i      if query
+  output = paged ? IO.popen("less -RXFi", "w") : $stdout
 
   ## Header
 
@@ -630,8 +641,16 @@ if $0 == __FILE__
 
   opts, args = parse_options
 
+  if opts.rofi?
+    if picked_num = rofi_picker
+      args = [picked_num]
+    else
+      exit
+    end
+  end
+
   if args.empty? and not opts.list?
-    search_history
+    show_history
     exit
   end
 
@@ -648,7 +667,7 @@ if $0 == __FILE__
 
   if opts.list?
     amount = nums.any? ? nums.first : 0
-    search_history(amount: amount, reverse: false, paged: true)
+    show_history(amount: amount, reverse: false, paged: true, rofi: opts.rofi?)
     exit
   end
 
@@ -664,7 +683,7 @@ if $0 == __FILE__
     if opts.youtube? # serach youtube
       search_youtube(query: query)
     else
-      search_history(query: query)
+      show_history(query: query)
     end
 
   elsif urls
