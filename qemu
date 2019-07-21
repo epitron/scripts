@@ -3,6 +3,14 @@ gem 'slop', "~> 3.6"
 require 'slop'
 require 'epitools'
 
+def copy(src, dest)
+  open(src, "rb") do |input|
+    open(dest, "wb") do |output|
+      IO.copy_stream(input, output)
+    end
+  end
+end
+
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
@@ -14,6 +22,7 @@ def parse_options
     on "k",  "kvm",      "Enable KVM"
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "r",  "restrict", "Restrict the network (firewall)"
+    on "e",  "efi",      "Boot using OVMF EFI BIOS"
     on "1",  "pi",       "Raspberry PI mode"
     on "2",  "pi2",      "Raspberry PI 2 mode"
     on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
@@ -102,13 +111,30 @@ elsif opts.pi2?
 else
   cmd = ["qemu-system-x86_64"]
   if File.exist?("/dev/kvm") or opts.kvm?
-    cmd << "-enable-kvm" 
+    cmd << "-enable-kvm"
   end
 end
 
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
+
+if opts.efi?
+  bios          = "/usr/share/ovmf/x64/OVMF_CODE.fd"
+  readonly_vars = "/usr/share/ovmf/x64/OVMF_VARS.fd"
+  vars          = "/tmp/ovmf_vars.fd"
+
+  raise "Error: #{bios} not found" unless File.exists?(bios)
+  raise "Error: #{readonly_vars} not found" unless File.exists?(readonly_vars)
+
+  copy(readonly_vars, vars)
+
+  cmd += [
+    "-drive", "if=pflash,format=raw,readonly,file=#{bios}",
+    "-drive", "if=pflash,format=raw,file=#{vars}"
+  ]
+end
+
 
 if opts.console?
   # cmd += %w[-nographic -serial mon:stdio -append 'console=ttyS0']
