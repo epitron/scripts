@@ -1020,7 +1020,7 @@ def print_ssl_certificate(filename)
         "-fingerprint", "-text", "-noout",
         "-inform", cert_format,
         "-in", filename,
-        stderr: true).read
+        stderr: true)
 
     break unless result =~ /unable to load certificate/
   end
