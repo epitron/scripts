@@ -1,6 +1,11 @@
 /fortunes/quotes.bak
 /win32/sqlitespy.db3
+
 *~
 *.pyc
+
 /crystal/.crystal
+
 /measure-mouse-refresh-rate
+/darkhttpd
+/urlsnap
