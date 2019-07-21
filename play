@@ -307,7 +307,7 @@ def rofi_picker
       f.gets&.split(".")&.first
     end
 
-    return result
+    return result.strip
   end
 end
 
