@@ -206,6 +206,8 @@ def greparound(io, pos, query)
   index_lines
 end
 
+# ------------------------------------------------------ #
+
 def lookup_bsearch(args)
   query = args.join.downcase
   f     = open(INDEX_FILE, "r")
@@ -221,29 +223,47 @@ def lookup_bsearch(args)
     current_word, offset = line.split("\t")
 
     if current_word[/^#{query}/]
-      index_lines = greparound(f, range.middle, query)
-      print_results(index_lines)
-      return
+      # EXIT POINT
+      return index_lines = greparound(f, range.middle, query) 
     elsif query < current_word
       range = range.first...range.middle
     else
       range = range.middle...range.last
     end
   end
-
+ 
 ensure
   f.close
 end
+ 
+# ------------------------------------------------------ #
 
 def lookup_grep(args)
   query = args.join
-
-  lines = `grep -iE '^#{query}' #{INDEX_FILE}`.each_line.to_a
-
-  print_results(lines)
+  `grep -iE '^#{query}' #{INDEX_FILE}`
 end
 
-def get_results(matches)
+# ------------------------------------------------------ #
+
+def lookup_look(args)
+  query = args.join
+  `look "#{query}" "#{INDEX_FILE}"`
+end
+
+# ------------------------------------------------------ #
+
+def lookup(args)
+  if which("look")
+    lookup_look(args)
+  else
+    # lookup_bsearch(args)
+    lookup_grep(args)
+  end
+end
+
+# ------------------------------------------------------ #
+
+def load_definitions(matches)
   open(TSV_FILE, "r") do |tsv|
     matches.map do |word, offset|
       defs = []
@@ -260,6 +280,8 @@ def get_results(matches)
 end
 
 def print_results(index_lines)
+  index_lines = index_lines.each_line.to_a if index_lines.is_a?(String)
+
   if index_lines.empty?
     puts "No results found."
     return
@@ -271,7 +293,7 @@ def print_results(index_lines)
     [word, offset]
   end
 
-  results = get_results(word_offsets)
+  results = load_definitions(word_offsets)
 
   lesspipe(wrap: true) do |less|
     results.each do |word, defs|
@@ -282,9 +304,6 @@ def print_results(index_lines)
   end
 end
 
-
-# alias lookup lookup_grep
-alias lookup lookup_bsearch
 
 ###################################################################
 
@@ -324,7 +343,8 @@ if $0 == __FILE__
     elsif args.empty?
       puts "Pass the word(s) you want to look up as (an) argument(s)."
     else
-      lookup(args)
+      indexes = lookup(args)
+      print_results(indexes)
     end
 
   end

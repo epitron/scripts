@@ -116,7 +116,7 @@ class MathOTron
       when "min"
         # 1.minute
         "#{num}.minutes"
-      when "hours", "h", "hr"
+      when "hours", "h", "hr", "hrs"
         # 1.hour
         "#{num}.hours"
       when "d", "days", "dy"

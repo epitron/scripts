@@ -15,6 +15,7 @@
 # + Mouse wheel support
 # + Syntax highlighting (see the "c" script)
 # + Display compressed files (like zless)
+# + If paging an actual file, memmap it instead of streaming it into memory (to view enormous files)
 #
 # -------------------------
 #    TODONEs:

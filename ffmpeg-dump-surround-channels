@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: ffmpeg-dump-surround-channels <video>"
+  exit 1
+fi
+
+FORMAT=mp3
+
+ffmpeg -i "$1" \
+  -filter_complex "channelsplit=channel_layout=5.1[FL][FR][FC][LFE][BL][BR]" \
+  -map "[FL]" front_left.$FORMAT \
+  -map "[FR]" front_right.$FORMAT \
+  -map "[FC]" front_center.$FORMAT \
+  -map "[LFE]" lfe.$FORMAT \
+  -map "[BL]" back_left.$FORMAT \
+  -map "[BR]" back_right.$FORMAT

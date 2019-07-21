@@ -17,6 +17,8 @@ ox
 xmlrpc
 html-renderer
 
+bencode
+
 t
 delicious-cli
 
