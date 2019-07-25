@@ -35,7 +35,12 @@ if cmd
   # cmd << "-L"         if opts.follow?
   cmd << "-H"         if opts.follow?
 
-  query = Regexp.new(args.map{|a| Regexp.escape(a) }.join(".*"), Regexp::IGNORECASE)
+  if args.empty?
+    system(*cmd)
+    exit
+  else
+    query = Regexp.new(args.map{|a| Regexp.escape(a) }.join(".*"), Regexp::IGNORECASE)
+  end
 
   # p cmd, query
 
