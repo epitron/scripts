@@ -1361,7 +1361,7 @@ def convert(arg)
         case format
         when /SQLite 3.x database/
           print_sqlite(arg)
-        when /POSIX shell script/
+        when /shell script/ 
           print_source(arg)
         when /:.+?(ELF|executable|shared object)[^,]*,/
           print_obj(arg)
