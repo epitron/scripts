@@ -63,7 +63,7 @@ urls.each do |url|
     url = "https://youtu.be/#{$1}"
   end
 
-  if url =~ /(youtu\.be|youtube\.com)/
+  if url =~ /(youtu\.be|(you|hook)tube\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or args.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
