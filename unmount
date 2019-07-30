@@ -30,8 +30,8 @@ def processes_holding(mountpoint)
   #   Sys.ps.zip types
   # end
 
-  # system("fuser", "-v", "-m", mountpoint)
-  system("lsof", "+D", mountpoint)
+  system("fuser", "-v", "-m", mountpoint)
+  # system("lsof", "+D", mountpoint)
 end
 
 def kill_processes_holding(mountpoint)
