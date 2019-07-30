@@ -100,6 +100,9 @@ shopt -s histverify
 # Append to the Bash history file, rather than overwriting it
 shopt -s histappend
 
+# disable history subtitution (able to use "!" without escaping it)
+set +H
+
 # Case-insensitive globbing (used in pathname expansion)
 # shopt -s nocaseglob
 
