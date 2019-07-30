@@ -104,6 +104,12 @@ class MathOTron
       when "b", "g", "bn", "gb"
         # 10**9
         "#{num}.billion"
+      when "gib"
+        "(#{num} * 2**30)"
+      when "mib"
+        "(#{num} * 2**20)"
+      when "kib"
+        "(#{num} * 2**10)"
       when "t", "tb"
         # 10**12
         "#{num}.trillion"
