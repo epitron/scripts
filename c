@@ -8,6 +8,7 @@
 #   ruby gems:
 #     redcloth (for markdown)
 #     nokogiri (for wikidumps)
+#     rougify (for source code)
 #
 #   python packages:
 #     pygments
@@ -38,6 +39,7 @@
 require 'pathname'
 require 'coderay'
 require 'coderay_bash'
+require 'set'
 ##############################################################################
 
 def pygmentize(lexer=nil, style="native", formatter="terminal256")
@@ -58,6 +60,14 @@ def rougify(lexer=nil)
   cmd = ["rougify"]
   cmd += ["-l", lexer] if lexer
   cmd
+end
+
+def which(cmd)
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exe = File.join(path, cmd)
+    return exe if File.executable? exe
+  end
+  nil
 end
 
 # def bat(lexer=nil)
@@ -138,6 +148,45 @@ FILENAME_HIGHLIGHTERS = {
   "Gemfile.lock"   => :c,
   "database.yml"   => :yaml,
 }
+
+#
+# All files that ctags can parse
+#
+CTAGS_EXTS = if which("ctags")
+  Set.new %w[
+    .1 .2 .3 .3pm .3stap .4 .5 .6 .7 .7stap .8 .9 .a51 .ac .ada .adb .adoc .ads .am .ant
+    .as .asa .asc .asciidoc .ash .asm .asp .au3 .aug .automount .awk .bas .bash .bat .bb .bet .bi .bsh .c .cbl
+    .cc .cl .clisp .clj .cljc .cljs .cmake .cmd .cob .conf .cp .cpp .cs .css .ctags .cu .cuh .cxx .d .device
+    .di .diff .dtd .dts .dtsi .e .el .elm .erl .ex .exp .exs .f .f03 .f08 .f15 .f77 .f90 .f95 .fal
+    .for .ftd .ftn .fy .gawk .gdb .gdbinit .glade .go .h .hh .hp .hpp .hrl .htm .html .hx .hxx .in .ini
+    .inko .inl .itcl .java .js .json .jsx .ksh .l .ld .ldi .lds .lisp .lsp .lua .m .m4 .mak .markdown .mawk
+    .md .mk .ml .mli .mm .mod .mount .mxml .myr .p .p6 .pas .patch .path .pb .perl .ph .php .php3 .php4
+    .php5 .php7 .phtml .pl .pl6 .plist .plx .pm .pm6 .pod .pom .pp .properties .proto .pxd .pxi .py .pyx .q .r
+    .rb .rc .repo .rest .rexx .rng .robot .rs .rst .ruby .rx .s .sch .scheme .scm .scons .scope .scr .service .sh
+    .sig .sl .slice .sm .sml .snapshot .socket .spec .spt .sql .stp .stpm .sv .svg .svh .svi .swap .target .tcl .tex
+    .time .timer .tk .ts .ttcn .ttcn3 .txt .unit .v .varlink .vba .vhd .vhdl .vim .vr .vrh .vri .wish .wsgi .xml
+    .xsl .xslt .y .yml .zep .zsh
+  ]
+else
+  Set.new
+end
+
+# #
+# # CTags mapping from all { '.ext' => 'LanguageName' }s
+# #
+# CTAGS_EXTS = if which("ctags")
+#   `ctags --list-maps`.
+#     each_line.
+#     flat_map do |line|
+#       lang, *exts = line.strip.split(/\s+/)
+#       exts.map! { |ext| ext[/\.\w+$/]&.downcase }.compact.uniq
+#       exts.map { |ext| [ext, lang] }
+#     end.
+#     to_h
+# else
+#   {}
+# end
+
 
 HTML_ENTITIES = {
   '&lt;'    => '<',
@@ -433,6 +482,29 @@ def render_source(data, format)
   CodeRay.scan(data, format).term
 end
 
+def render_ctags(arg)
+  load "#{__dir__}/codetree" unless defined? CTags
+
+  entities = CTags.parse(arg.to_s)
+  longest_name_width = entities.map { |e| e.name.size }.max
+
+  Enumerator.new do |y|
+    y << "=== CTags Overview: ================="
+    y << ""
+    entities.each do |e|
+      padding_size    = (CTags::Entity::TYPE_LENGTH - e.type_name.to_s.size)
+      padding_size    = 0 if padding_size < 0
+      padding         = " " * padding_size
+
+      y << "#{padding}<8>[<#{e.type_color}>#{e.type_name}<8>] <15>#{e.name.rjust(longest_name_width)}<8>: <7>#{e.expr}".colorize
+    end
+
+    y << ""
+    y << "=== Source code: ================="
+    y << ""
+  end
+end
+
 def print_source(arg)
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
@@ -442,25 +514,33 @@ def print_source(arg)
           EXT_HIGHLIGHTERS[ext] ||
           FILENAME_HIGHLIGHTERS[filename]
 
-  if ext == ".json"
-    require 'json'
-    begin
-      data = File.read(arg)
-      json = JSON.parse(data)
-      CodeRay.scan(JSON.pretty_generate(json), :json).term
-    rescue JSON::ParserError
-      data
+  output = begin
+    if ext == ".json"
+      require 'json'
+      begin
+        data = File.read(arg)
+        json = JSON.parse(data)
+        CodeRay.scan(JSON.pretty_generate(json), :json).term
+      rescue JSON::ParserError
+        data
+      end
+    elsif lang.is_a? Array
+      run(*lang, arg)
+    elsif lang
+      CodeRay.scan_file(path, lang).term
+    else
+      CodeRay.scan_file(path).term
     end
-  elsif lang.is_a? Array
-    run(*lang, arg)
-  elsif lang
-    CodeRay.scan_file(path, lang).term
-  else
-    CodeRay.scan_file(path).term
+  rescue ArgumentError
+    # Default is to dump file system information about the file and guess its magic type
+    concatenate_enumerables run("file", path), run("ls", "-l", path)
   end
 
-rescue ArgumentError
-  concatenate_enumerables run("file", path), run("ls", "-l", path)
+  if CTAGS_EXTS.include? ext
+    output = concatenate_enumerables render_ctags(path), output.each_line
+  end
+
+  output
 end
 
 ##############################################################################
@@ -1306,6 +1386,8 @@ def convert(arg)
       print_wikidump(arg)
     elsif path.filename =~ /bookmark.+\.html$/i
       print_bookmarks(arg)
+    elsif path.filename =~ /^id_(rsa|ed25519|dsa|ecdsa)(\.pub)?$/
+      print_ssl_certificate(arg)
     else
       case ext
       when *%w[.html .htm]
