@@ -164,7 +164,7 @@ CTAGS_EXTS = if which("ctags")
     .php5 .php7 .phtml .pl .pl6 .plist .plx .pm .pm6 .pod .pom .pp .properties .proto .pxd .pxi .py .pyx .q .r
     .rb .rc .repo .rest .rexx .rng .robot .rs .rst .ruby .rx .s .sch .scheme .scm .scons .scope .scr .sh
     .sig .sl .slice .sm .sml .snapshot .socket .spec .spt .sql .stp .stpm .sv .svg .svh .svi .swap .target .tcl .tex
-    .time .timer .tk .ts .ttcn .ttcn3 .unit .v .varlink .vba .vhd .vhdl .vim .vr .vrh .vri .wish .wsgi
+    .time .tk .ts .ttcn .ttcn3 .unit .v .varlink .vba .vhd .vhdl .vim .vr .vrh .vri .wish .wsgi
     .y .zep .zsh
   ]
 else
@@ -417,6 +417,8 @@ def term_width
 end
 
 def concatenate_enumerables(*enums)
+  enums = enums.map { |enum| enum.is_a?(String) ? enum.each_line : enum }
+
   Enumerator.new do |y|
     enums.each do |enum|
       enum.each { |e| y << e }
@@ -537,7 +539,7 @@ def print_source(arg)
   end
 
   if CTAGS_EXTS.include? ext
-    output = concatenate_enumerables render_ctags(path), output.each_line
+    output = concatenate_enumerables render_ctags(path), output
   end
 
   output
