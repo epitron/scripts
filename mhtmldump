@@ -25,23 +25,30 @@ args = ARGV
 ########################################################
 
 mhtml_filename, *files = args
-data = File.read(mhtml_filename)
-doc = Mhtml::RootDocument.new(data)
+
+mhtml = Path[mhtml_filename]
+doc   = Mhtml::RootDocument.new(mhtml.read)
 
 if opts.list?
-  puts "<8>* <15>Listing documents in <14>#{mhtml_filename}<7>...".colorize
+  puts "<8>* <15>Listing documents in <14>#{mhtml.filename}<7>...".colorize
   doc.sub_docs.each do |subdoc|
     puts "  |_ <7>#{subdoc.file_path} <8>(<9>#{subdoc.body.size} <7>bytes<8>)".colorize
   end
 else
   if opts[:dir]
     outdir = Path[opts[:dir]]
-    outdir.mkdir_p unless outdir.exists?
   else
-    outdir = Path["."]
+    outdir = Path[mhtml.basename]
   end
 
-  puts "<8>* <15>Extracting <11>#{mhtml_filename} to <14>#{outdir}<7>...".colorize
+  if outdir.exists?
+    puts "Error: #{outdir} already exists."
+    exit 1
+  end
+
+  outdir.mkdir_p 
+
+  puts "<8>* <15>Extracting <11>#{mhtml.filename} to <14>#{outdir}<7>...".colorize
 
   outdir.cd do
     doc.sub_docs.each do |subdoc|
