@@ -10,6 +10,9 @@ pry-stack_explorer
 sinatra
 haml
 
+sequel
+leveldb
+
 http
 nokogiri
 oga
@@ -21,4 +24,3 @@ bencode
 
 t
 delicious-cli
-

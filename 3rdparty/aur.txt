@@ -1,3 +1,15 @@
 chromexup
 ungoogled-chromium
+stapler
+mergerfs
 
+ttf-ms-fonts
+ttf-iosevka
+ttf-monaco
+ttf-meslo
+
+spotify
+spotify-adblock-git
+
+yay
+yaourt
