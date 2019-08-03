@@ -22,6 +22,7 @@ def parse_options
     on 'a',  'audio',     "Play/download audio only"
     on 'd',  'download',  "Download video <n>"
     on 'i',  'info',      "Detailed info about <n>"
+    on 'f',  'fullscreen',"Detailed info about <n>"
     on 's=', 'subs',      "Use specified file or URL as subtitles (or 'auto' to add .srt to the filename)"
     on 't=', 'seek',      "Seek to timestamp"
     on 'r',  'rofi',      "Rofi Opener"
@@ -546,6 +547,7 @@ def play(url, opts)
   foreground = opts["no-daemon"]
   verbose    = opts.verbose?
   audio_only = opts.audio?
+  fullscreen = opts.fullscreen?
 
   if url.is_a? LogEntry
     notify(:info, "Loading:", url.title, time: 4)
@@ -626,6 +628,8 @@ def play(url, opts)
   end
 
   cmd += ["--start", seek.to_s] if seek
+  cmd += ["--fs=yes"]           if fullscreen
+
 
   ## Run mpv
 
