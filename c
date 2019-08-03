@@ -116,6 +116,8 @@ EXT_HIGHLIGHTERS = {
   ".opml"           => :xml,
   ".dfxp"           => :xml,
   ".xspf"           => :xml,
+  ".smil"           => :xml,
+  ".xsl"            => :xml,
   ".gd"             => rougify("nim"),
   ".ll"             => rougify,
   ".stp"            => :javascript, # systemtap
@@ -156,7 +158,7 @@ CTAGS_EXTS = if which("ctags")
   Set.new %w[
     .1 .2 .3 .3pm .3stap .4 .5 .6 .7 .7stap .8 .9 .a51 .ac .ada .adb .adoc .ads .am .ant
     .as .asa .ash .asm .asp .au3 .aug .automount .awk .bas .bash .bat .bb .bet .bi .bsh .c .cbl
-    .cc .cl .clisp .clj .cljc .cljs .cmake .cmd .cob .conf .cp .cpp .cs .css .ctags .cu .cuh .cxx .d .device
+    .cc .cl .clisp .clj .cljc .cljs .cmake .cmd .cob .cp .cpp .cs .css .ctags .cu .cuh .cxx .d .device
     .di .diff .dtd .dts .dtsi .e .el .elm .erl .ex .exp .exs .f .f03 .f08 .f15 .f77 .f90 .f95 .fal
     .for .ftd .ftn .fy .gawk .gdb .gdbinit .glade .go .h .hh .hp .hpp .hrl .hx .hxx .in .ini
     .inko .inl .itcl .java .js .jsx .ksh .l .ld .ldi .lds .lisp .lsp .lua .m .m4 .mak .mawk
