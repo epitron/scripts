@@ -246,8 +246,8 @@ functions() {
 # alias gc="git clone"
 gc() {
   # Cloning into 'reponame'...
-  if `which gc` "$@"; then
-    cd `ls -tr | tail -n1`
+  if $(which gc) "$@"; then
+    cd "$(ls -tr | tail -n1)"
   else
     echo "clone failed"
   fi
