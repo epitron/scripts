@@ -9,7 +9,8 @@ def parse_options
   opts = Slop.parse(strict: true) do
     banner "Usage: gc [options] <git-url or github-user/repo> [<destination directory>]"
 
-    on "s",  "shallow",      "Shallow clone (without history)"
+    # on "s",  "shallow",      "Shallow clone (without history)"
+    on "a",  "all",          "Clone all of the historical commits (default is to do a shallow (--depth=1) clone)"
     on "r",  "no-recursion", "Don't automatically clone submodules"
     on "w",  "wiki",         "Also get the wiki (placed in {reponame}/wiki)"
     on "e",  "edit",         "Open cloned repo in editor (hardwired to 'subl')"
@@ -93,9 +94,9 @@ end
 reponame = clone(
   repo,
   dest,
-  branch: opts[:branch],
+  branch:    opts[:branch],
   recursive: !opts["no-recursion"],
-  shallow: opts[:shallow]
+  shallow:   !opts[:all]
   )
 
 ########################################################################
