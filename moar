@@ -16,6 +16,12 @@
 # + Syntax highlighting (see the "c" script)
 # + Display compressed files (like zless)
 # + If paging an actual file, memmap it instead of streaming it into memory (to view enormous files)
+# + [/-key] = search mode; on each keystroke:
+#   - clear screen, move cursor to middle
+#   - spawn 2 threads: each scans away from the cursor (up and down) simultaneously
+#     - each thread scans the history buffer, finds matches, and gathers [line_no, highlighted_line] pairs, printing them to the screen as they arrive, and each thread stopping once it hits the window boundary
+#   - scrolling within the matches populates more matches
+#     (requires a double-ended indexable queue)
 #
 # -------------------------
 #    TODONEs:
