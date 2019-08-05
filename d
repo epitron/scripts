@@ -17,7 +17,7 @@ TYPE_INFO = [
   [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk|epub))$/i, :light_white],
   [:config,  /\.(conf|ini)$/i,                                            :cyan],
   [:dotfile, /^\../i,                                                     :grey],
-  [:data,    /\.(json|ya?ml|h)$/i,                                        :yellow],
+  [:data,    /\.(json|ya?ml|h|sql)$/i,                                    :yellow],
   [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
 
 ]
@@ -36,8 +36,10 @@ ARG2TYPE = Rash.new({
   /^(dir|directory)$/     => :dir,
   /^(bin|exe|program)s?$/ => :bin,
   /^dotfiles?$/           => :dotfile,
-  /^files?$/              => :file?,
-  /^dirs?$/               => :dir?,
+  /^sidecar$/             => :dotfile,
+  /^data$/                => :data,
+  /^files?$/              => :file,
+  /^dirs?$/               => :dir,
 })
 
 SIZE_COLORS = Rash.new(
@@ -47,6 +49,48 @@ SIZE_COLORS = Rash.new(
       1_000_000...1_000_000_000 => :light_cyan,
   1_000_000_000...1_000_000_000_000 => :light_white
 )
+
+
+def parse_options
+  selected_types = []
+  ARGV.each do |arg|
+    if type = ARG2TYPE[arg.gsub(/^--/, '')]
+      ARGV.delete(arg)
+      selected_types << type
+    end
+  end
+
+  #
+  # Parse normal arguments
+  #
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: d [options] <file/dir(s)..>"
+
+    on "v", "verbose",      'Enable verbose mode'
+    on "l", "long",         'Long mode (with sizes and dates)'
+    on "r", "recursive",    'Recursive'
+    on "D", "dirs-first",   'Show directories first'
+    on "a", "all"   ,       'Show all files (including hidden)'
+    on "H", "hidden",       'Show hidden files'
+    on "t", "time",         'Sort by modification time'
+    on "T", "reverse-time", 'Sort by modification time (reversed)'
+    on "s", "size",         'Sort by size'
+    on "S", "reverse-size", 'Sort by size (reversed)'
+    on "p", "paged",        'Pipe output to "less"'
+    on "n", "dryrun",       'Dry-run', false
+    on "g=","grep",         'Search filenames'
+    on "f=","find",         'Find in directory tree'
+
+    separator "        --<type name>       List files of this type (possibilities: #{TYPE_INFO.map(&:first).join(', ')})"
+  end
+
+  # re_matchers = ARG2TYPE.keys.map { |re| re.to_s.scan(/\^(.+)\$/) }
+  # separator "        --<type name>       List files of this type (will match: #{re_matchers.join(", ")})"
+
+  [opts, selected_types, ARGV]
+end
+
+# List the current directory if no files/dirs were specified
 
 ###############################################################################
 
@@ -146,47 +190,9 @@ end
 # Main
 ###############################################################################
 
-#
-# Snatch out the --<type> options before Slop sees them, so it doesn't blow up
-#
-types = TYPE_INFO.map &:first
-selected_types = []
-ARGV.each do |arg|
-  if type = ARG2TYPE[arg.gsub(/^--/, '')]
-    ARGV.delete(arg)
-    selected_types << type
-  end
-end
+opts, selected_types, args = parse_options
 
-#
-# Parse normal arguments
-#
-opts = Slop.parse(help: true, strict: true) do
-  banner "Usage: d [options] <file/dir(s)..>"
-
-  on "v", "verbose",      'Enable verbose mode'
-  on "l", "long",         'Long mode (with sizes and dates)'
-  on "r", "recursive",    'Recursive'
-  on "D", "dirs-first",   'Show directories first'
-  on "a", "all"   ,       'Show all files (including hidden)'
-  on "H", "hidden",       'Show hidden files'
-  on "t", "time",         'Sort by modification time'
-  on "T", "reverse-time", 'Sort by modification time (reversed)'
-  on "s", "size",         'Sort by size'
-  on "S", "reverse-size", 'Sort by size (reversed)'
-  on "p", "paged",        'Pipe output to "less"'
-  on "n", "dryrun",       'Dry-run', false
-  on "g=","grep",         'Search filenames'
-  on "f=","find",         'Find in directory tree'
-
-  separator "        --<type name>       List files of this type (possibilities: #{types.join(', ')})"
-
-  # re_matchers = ARG2TYPE.keys.map { |re| re.to_s.scan(/\^(.+)\$/) }
-  # separator "        --<type name>       List files of this type (will match: #{re_matchers.join(", ")})"
-end
-
-# List the current directory if no files/dirs were specified
-args = ARGV.empty? ? ["."] : ARGV
+args = ["."] if args.empty?
 
 # Expand arguments into collections of files
 grouped      = {}
@@ -210,6 +216,13 @@ end
 grouped = grouped.update single_files.flatten.group_by(&:dir)
 regex   = opts[:grep] ? Regexp.new(opts[:grep], Regexp::IGNORECASE) : nil
 
+if opts["find"]
+  # BFS search
+
+  exit
+end
+
+
 grouped.each do |dir, paths|
   if grouped.size > 1
     puts
@@ -217,7 +230,11 @@ grouped.each do |dir, paths|
   end
 
   if selected_types.any?
-    paths = paths.select { |path| selected_types.include? path.type }
+    paths = if selected_types.include?(:file)
+      paths.select { |path| path.file? }
+    else
+      paths.select { |path| selected_types.include? path.type }
+    end
   end
 
   start_pager_at_the_end = false
