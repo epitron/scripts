@@ -34,6 +34,7 @@ def parse_options
     on 's=', 'set',       'Set an attr (eg: "x -s dublincore.title=Something something.mp4")'
     on 'e',  'edit',      'Edit xattrs (with $EDITOR)'
     on 'c',  'copy',      'Copy xattrs from one file to another (ERASING the original xattrs)'
+    on 'd',  'directory', 'Show the directory itself, not its contents'
     on 'm',  'merge',     'Overlay xattrs from one file onto another (overwriting only the pre-existing attrs)'
     on 'y',  'yaml',      'Print xattrs as YAML'
     on 'j',  'json',      'Print xattrs as JSON'
@@ -89,13 +90,14 @@ def edit(path)
   file.puts "#"
   POPULAR_KEYS.each { |key| file.puts "##{key}: "}
   file.puts "#"
-  file.close
+  file.flush
 
   editor = (ENV["EDITOR"] || "nano").split
   system *editor, file.path
 
-  path.attrs = Path[file.path].read_yaml
+  path.attrs = ( file.read.from_yaml || {} )
 
+  file.close
   file.unlink    # deletes the temp file
 
   path
@@ -127,9 +129,10 @@ end
 
 
 def show(path, timestamp=false)
-  if path.dir?
-    return
-  elsif not path.exists?
+  # if path.dir?
+  #   return
+  # elsif not path.exists?
+  if not path.exists?
     puts "<7>#{path.filename} <8>(<12>not found<8>)".colorize
   elsif (attrs = path.attrs).any?
     title = "<15>#{path.filename}"
@@ -178,13 +181,13 @@ end
 
 def paths_as_hashes(paths)
   paths.map do |path|
-    next if path.dir?
+    # next if path.dir?
     {
-      "filename" => path.filename,
-      "dir" => path.dir,
-      "mtime" => path.mtime,
-      "size" => path.size,
-      "xattrs" => path.xattrs,
+      "filename" => (path.filename unless path.dir?),
+      "dir"      => path.dir,
+      "mtime"    => path.mtime,
+      "size"     => path.size,
+      "xattrs"   => path.xattrs,
     }
   end.compact
 end
@@ -252,16 +255,24 @@ if $0 == __FILE__
   else
 
     paths << Path.pwd if paths.empty?
+    recurse = !(opts.directory? or opts.edit?)
 
     paths = paths.map do |path|
-      if path.dir?
+
+      if path.dir? and recurse
+
+        # recurse dirs
         if opts.recursive?
           path.ls_r
         else
           path.ls
         end
+
       else
+
+        # just show path
         path
+
       end
     end.flatten
 
