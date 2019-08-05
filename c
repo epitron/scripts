@@ -19,6 +19,7 @@
 #
 #
 # TODOs:
+#   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
 #   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
 #   * Follow symlinks by default
