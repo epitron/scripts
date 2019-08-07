@@ -27,7 +27,7 @@ class Object
 end
 
 def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true)
-  print "\e[37m\e[1mCloning \e[0m\e[33m\e[1m#{repo}\e[0m"
+  print "\e[37m\e[1m#{"Shallow " if shallow}Cloning \e[0m\e[33m\e[1m#{repo}\e[0m"
   print " into \e[0m\e[36m\e[1m#{dest}\e[0m\e[37m\e[0m" if dest
   puts
 
