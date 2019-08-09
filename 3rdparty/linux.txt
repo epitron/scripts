@@ -1,0 +1,13 @@
+restic
+noto-fonts*
+ttf-croscore
+ttf-dejavu
+ttf-droid
+ttf-inconsolata
+ttf-iosevka
+ttf-liberation
+ttf-monaco
+ttf-monoid
+ttf-ms-fonts
+ttf-ubuntu-font-family
+
