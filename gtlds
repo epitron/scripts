@@ -1,2 +1,39 @@
-#!/bin/bash
-html2csv -v "https://newgtlds.icann.org/en/program-status/delegated-strings"
+#!/usr/bin/env ruby
+require 'oga'
+require 'date'
+require 'open-uri'
+
+class GTLD < Struct.new(:date, :name)
+  def self.from_row(row)
+    date, name = row.css("td").map(&:text)
+    unless date and name
+      nil
+    else
+      new(DateTime.parse(date), name.downcase)
+    end
+  end
+
+  def to_s
+    "[#{date.strftime("%Y-%m-%d")}] #{name}"
+  end
+end
+
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if opts.include?("--help") or opts.include?("-h")
+  puts "usage: gtlds <options>"
+  puts
+  puts "options:"
+  puts "   -n   sort by name"
+  puts
+  exit
+end
+
+sort_key = opts.delete("-n") ? :name : :date 
+
+html = open("https://newgtlds.icann.org/en/program-status/delegated-strings")
+doc = Oga.parse_html(html)
+results = doc.css("tr").map { |row| GTLD.from_row(row) }.compact
+
+results.sort_by(&sort_key.to_proc).each { |r| puts r }
