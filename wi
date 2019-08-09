@@ -134,7 +134,13 @@ end
 ################################################################
 
 def geoip(thing)
-  run(["geoiplookup", thing])
+  if which("geoiplookup")
+    run(["geoiplookup", thing])
+  else
+    run(["geoip-ruby", thing])
+  end
+rescue Exception => e
+  "Error: #{e.inspect}"
 end
 
 ################################################################
