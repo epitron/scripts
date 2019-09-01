@@ -105,6 +105,9 @@ def edit_filename(prompt, filename)
       inst.menu.string = "(Swapped left/right side of the '-')"
     end
 
+    #
+    # ^d: Delete file
+    #
     c.bind "\x14" do |inst|
       system("trsh", filename)
       puts "\r\n[Trashed]\r"
@@ -210,6 +213,7 @@ def edit_filename(prompt, filename)
       end
       inst.menu.string = "(Opening file)"
     end
+
     #
     # ^k: delete everything from the cursor to the file extension
     #
