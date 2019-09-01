@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+us = Path["/home/"].ls.map { |p| p.dirs.last }
+ws = `w`.
+  each_line.
+  map { |l| l.split.first }.
+  uniq.
+  map { |l|
+    us.find { |u| u == l } || us.find { |u| u[/^#{l}/] } 
+  }.
+  compact
+
+puts us.map { |u| u.send(ws.include?(u) ? :light_green : :light_blue) }.join(", ".grey)
