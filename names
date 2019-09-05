@@ -1,14 +1,7 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-us = Path["/home/"].ls.map { |p| p.dirs.last }
-ws = `w`.
-  each_line.
-  map { |l| l.split.first }.
-  uniq.
-  map { |l|
-    us.find { |u| u == l } || us.find { |u| u[/^#{l}/] } 
-  }.
-  compact
+users     = Path["/home/"].ls.map { |p| p.dirs.last }
+logged_in = `users`.strip.split.sort.uniq
 
-puts us.map { |u| u.send(ws.include?(u) ? :light_green : :light_blue) }.join(", ".grey)
+puts users.map { |user| user.send(logged_in.include?(user) ? :light_green : :light_blue) }.join(", ".grey)

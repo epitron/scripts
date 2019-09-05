@@ -215,6 +215,24 @@ def edit_filename(prompt, filename)
     end
 
     #
+    # ^x: print xattrs
+    #
+    c.bind "\x18" do |inst|
+      require 'epitools'
+      require 'pp'
+      fha8huv8z9;lh
+      print "up 4"
+      print "enable linefeeds"
+      print "set scroll window bounds: l..r, top..(bottom - 5)"
+
+      pp Path[filename].xattrs
+
+      print "disable linefeeds"
+
+      inst.menu.string = "(Printing xattrs)"
+    end
+
+    #
     # ^k: delete everything from the cursor to the file extension
     #
     c.bind "\v" do |inst|
@@ -224,6 +242,7 @@ def edit_filename(prompt, filename)
       inst.line[start...finish] = "" if start < finish
       inst.menu.string = "(Deleted to end)"
     end
+
   end.readline(prompt, filename)
 
 end
