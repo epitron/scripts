@@ -49,6 +49,10 @@ end
 #####################################################################################
 
 POPULAR_KEYS = %w[
+  user.xdg.referrer.url
+  user.xdg.origin.url
+  user.xdg.robots.backup
+  user.xdg.robots.index
   user.dublincore.title
   user.dublincore.creator
   user.dublincore.subject
@@ -64,8 +68,6 @@ POPULAR_KEYS = %w[
   user.dublincore.relation
   user.dublincore.coverage
   user.dublincore.rights
-  user.xdg.referrer.url
-  user.xdg.origin.url
 ]
 
 #####################################################################################
