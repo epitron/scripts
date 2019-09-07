@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-users     = Path["/home/"].ls.map { |p| p.dirs.last }
+users     = Path["/home/"].ls.map { |p| p.dirs.last }.sort
 logged_in = `users`.strip.split.sort.uniq
 
 puts users.map { |user| user.send(logged_in.include?(user) ? :light_green : :light_blue) }.join(", ".grey)
