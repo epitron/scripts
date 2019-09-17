@@ -1043,9 +1043,15 @@ end
 
 ##############################################################################
 
-def print_media(arg)
+def print_ffprobe(arg)
   result = run("ffprobe", "-hide_banner", arg, stderr: true)
   highlight_lines_with_colons(result)
+end
+
+##############################################################################
+
+def print_exif(arg)
+  run("exiv2", "pr", arg, stderr: true)
 end
 
 ##############################################################################
@@ -1432,7 +1438,9 @@ def convert(arg)
       when *%w[.csv .xls]
         print_csv(arg)
       when *%w[.mp3 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
-        print_media(arg)
+        print_ffprobe(arg)
+      when *%w[.jpg .jpeg]
+        print_exif(arg)
       when ".tsv"
         print_csv(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
