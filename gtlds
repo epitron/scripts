@@ -1,4 +1,12 @@
 #!/usr/bin/env ruby
+#################################################################
+#
+# TODOs:
+# - if a gtld is passed as an argument, lookup who owns it
+#   and where you can register it
+# - filter out corporate gtlds (eg: .comcast)
+#################################################################
+
 require 'oga'
 require 'date'
 require 'open-uri'
