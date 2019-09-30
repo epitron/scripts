@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+args = ARGV
+
+if args.empty?
+  puts "usage: ttm <file or url>"
+  exit 1
+end
+
+args.each do |arg|
+
+  puts "* Uploading: #{arg}"
+
+  if arg =~ %r{^https?://.+}
+    form = "url=#{arg}"
+  else
+    form = "file=@#{arg}"
+  end
+
+  cmd = [
+    "curl",
+    "--compressed",
+    "--progress-bar",
+    %{-F#{form}},
+    "https://ttm.sh"
+  ]
+
+  IO.popen(cmd, "r") {|io| puts io.read }
+  puts
+end
