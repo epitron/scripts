@@ -1198,6 +1198,10 @@ def print_archive(filename)
   run("atool", "-l", filename)
 end
 
+def print_zip(filename)
+  run("unzip", "-v", filename)
+end
+
 def print_archived_xml_file(archive, internal_file)
   # internal_ext = File.extname(internal_file)
   case archive.extname
@@ -1456,6 +1460,8 @@ def convert(arg)
         case format
         when /SQLite 3.x database/
           print_sqlite(arg)
+        when /Zip archive data/
+          print_zip(arg)
         when /shell script/ 
           print_source(arg)
         when /:.+?(ELF|executable|shared object)[^,]*,/
