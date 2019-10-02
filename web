@@ -456,8 +456,12 @@ BEGIN {
         # Hack for Chrome's "Tabs Outliner" plugin
         next if browser_name.in?(["chrome", "chromium"]) and w.title == "Tabs Outliner"
 
-        binary = w.command.split.first
-        binary[browser_name]
+        # Hack for ungoogled-chromium
+        if browser_name == "chromium" and w.command == "/usr/l b/chromium/chromium"
+          true
+        else
+          w.command.split.first[browser_name]
+        end
       end
 
       [ browser_name, browser_window ] if browser_window
