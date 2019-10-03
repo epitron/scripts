@@ -89,7 +89,7 @@
 
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
-BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
+BROWSERS       = %w[qupzilla chromium chrome firefox opera vivaldi-bin dillo otter-browser xombrero midori jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 routes do
@@ -109,12 +109,13 @@ routes do
 
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com], &play_video
-  match host: %w[youtube.com], path: %r{^/(watch|embed)}, &play_video
-  match host: %w[media.ccc.de], path: %r{^/v/.+}, &play_video
+  match host: %w[youtube.com invidio.us], path: %r{^/(watch|embed)}, &play_video
   match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
-  match host: "ted.com", path: "/talks/", &play_video
-  match host: "tvo.org", path: ["/programs/", "/video/", "/documentaries/"], &play_video
-  match host: "c-span.org", path: "/video/", &play_video
+  match host: "media.ccc.de", path: %r{^/v/.+},     &play_video
+  match host: "ted.com",      path: "/talks/",      &play_video
+  match host: "longnow.org",  path: "/seminars/",   &play_video
+  match host: "c-span.org",   path: "/video/",      &play_video
+  match host: "tvo.org",      path: ["/programs/", "/video/", "/documentaries/"], &play_video
   match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
@@ -163,6 +164,34 @@ BEGIN {
   require 'epitools/core_ext/object'
 
   ####################################################################################
+  class Class
+
+    def debug(*meths)
+      return unless $DEBUG
+
+      puts "debug instrumentation: #{meths.inspect}"
+      
+      m = Module.new
+
+      meths.each do |meth|
+        case meth
+        when :*
+          debug(methods)
+        else
+          m.define_method(meth) do |*args|
+            p [meth, args]
+            super(*args)
+          end
+        end
+      end
+
+      puts "prepending #{m} to #{self}"
+      self.module_prepend(m)
+    end
+
+  end
+  ####################################################################################
+
 
   module URI
 
@@ -253,6 +282,8 @@ BEGIN {
   #
   class Router
 
+    debug :*
+
     def initialize
       @rules = []
       @default  = nil
@@ -284,7 +315,7 @@ BEGIN {
     #
     # Pass an URL through the rules
     #
-    def route!(uri)
+    def route!(uri, opts={})
       # TODO: Figure out how to avoid infinite routing loops (hasn't been an issue yet)
 
       uri = URI.parse(uri.gsub("[", "%5B").gsub("]", "%5D")) unless uri.is_a? URI
@@ -413,6 +444,9 @@ BEGIN {
     find_in_parents(program)
   end
 
+  #
+  # Takes `windows` (an array of windows), and `browsers` (an array of browser names, ordered by priority), and returns the windows which are preferred browsers
+  #
   def find_browsers(windows, browsers)
     browsers.map do |browser_name|
 
@@ -422,8 +456,12 @@ BEGIN {
         # Hack for Chrome's "Tabs Outliner" plugin
         next if browser_name.in?(["chrome", "chromium"]) and w.title == "Tabs Outliner"
 
-        binary = w.command.split.first
-        binary[browser_name]
+        # Hack for ungoogled-chromium
+        if browser_name == "chromium" and w.command == "/usr/l b/chromium/chromium"
+          true
+        else
+          w.command.split.first[browser_name]
+        end
       end
 
       [ browser_name, browser_window ] if browser_window
@@ -508,9 +546,9 @@ BEGIN {
     end
   end
 
-  def route(url)
+  def route(url, opts)
     write_to_log url
-    $router.route! url
+    $router.route! url, opts
   end
 
 }
@@ -518,12 +556,16 @@ BEGIN {
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }
     puts "== Usage: =="
-    puts " web <url>"
+    puts " web [options] <url>"
     puts
     puts "== What it Does: =="
     puts " Opens the url in the best browser on the current desktop."
     puts " If there's no browser on the current desktop, it finds the"
     puts " best browser on the nearest desktop and jumps to that one."
+    puts
+    puts "== Options: =="
+    puts " -d    Debug mode"
+    puts " -k    Kodi mode ('-k' to toggle, '-k on' to enable, '-k off' to disable)"
     puts
     puts "== These are the browsers it will try to use (in order): =="
     puts " #{BROWSERS.join(", ")}"
@@ -532,13 +574,16 @@ if $0 == __FILE__
     exit
   end
 
+  opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+  opts = opts.map { |opt| opt.sub(/^-+/, '').split("=") }.to_h
+
   ensure_required_binaries_are_in_the_path
 
   load_rc_file
 
-  if url = ARGV.first
+  if url = args.first
     # url = "http://#{url}" unless url[%r{^(https?|file|magnet)://}i] # slap an http:// on the argument if necessary
-    route url
+    route url, opts
   else
     puts "usage: web <url>"
   end

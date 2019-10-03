@@ -125,7 +125,7 @@ def playlist_add(*urls)
     ph result
   end
 
-  player_playpause unless active_player_id
+  # player_playpause unless active_player_id
 end
 
 def shuffle_current_playlist
@@ -205,6 +205,28 @@ def set_volume(value)
   rpc(method: "Application.SetVolume", params: {volume: value})
 end
 
+def clear
+  print "\e[H\e[J"
+end
+
+def pretty_print_playlist
+  # TODO: crop playlist to a region around the current track (centred in cropped window, or positioned in chunky cropped window (crop mod page-size)) 
+  items = playlist.to_h["items"]
+
+  clear
+
+  items.each_with_index do |item, i|
+    label, title, file = item.values_at(*%w[label title file])
+
+    desc = nil
+    desc ||= title unless title.empty?
+    desc ||= label unless label.empty?
+    desc ||= file unless file.empty?
+
+    puts "#{i+1}. #{desc}"
+  end
+end
+
 ########################################################
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w+/] }
@@ -230,10 +252,16 @@ elsif opts.include?("-I")
   require 'pry'
   binding.pry
   exit
+elsif opts.include?("-ppp")
+  pretty_print_playlist
 elsif opts.include?("-L")
   ph playlists
 elsif opts.include?("-l")
-  ph playlist
+  if args.any? { |arg| arg[/^(\d+)$/] }
+    ph playlist($1.to_i)
+  else
+    ph playlist
+  end
 elsif opts.include?("-n")
   playlist_next
 elsif opts.include?("-b")
@@ -263,9 +291,9 @@ else
       playlist_add(arg)
     end
 
-    if args.any? and opts.include?("-c")
-      player_play
-    end
+    # if args.any? and opts.include?("-c")
+    # player_play
+    # end
   end
 end
 

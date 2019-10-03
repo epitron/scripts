@@ -1043,9 +1043,15 @@ end
 
 ##############################################################################
 
-def print_media(arg)
+def print_ffprobe(arg)
   result = run("ffprobe", "-hide_banner", arg, stderr: true)
   highlight_lines_with_colons(result)
+end
+
+##############################################################################
+
+def print_exif(arg)
+  run("exiv2", "pr", arg, stderr: true)
 end
 
 ##############################################################################
@@ -1190,6 +1196,10 @@ end
 
 def print_archive(filename)
   run("atool", "-l", filename)
+end
+
+def print_zip(filename)
+  run("unzip", "-v", filename)
 end
 
 def print_archived_xml_file(archive, internal_file)
@@ -1432,7 +1442,9 @@ def convert(arg)
       when *%w[.csv .xls]
         print_csv(arg)
       when *%w[.mp3 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
-        print_media(arg)
+        print_ffprobe(arg)
+      when *%w[.jpg .jpeg]
+        print_exif(arg)
       when ".tsv"
         print_csv(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
@@ -1448,6 +1460,8 @@ def convert(arg)
         case format
         when /SQLite 3.x database/
           print_sqlite(arg)
+        when /Zip archive data/
+          print_zip(arg)
         when /shell script/ 
           print_source(arg)
         when /:.+?(ELF|executable|shared object)[^,]*,/
