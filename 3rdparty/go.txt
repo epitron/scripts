@@ -1,3 +1,5 @@
 github.com/boyter/scc
 github.com/github/hub
 github.com/caddyserver/caddy/caddy
+github.com/eliukblau/pixterm
+
