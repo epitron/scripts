@@ -93,7 +93,9 @@ unless args.any? or opts.delete("-h") or opts.delete("--help")
   puts "  yt [options] <query>"
   puts
   puts "options:"
-  puts "    -j --json    Output results as JSON"
+  puts "    -j --json       Output results as JSON"
+  puts "    -p --playlists  Show user's playlists"
+  puts "    -d --dump       Dump everything in account"
   puts
   exit 1
 end
