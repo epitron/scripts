@@ -546,7 +546,7 @@ BEGIN {
     end
   end
 
-  def route(url, opts)
+  def route(url, opts={})
     write_to_log url
     $router.route! url, opts
   end
