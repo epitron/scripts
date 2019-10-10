@@ -27,10 +27,10 @@ end
 opts = Slop.parse(help: true, strict: true) do
   banner "Usage: html2csv [options] <url or file>"
 
+  on "o=", "output",  "Output to a file"
   on "v",  "view",    "View tables instead of converting to CSV"
   on "s",  "short",   "Print an excerpt from each table"
   on "n=", "number",  "Which table?", default: 1
-  on "o=", "output",  "Output to a file"
 end
 
 args = ARGV
@@ -39,8 +39,26 @@ args = ARGV
 
 class Table < Struct.new(:header, :rows)
 
+  def self.textify(e)
+    # require 'pry';binding.pry
+    if e.is_a? Nokogiri::XML::NodeSet
+      e.map { |ec| textify(ec) }.join(" ")
+    elsif e.is_a? Nokogiri::XML::Node
+      if e.text?
+        e.to_s
+      elsif e.name == "a"
+        desc = textify(e.children)
+        "#{desc.empty? ? "" : "#{desc} - "}#{e["href"]}"
+      else
+        e.children.map { |ec| textify(ec) }.join(" ")
+      end
+    else
+      raise "wtf"
+    end
+  end
+
   def self.row_to_array(row)
-    row.search("td, th").map { |cell| cell.inner_text.tighten }
+    row.search("td, th").map { |cell| textify(cell) }
   end
 
   def self.from_node(table)
