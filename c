@@ -19,6 +19,7 @@
 #
 #
 # TODOs:
+#   * Live filtering (grep within output chunks, but retain headers; retain some context?)
 #   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
 #   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
