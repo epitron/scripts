@@ -6,7 +6,8 @@ require 'epitools'
 def packages_that_depend_on(package)
   result = []
 
-  [`pacman -Sii #{package}`, `pacman -Qi #{package}`].each do |output|
+  # [`pacman -Sii #{package}`, `pacman -Qi #{package}`].each do |output|
+  [`pacman -Sii #{package}`].each do |output|
     output.each_line do |l|
       if l =~ /Required By\s+: (.+)/
         result += $1.strip.split unless $1["None"]
