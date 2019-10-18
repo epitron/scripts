@@ -1,1 +1,3 @@
 shuji (convert sourcemap back to javascript)
+wscat (websocket cli)
+

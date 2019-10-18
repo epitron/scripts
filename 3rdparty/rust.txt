@@ -1,2 +1,2 @@
-websocat
+--features=ssl websocat
 
