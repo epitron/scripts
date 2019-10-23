@@ -45,7 +45,7 @@ end
 
 if args.delete("-a")
   cmd << "--extract-audio"
-  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]"] unless args.include?("-f") # allow user to override the format options
+  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
   cmd << "--add-metadata"
 elsif args.delete("-s")
   cmd << "--skip-download"
