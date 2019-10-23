@@ -34,7 +34,7 @@ opts = Slop.parse(help: true, strict: true) do
   on 'm',  'mute',     'No audio'
   # DEV.LS h264                 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (decoders: h264 h264_vdpau ) (encoders: libx264 libx264rgb h264_nvenc h264_vaapi nvenc nvenc_h264 )
   # DEV.L. hevc                 H.265 / HEVC (High Efficiency Video Coding) (encoders: libx265 nvenc_hevc hevc_nvenc hevc_vaapi )
-  on 'v=', 'vcodec',   "Output video codec\n\t\t\t\t (eg: h264, h264_nvenc, hevc, hevc_nvenc, hevc_vaapi)\n\t\t\t\t", default: "h264"
+  on 'v=', 'vcodec',   "Output video codec\n\t\t\t\t (eg: copy, h264, h264_nvenc, hevc, hevc_nvenc, hevc_vaapi)\n\t\t\t\t", default: "h264"
   on 'N',  'nvidia',   'Use nvidia-accelerated version of the --vcodec'
   on 'A',  'vaapi',    'Use vaapi-accelerated version of the --vcodec'
   on 'c=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
