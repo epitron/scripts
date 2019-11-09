@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+##############################################################################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+##############################################################################################################
+
+##############################################################################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: spleet [options] <input file(s)>"
+
+  on "m=",  "model",      "model name (eg: 2stems, 4stems, 5stems, list)", default: "2stems"
+  on "o=",  "outdir",     "output dir", default: "."
+  on "c=",  "compressor", "output compression format (eg: wav, flac, mp3, ogg, m4a, wma)", default: "flac"
+  on "w",   "weiner",     "weiner filtering"
+  on "p=",  "pretrained_models", "where to store pretrained models", default: "~/.cache/spleeter"
+end
+
+args = ARGV
+
+##############################################################################################################
+
+def spleeter_path
+  # /home/pip/.local/lib/python3.7/site-packages/spleeter/resources/5stems.json
+  pysrc            =  "import spleeter; print(spleeter.__file__)"
+  spleeter_initpy  =  IO.popen(["python3", "-c", pysrc], &:read).strip
+  $spleeter_path  ||= Path[spleeter_initpy]
+  
+  $spleeter_path.with(filename: nil)
+end
+
+def model_path(modelfile=nil)
+  path = spleeter_path/"resources"
+
+  if modelfile
+    modelfile = "#{modelfile}.json" unless model[/\.json$/]
+    path/modelfile
+  else
+    path
+  end
+end
+
+##############################################################################################################
+
+def list_models
+
+  puts "Available models:"
+
+  (model_path/"*.json").each do |path|
+    instruments = path.parse["instrument_list"]
+    puts "  - #{path.basename} (#{instruments.join(", ")})"
+  end
+
+end
+
+##############################################################################################################
+
+if opts[:model] == "list"
+  list_models
+elsif args.empty?
+  puts "Error: no input files"
+  puts
+  puts opts
+  exit 1
+else
+  cmd = ["spleeter", "separate"]
+  cmd += ["-o", opts[:outdir]]
+
+  if opts[:model] =~ /^(\w+)(?:\.\w+)?$/
+    model = $1
+    json = model_path/"#{model}.json"
+    cmd += ["--params_filename", json]
+
+    instruments = json.parse["instrument_list"]
+  else
+    puts "Error: can't parse model name: #{opts[:model].inspect}"
+    puts
+    list_models
+    exit 1
+  end
+
+  cmd += ["--audio_codec", opts[:compressor]]
+  cmd << "--mwf" if opts.weiner?
+
+  pretrained_models = Path[opts[:pretrained_models]]
+  env = {"MODEL_PATH" => pretrained_models}
+
+  puts "[-] Model: #{model || "default"}"
+  puts "[-] Instruments: #{instruments.join(", ")}" if model
+  puts "[-] Pretrained model path: #{pretrained_models}"
+  puts "[*] Splitting..."
+
+  p cmd
+  p env
+  p args
+  
+  system(env, *cmd, "--audio_filenames", *args)
+end
