@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 ###################################################################
-require 'xmlrpc/client'
-require 'epitools/colored'
+gem 'xmlrpc';   require 'xmlrpc/client'
+gem 'epitools'; require 'epitools/colored'
 ###################################################################
 
 # For some reason you have to do this crazy thing so that it doesn't blow up when it sees a <nil/> tag
