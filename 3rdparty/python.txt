@@ -8,3 +8,6 @@ rst2ansi
 
 ffmpeg-normalize
 
+ranger
+kitty
+
