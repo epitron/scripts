@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 ################################################
+require 'epitools/clitools'
+################################################
+
+LOCAL_QUOTES_FILE = "#{__dir__}/fortunes/quotes"
+
+################################################
 
 def quotes(files=nil)
   files.flat_map do |file|
@@ -8,13 +14,18 @@ def quotes(files=nil)
 end
 
 ################################################
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-args = ARGV
+if opts.delete("-e")
+  cmd = [which("s") ? "s" : ENV["EDITOR"], LOCAL_QUOTES_FILE, *args]
+  system *cmd
+  exit
+end
 
-if args.delete("-f")
+if opts.delete("-f")
   files = Dir["/usr/share/fortune/**/*"].select { |fn| File.file?(fn) and not fn[/\.dat$/] }
 else
-  files = ["#{__dir__}/fortunes/quotes"]
+  files = [LOCAL_QUOTES_FILE]
 end
 
 if args.any? { |arg| %w[-c --count -s --stats --stat].include? arg }
