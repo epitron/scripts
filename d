@@ -207,7 +207,7 @@ args.each do |arg|
   end
 
   if path.dir?
-    grouped[path] = opts.recursive? ? path.ls_R : path.ls
+    grouped[path] = opts.recursive? ? path.ls_R.group_by(&:dir) : path.ls
   else
     single_files << path
   end
