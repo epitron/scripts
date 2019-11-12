@@ -4,8 +4,10 @@ require 'shellwords'
 
 # Array of [ [dirname, path], ... ]
 raw_mp3s = Dir["#{ENV["HOME"]}/m/music/*"] +
-           Dir["#{ENV["HOME"]}/m/music/\\[offline\\]/*"] +
-           Dir["#{ENV["HOME"]}/m/music/\\[radio\\]/*"]
+           Dir["#{ENV["HOME"]}/m/music/outbox/*"] +
+           Dir["#{ENV["HOME"]}/m/music/inbox/*"] +
+           Dir["#{ENV["HOME"]}/m/music/offline/*"] +
+           Dir["#{ENV["HOME"]}/m/music/mixes/*"]
 
 paths = raw_mp3s.
           reject { |e| e =~ /\.\w{1,4}$/ unless e =~ /\.(xspf|m3u8?)$/ }.
