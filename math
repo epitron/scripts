@@ -176,6 +176,7 @@ class MathOTron
       end
     rescue Exception => e
       puts e.to_s.bright_red
+      puts e.backtrace
     end
   end
 
