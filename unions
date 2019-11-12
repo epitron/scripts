@@ -3,10 +3,14 @@ shares = {
   "media/movies"        => ["movies-*"],
   "media/tv"            => ["tv-*"],
   "media/music"         => ["mp3-*"],
+  "media/ebooks"        => ["ebooks-*"],
   "media/iso"           => ["iso-*"],
   "media/documentaries" => ["documentaries-*"],
-
-  #"media/talks"  => ["talks*"],
+  "media/audiobooks"    => ["audiobooks"],
+  "media/musicvideos"   => ["musicvideos"],
+  "media/podcasts"      => ["podcasts"],
+  "media/talks"         => ["talks-*"],
+  "media/talks-old"     => ["talks-old"],
 }
 
 root       = ENV["HOME"]

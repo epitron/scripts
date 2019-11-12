@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 
+class String
+  def frontslashed
+    (self[0] != '/') ? "/"+self : self
+  end
+end
+
 class Mount
   attr_accessor :dev, :path, :type, :options
 
@@ -12,10 +18,6 @@ class Mount
     (path =~ %r{^/(sys|dev|proc|run/user|tmp)}) or dev == "systemd-1"
   end
   
-  def inspect
-    "#{type}: #{path} (#{dev})"
-  end
-  
   def to_s
     "  #{path} (#{dev})"
   end
@@ -26,6 +28,16 @@ mounts = IO.popen(["findmnt", "--raw"]) { |io| io.drop(1).map { |line| Mount.new
 puts
 mounts.reject(&:system?).group_by(&:type).each do |type, mounts|
   puts "== #{type} ======================"
-  mounts.each { |mount| puts mount }
+
+  mounts.each do |mount|
+    case type
+    when "fuse.mergerfs"
+      puts "* #{mount.path}"
+      mount.dev.split(":").each { |src| puts "  |_ #{src.frontslashed}" }
+    else
+      puts mount
+    end
+  end
+
   puts
 end

@@ -346,10 +346,15 @@ alias pacr='pacman -Rs --'   # remove package (and unneeded dependencies)
 alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
-alias y='yaourt'
 alias abs='sudoifnotroot abs'
-# alias pkgfile='sudoifnotroot pkgfile -r'
 alias mp='makepkg -s'
+# alias pkgfile='sudoifnotroot pkgfile -r'
+
+if we_have yaourt; then
+  alias y='yaourt'
+else
+  alias y='aurs'
+fi
 
 # npm
 # alias ni="sudoifnotroot npm install -g"
