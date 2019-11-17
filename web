@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 ## TODOs:
+# * follow_redirect should never get into a loop (remember last url, and check that Location header is set)
 # * Add a clipboard option which automatically checks BOTH
 #   primary and secondary clipboards for urls (preferring route matches if both
 #   clipboards contain an url).
@@ -105,7 +106,7 @@ routes do
   match(params: "fbclid") { |uri| route uri.without_params("fbclid") }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd ow.ly buff.ly]) { |uri| route uri.follow_redirect }
+  match(host: %w[t.co bit.ly is.gd ow.ly buff.ly], &follow_redirect) # { |uri| route uri.follow_redirect }
 
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com], &play_video
@@ -295,6 +296,10 @@ BEGIN {
       proc { |uri| exec(PLAY, uri) }
     end
 
+    def follow_redirect
+      proc { |uri| route uri.follow_redirect }
+    end
+    alias_method :follow, :follow_redirect
 
     ## Rules
 
