@@ -629,7 +629,7 @@ BLACKCARPET_INIT = proc do
     end
 
     def codespan(code)
-      code.cyan
+      code&.cyan
     end
 
     def header(title, level, anchor=nil)
@@ -1122,6 +1122,12 @@ end
 
 ##############################################################################
 
+def print_gpg(filename)
+  run("gpg", "--list-packets", "-v", filename)
+end
+
+##############################################################################
+
 def print_csv(filename)
   require 'csv'
 
@@ -1436,8 +1442,8 @@ def convert(arg)
         print_rtf(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
-      # when *%w[.dfxp .xml]
-      #   pretty_xml(arg)
+      when *%w[.sig .asc]
+        print_gpg(arg)
       when *%w[.xml]
         print_xml(arg)
       when *%w[.csv .xls]
@@ -1455,6 +1461,8 @@ def convert(arg)
         print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
+      # when *%w[.dfxp .xml]
+      #   pretty_xml(arg)
       else
         format = run('file', arg)
 
