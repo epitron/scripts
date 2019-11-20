@@ -6,5 +6,6 @@ if [ "$1" == "" ]; then
 elif [ "$1" == "-a" ]; then
   c *.txt
 else
-  ag --color -i "$@" | less -RSFX
+  # ag --color -i "$*" | less -RSFX
+  grep --color=always -i "$*" *.txt | less -RSFX
 fi

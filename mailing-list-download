@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: mailing-list-download <list archives url>"
+  exit 1
+fi
+
+getlinks "$@" | egrep '\.txt(\.gz)?$' | xargs -i get "{}"

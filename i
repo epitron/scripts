@@ -49,13 +49,21 @@ class Systemd
     systemctl("list-unit-files", msg: "Units")
   end
 
+  def search(query)
+    systemctl("list-unit-files", query, msg: "Searching for: #{query}")
+  end
+
   def reload
-    systemctl("daemon-reload", msg: "Reloading")
+    systemctl("daemon-reload", msg: "Reloading systemd configuration")
+  end
+
+  def reexec
+    systemctl("daemon-reexec", msg: "Reexecuting systemd")
   end
 
   # "command1>command2" means to call command2 whenever command1 is called
   # something starting with a ":" means to call a method
-  %w[start>status stop>status restart>status disable>stop enable>:start].each do |command|
+  %w[start>status stop>status restart>status disable>stop enable>:start mask>stop>status unmask>status].each do |command|
     commands = command.split(">")
 
     define_method commands.first do |service|
@@ -92,10 +100,6 @@ class Systemd
 
   def default
     services
-  end
-
-  def search(query)
-    raise "Search not implemented for systemd."
   end
 
   def default_command(service)
@@ -144,7 +148,9 @@ class Initd
   def search(query)
     require 'epitools'
 
-    puts "Services (filtered by /#{query}/):"
+    regexp = Regexp.new(query)
+
+    puts "Services (search query: /#{regexp}/):"
     puts "================================================="
 
     highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
@@ -234,29 +240,20 @@ end
 
 args = ARGV
 
-
 if Systemd.detected?
   manager = Systemd.new( args.delete("--user") )
 else
   manager = Initd.new
 end
 
-
+# Parse args
 if args.empty? # No args
-
   manager.default
-
 elsif args.any? { |arg| ["reload", "daemon-reload"].include? arg }
-
   manager.reload
-
 elsif args.first =~ %r{/(.+?)/}
-
-  query = Regexp.new($1)
-  manager.search(query)
-
+  manager.search($1)
 else
-
   case args.size
   when 2
     service, command = args
@@ -265,5 +262,4 @@ else
   end
 
   manager.send(command, service)
-
 end

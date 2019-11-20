@@ -8,15 +8,21 @@ class String
 end
 
 def despam(link)
-  URI.parse(link).params.values.map do |val|
-    if val.url?
-      val
-    elsif (decoded = val.from_base64).url?
-      decoded
-    else
-      nil
-    end
-  end.compact
+  uri = URI.parse(link)
+
+  if uri.host[/youtu(be)?/] and uri.path["attribution_link"] and uri.params["u"]
+    ["https://youtube.com#{uri.params["u"]}"]
+  else
+    uri.params.values.map do |val|
+      if val.url?
+        val
+      elsif (decoded = val.from_base64).url?
+        decoded
+      else
+        nil
+      end
+    end.compact
+  end
 end
 
 def show_links_for(url)
@@ -38,7 +44,7 @@ if $0 == __FILE__
     loop do
       print "Paste link: "
       url = gets.strip
-      
+
       show_links_for url
       puts
     end

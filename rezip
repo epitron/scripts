@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: rezip [options] <zip file(s)>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+paths = ARGV.map(&:to_Path)
+
+########################################################
+
+paths.each do |path|
+  unless path.exists?
+    puts "* Skipping #{path} (not found)"
+    next
+  end
+
+  tmp = path.with(path: "#{path}-rezipping")
+  tmp.mkdir
+  tmp.cd do
+    if system("unzip", path.to_s)
+      path.mv("#{path}.bak")
+      system("zip", "-r", path.to_s, ".")
+    else
+      puts "* Error unzipping #{path}"
+    end
+  end
+
+  FileUtils.rm_rf(tmp)
+end

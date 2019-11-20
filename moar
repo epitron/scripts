@@ -6,16 +6,22 @@
 #    TODOs:
 # -------------------------
 #
-# + Tagline:
+# + Search
+# + Other possible names: "most", "least", "pager"
 #   - moar is more moar than less is more
 #   - more is more by being less than less is less than more
-# + Other possible names: "most", "least", "pager"
-# + "Log" mode (tail, and deduplicate lines)
-# + Wrap ANSI properly (strip ANSI codes)
-# + Search
-# + Mouse wheel
+# + "Log" mode (tail, *and* deduplicate lines)
+# + ANSI-compatible "wrap" mode (strip ANSI codes before wrapping)
+# + Mouse wheel support
 # + Syntax highlighting (see the "c" script)
-# + Read gzip/xz files
+# + Display compressed files (like zless)
+# + If paging an actual file, memmap it instead of streaming it into memory (to view enormous files)
+# + [/-key] = search mode; on each keystroke:
+#   - clear screen, move cursor to middle
+#   - spawn 2 threads: each scans away from the cursor (up and down) simultaneously
+#     - each thread scans the history buffer, finds matches, and gathers [line_no, highlighted_line] pairs, printing them to the screen as they arrive, and each thread stopping once it hits the window boundary
+#   - scrolling within the matches populates more matches
+#     (requires a double-ended indexable queue)
 #
 # -------------------------
 #    TODONEs:
@@ -80,9 +86,10 @@ class Pager
       PgUp/PgDn:  Scroll up/down by a page\r
       Space:      Scroll down by a page\r
       Home/End:   Scroll to beginning/end\r
+      Ctrl-Left/Right:   Scroll to beginning/end of line\r
       \r
       t: Toggle tail-mode\r
-      w: Toggle word-wrap\r
+      w: Toggle wrapping of lines\r
       n: Toggle line numbers\r
       r: Refresh\r
       \r
@@ -101,7 +108,7 @@ class Pager
 
   end
 
-  def initialize(io)
+  def initialize(io, opts)
     @display_lock            = Mutex.new
     @scrollback              = []
     @queue                   = Queue.new
@@ -114,14 +121,15 @@ class Pager
     @refresh_throttle        = 1.0 / (@max_fps)
     @last_refresh            = Time.now - @refresh_throttle
     @last_display_status_bar = Time.now - @refresh_throttle
+    @tail_mode               = opts[:tail_mode]
 
     @height = @termheight - 1
 
     pager = self
 
     @keymap = KeyMap.new do
-      key(:up)      { pager.scroll_down }
-      key(:down)    { pager.scroll_up }
+      key(:up)      { pager.scroll_output_up }
+      key(:down)    { pager.scroll_output_down }
       key(:left)    { pager.scroll_right }
       key(:right)   { pager.scroll_left }
 
@@ -129,8 +137,8 @@ class Pager
       key(:pgdown)  { pager.pagedown }
       key(" ")      { pager.pagedown }
 
-      key(:home)    { pager.scroll_home }
-      key(:end)     { pager.scroll_end }
+      key(:home, "<") { pager.scroll_home }
+      key(:end,  ">") { pager.scroll_end }
 
       # key("/")      { pager.searchmode }
       # key("n")      { pager.next_match }
@@ -267,9 +275,9 @@ class Pager
 
 
 
-
-
-
+  #
+  # Terminal control sequences (reference: http://man7.org/linux/man-pages/man5/terminfo.5.html)
+  #
 
   def clear
     print "\e[H\e[J"
@@ -285,6 +293,10 @@ class Pager
 
   def move_to(row: 1, col: 1)
     print "\e[#{row};#{col}H"
+  end
+
+  def move_to_col(n)
+    print "\e[#{n}H"
   end
 
   def move_to_row(n)
@@ -307,12 +319,34 @@ class Pager
     print "\e[?25h"
   end
 
+  #
+  # Scroll the text up the screen
+  #
+  # scroll_forward              ind       sf     scroll text up (P)   ind=\n
+  # parm_index                  indn      SF     scroll forward #1 lines (P)
+  #
+  def scroll_text(n)
+    move_to_row(@termheight)
+    clear_eol
+    print "\n"*n
+  end
+
+  #
+  # Scroll the text down the screen
+  #
+  # scroll_reverse              ri        sr     scroll text down (P) ri=\eM
+  # parm_rindex                 rin       SR     scroll back #1 lines (P)
+  #
+  def reverse_scroll_text(n)
+    move_to_top
+    print "\eM"*n
+  end
 
 
 
   def percent
     pct = (bottom.to_f / lines) * 100
-    "%0.1f%" % pct
+    "%0.1f%%" % pct
   end
 
   def top
@@ -359,8 +393,8 @@ class Pager
     end
 
     move_to_row(row) if row
-    clear_eol
     print cropped
+    clear_eol
   end
 
   def move_pos(delta)
@@ -383,15 +417,15 @@ class Pager
 
 
   #
-  # Page moves up (new lines added at bottom)
+  # Down arrow: page moves up (new lines added at bottom)
   #
-  def scroll_up(n=1)
+  def scroll_output_down(n=1)
     n = move_pos(n)
 
     if n != 0
       bottom_line = height-n+1
       clear_status_bar
-      print "\e[#{n}S"
+      scroll_text(n)
       move_to(row: bottom_line)
       debug(scrolled_up: n)
       lines_on_screen.last(n).each_with_index do |(line,num),i|
@@ -402,13 +436,13 @@ class Pager
   end
 
   #
-  # Page moves down (new lines added at top)
+  # Up arrow: page moves down (new lines added at top)
   #
-  def scroll_down(n=1)
+  def scroll_output_up(n=1)
     n = move_pos(-n).abs
     if n != 0
       move_to(row: 1)
-      print "\e[#{n}T"
+      reverse_scroll_text(n)
       debug(scrolled_down: n)
       lines_on_screen.first(n).each_with_index do |(line,num), i|
         display(line, row: 1+i, num: num)
@@ -434,7 +468,7 @@ class Pager
     lines_from_end = lines - bottom
 
     if lines_from_end < height
-      scroll_up(lines_from_end)
+      scroll_output_down(lines_from_end)
     else
       @pos = end_pos
       refresh!
@@ -442,11 +476,11 @@ class Pager
   end
 
   def pageup
-    scroll_down(height/2)
+    scroll_output_up(height/2)
   end
 
   def pagedown
-    scroll_up(height/2)
+    scroll_output_down(height/2)
   end
 
 
@@ -484,8 +518,10 @@ class Pager
   end
 
   #
-  # Throttles (limited to @max_fps updates per second)
+  # Creates throttled version of the `refresh!` and `display_status_bar!` methods
+  # (The ones with the exclamation mark happen instantly, while the ones without are limited to @max_fps updates per second)
   #
+
   %w[refresh display_status_bar].each do |meth|
     class_eval %{
       def #{meth}
@@ -583,27 +619,30 @@ if $0 == __FILE__
     exit
   end
 
-  opts, args = ARGV.partition { |arg| arg[/^-\w$/] }
+  flags, args = ARGV.partition { |arg| arg[/^-\w$/] }
+  opts = {}
 
-  opts.each do |opt|
-    case opt
+  flags.each do |flag|
+    case flag
     when "-d" then $debug = true
+    when "-t" then opts[:tail_mode] = true
     else
-      $stderr.puts "Unrecognized option: #{opt}"
+      $stderr.puts "Unrecognized option: #{flag}"
     end
   end
 
   case args.size
   when 0
     # TODO: Use a PTY to avoid buffering
-    Pager.new($stdin).page!
+    pager = Pager.new($stdin, opts)
   when 1
-    Pager.new(open(args.first)).page!
+    pager = Pager.new(open(args.first), opts)
   else
-    IO.popen(["c", *args], :err=>[:child, :out]) do |io|
-      Pager.new(io).page!
-    end
+    io = IO.popen(["c", *args], :err=>[:child, :out])
+    pager = Pager.new(io, opts)
   end
+
+  pager.page!
 
   exit!
 end

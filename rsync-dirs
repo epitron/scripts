@@ -19,7 +19,7 @@ opts = opts.map do |opt|
   end
 end.flatten.uniq
 
-SSH_ARG_REGEXP = /^([^@]+)@([^:]+):(.+)$/
+SSH_ARG_REGEXP = /^([^@]+@)?([^:]+):(.+)$/
 
 if args.any?
 
@@ -32,7 +32,7 @@ if args.any?
   letters += %w[o g p] if opts.delete("-o") # ownership
   letters += %w[z]     if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
 
-  params = ["--xattrs"]; opts.delete("-x") # Always sync xattrs
+  params = ["--xattrs"] # Always sync xattrs
 
   unless opts.delete "-q"
     params  << "--progress"
@@ -40,6 +40,7 @@ if args.any?
   end
 
   params << "--bwlimit=40"      if opts.delete "-l"  # limit bandwidth
+  params << "--copy-links"      if opts.delete "-L"  # dereference symlinks
   params << "--append-verify"   if opts.delete "-a"  # append to smaller destination files if they match
   params << "--partial"         if opts.delete "-p"  # partials
   params << "--delete-after"    if opts.delete "-d"  # delete destination files
@@ -49,8 +50,9 @@ if args.any?
   params += ["-e", "ssh -c blowfish"] if opts.delete "-f" # fast cipher
   params += %w[--specials --devices]  if opts.delete "-s" # sync special files (sockets, fifos) and devices
 
-  if opts.delete "-b" # binary mode
-    params += ["--checksum", "--copy-links"]
+
+  if opts.delete "-c" # checksum mode
+    params << "--checksum"
   else
     params << "--size-only"
   end
@@ -72,10 +74,10 @@ else
   puts
   puts "Special options:"
   puts "    -q    Quiet mode"
-  puts "    -b    Binary rsync (and dereference symlinks)"
+  puts "    -c    Checksum files (instead of using file size)"
+  puts "    -L    Dereference symlinks"
   puts "    -o    Preserve ownership (user/group/permissions)"
   puts "    -s    Sync special files (sockets, fifos, devices)"
-  # puts "    -x    Preserve xattrs"
   puts "    -a    Append to smaller destination files"
   puts "          (if their overlap has the same checksum)"
   puts "    -d    Delete destination files that aren't in the source"

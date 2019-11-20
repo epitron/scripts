@@ -1,10 +1,25 @@
 #!/usr/bin/env ruby
 require 'json'
+require 'epitools'
 
 STARLOG = open(File.expand_path("~/elf-stars.json"))
 
 STARLOG.each_line do |line|
   json = JSON.parse(line)
-  time = Time.at(json["date"]).strftime("%Y-%m-%d @ %H:%M")
-  puts "#{time} | #{json["name"]}"
+  time = Time.at(json["date"]).strftime("<9>%Y-%m-%d <8>@ <11>%H:%M")
+  name = json["name"]
+  filename = json["filename"]
+
+  if filename =~ %r{^https?://}
+    uri = URI.parse(filename)
+    if name =~ /^(.+) - #{uri.host} - (.+)/
+      station = $1
+      name = $2
+    end
+  else
+    station = filename
+  end
+
+  puts "#{time} <8>| <10>#{name}".colorize
+  puts "                   <8>| <2>#{station}".colorize if station
 end

@@ -11,10 +11,22 @@
 # * Config file
 
 ######################################################################################
-# "web" by Chris Gahan (chris@ill-logic.com)
+# "web" router, by Chris Gahan (chris@ill-logic.com)
 ######################################################################################
-# This script intelligently opens URLs in the best browser on the current desktop,
-# or on another desktop.
+# Call this script on an URL to forward it to the appropriate application (using
+# routing rules).
+#
+# You can specify the rules in a Ruby DSL (documented in the "ROUTING RULES" section
+# below). The DSL provides advanced matching against the URL and all of its sub-parts
+# (scheme, host, port, path, query params, etc.) using Regexes or sets.
+
+# executed on the URL
+# send the URL to a specific browser if multiple are open (on a specific desktop),
+# or to a program.
+
+#
+# The configuration uses a DSL which allows for detailed matching on any part of an
+# URL, and full URL rewriting using plain old Ruby.
 #
 # Now you can have as many browsers open on as many desktops as you want, and you'll
 # never have to worry when clicking on a link that it'll go to the wrong one.
@@ -34,11 +46,14 @@
 # Match rule examples:
 #   match "site.com"
 #   match /site\.com/
-#   match host: /(site1|site2)\.com/
-#   match host: %w[site1.com site2.com], scheme: "https"
 #   match "site1.com", "site2.com", "site3.com"
 #   match host: "site.com"
+#   match host: /(site|othersite)\.com/
+#   match host: %w[site1.com site2.com], scheme: "https"
 #   match ->(uri) { uri.host["site.com"] and Time.now.year == 2012 }
+#   match params: "tracker"
+#   match params: {enabled: 1}
+#   match params: ["user", "age", "redirect_to"]
 #
 # The 'uri' object:
 #   Each rule matches against Ruby's URI object, and when a match succeds, the block
@@ -51,31 +66,56 @@
 #     port   = 443,
 #     path   = "/path",
 #     query  = "query=yes"
+#     params = {"query" => "yes"}
+######################################################################################
+
+######################################################################################
+# .webrc (Local Config)
+######################################################################################
+#
+# You can add extra rules just for your specific machine by putting them in ~/.webrc.
+#
+# (The .webrc's contents are treated as regular Ruby code that are executed in the
+# context of the script.)
+#
+# Example .webrc:
+#
+#   routes do
+#     match host: "another-video-site.com", path: "/videos/", &play_video
+#     match(host: "another-url-shortener.com") { |uri| route uri.follow_redirect }
+#   end
+#
 ######################################################################################
 
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
-BROWSERS       = %w[opera qupzilla vivaldi-bin chromium chrome xombrero midori firefox jumanji]
+BROWSERS       = %w[qupzilla chromium chrome firefox opera vivaldi-bin dillo otter-browser xombrero midori jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 routes do
 
   default do |uri|
-    open_in_best_browser uri, BROWSERS
+    open_in_best_browser uri
   end
 
   # Strip click trackers
   match(host: /google.\w{2,3}$/, path: "/url")   { |uri| route uri.params["url"] || uri.params["q"] }
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
+  match(host: "youtube.com", path: "/attribution_link") { |uri| route "https://youtube.com#{uri.params["u"]}" }
+  match(params: "fbclid") { |uri| route uri.without_params("fbclid") }
 
   # Resolve redirects
-  match(host: %w[t.co bit.ly is.gd]) { |uri| route uri.follow_redirect }
+  match(host: %w[t.co bit.ly is.gd ow.ly buff.ly]) { |uri| route uri.follow_redirect }
 
   # Open videos in 'play' (using a standalone desktop video player)
-  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com], &play_video
-  match host: %w[youtube.com], path: %r{^/(watch|embed|attribution_link)}, &play_video
-  match host: %w[facebook.com bigthink.com], path: "/videos/", &play_video
-  match host: "ted.com", path: "/talks/", &play_video
+  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com], &play_video
+  match host: %w[youtube.com invidio.us], path: %r{^/(watch|embed)}, &play_video
+  match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
+  match host: "media.ccc.de", path: %r{^/v/.+},     &play_video
+  match host: "ted.com",      path: "/talks/",      &play_video
+  match host: "longnow.org",  path: "/seminars/",   &play_video
+  match host: "c-span.org",   path: "/video/",      &play_video
+  match host: "tvo.org",      path: ["/programs/", "/video/", "/documentaries/"], &play_video
   match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
@@ -121,8 +161,37 @@ BEGIN {
   require 'epitools/wm'
   require 'epitools/core_ext/misc'
   require 'epitools/core_ext/hash'
+  require 'epitools/core_ext/object'
 
   ####################################################################################
+  class Class
+
+    def debug(*meths)
+      return unless $DEBUG
+
+      puts "debug instrumentation: #{meths.inspect}"
+      
+      m = Module.new
+
+      meths.each do |meth|
+        case meth
+        when :*
+          debug(methods)
+        else
+          m.define_method(meth) do |*args|
+            p [meth, args]
+            super(*args)
+          end
+        end
+      end
+
+      puts "prepending #{m} to #{self}"
+      self.module_prepend(m)
+    end
+
+  end
+  ####################################################################################
+
 
   module URI
 
@@ -132,7 +201,7 @@ BEGIN {
     alias_method :old_params, :params
 
     def params
-      old_params.delete_if { |k,v| v.blank? }
+      old_params.reject { |k,v| v.blank? }
     end
 
     def path_with_query
@@ -140,11 +209,28 @@ BEGIN {
     end
     alias_method :fullpath, :path_with_query
 
-    def follow_redirect
-      require 'http'
+    def with_params(*keys)
+      with(query: params.select{|k,v| keys.include? k }.to_query)
+    end
 
-      response = ::HTTP.get(self)
-      response.headers["Location"] || self
+    def without_params(*keys)
+      with(query: params.reject{|k,v| keys.include? k }.to_query)
+    end
+
+    def get
+      require 'net/http'
+      Net::HTTP.get_response(self)
+    end
+
+    def follow_redirect
+      response = get
+
+      if response.code_type < Net::HTTPRedirection
+        puts "following redirect: #{self}"
+        response["location"]
+      else
+        self
+      end
     end
 
     def escaped
@@ -196,65 +282,99 @@ BEGIN {
   #
   class Router
 
+    debug :*
+
     def initialize
-      @matchers = []
+      @rules = []
       @default  = nil
     end
 
-    def match(*args, &block)
-      @matchers << [args, block]
-    end
+    ## Helpers
 
     def play_video
       proc { |uri| exec(PLAY, uri) }
     end
 
+
+    ## Rules
+
+    #
+    # Create a new rule
+    #
+    def match(*conditions, &block)
+      @rules << [conditions, block]
+    end
+
+    #
+    # Set the default action, if all other rules
+    #
     def default(&block)
       @default = block
     end
 
-    def route!(url)
-      # TODO: Avoid infinite routing loops
+    #
+    # Pass an URL through the rules
+    #
+    def route!(uri, opts={})
+      # TODO: Figure out how to avoid infinite routing loops (hasn't been an issue yet)
 
-      uri = URI.parse(url.gsub("[", "%5B").gsub("]", "%5D"))
+      uri = URI.parse(uri.gsub("[", "%5B").gsub("]", "%5D")) unless uri.is_a? URI
 
-      # Make sure the default is set...
-      @default ||= proc.new { open_in_best_browser uri, BROWSERS }
+      # The default @default (sets it if it hasn't been set)
+      @default ||= proc.new { open_in_best_browser uri }
 
-      # URI.parse doesn't handle file:/// urls properly, so we'll have to bypass it...
-      return @default.(url) if url.to_s[%r{^file://}i]
+      # URI.parse doesn't handle file:/// urls properly, so, as a quick fix, let's just bypass it...
+      return @default.(uri) if uri.to_s[%r{^file://}i]
 
-      # Try each of the matchers...
-      @matchers.each do |args, block|
+      # Try the rules until one matches
+      @rules.each do |conditions, block|
 
-        matched = args.any? do |arg|
-          case arg
-
+        # NB: 'conditions' is the array of conditions that determine whether the match matches, and 'block' is what's executed if there's a match
+        matched = conditions.any? do |condition|
+          case condition
           when Hash
-            arg.all? do |key, val|
-              case val
-              when Array
-                if key == :host
-                  # match the end of the domain
-                  val.any? { |v| uri.host&.[](/(^|\.)#{v}$/) }
+            # if a hash is supplied, all conditions must match (boolean AND)
+            condition.all? do |key, val|
+              # matching against params requires special logic
+              if key == :params
+
+                # match a hash/array/string against the params
+                case val
+                when Hash
+                  val.map { |k,v| [k.to_s, v.to_s] }.all? { |k,v| uri.params[k] == v }
+                when Array
+                  val.all? { |k| uri.params[k] }
                 else
-                  val.any? { |v| uri.send(key)[v] }
+                  uri.params[val]
                 end
-              when String, Regexp
-                uri.send(key)&.[](val)
+
               else
-                raise "Unknown match value: #{val.inspect}"
+
+                case val
+                when Array
+                  if key == :host
+                    # match the end of the domain
+                    val.any? { |v| uri.host&.match(/(^|\.)#{v}$/) }
+                  else
+                    val.any? { |v| uri.send(key)[v] }
+                  end
+                when String, Regexp
+                  uri.send(key)&.[](val)
+                else
+                  raise "Unknown match value: #{val.inspect}"
+                end
+
               end
             end
 
           when Regexp, String
-            uri.to_s[arg]
+            uri.to_s[condition]
 
           when Proc
-            arg.call(uri)
+            condition.call(uri)
 
           else
-            raise "Unknown match thing: #{arg.inspect}"
+            raise "Unknown match thing: #{condition.inspect}"
           end
 
         end
@@ -298,6 +418,14 @@ BEGIN {
 
   ######################################################################################
 
+  def load_rc_file
+    rc = File.expand_path("~/.webrc")
+    if File.exists? rc
+      # $router.instance_eval File.read(rc)
+      eval File.read(rc)
+    end
+  end
+
   def select_parents(query, &block)
     process = Sys.ps($$).first.parent
 
@@ -316,6 +444,9 @@ BEGIN {
     find_in_parents(program)
   end
 
+  #
+  # Takes `windows` (an array of windows), and `browsers` (an array of browser names, ordered by priority), and returns the windows which are preferred browsers
+  #
   def find_browsers(windows, browsers)
     browsers.map do |browser_name|
 
@@ -325,8 +456,12 @@ BEGIN {
         # Hack for Chrome's "Tabs Outliner" plugin
         next if browser_name.in?(["chrome", "chromium"]) and w.title == "Tabs Outliner"
 
-        binary = w.command.split.first
-        binary[browser_name]
+        # Hack for ungoogled-chromium
+        if browser_name == "chromium" and w.command == "/usr/l b/chromium/chromium"
+          true
+        else
+          w.command.split.first[browser_name]
+        end
       end
 
       [ browser_name, browser_window ] if browser_window
@@ -356,7 +491,7 @@ BEGIN {
     IO.popen("xclip -selection clipboard", "w") { |clip| clip << string }
   end
 
-  def open_in_best_browser(uri, browsers)
+  def open_in_best_browser(uri, browsers=BROWSERS)
     name, browser = best_browser_for(uri, browsers)
 
     unless browser
@@ -411,27 +546,26 @@ BEGIN {
     end
   end
 
-  def route(url)
+  def route(url, opts={})
     write_to_log url
-    $router.route! url
+    $router.route! url, opts
   end
 
 }
 
-def load_rc_file
-  rc = File.expand_path("~/.web-rules")
-  eval File.read(rc) if File.exists? rc
-end
-
 if $0 == __FILE__
   if ARGV.any? { |arg| arg == "--help" }
     puts "== Usage: =="
-    puts " web <url>"
+    puts " web [options] <url>"
     puts
     puts "== What it Does: =="
     puts " Opens the url in the best browser on the current desktop."
     puts " If there's no browser on the current desktop, it finds the"
     puts " best browser on the nearest desktop and jumps to that one."
+    puts
+    puts "== Options: =="
+    puts " -d    Debug mode"
+    puts " -k    Kodi mode ('-k' to toggle, '-k on' to enable, '-k off' to disable)"
     puts
     puts "== These are the browsers it will try to use (in order): =="
     puts " #{BROWSERS.join(", ")}"
@@ -440,13 +574,16 @@ if $0 == __FILE__
     exit
   end
 
+  opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+  opts = opts.map { |opt| opt.sub(/^-+/, '').split("=") }.to_h
+
   ensure_required_binaries_are_in_the_path
 
   load_rc_file
 
-  if url = ARGV.first
+  if url = args.first
     # url = "http://#{url}" unless url[%r{^(https?|file|magnet)://}i] # slap an http:// on the argument if necessary
-    route url
+    route url, opts
   else
     puts "usage: web <url>"
   end

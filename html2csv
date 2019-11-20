@@ -1,0 +1,144 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+class IO
+  def name
+    case fileno
+    when 0
+      "STDIN"
+    when 1
+      "STDOUT"
+    when 2
+      "STDERR"
+    else
+      respond_to?(:base_uri) ? base_uri.to_s : path
+    end
+  end
+end
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: html2csv [options] <url or file>"
+
+  on "o=", "output",  "Output to a file"
+  on "v",  "view",    "View tables instead of converting to CSV"
+  on "s",  "short",   "Print an excerpt from each table"
+  on "n=", "number",  "Which table?", default: 1
+end
+
+args = ARGV
+
+########################################################
+
+class Table < Struct.new(:header, :rows)
+
+  def self.textify(e)
+    # require 'pry';binding.pry
+    if e.is_a? Nokogiri::XML::NodeSet
+      e.map { |ec| textify(ec) }.join(" ")
+    elsif e.is_a? Nokogiri::XML::Node
+      if e.text?
+        e.to_s
+      elsif e.name == "a"
+        desc = textify(e.children)
+        "#{desc.empty? ? "" : "#{desc} - "}#{e["href"]}"
+      else
+        e.children.map { |ec| textify(ec) }.join(" ")
+      end
+    else
+      raise "wtf"
+    end
+  end
+
+  def self.row_to_array(row)
+    row.search("td, th").map { |cell| textify(cell) }
+  end
+
+  def self.from_node(table)
+    rows = table.search("tr")
+
+    if rows.first.at("th") or rows.first.ancestors("thead")
+      header = row_to_array(rows.first)
+      rows   = rows[1..-1]
+    end
+
+    array = rows.map do |row|
+      row_to_array(row)
+    end
+
+    new(header, array)
+  end
+
+  def to_csv(io)
+    csv = CSV.new(io)
+    csv << header
+    rows.each { |row| csv << row }
+  end
+
+  def to_s(amount: nil)
+    require 'terminal-table'
+    if amount and amount < rows.size
+      to_print = rows[0..amount]
+      to_print << (["..."] * rows.first.size)
+    else
+      to_print = rows
+    end
+
+    Terminal::Table.new(headings: header, rows: to_print).to_s
+  end
+
+end
+
+
+if args.size != 1
+  puts opts
+  exit 1
+end
+
+path = Path[args.first]
+
+$stderr.puts "* Parsing: #{path}"
+doc   = Nokogiri::HTML(path.read)
+nodes = doc.search("table")
+
+if table_num = opts[:number].to_i
+  table = Table.from_node(nodes[table_num-1])
+  indexed_tables = [[table, table_num]]
+else
+  indexed_tables = nodes.map.with_index { |node, i| [Table.from_node(node), i+1]}
+end
+
+if opts.view? or opts.short?
+
+  lesspipe do |less|
+  # begin; less = $stdout
+    indexed_tables.each do |table, i|
+      less.puts "Table: ##{i}:"
+      less.puts table.to_s(amount: opts.short? ? 4 : nil)
+      less.puts
+    end
+
+  end
+
+else
+
+  table, num = indexed_tables.first
+
+  if outfile = opts[:output]
+    output = Path[outfile]
+  else
+    output = $stdout
+  end
+
+  $stderr.puts "* Writing table ##{num} to #{output.name}.."
+
+  table.to_csv(output)
+
+end

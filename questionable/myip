@@ -1,0 +1,2 @@
+#!/bin/bash
+lynx -dump whatismyip.org

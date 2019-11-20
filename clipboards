@@ -1,12 +1,22 @@
 #!/usr/bin/env ruby
 
-def print_clipboard(name, title)
+clipboards = {
+  "clipboard" => "'Clipboard' clipboard (XA_CLIPBOARD)",
+  "primary"   => "Primary clipboard (XA_PRIMARY)",
+  "secondary" => "Secondary clipboard (XA_SECONDARY)",
+}
+
+if ARGV.include?("-c")
+  puts '### Clipboards cleared! ########'
+  puts
+  for name, title in clipboards
+    system("xclip", "-selection", name, "-i", "/dev/null")
+  end
+end
+
+for name, title in clipboards
   puts "== #{title} ================="
   result = `xclip -o -selection #{name}`
   p result
   puts
 end
-
-print_clipboard("primary", "Primary clipboard (XA_PRIMARY)")
-print_clipboard("secondary", "Secondary clipboard (XA_SECONDARY)")
-print_clipboard("clipboard", "'Clipboard' clipboard (XA_CLIPBOARD)")

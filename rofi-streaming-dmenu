@@ -1,0 +1,1 @@
+rofi -dmenu -async-pre-read 0 -p '>'

@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: copy-timestamp [options] <source file> <destination file>"
+
+  # on "a",  "all",    "Copy both ctime and mtime"
+  # on "c",  "ctime",  "Copy ctime only"
+  # on "m",  "mtime",  "Copy mtime only (default)"
+end
+
+args = ARGV
+
+########################################################
+
+if args.size != 2
+  puts "Error: Must supply exactly 2 arguments (source file and destination file)"
+  puts
+  puts opts
+  exit 1
+end
+
+src, dest = args.map(&:to_Path)
+
+puts "* Copying mtime..."
+puts "  |_ time: #{src.mtime}"
+puts "  |_ source: #{src}"
+puts "  |_ destination: #{dest}"
+dest.mtime = src.mtime
+puts

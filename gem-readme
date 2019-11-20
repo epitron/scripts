@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: gem-readme <gemname>"
+  exit 1
+fi
+
+
+cd "`gem-dir "$1"`"
+c .

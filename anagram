@@ -55,7 +55,7 @@ end
 
 class Anagrammer
 
-  attr_accessor :words
+  attr_accessor :words, :grouped
 
   SHORTWORDS = %w[
     a in be to if in of at it ho no ye yo we
@@ -65,24 +65,50 @@ class Anagrammer
 
   LOOKUP_TABLE_FILE = File.expand_path("~/.cache/anagram.lookup.table")
 
-  def initialize(wordlist="/usr/share/dict/words")
+  def load_words_file(path="/usr/share/dict/words")
+    return nil unless File.exist? path
+    print " from #{path}"
+    Enumerator.new do |y|
+      open(path).each { |word| y << word }
+    end
+  end
+
+  def load_wikt_file(path=File.expand_path("~/.cache/wict/wikt.idx"))
+    return nil unless File.exist? path
+    print " from #{path}"
+    Enumerator.new do |y|
+      open(path).each { |line| y << line.split("\t").first }
+    end
+  end
+
+  def initialize
     if File.exist?(LOOKUP_TABLE_FILE)
       time("Loading word lookup table from #{LOOKUP_TABLE_FILE}") do
         @grouped = open(LOOKUP_TABLE_FILE) { |f| Marshal.load f }
       end
     else
-
       time("Generating word lookup table") do
         @grouped = Hash.of_arrays
-        group_proc = proc { |word| @grouped[word.chars.sort] << word }
+        @wordcount = 0
+        group_proc = proc do |word|
+          @grouped[word.chars.sort] << word
+          @wordcount += 1
+        end
 
-        open(wordlist).
+        unless words = (load_wikt_file || load_words_file)
+          puts "Error: couldn't find a wordlist."
+          exit 1
+        end
+
+        words.
           map    { |w| w.chomp.chomp("'s") }.
           select { |w| w.size > 2 and w.upcase != w }.
           map    { |l| l.downcase }.
           each   &group_proc
 
         SHORTWORDS.each &group_proc
+
+        print "\n  |_ #{@wordcount} words loaded..."
       end
 
       time("Saving to #{LOOKUP_TABLE_FILE}...") do
@@ -98,7 +124,7 @@ class Anagrammer
   def words_from(letters)
     return to_enum(:words_from, letters) unless block_given?
 
-    letters = letters.sort
+    # letters = letters.sort
 
     letters.size.downto(1) do |n|
       letters.combination(n) do |perm| # NB: combination() thoughtfully returns the letters in sorted order! :D
@@ -141,7 +167,7 @@ class Anagrammer
     exit 74 # EX_IOERR
   rescue Interrupt
     $stderr.puts "Interrupted"
-  end    
+  end
 
 end
 

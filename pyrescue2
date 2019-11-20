@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: pyrescue <script> [args]"
+  exit 1
+fi
+
+ipython2 --pdb -- "$@"

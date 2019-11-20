@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+  echo "Usage:"
+  echo "  pulse-mic-loopback [-u]"
+  echo
+  echo "Options:"
+  echo "   -u  Unload module"
+  echo
+  echo "Purpose:"
+  echo "  Create a loopback device so you can listen to your own mic"
+  echo
+  exit
+fi
+
+if [ "$1" == "-u" ]; then
+  echo "* Unloading loopback module..."
+  pactl unload-module module-loopback
+else
+  echo "* Loading loopback module..."
+  pactl load-module module-loopback latency_msec=1
+fi

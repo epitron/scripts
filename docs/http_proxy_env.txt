@@ -1,0 +1,12 @@
+ENVIRONMENT VARIABLES
+
+Curl reads and understands the following environment variables:
+http_proxy, HTTPS_PROXY, FTP_PROXY
+
+They should be set for protocol-specific proxies. General proxy should be set with
+ALL_PROXY
+
+A comma-separated list of host names that shouldn't go through any proxy is set in (only an asterisk, '*' matches all hosts)
+NO_PROXY
+
+If the host name matches one of these strings, or the host is within the domain of one of these strings, transactions with that node will not be proxied.

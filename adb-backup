@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+require 'zlib'
+
+BLOCK_SIZE = 512*1024
+args = ARGV
+
+if args.empty?
+  puts "usage: adb-backup-extract [options] <file.backup>"
+  puts
+  puts "options:"
+  puts "  -l   List contents"
+  puts "  -c   Convert to .tar.xz archive"
+  puts "  -x   Extract archive to current directory"
+  puts
+else
+  opts, args = args.partition { |arg| arg[/^-\w/] }
+
+  args.each do |arg|
+
+    if opts.include?("--to-xz") or opts.include?("-c")
+      cmd = ["pixz", "-o", "#{arg}.tar.xz"]
+    else
+      if opts.include?("-v") or opts.include?("-l")
+        cmd = ["tar", "-tv"]
+      elsif opts.include("-x") or opts.include("-e")
+        cmd = ["tar", "-xv"]
+      else
+        puts "Unrecognized option: #{opts}"
+        exit 1
+      end
+    end
+
+    puts "#{arg} => #{cmd}"
+
+    open(arg, "rb") do |f|
+      head = f.read(24)
+      #p header_valid: (head == "ANDROID BACKUP\n1\n1\nnone\n")
+ 
+      zlib = Zlib::Inflate.new
+
+      IO.popen(cmd, "w") do |tar|
+        until f.eof?
+          zlib << f.read(BLOCK_SIZE)
+          tar.write zlib.flush_next_out
+        end
+      end
+    end
+  end
+  #dd if="$1" bs=24 skip=1 2>/dev/null | openssl zlib -d | tar $TAR_OPTS -
+end

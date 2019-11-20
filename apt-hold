@@ -1,19 +1,8 @@
 #!/usr/bin/env ruby
-
-# sudoifnotroot, ruby style.
-unless Process.uid == 0
-  system("sudo", __FILE__, *ARGV)
-  exit
-end
-
 require 'epitools'
 require 'slop'
 
-class Slop
-  def args
-    [].tap {|a| parse { |arg| a << arg } }
-  end
-end
+original_ARGV = ARGV.dup
 
 opts = Slop.parse :help => true do
   banner %{Usage: apt-hold [options] <package(s)>
@@ -21,17 +10,22 @@ opts = Slop.parse :help => true do
   Puts packages on "hold", so they won't be automatically upgraded by apt-get.
 
 Example:
-  apt-hold google-chrome-stable} 
-  
+  apt-hold google-chrome-stable}
+
   on  :l, :list,   "List specified packages (or ALL packages if none specified)"
   on  :u, :unhold, "Unhold the package"
 end
+args = ARGV
 
-args = opts.args
+# sudoifnotroot
+unless Process.uid == 0
+  system("sudo", __FILE__, *original_ARGV)
+  exit
+end
 
 def selections
   @selections ||= IO.popen("dpkg --get-selections") do |r|
-    Hash[ r.lines.map {|l| l.strip.split } ] 
+    Hash[ r.lines.map {|l| l.strip.split } ]
   end
 end
 
@@ -42,7 +36,7 @@ end
 
 def holds
   selections.select{|pkg,state| state == "hold"}
-end  
+end
 
 STATE_INFO = {
   "hold"        => ["Hold", :light_green],
@@ -51,9 +45,9 @@ STATE_INFO = {
 
 def set_selections(packages, state)
   input = packages.map { |pkg| "#{pkg} #{state}" }.join("\n")
-  
+
   puts input
-  
+
   IO.popen("dpkg --set-selections", "w") do |dpkg|
     dpkg.puts input
   end
@@ -81,6 +75,6 @@ elsif args.empty?
 elsif opts.unhold?
   set_selections( args, "install" )
 else
-  set_selections( args, "hold" ) 
+  set_selections( args, "hold" )
 end
 

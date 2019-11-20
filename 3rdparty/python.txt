@@ -1,0 +1,13 @@
+internetarchive
+git+https://github.com/tokland/youtube-upload.git
+
+tvnamer
+catt
+
+rst2ansi
+
+ffmpeg-normalize
+
+ranger
+kitty
+

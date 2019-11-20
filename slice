@@ -1,0 +1,53 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: slice [options] <input file>"
+
+  on "s=",  "start",  "start byte (0 is the first byte)"
+  on "e=",  "end",    "end byte (if negative, set position relative to the end of the file)"
+  on "o=",  "output",  "output file (default: input filename with byte-range appended)"
+end
+
+args = ARGV
+
+########################################################
+
+if args.size != 1
+  $stderr.puts "Error: Must supply exactly one filename"
+  puts
+  puts opts
+  exit 1
+end
+
+input = Path[args.first]
+
+startpos = opts[:start]&.to_i || 0
+endpos   = opts[:end]&.to_i   || -1
+endpos  += input.size if endpos < 0
+
+output = if opts[:output]
+  Path[opts[:output]]
+else
+  input.with(filename: "#{input.filename}_#{startpos}-#{endpos}")
+end
+
+length = (endpos - startpos) + 1
+
+puts "* Slicing #{input}"
+puts "  |_ output: #{output}"
+puts "  |_ range: #{startpos}-#{endpos} (#{length} bytes)"
+
+input.open("rb") do |i|
+  output.open("wb") do |o|
+    IO.copy_stream(i, o, length, startpos)
+  end
+end

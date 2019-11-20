@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [[ ! $# -eq 2 ]]; then
+  echo "usage: mysql-diff <database1> <database2>"
+  exit
+fi
+
+DB1="$1"
+DB2="$2"
+FILE1="/tmp/mysqldiff-$DB1.sql"
+FILE2="/tmp/mysqldiff-$DB2.sql"
+
+mysqldump --skip-comments --skip-extended-insert -u root -p "$DB1" > "$FILE1"
+mysqldump --skip-comments --skip-extended-insert -u root -p "$DB2" > "$FILE2"
+diff -u "$FILE1" "$FILE2" | less -S
+
+rm "$FILE1" "$FILE2"

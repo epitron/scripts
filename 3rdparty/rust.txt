@@ -1,0 +1,5 @@
+--features=ssl websocat
+watchexec
+bb
+fd
+hexyl

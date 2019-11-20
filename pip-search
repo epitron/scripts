@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 ###################################################################
-require 'xmlrpc/client'
-require 'epitools/colored'
+gem 'xmlrpc';   require 'xmlrpc/client'
+gem 'epitools'; require 'epitools/colored'
 ###################################################################
 
 # For some reason you have to do this crazy thing so that it doesn't blow up when it sees a <nil/> tag
@@ -10,7 +10,9 @@ XMLRPC::Config.const_set(:ENABLE_NIL_PARSER, true)
 $VERBOSE = original_verbose
 
 def pypi_api
-  # https://wiki.python.org/moin/PyPIXmlRpc
+  # PyPI XML-RPC API Reference:
+  #   https://warehouse.pypa.io/api-reference/xml-rpc/
+  #   https://wiki.python.org/moin/PyPIXmlRpc
   @pypi_api ||= XMLRPC::Client.new('pypi.python.org', '/pypi', 80)
 end
 
@@ -80,7 +82,7 @@ def print_search_results(query)
           "<11>#{info["name"]} " +
           "<7>(<3>v#{info["version"]}<7>)" +
           "<8>==============").colorize
-    puts info["summary"].indent.bright_white
+    puts info["summary"].indent.bright_white unless info["summary"].empty?
     puts "    <3>https://pypi.org/project/#{info["name"]}/".colorize
     puts
   end
@@ -100,6 +102,6 @@ if opts.include?("-i")
   args.each { |arg| print_pkg_info(arg) }
 else
   query = args.join("+")
-  puts "<8>* <7>Searching rubygems.org for <14>#{query.inspect}<7>...".colorize
+  puts "<8>* <7>Searching pypi for <14>#{query.inspect}<7>...".colorize
   print_search_results(query)
 end

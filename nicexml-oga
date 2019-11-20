@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+########################################################
+# require 'epitools'
+require 'oga'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+def print_node(node)
+  case node
+  when Oga::XML::Comment
+    "<!-- #{node.text} -->"
+  when Oga::XML::Text
+    node.text
+  when Oga::XML::Document
+    "<#{node.type}>"
+  when Oga::XML::Element
+    attrs = node.attributes.map(&:to_xml).join(" ")
+    "<#{node.name}#{" #{attrs}" if attrs}>"
+  else
+    raise "unknown type: #{node.inspect}"
+  end
+end
+
+def print_tree(node, level=0)
+  dent = "  "*level
+  puts "#{dent}#{print_node node}"
+  node.children.each do |child|
+    print_tree(child, level+1)
+  end
+end
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: nicexml-oga [options]"
+
+  on "H",  "html",  "Treat input as HTML"
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+args.each do |arg|
+  data = File.read(arg)
+  doc = opts.html? ? Oga.parse_html(data) : Oga.parse_xml(data)
+
+  print_tree doc.root_node
+
+end

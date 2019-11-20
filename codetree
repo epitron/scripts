@@ -1,0 +1,97 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+########################################################
+
+class CTags
+
+  class Entity < Struct.new(:name, :type, :line, :file, :expr)
+    TYPE_FORMAT = {
+      "class"            => [:class,     11],
+      "module"           => [:module,     3],
+      "label"            => [:label,      2],
+      "function"         => [:func,       9],
+      "subroutine"       => [:sub,        1],
+      "method"           => [:method,     2],
+      "member"           => [:method,     2],
+      "singleton_method" => [:cmethod,   14],
+      "variable"         => [:var,        5],
+      "namespace"        => [:namespace, 13],
+      "struct"           => [:struct,    12],
+      "package"          => [:package,    7],
+      "macro"            => [:macro,      7],
+    }
+    TYPE_LENGTH = TYPE_FORMAT.values.map {|n,c| n.to_s.size }.max
+
+    def self.from_line(line)
+      pieces = line.chomp.split(/\s+/, 5)
+
+      # sometimes the "type" column has a space in it; this fixes that
+      if pieces[1] == "singleton"
+        pieces[1..2] = pieces[1..2].join("_")
+        pieces += pieces.pop.split(/\s+/,2)
+      end
+
+      new(*pieces)
+    end
+
+    def pretty_print(q)
+      q.pp to_s
+    end
+
+    def to_s
+      "#{name} (#{type}): #{expr}"
+    end
+
+    def type_color
+      @type_color ||= TYPE_FORMAT[type]&.last || 7
+    end
+
+    def type_name
+      @type_name ||= TYPE_FORMAT[type]&.first || type.upcase
+    end
+
+    def colorize
+      padding_size    = (TYPE_LENGTH - type_name.to_s.size)
+      padding_size    = 0 if padding_size < 0
+      padding         = " " * padding_size
+
+      "#{padding}<8>[<#{type_color}>#{type_name}<8>] <15>#{name}<8>: <7>#{expr}".colorize
+    end
+  end
+
+  def self.parse(*files, ctags_options: nil)
+    cmd = %w[ctags -xR --sort=no] + files
+    cmd += ctags_options if ctags_options
+
+    IO.popen(cmd, "rb") do |io|
+      io.each_line.map { |line| Entity.from_line(line) }
+    end
+  end
+
+end
+
+
+if $0 == __FILE__
+  gem 'slop', "~> 3.6"
+  require 'slop'
+
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: codetree <file(s)/director(y/ies)>"
+  end
+
+  args = ARGV
+  args << "." if args.empty?
+
+  grouped_entities = CTags.parse(*args).group_by(&:file)
+
+  lesspipe do |less|
+    grouped_entities.each do |file, ents|
+      less.puts "<8>== <7>#{file} <8>===========================".colorize
+
+      less.puts
+      ents.each { |ent| less.puts "  #{ent.colorize}" }
+      less.puts
+    end
+  end
+end

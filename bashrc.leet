@@ -3,27 +3,43 @@
 # The directory from which this script is being called
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Push a directory onto the path (if it exists)
-function path_prepend() {
-  if [ -d "$@" ]; then
-    export PATH="$@:$PATH"
-  fi
-}
-
 # Aliases
 source "$SCRIPTDIR/aliases.sh"
 
 
 ## Environment Variables
 
-# Things for the PATH
-path_prepend ~/node_modules/.bin
-path_prepend ~/.gem/bin
-path_prepend ~/.nimble/bin
-path_prepend ~/go/bin
-path_prepend ~/.local/bin
-path_prepend $SCRIPTDIR
-path_prepend ~/bin
+# Prepend a directory to the path (if it exists)
+function possibly_prepend_path() {
+  if [ -d "$@" ]; then
+    export PATH="$@:$PATH"
+  fi
+}
+
+# Append a directory to the path (if it exists)
+function possibly_append_path() {
+  if [ -d "$@" ]; then
+    export PATH="$PATH:$@"
+  fi
+}
+
+# Things for the PATH (in reverse order of precedence)
+possibly_append_path ~/opt/graal/bin
+possibly_prepend_path ~/perl5/bin
+possibly_prepend_path ~/.nimble/bin
+possibly_prepend_path ~/.pub-cache/bin
+possibly_prepend_path ~/.luarocks/bin
+possibly_prepend_path ~/node_modules/.bin
+possibly_prepend_path ~/.cabal/bin
+possibly_prepend_path ~/.cargo/bin
+possibly_prepend_path ~/go/bin
+for i in ~/.gem/ruby/*/bin; do
+  possibly_prepend_path $i
+done
+possibly_prepend_path ~/.gem/bin
+possibly_prepend_path ~/.local/bin
+possibly_prepend_path $SCRIPTDIR
+possibly_prepend_path ~/bin
 
 # Lovely less/man colors
 export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
@@ -42,8 +58,15 @@ if we_have fzf; then
     export FZF_DEFAULT_OPTS="--ansi"
   fi
 
-  . /usr/share/fzf/completion.bash
-  . /usr/share/fzf/key-bindings.bash
+  if [ -f /usr/share/fzf/completion.bash ]; then
+    . /usr/share/fzf/completion.bash
+    . /usr/share/fzf/key-bindings.bash
+  elif [ -f ~/.fzf/shell/completion.bash ]; then
+    . ~/.fzf/shell/completion.bash
+    . ~/.fzf/shell/key-bindings.bash
+  else
+    echo "can't find fzf's bash scripts"
+  fi
 fi
 
 # misc
@@ -63,14 +86,37 @@ if [ -f /proc/cpuinfo ]; then
   export MAKEFLAGS="$MAKEOPTS"
 fi
 
-# Enable recursive glob (eg: **/*.txt)
-shopt -s globstar > /dev/null 2>&1
+# Don't put duplicate lines or lines starting with space in the history
+export HISTCONTROL=ignoreboth
 
-# make readline know that the window has resized
+## Bash options
+
+# Check the window size after every command and update LINES and COLUMNS (fixes readline misbehaviour)
 shopt -s checkwinsize
 
 # Verify ! history expansions
 shopt -s histverify
+
+# Append to the Bash history file, rather than overwriting it
+shopt -s histappend
+
+# disable history subtitution (able to use "!" without escaping it)
+set +H
+
+# Case-insensitive globbing (used in pathname expansion)
+# shopt -s nocaseglob
+
+# Autocorrect typos in path names when using `cd`
+# shopt -s cdspell
+
+
+## Bash >= 4 options
+
+# Enable recursive glob (eg: **/*.txt)
+shopt -s globstar 2> /dev/null
+
+# `autocd`, e.g. `**/qux` will enter `./foo/bar/baz/qux`
+shopt -s autocd 2> /dev/null
 
 
 ## Platform-specific customizations

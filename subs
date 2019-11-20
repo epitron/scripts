@@ -6,7 +6,7 @@ require 'epitools'
 ########################################################################
 
 SUB_DLERS = {
-  "subdl" => %w[subdl],
+  "subdl"      => %w[subdl],
   "subliminal" => %w[subliminal download -l en],
 }
 
@@ -22,6 +22,18 @@ opts = Slop.parse(help: true, strict: true) do
 end
 
 args = ARGV
+
+########################################################################
+
+available_downloaders = SUB_DLERS.keys.select { |name| Path.which(name) } 
+
+if available_downloaders.any?
+  puts "Available downloaders: #{available_downloaders.join(", ")}"
+else
+  dent = " " * ("Error: ".size)
+  puts "<12>Error: <15>No downloaders available.\n#{dent}Install one of these:\n#{SUB_DLERS.keys.map {|name| "#{dent}  <8>- <13>#{name}\n"}.join}".colorize
+  exit 1
+end
 
 ########################################################################
 

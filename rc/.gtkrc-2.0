@@ -1,13 +1,18 @@
-style "scrollbar"
-{
-    GtkScrollbar::slider-width = 16
-    GtkScrolledWindow::scrollbars-within-bevel = 0
-}
-class "Gtk*Scrollbar" style "scrollbar"
+# DO NOT EDIT! This file will be overwritten by LXAppearance.
+# Any customization should be done in ~/.gtkrc-2.0.mine instead.
 
-style "resize-grip"
-{
-    GtkWindow::resize-grip-height = 24
-    GtkWindow::resize-grip-width = 24
-}
-class "GtkWindow*" style "resize-grip"
+gtk-theme-name="TraditionalOk"
+gtk-icon-theme-name="default.kde4"
+gtk-font-name="Cantarell 11"
+gtk-cursor-theme-name="Vanilla-DMZ"
+gtk-cursor-theme-size=48
+gtk-toolbar-style=GTK_TOOLBAR_ICONS
+gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
+gtk-button-images=1
+gtk-menu-images=1
+gtk-enable-event-sounds=0
+gtk-enable-input-feedback-sounds=0
+gtk-xft-antialias=1
+gtk-xft-hinting=1
+gtk-xft-hintstyle="hintfull"
+gtk-xft-rgba="rgb"

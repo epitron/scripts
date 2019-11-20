@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+require 'net/ping'
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: pingall [options]"
+
+    # on 'c',  'codecs',  'List the availiable codecs'
+    # on 'u=', 'use',     'Tool to use (ffmpeg, mencoder)', default: "ffmpeg"
+  end
+
+  [opts, ARGV]
+end
+
+class Result < Struct.new(:ip, :host)
+  attr_accessor :pings
+
+  def ping!(n=5, delay=0.1)
+    @pings ||= []
+    n.times do
+      # ...
+    end
+    sleep delay
+  end
+end
+
+opts, args = parse_options
+
+
+results = []
+dns = Resolv::DNS.new
+
+args.each do |arg|
+  dns.each_address(arg) do |a|
+    ip   = a.to_s
+    name = dns.getname(ip).to_s
+
+    results << Result.new(ip, name)
+  end
+end
+
+pp results
+binding.pry
+
+# results.each

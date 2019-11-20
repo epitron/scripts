@@ -1,0 +1,635 @@
+---
+Debian Scripts:
+  acs: apt show (display package info)
+  agd: apt download (downloads all new packages but doesn't install them)
+  agdu: apt dist-upgrade (install new packages)
+  agi: apt install (download + install a package)
+  agr: apt remove (uninstall a package)
+  ags: apt search (search package names and descriptions)
+  agu: apt update (get updated list of packages from package repositories)
+  agud: apt update + apt download (get new package list + download new packages)
+  apt-build: apt build a source package
+  dl: dpkg list (display installed debian packages)
+  ds: dpkg search (search list of installed packages)
+  purge-configs: delete the config files from all uninstalled debian packages
+InstallWatch Package Tools:
+  inst: runs "make install" (or "python setup.py install" or "ruby setup.rb install")
+    in the current directory and monitors all the files that get installed, then records
+    all the installed files in a file in /usr/share/instmon. the package is named
+    after the current directory.
+  instbackup: compresses all this package's files into a tarball and removes the package
+  instfind: search the list of installed packages
+  instl: list installed packages
+  instlist: list the files in an installed package
+  instmon: puts you into a shell that monitors any changes you make to the filesystem.
+    when you type "exit", it saves the changes to the package list.
+  instremove: remove an installed package
+Useful UNIX Time-Savers:
+  ks: 'kill-search (Usage: ks [kill SIGNAL] [grep pattern]) -> prompts you to kill
+    all processes that match the supplied search pattern (using the optional signal)'
+  psfind: 'Usage: psfind [grep pattern] -> search all running processes'
+  f: 'Usage: find [search pattern] [paths to search] -> recursively find all files
+    in the specified directories, or the current directory if unspecified'
+  ddu: directory disk-usage (same as du --max-depth=1 -m)
+  i: 'init.d daemon controller (runs /etc/init.d/[param] [command]) eg: "i apache2"
+    runs /etc/init.d/apache2 restart, "i gdm stop" kills gdm, etc.'
+  arf: Archive Retrieval Fiend (extract any kind of archive (tarball, zip, rar) from
+    the filesystem or from an URL)
+  build: run "./configure ; make" in the current directory, optionally using the "buildconfig"
+    file in the current directory to pass parameters to configure and make. (See the
+    parameters that the script displays when you run it if you want to know what you
+    can set.)
+  tounix: convert a text file (or directory of text files) with DOS line endings to
+    Unix (optionally, replace tabs with a specified number of spaces)
+  fixutf8: Figure out the encoding of a text file and convert it to UTF8
+  cu: run "cvs (or svn) update" on the current directory
+  log: display the logfile for some program, piped to colorize and less.
+  count: display the number of lines of each file in a directory tree (shows both
+    total lines and non-blank lines)
+RC Files:
+  bashrc.leet: my custom bashrc file
+  aliases.sh: bash aliases
+  bashrc.bsd: "bash profile for *BSD systems"
+  bashrc.cygwin:
+  bashrc.openbsd:
+  bashrc.android:
+  aliases.fish:
+Other Things:
+  j: loads a file in an already-open jedit editor
+  n: open a file in nedit (using the same nedit process as all other instances)
+  underscorize: convert all spaces in filenames to underscores
+  timesync: synch the system's hardware clock with time.nist.gov
+  rsync-dirs: rsync two locations (using size and CRC to determine the differences)
+  blockip: create an iptables rule to block the passed ip
+  dictless: dict piped to a less command that only scrolls if the output is more than
+    a screen
+  green: a pretty green bash prompt
+  imageshuffle: runs gthumb on a random selection of images in a directory tree
+  kb: kernel build (make dep && make bzImage && make modules && make modules_install)
+  makepatch: diff two files and output a mailinglist-submittable diff file
+  mountiso: mount an iso to a directory
+  printcode: fancy options to printing your code using trueprint
+  prompt: nice prompt
+  purple: purple bash prompt
+  rmzeros: remove all 0-byte files in a directory
+  rubyxterm: runs a ruby script in an xterm with a nice font
+  runrxvt: spawns an rxvt with a nice font
+  runxterm: spawns an xterm with a nice font
+  unscramble: given a word, find all permutations of it (good for cheating at scrabble)
+  urldecode: convert a string with URL escape codes (eg %20) to a regular string
+  wi: do a "whois" lookup on a domain without all the spam, piped to less
+  asf2mp3: convert an asf to an mp3 via lame
+  asfrecorder: " "
+  ed2k_hash: generate an edonkey-2k hash of a file
+  charmap: displays the ascii table
+  compyle: runs "python -c" on all files in a directory tree
+Git:
+  gc: 'git clone' wrapper (lets you do shallow or recursive clones, clone github wikis, and adds the 'https://github.com/' prefix to urls if not specified)
+  gg: 'git grep' wrapper
+  gp: 'git push' wrapper
+  gl: 'git log' wrapper
+  gb: 'git branch' wrapper
+    (display/create/track/fetch/push/rename/delete)
+  push: 'git push' wrapper
+  pull: 'git pull' wrapper
+  ppull: 'git pull' a number of repositories in parallel (using 12 threads by default)
+  git-meld: Merge two git branches
+  git-remote-bzr: Add a bzr remote to your git repository
+  git-remote-hg: Add a mercurial remote to your git repository
+  git-shallowize: Convert a full git checkout to a shallow checkout (--depth=1)
+  git-backfill: Convert a shallow git checkout to a full checkout
+  git-patch: Create a patch file for the current git repository (given a commit)
+  git-branches: Display which local/remote git branches have been merged/unmerged into/not-into master
+  git-log-branches: 'git log' branches (show the tree of all commits on all branches, with one commit per line) (aka. glb)
+  git-pushdiff: Display what you're about to push as a git diff.
+  git-sizes:
+  git-unshallow:
+  git-commit-size:
+  git-bigfiles:
+  git-backdate:
+  git-ls:
+  git-remaster:
+  git-bloat:
+  git-shallow:
+  git-f:
+  git-pristine:
+  git-dangling-commits:
+  git-wtf:
+SSL/TLS Tools:
+  ssl-print-key: Display detailed information for an RSA private/public key
+  ssl-cert-remove:
+  ssl-cert-gen: Generate a public/private SSL/TLS certificate pair
+  ssl-cert-list: List locally installed certificates in the NSS cert store
+  ssl-cert-import: Import an SSL/TLS certificate into the local NSS PKI store
+  ssl-fingerprint:
+  ssl-db-create:
+  sslnet: Uses socat to connect to an SSL host, giving you a telnet-like connection to it (aka. stelnet)
+Command-line Search Tools:
+  gits: Search github from the command-line (aka. github-search, git-search)
+  portsearch: Search FreeBSD ports from the command-line
+  pips: Search the Python Package Index (pypi) from the command-line (aka. pip-search)
+  yt: Search YouTube from the command-line
+Unsorted:
+  pi: 'pip install --user --upgrade' wrapper
+  rmempty: Remove empty files
+  fixport: Un-wedge a zombie TCP port
+  redshift-launcher: Run redshift-gtk with my favorite defaults
+  cx: chmod +x
+  meta: Edit/display ebook metadata (auto-filling from the filename, with a coolline editor)
+  nicejs: Reformat JavaScript Beautifully (aka. jsbeautify)
+  wine-uninstall: Runs the wine uninstaller (in case you forgot it existed)
+  abi: apt build/apt install
+  kodi-cli: Remotely control Kodi (via the JSONRPC web API)
+  extract-kernel-config: Extract the .config file from a kernel image (vmlinuz)
+  spark: Graph some numeric data as a tiny "sparkline" (an ASCII graph)
+  shuffle: Randomly play videos/audio/music from the current directory
+  image-tile: Creates an n-by-m grid out of the input images
+  serve: A Ruby HTTP server for quickly sharing files on the network
+  connections: Show all processes with open network connections, and the source/destination host/port
+  apt-cyg: apt-get for cygwin
+  aur-list: List all Arch packages that were installed from the AUR (aka. aurl)
+  swap: Swap two files or directories (works with symlinks as well)
+  start-vnc-server: Launch a VNC server (creating a new password if none exists)
+  atool: A file archive multitool (extracts/lists/creates zip/tar/7z/rar/deb/rpm/cab/etc. archives)
+  adiff:
+  datestamp: Prints the current date in YYYY-MM-DD format
+  spotify-register-urls: Registers spotify URL-handlers
+  bbs: Connect to telnet BBSes
+  mp3chunk-by-cue: Given a .CUE file and an .MP3 file, create a smaller MP3 file for each CUE entry
+  ssh-fingerprint: Prints a visual fingerprint of the public key for the system's SSH daemon
+  cabal-fix: Fix a cabal-install environment that has broken packages
+  svnc: Secure VNC (VNC over an SSH tunnel)
+  trace: A wrapper around strace that colorizes the output
+  codetree: Prints the high level outline of source code file(s) or director(y/ies) using ctags (aka. code-tree)
+  fix-steam: Removes libgcc/stdc++/xcb dynamic libraries from the Steam directory (used to be required on Arch Linux, probably not anymore)
+  agudu: apt-get update/apt-get dist-upgrade
+  gem-search: Search rubygems.org from the command-line (faster/prettier than 'gem search')
+  rstrip: Strips trailing whitespace from all the files in a directory tree
+  nmap-everything: Runs nmap on all the ports!
+  nmap-fast: Runs nmap in crazy-mode!
+  cp437: Emulate a CP437 (IBMPC) character set terminal on a modern UTF-8 terminal
+  light-theme: Runs a GTK program with a light theme
+  apt-reinstall: Use apt-get to force-reinstall an already installed package
+  apt-ppa: Downloads a ppa file and adds it to /etc/apt/sources.list.d
+  web-clipboard: Runs 'web' on whatever's in the clipboard
+  ago: Optimize your apt databases (garbage collection/compaction)
+  tree: A wrapper around 'tree' which pipes it through 'less'
+  play: Universal video player (with a searchable history, and the ability to download them or send them to the Chromecast)
+  minimize-others: Minimize all the other windows on the current desktop
+  xfwm-compositing: Toggle the XFCE4 Window Manager's compositing support
+  pacman-groups: Shows all the packages in pacman's package groups as a series of tables (aka. pacgroups)
+  wayback-mirror: Download a site from the wayback machine
+  run: Execute a binary that doesn't have the executable bit set
+  group-by-quarter: Groups all files in the current directory into subdirectories labelled by year and quarter (eg. 2015-Q3/)
+  forward: Forwards a port using the 'upnpc' UPnP client
+  c: Super Cat can display any file(s) or director(y/ies), with syntax highlighting or ANSI rendering, and less support
+  gpg-key-get: Get a GPG key from a GPG keyserver (aka. gpg-getkey)
+  pa-echo: Create an echo in pulseaudio using a loopback module with a 1ms delay
+  ffmpeg-dump-audio: Quickly dump a video's raw audio stream to a file
+  folderdiff: Compare two folders and report the differences
+  apt-hold: Puts packages on "hold", so they won't be automatically upgraded by apt-get.
+  gif-framedump: Convert the frames of an animated gif to separate image files
+  flac2mp3: Convert .flac files to .mp3 (preserving metadata)
+  urlsnap: A webpage archival tool which downloads a complete page (including images, javascript, css) to an .mhtml file
+  wine-install: Install an .msi installation package with Wine (aka. winemsi)
+  bitcoin-hash: Hashes files and stores their identities in the bitcoin blockchain (using OriginStamp, a Bitcoin-based timestamping service with a free API)
+  sysdig-openfiles: List all open files
+  pacf: Search for files in installed pacman packages
+  extract-keyframes: Extract the keyframes from a video file to individual image files
+  vpk: Run Valve's VPK extractor
+  vulnerability-check: Print out CPU vulnerabilities that are known Linux and whether workarounds are enabled (aka. meltdown-check, spectre-check)
+  iommu-groups: Display the currently configured IOMMU groups
+  xephyr: Launch a new nested Xephyr X11 server (and optionally run an X11 program inside of it)
+  wikt: Wiktionary (the Wikipedia Dictionary) offline browser
+  sqlite-grep: Search through all the tables in an .sqlite database for a specific regular expression
+  '0x0': Upload files to the 0x0.st hosting service
+  audacious-dmenu: Play files in audacious via dmenu
+  sleepsort: The simplest sorting algorithm, implmented entirely in bash
+  arch-lostfiles: Search for files which are not part of installed Arch Linux packages
+  subs: Download subtitles using some Python programs
+  mkvsplit: Split large mkv files into 4470MB pieces
+  wn: Lookup a word in the WordNet dictionary
+  fields: Extract one or more "fields" from STDIN and print them to STDOUT
+  striphtml: Strips extraneous tags from an HTML document, leaving only the bare minimum tags necessary to read the document.
+  ren: An interactive file renamer
+  bring-window-forward: Searches through all the titles of windows on the desktop and brings matching windows to the foreground
+  faststart: Add a faststart section to an .mp4 file (makes it load very quickly when in an HTML5 <video> tag)
+  wifiscan: Display all wireless hotspots
+  yank: Replaces a symlink with the file it's pointing at, removing the target
+  quotes: Show a random quote, or search them (aka. q)
+  lftpfs: Create a FUSE filesystem out of an lftp script
+  sysdig-nettop: List processes by network activity
+  sort-by: Sort STDIN by a specific field
+  cat-dos: Display CP437-encoded files (DOS format) on a UTF8 terminal (aka. doscat)
+  ack: A powerful replacement for grep
+  256colors: Show the 256-color xterm palette
+  encrypt: AES256-encrypt a file
+  dpkg-log: Display the log of package installs on a Debian-based OS
+  despam-link: "Parse a click-tracking URL (eg: facebook) and print out the target URL"
+  nvidia-top: Display nvidia GPU processor usage/memory usage/temperature/power draw
+  motion: Launch the 'motion' webcam monitor and start it
+  xren: Print a file's xattrs, then run the interactive rename tool 'ren' on it
+  ffmpeg-jpg2mp4: Convert a series of .jpg images into an .mp4 video
+  meld-rcfiles: Interactively merge local dotfiles with ~/scripts/rc/
+  apt-key-get: Add a GPG key to the APT package repository
+  rocksearch: A fast CLI search tool for Lua Rocks packages
+  fixexts: Automatically give files a new extension based on their detected file format (using 'magic' signatures)
+  d: A fancy directory lister (with file-type filtering and automatic paging)
+  wrap: Wrap lines of text to a specified width
+  cdir: Create a CACHEDIR.TAG file (which causes rsync to automatically ignore it)
+  clip: Extract a clip from a video file
+  nat: Setup 'nat' forwarding
+  checksec: Display current exploit-mitigation and kernel security settings (NX, ASLR, PaX, seccomp, stack canaries, RELRO, fortify, etc.)
+  f-mac: A verison of 'f' that runs on OSX
+  cat-until: Print a file until a regular expression is matched
+  wget-mirror-page: Mirror a page using wget
+  switch: Swich to another window using dmenu
+  xfsettingsd-debug: Replace xfsettingsd with a new copy, running in debug mode, on the current terminal
+  transcribe: Recognize speech using google's API (aka. recognize-speech, wreck-a-nice-beach)
+  handbrake: Runs HandbrakeCLI (incase you forget the name of it)
+  ffmpeg-concat: Concatenate multiple videos into a single file
+  hyperthreading: Enable/disable hyperthreading
+  scan: Scans STDIN/files for a regular expression pattern, and prints just the matched sections of text (as opposed to 'grep', which prints the whole line that contains the match)
+  dir.sh: Determine the directory that the current bash script is being run from (to be sourced by other bash scripts)
+  spec: rspec wrapper
+  pac: 'pacman -S' wrapper (can take remote packages or local files as arguments, and maybe AUR packages someday!)
+  table: Display whatever you pipe into it as a table (aka. cols)
+  vfio-bind: Bind PCI devices to a specific vfio
+  vfio-unbind: Unind PCI devices from a specific vfio
+  timestamp: Either put a time stamp on every line piped to its STDIN, or print the seconds-since-unix-epoch
+  c-x-r: recursively 'chmod -x'
+  rawk: "A thought experiment: What if Ruby was Awk? (It 'eval's the argument(s) you pass it on each line of STDIN)"
+  agf: apt-get fix
+  wineprefix: A short script for managing wine prefixes
+  cast: Cast to the Chromecast from the command-line (depends on 'catt', which is in pypi)
+  discs: Search discs
+  dim: Make the screen dim
+  moredim: Make the screen very dim
+  lessdim: Make the screen less dim
+  undim: Make the screen not dim at all
+  iptables-log-dropped-packets.sh: Log dropped iptables packets
+  'null': Anything piped to this script is sent to /dev/null (I find it easier to type '|null' than '>/dev/null')
+  shorten: Shorten a link with 0x0.st
+  lightson: Prevent the screensaver from running while videos are playing
+  vnc: Connect to a machine with VNC
+  mergerfs.mktrash: Create a .Trash directory on a mergerfs mount
+  pacman-usage: Print the size of each installed Arch package (sorted with largest package last) (aka. pacsize)
+  split-lines: Splits each line into tokens, and prints one token per line.
+  key-repeat-rate: A brisk key-repeat-rate setting
+  tohaml: Batch convert a number of HTML/ERB files to HAML
+  foo: Foobar2000 Remote Control
+  moar: A pure-Ruby replacement for 'less' (aka. lest, least, page)
+  stripansi: Remove terminal color codes from piped input (aka. noansi)
+  x: An xattr power-tool (display, edit, dump to JSON)
+  pycachegrind: Profile a Python script using hotshot and kcachegrind.
+  chrome-extensions: Pretty-print all of your installed chrome extension names, along with their local paths
+  rotate: Rotate your display (90, 180, 270, 360, or 0 degrees); with no arguments, toggles between 90-degrees clockwise and unrotated
+  aur-deps: List all the pacman packages that a binary depends on, by inspecting its dynamic library dependencies (for creating new AUR packages)
+  apt-usage: Show how much disk space is used by every apt package
+  decap: Removes the header from UEFI capsule files
+  f-dfs: 'f', in depth-first-search mode
+  qemu-create-overlay-image: Create a qcow2 image backed by another image
+  crt2pem: Convert binary .crt certificates to ASCII .pem certificates
+  drives: A nice 'lsblk' display of all the drives/partitions in the system
+  vncspy: Connect to a VNC display server without controlling it.
+  swapped: Print the amount of swap memory that each process is using
+  pulse-set-output: Redirect all apps to output on a specific pulseaudio device, or automatically toggle the output between two specific devices
+  gsub: Ruby-style regex replacement on streams/files
+  get: A curl wrapper that downloads files and sets xattrs
+  handbrake-phone-video: A Handbrake wrapper for re-encoding videos recorded on an Android device (including automatically rotating the video)
+  drop-caches: Clear the Linux file cache
+  pipesum: Compute all the popular checksum/hashes (CRC32, MD5, SHA1, SHA256, SHA512) for files or piped input (aka. sums, checksum)
+  serve-rack: A pure-rack version of 'serve' (faster, simpler, no Sinatra dependency)
+  simplify-html.xslt: An XSLT template to filter out all complex HTML tags
+  disable-joysticks: Disable all joysicks (I had a weird keyboard where a switch pretended to be a joystick; it was annoying, so I made this)
+  hub-old: Pure-bash github 'hub' script
+  turboread: Lets you speed-read text files by printing each word very quickly at a static position on the screen (not having to move your eyes lets you speed up reading significantly)
+  pacman-cleanup: Remove all but the most recent 'n' versions of each pacman package
+  pacl: List installed packages (piped to fzf to filter the results, and press enter to show contents of the selected package)
+  ariastream: Download an URL using multiple connections, while still be able to stream it (using 12 connections and 3MB blocks by default)
+  fixmp3: Validate the integrity of an MPEG audio stream and correct any errors
+  getlibs:
+  paclog:
+  enmount:
+  ansi2utf8:
+  mp3dump:
+  ssh-authorize:
+  split:
+  zidrav:
+  autocrop:
+  checksum:
+  stats:
+  descs.json:
+  ssh-logins:
+  rtmpsniff:
+  filename-sync:
+  sysinfo:
+  serve-dev.rb:
+  sysdig-spy:
+  symbols:
+  arf2:
+  slookup:
+  soma-xspf:
+  typespeed:
+  apps:
+  jot:
+  mp3chunk:
+  group-by:
+  gl2:
+  reverse:
+  decrypt:
+  ytradio:
+  zbaq:
+  treeify:
+  freenode-ping:
+  ssh-forward:
+  h:
+  rtspdump:
+  listening:
+  rubygems:
+  apack:
+  iptables-forward-port:
+  gfv:
+  ssh-verify:
+  mouse-lefthanded-toggle:
+  torrent-check:
+  spinner:
+  cpu-performance:
+  install-desktop-file:
+  fex:
+  stripcomments:
+  sort_by:
+  unpax: Sets some xattrs that allow a binary to do unsafe mmap operations
+  airoscript:
+  wik:
+  pacs:
+  op:
+  rename2:
+  adb-backup:
+  clear-caches:
+  zshrc.leet:
+  tz:
+  wakeup:
+  arand:
+  agup:
+  handbrake-yify:
+  pause-process:
+  ssh-vnc:
+  qemu:
+  motion-watch:
+  hardening-check:
+  m2:
+  defaultprompt:
+  lnk-parse:
+  runrxvt-unicode:
+  logins:
+  xnest:
+  iptables-log-connects.sh:
+  srtmerge:
+  ssu:
+  skype-cam:
+  toepub:
+  getlinks:
+  open:
+  htmlstrip:
+  snip:
+  sysdig-iotop:
+  pacman-mirror-update:
+  dumpaudio:
+  lesstail:
+  rates:
+  keycodes:
+  geteltorito:
+  ffmpeg-extract-audio:
+  webcam-info:
+  hex:
+  fortune-old:
+  gems:
+  gem-edit:
+  sqgrep:
+  serve3:
+  dump-keyframes:
+  t:
+  bufferbloat-test:
+  SCREENSHOTS.erb:
+  downcase:
+  clementine-ratings:
+  agb:
+  cast-clipboard:
+  rofi-streaming-dmenu:
+  paci:
+  z.sh:
+  unwrap:
+  cpu-powersaving:
+  steam-debug:
+  g:
+  anagram:
+  make-targets:
+  ix:
+  msh:
+  pacman-orphaned-files:
+  agar:
+  disable-firefox-tabs:
+  jsbeautify:
+  trsh:
+  tomp4:
+  picview:
+  yellow:
+  jsonview:
+  zeros:
+  gource-encode:
+  nicehtml:
+  agp:
+  mplayer-crop:
+  OLDREADME.txt:
+  pacman-rollback:
+  progress:
+  wine-win7-install:
+  serve2:
+  spectre-check:
+  unpause-process:
+  modparams:
+  radio-ripper:
+  tgrep:
+  ffmpeg-progress:
+  toflv:
+  mosh-reaper:
+  service-enable:
+  torcache:
+  zswap-stats:
+  gamma:
+  wm:
+  pdf2png:
+  ytinfo:
+  wmls:
+  ipfs-logalizer:
+  rofi-movies:
+  pacman-repackage:
+  bhogs:
+  cloc:
+  ansilove:
+  make-harder:
+  splitmp3:
+  field:
+  cool:
+  wict-old:
+  kde-gtk-config:
+  exchange-rates:
+  quakelivedec:
+  ffinfo:
+  k:
+  disc-import:
+  utf8-fix:
+  sum:
+  m:
+  aunpack:
+  zero-data:
+  countlines:
+  ffmpeg-info:
+  nvtop:
+  compose-key:
+  handbrake-gui:
+  aur-get:
+  mksrcinfo:
+  nicejson:
+  signal:
+  torrent-verify:
+  urlencode:
+  als:
+  ngrep-web:
+  ffmpeg-extract-keyframes:
+  extract-audio:
+  moin2md:
+  pl:
+  apt-key-add:
+  wikidump:
+  latest:
+  firmware-extractor:
+  pyrescue:
+  clipboards:
+  torshell:
+  wayback-cleanup:
+  dump-process-memory:
+  ffmpeg-test:
+  zsh-config:
+  ums:
+  duck:
+  privatize-torrent:
+  wayback-proxy.pac:
+  check-safe-stack:
+  switch-to-next-window-in-group:
+  unmount:
+  newscript:
+  acat:
+  new:
+  sshfs-with-symlinks:
+  readrange:
+  bright:
+  vid-copy:
+  gem-dir:
+  argvtoclipboard:
+  rtfm:
+  nvidia-stats:
+  screenshot-ocr:
+  arepack:
+  sub2srt:
+  speedtest:
+  s-old:
+  oui:
+  feh-url:
+  web:
+  play2:
+  dbus:
+  sup:
+  lk:
+  guess-encoding:
+  wict:
+  elf-stars:
+  termtitle:
+  pa-noecho:
+  veth-simulated-slow-network.sh:
+  mp3-remove-ratings:
+  sample:
+  keychar:
+  aur:
+  ted:
+  hosts:
+  bms:
+  pacman-old:
+  svn2git:
+  datetimestamp:
+  mplayer-fast:
+  s:
+  math:
+  rs:
+  mem:
+  entropy:
+  hdtemp:
+  tz-old:
+  wine-disable-file-associations.reg:
+  dm:
+  csv2json:
+  utorrent:
+  launch:
+  gem-reverse-deps:
+  diff-dirs:
+  xfwm-compositor:
+  find-with-slashes:
+  compizsend:
+  lspci-extreme:
+  mediawiki-dumpgenerator:
+  nets:
+  ext:
+  denyhosts-unban:
+  pacdepends:
+  nicexml:
+  apt-hold:
+  mplayer-titled:
+  whitespace:
+  iso2usbstick:
+  flashpatch:
+  toutf8:
+  mounts:
+  grey:
+  keylogger:
+  sdo-scraper:
+  grab:
+  README-parser:
+  rm-wine-associations:
+  hamltidy:
+  make-tasks:
+  rsync-bins:
+  gource-gravatars:
+  cpuinfo:
+  runelf:
+  jpg2mp4:
+  pulse-server:
+  audacious-rofi:
+  shrt:
+  wordnums:
+  mp3ratings:
+  mdinfo:
+  sublime-handler.desktop:
+  'off':
+  zsh-prompt:
+  android-backup:
+  psfind-mac:
+  disable-bluetooth:
+  whiteboard-cleaner:
+  mkvtoolnix:
+  ciut-leech:
+  ssh-termtitle:
+  xfce4-notifyd-launcher:
+  term: Spawns a new terminal, or runs a command inside a new terminal
+  sudoifnotroot:
+  wget-mirror:
+  timediff:
+  dupes:
+  je:
+  c644:
+  fixm4a:
+  gbi:
+  blue:
+  resize:
+  genprompts:
+  rot13:

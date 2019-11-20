@@ -5,6 +5,17 @@ gem 'slop', "~> 3.6"
 require 'slop'
 ########################################################
 
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: moin2md [options] <file(s)...>"
+
+  on "c",  "stdout",  "Write to STDOUT"
+end
+
+########################################################
+
 def convert(doc)
   convert_tables = proc do |s|
     chunks = s.each_line.chunk { |line| line.match? /^\s*\|\|.*\|\|\s*$/ }
@@ -57,15 +68,6 @@ def convert(doc)
     gsub(/\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
 
   markdown = convert_tables[markdown]
-end
-
-########################################################
-# Parse options
-
-opts = Slop.parse(help: true, strict: true) do
-  banner "Usage: moin2md [options] <file(s)...>"
-
-  on "c",  "stdout",  "Write to STDOUT"
 end
 
 ########################################################

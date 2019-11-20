@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+########################################################
+require 'mhtml'
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: mhtmldump [options] <mhtml file>"
+
+  on "l",  "list",     "List documents in MHTML file"
+  on "x",  "extract",  "Extract documents to (current or supplied) direcory"
+  on "C=", "dir",      "Target directory (creates it if it doesn't exist)"
+end
+
+args = ARGV
+
+########################################################
+
+mhtml_filename, *files = args
+
+mhtml = Path[mhtml_filename]
+doc   = Mhtml::RootDocument.new(mhtml.read)
+
+if opts.list?
+  puts "<8>* <15>Listing documents in <14>#{mhtml.filename}<7>...".colorize
+  doc.sub_docs.each do |subdoc|
+    puts "  |_ <7>#{subdoc.file_path} <8>(<9>#{subdoc.body.size} <7>bytes<8>)".colorize
+  end
+else
+  if opts[:dir]
+    outdir = Path[opts[:dir]]
+  else
+    outdir = Path[mhtml.basename]
+  end
+
+  if outdir.exists?
+    puts "Error: #{outdir} already exists."
+    exit 1
+  end
+
+  outdir.mkdir_p 
+
+  puts "<8>* <15>Extracting <11>#{mhtml.filename} to <14>#{outdir}<7>...".colorize
+
+  outdir.cd do
+    doc.sub_docs.each do |subdoc|
+      outfilename = CGI.escape(subdoc.file_path)
+      puts "  <8>|_ <7>#{subdoc.file_path} <8>(<9>#{subdoc.body.size} <7>bytes<8>)".colorize
+      open(outfilename, "wb") { |f| f.write(subdoc.body) }
+    end
+  end
+end

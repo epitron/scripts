@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "usage: qr [<string to qr-encode>]"
+  exit 1
+fi
+
+if [ "$1" == "" ]; then
+  curl -F-=\<- qrenco.de
+else
+  echo "$*" | qr
+fi

@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if args.size != 1
+  puts "Error: must supply exactly one URL"
+  exit 1
+end
+
+url = args.first
+url = "http://#{url}" unless url[%r{^https?://}]
+
+exec("lftp", *opts, url)

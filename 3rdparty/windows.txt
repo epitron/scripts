@@ -1,0 +1,4 @@
+https://github.com/bmrf/tron/ # Remove garbage from Windows
+https://ninite.com
+https://cygwin.com
+https://www.oo-software.com/en/shutup10

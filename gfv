@@ -14,6 +14,10 @@ if args.empty? or args.delete("--help")
   puts "  -n     Number the files when downloading playlists"
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
+  puts "  -o <filename>"
+  puts "         Set output filename."
+  puts "         ( For a list of variables that can be inserted into the filename, see:"
+  puts "           https://github.com/rg3/youtube-dl/blob/master/README.md#output-template )"
   puts
   puts "(any other options will be passed directly to youtube-dl)"
   puts
@@ -41,9 +45,11 @@ end
 
 if args.delete("-a")
   cmd << "--extract-audio"
-  cmd += ["-f", "bestaudio[ext=m4a]"] unless args.include?("-f") # allow user to override the format options
+  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
+  cmd << "--add-metadata"
 elsif args.delete("-s")
   cmd << "--skip-download"
+  cmd << "--write-auto-sub"
 elsif args.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]
@@ -54,8 +60,12 @@ urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
 cmd += args
 
 urls.each do |url|
-  if url =~ /(youtu\.be|youtube\.com)/
-    unless cmd.include?("-f") or args.delete("-h")
+  if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
+    url = "https://youtu.be/#{$1}"
+  end
+
+  if url =~ /(youtu\.be|(you|hook)tube\.com)/
+    unless cmd.include?("--skip-download") or cmd.include?("-f") or args.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end

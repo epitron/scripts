@@ -1,0 +1,2 @@
+#!/bin/bash
+PYTHONPROFILEIMPORTTIME=1 python "$@"

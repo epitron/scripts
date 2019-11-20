@@ -36,15 +36,27 @@ fi
 
 ## aliases
 
-# ls
-alias ll='ls -l'
-alias l='ls -al'
-alias la='ls -la'
-alias ll='ls -l'
-alias lh='ls -lh'
-alias lts='lt -s'
+alias ll='l'
+alias la='l -a'
 alias lt='d -lt'
+alias lh='ls -lh'
+alias lts='d -ls'
+alias da='d -a'
 
+if we_have exa
+then
+  alias e='exa'
+  alias l='exa -a --long --header'
+
+  function t() {
+    exa --long --header --tree --color=always "$@" | less -SRXFi
+  }
+else
+  alias l='ls -al'
+  function t() {
+    tree -Ca $* | less -SRXFi
+  }
+fi
 
 function fd() {
   query="$@"
@@ -70,7 +82,7 @@ alias .......='cd ../../../../../..'
 
 mkcd() {
   if [ ! -d "$@" ]; then
-    mkdir "$@"
+    mkdir -p "$@"
   fi
   cd "$@"
 }
@@ -94,7 +106,6 @@ alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
 alias cls='clear'
-alias r="ren"
 
 # text
 if ! we_have nano && we_have pico; then
@@ -104,6 +115,7 @@ else
 fi
 
 alias s.='s .'
+alias c.='c .'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
@@ -149,6 +161,7 @@ alias whois='whois -H'
 alias geoip='geoiplookup'
 alias geoip6='geoiplookup6'
 alias iptraf='sudoifnotroot iptraf-ng'
+alias ip6='ip -6'
 
 # disks
 alias_all_as_sudo fdisk blkid
@@ -164,6 +177,8 @@ if we_have dcfldd; then
 elif we_have ddrescue; then
   alias dd='ddrescue'
 fi
+
+alias um='unmount'
 
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
@@ -221,6 +236,7 @@ alias g+="git add"
 alias gr="git remote -v"
 alias gf="git fetch --prune"
 alias fetch="gf"
+alias whose-line-is-it-anyway="git blame"
 
 # functions
 functions() {
@@ -230,8 +246,8 @@ functions() {
 # alias gc="git clone"
 gc() {
   # Cloning into 'reponame'...
-  if `which gc` "$@"; then
-    cd `ls -tr | tail -n1`
+  if $(which gc) "$@"; then
+    cd "$(ls -tr | tail -n1)"
   else
     echo "clone failed"
   fi
@@ -263,9 +279,17 @@ alias gcs="gc --depth=1"
 # scripting languagey things
 alias be="bundle exec"
 alias rock='luarocks'
+alias gi='gem install --user'
 alias pi='pip install --user'
+alias pi2='pip2 install --user'
+alias pi3='pip3 install --user'
 alias piu='pip uninstall'
 alias py=python2
+alias ipy=ipython
+alias ipy3=ipython3
+alias ipy2=ipython2
+alias ni='npm install'
+
 
 gem-cd() {
   local gem_dir
@@ -276,9 +300,14 @@ gem-cd() {
 }
 
 pip-cd() {
-  cd ~/.local/lib/python3*/site-packages/$1
+  for dir in `ls -1rd ~/.local/lib/python*/site-packages/` `ls -1rd /usr/lib/python*/site-packages/`; do
+    if [ -d $dir/$1 ]; then
+      cd $dir/$1
+      break
+    fi
+  done
 }
-
+alias pycd=pip-cd
 
 # # 64/32bit specific aliases
 # case `uname -m` in
@@ -304,22 +333,28 @@ alias uf='upm files'
 alias ul='upm list'
 alias us='upm search'
 
+
 # arch
-alias pacman='sudoifnotroot pacman'
-alias pacs='\pacman -Ss'   # search for package
+alias pacman='sudoifnotroot /usr/bin/pacman'
+# alias pacs='\pacman -Ss'   # search for package
 alias pacf='\pacman -Ql|grep' # which package contains this file?
 alias pacq='\pacman -Q|grep'  # find a package
 alias pacg='\pacman -Qg'   # show groups
 alias pacu='pacman -Syu'  # update packages
 alias pacd='pacman -Syuw' # only download updates (no install)
-alias pacr='pacman -Rs'   # remove package (and unneeded dependencies)
+alias pacr='pacman -Rs --'   # remove package (and unneeded dependencies)
 alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
-alias y='yaourt'
 alias abs='sudoifnotroot abs'
-# alias pkgfile='sudoifnotroot pkgfile -r'
 alias mp='makepkg -s'
+# alias pkgfile='sudoifnotroot pkgfile -r'
+
+if we_have yaourt; then
+  alias y='yaourt'
+else
+  alias y='aurs'
+fi
 
 # npm
 # alias ni="sudoifnotroot npm install -g"

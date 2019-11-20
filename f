@@ -11,6 +11,7 @@ def parse_options
 
     on "d",  "dirs", "Search directory names only"
     on "x",  "xdev", "Stay on this device"
+    on "L",  "follow", "Follow symbolic links"
     # on "b=", "blong",  "desc", default: ""
   end
 
@@ -29,10 +30,17 @@ bins.any? { |bin, args| cmd = [bin, *args] if which(bin) }
 
 if cmd
 
-  cmd += %w[-type d] if opts.dirs?
-  cmd << "-xdev" if opts.xdev?
+  cmd += %w[-type d]  if opts.dirs?
+  cmd << "-xdev"      if opts.xdev?
+  # cmd << "-L"         if opts.follow?
+  cmd << "-H"         if opts.follow?
 
-  query = Regexp.new(args.map{|a| Regexp.escape(a) }.join(".*"), Regexp::IGNORECASE)
+  if args.empty?
+    system(*cmd)
+    exit
+  else
+    query = Regexp.new(args.map{|a| Regexp.escape(a) }.join(".*"), Regexp::IGNORECASE)
+  end
 
   # p cmd, query
 

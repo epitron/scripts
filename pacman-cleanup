@@ -16,7 +16,7 @@ class Package < TypedStruct["name ver rev arch path size mtime"]
     #   xdg-utils-1.1.0-2.20120520-any.pkg.tar.xz
     #   cuda-5.0.35-4-x86_64.pkg.tar.xz
     #   lib32-fontconfig-2.10.95-1.1-x86_64.pkg.tar.xz
-    if path.filename =~ %r{^(.+)-([^-]+)-([\d\.]+)-([\w_]+)\.pkg\.tar\.xz$}
+    if path.filename =~ %r{^(.+)-([^-]+)-([\d\.]+)-([\w_]+)\.pkg\.tar\.xz(?:\.part)?$}
       super($1, $2, $3, $4, path, path.size, path.mtime)
     else
       raise "Can't parse: #{path}"
@@ -66,6 +66,8 @@ Path.cd("/var/cache/pacman/pkg") do
 
     puts output.colorize
   end
+
+  all_removals += Path["*.part"].map {|path| Package.new(path) }
 
   if all_removals.empty?
     puts

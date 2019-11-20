@@ -1,0 +1,9 @@
+# examples: 
+# 	package
+#   package (arch)
+# 	gem (ruby)
+#   alias (arch:realname)
+
+vscode (arch:code)
+
+# todo: add <pacman selections>

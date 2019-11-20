@@ -24,6 +24,9 @@ opts = Slop.parse(help: true, strict: true) do
   on 'd',  'deinterlace', 'Blend deinterlace (using yadif)'
   on 'D=', 'denoise',  'Denoise filter (0: none, 1: fast, 2: slow but good)', default: nil
   on 'b',  'bob',      'Bob deinterlace (using yadif)'
+  on 'S=', 'start',    'Start time in the input video'
+  on 'l=', 'length',   'Length of the input video to encode'
+  on 'p=', 'preset',   'Encoder preset', default: 'slow'
   on "r=", "aspect",   'Aspect ratio (eg: 4:3, 1.6666)'
   on 'd=', 'outdir',   'Output directory'
   on 'o=', 'output',   'Output file'
@@ -31,8 +34,9 @@ opts = Slop.parse(help: true, strict: true) do
   on 'm',  'mute',     'No audio'
   # DEV.LS h264                 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (decoders: h264 h264_vdpau ) (encoders: libx264 libx264rgb h264_nvenc h264_vaapi nvenc nvenc_h264 )
   # DEV.L. hevc                 H.265 / HEVC (High Efficiency Video Coding) (encoders: libx265 nvenc_hevc hevc_nvenc hevc_vaapi )
-  on 'v=', 'vcodec',   "Output video codec\n\t\t\t\t (eg: h264, h264_nvenc, hevc, hevc_nvenc, hevc_vaapi)\n\t\t\t\t", default: "h264"
-  on 'N',  'nvidia',   'Use nvidia-accelerated version of vcodec'
+  on 'v=', 'vcodec',   "Output video codec\n\t\t\t\t (eg: copy, h264, h264_nvenc, hevc, hevc_nvenc, hevc_vaapi)\n\t\t\t\t", default: "h264"
+  on 'N',  'nvidia',   'Use nvidia-accelerated version of the --vcodec'
+  on 'A',  'vaapi',    'Use vaapi-accelerated version of the --vcodec'
   on 'c=', 'crop',     'Crop video (in mplayer format: w:h:x:y)'
   on 'f=', 'framerate','Alter framerate (can have decimals or be a fraction)', default: nil
 end
@@ -111,22 +115,44 @@ files.each do |inp|
     # cmd += ["-f", "image2"]
     cmd += ["-pattern_type", "glob"]
   end
+
+  if start = opts[:start]
+    cmd += ["-ss", start]
+  end
+
+  if length = opts[:length]
+    cmd += ["-t", length]
+  end
+
   cmd += ["-i", inp]
 
   vcodec = opts[:vcodec]
-  vcodec = "#{vcodec}_nvenc" if opts.nvidia? and vcodec != "copy" and not vcodec["nvenc"]
-
-  # cmd += %w[-crf 20] if opts.hq?
-  cmd += ["-c:v", vcodec]
+  if opts.nvidia? and ["h264", "hevc"].include?(vcodec) # != "copy" and not vcodec["nvenc"]
+    vcodec = "#{vcodec}_nvenc"
+    cmd += ["-c:v", vcodec]
+    cmd += ["-preset:v", "slow"]
+    cmd += ["-rc:v", "constqp"]
+    cmd += ["-rc-lookahead:v", "32"]
+    opts[:quality] ||= 27
+  else
+    cmd += ["-c:v", vcodec, "-preset:v", opts[:preset]]
+  end
 
   unless opts.mute?
     acodec = opts[:acodec]
-    acodec = "libfdk_aac" if acodec == "aac"
     cmd += ["-c:a", acodec]
   end
 
   # cmd += ["-crf", opts[:quality]] if opts.quality?
-  cmd += ["-qp", opts[:quality]] if opts.quality?
+  if opts.quality?
+    if vcodec == "hevc"
+      # cmd += ["-x265-params", "--qp #{opts[:quality]}"]
+      cmd += ["-x265-params", "crf=#{opts[:quality]}"]
+    else
+      # cmd += ["-qp:v", opts[:quality]]
+      cmd += ["-crf:v", opts[:quality]]
+    end
+  end
   cmd += ["-aspect", opts[:aspect]] if opts[:aspect]
   cmd += %w[-movflags faststart]
 
@@ -163,7 +189,6 @@ files.each do |inp|
   end
 
   cmd += ["-filter:v", vfilters.join(",")] if vfilters.any?
-  cmd += ["-vf", vfilters.join(",")] if vfilters.any?
 
   cmd << out
   puts "   out: #{out}"

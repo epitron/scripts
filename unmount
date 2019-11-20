@@ -30,8 +30,8 @@ def processes_holding(mountpoint)
   #   Sys.ps.zip types
   # end
 
-  # system("fuser", "-v", "-m", mountpoint)
-  system("lsof", "+D", mountpoint)
+  system("fuser", "-v", "-m", mountpoint)
+  # system("lsof", "+D", mountpoint)
 end
 
 def kill_processes_holding(mountpoint)
@@ -65,7 +65,12 @@ def unmount(arg)
 
   # Do the unmount
   success = if mount.type[/^fuse/]
-              system("fusermount", "-u", mount.path)
+              if bin = which("fusermount", "fusermount3", "fusermount2")
+                system(bin, "-u", mount.path)
+              else
+                puts "ERROR: Couldn't find 'fusermount' binary in the path"
+                exit 1
+              end
             else
               system("sudoifnotroot", "umount", mount.path)
             end

@@ -1,7 +1,11 @@
 #!/bin/bash
-
-Xephyr -screen 1400x900 :1
+res=1400x900
+disp=:1
 
 if [ "$1" != "" ]; then
-  DISPLAY=:1 $@
+  Xephyr -screen $res $disp &
+  sleep 1
+  DISPLAY=$disp $@
+else
+  exec Xephyr -screen $res $disp
 fi

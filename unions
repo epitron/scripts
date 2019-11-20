@@ -1,0 +1,98 @@
+#!/usr/bin/env ruby
+shares = {
+  "media/movies"        => ["movies-*"],
+  "media/tv"            => ["tv-*"],
+  "media/music"         => ["mp3-*"],
+  "media/ebooks"        => ["ebooks-*"],
+  "media/iso"           => ["iso-*"],
+  "media/documentaries" => ["documentaries-*"],
+  "media/audiobooks"    => ["audiobooks"],
+  "media/musicvideos"   => ["musicvideos"],
+  "media/podcasts"      => ["podcasts"],
+  "media/talks"         => ["talks-*"],
+  "media/talks-old"     => ["talks-old"],
+}
+
+root       = ENV["HOME"]
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if opts.include?("-h") or opts.include?("--help")
+  puts <<~HELP
+    usage:
+      unions    => mount unions
+      unions -u => unmount unions
+      unions -r => remount unions
+  HELP
+
+  puts
+  puts "mountpoints:"
+  shares.each {|k,v| puts "  #{k} => #{v}" }
+  exit
+end
+
+
+def free_space(dir)
+  IO.popen(["df", "-h", dir], "r") do |io|
+    dev, size, used, avail, percent, mountpoint = io.each_line.drop(1).first.split
+    # => ["/dev/sdf2", "1.6T", "1.6T", "254M", "100%", "/w"]
+    "#{avail} (#{mountpoint})"
+  end
+end
+
+# Expand globs
+shares = shares.map do |dest, srcs|
+  ["#{root}/#{dest}", srcs.map { |src| Dir["#{root}/#{src}"].sort }.flatten]
+end
+
+unmount = proc do
+  puts "Unmounting..."
+  shares.each do |target, srcs|
+    puts "* #{target}..."
+    system("fusermount", "-u", target)
+  end
+end
+
+# unmount
+if opts.delete("-u")
+  unmount.call
+  exit
+end
+
+# remount
+if opts.delete("-r")
+  unmount.call
+end
+
+mountopts = %w[-o func.create=epff,minfreespace=8G,allow_other,uid=1000,gid=992,umask=0002,xattr=passthrough] # umask=0002
+longest   = shares.map(&:last).flatten.map(&:size).max
+
+if args.any?
+  arg_dirs = args.map { |dir| File.realdirpath(dir) }
+  shares   = shares.select { |dir, _| arg_dirs.include? File.realdirpath(dir) }
+end
+
+shares.each do |dest, srcs|
+  puts "* #{dest}"
+  srcs.each { |src| puts "  |_ #{src}" }
+
+  srcs_joined = srcs.join(":")
+  cmd = ["mergerfs", *mountopts, srcs_joined, dest]
+
+  p cmd if opts.include? "-v"
+
+  if opts.include? "-s" or opts.include? "-f"
+    srcs.each do |src|
+      puts "#{src.ljust(longest+2)} => #{free_space(src)}"
+    end
+  elsif opts.include? "-u"
+    exit 1 unless system("unmount", dest_joined)
+  elsif opts.include? "-p"
+    puts cmd.join(" ")
+    puts
+  else
+    unless system(*cmd)
+      puts "#{dest} failed!"
+    end
+  end
+
+end

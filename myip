@@ -1,2 +1,3 @@
 #!/bin/bash
-lynx -dump whatismyip.org
+curl https://api.ipify.org
+echo
