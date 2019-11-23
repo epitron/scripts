@@ -153,7 +153,70 @@ class Initd
     puts "Services (search query: /#{regexp}/):"
     puts "================================================="
 
-    highlighted = services.map { |s| s.highlight(regexp) if regexp =~ s }.compact
+    highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
+
+    puts Term::Table.new(highlighted, :ansi=>true).by_columns
+  end
+
+  def default
+    require 'epitools'
+
+    puts "Services:"
+    puts "============================="
+
+    puts Term::Table.new(services).by_columns
+  end
+
+  def default_command(service)
+    restart(service)
+  end
+
+end
+
+#######################################################################
+
+class Runit
+
+  def initialize
+    @initdir = %w[
+      /etc/init.d
+      /etc/rc.d
+    ].find {|dir| File.directory? dir }
+  end
+
+  def services
+    Path["#{@initdir}/*"].map(&:filename).compact.sort
+  end
+
+  def reload
+    puts "Reload not needed for init.d"
+  end
+
+  def run(service, command)
+    cmd = ["#{@initdir}/#{service}", command]
+    cmd = ["sudo", *cmd] unless root?
+    system *cmd
+  end
+
+  def start(service)
+    run(service, "start")
+  end
+
+  def stop(service)
+    run(service, "stop")
+  end
+
+  def restart(service)
+    run(service, "restart")
+  end
+
+  def search(query)
+    require 'epitools'
+
+    puts "Services (filtered by /#{query}/):"
+    puts "================================================="
+
+    highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
 
     puts Term::Table.new(highlighted, :ansi=>true).by_columns
   end
