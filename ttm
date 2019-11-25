@@ -1,30 +1,47 @@
 #!/usr/bin/env ruby
 
-args = ARGV
+class String
+  def url?
+    match %r{^https?://.+}
+  end
+end
 
-if args.empty?
-  puts "usage: ttm <file or url>"
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if args.empty? or opts.include?("-h") or opts.include?("--help")
+  puts "usage:"
+  puts "  ttm [option] <file or url>"
+  puts
+  puts "options:"
+  puts "  -s   shorten all urls (must supply only urls)"
   exit 1
 end
 
 args.each do |arg|
-
-  puts "* Uploading: #{arg}"
-
-  if arg =~ %r{^https?://.+}
-    form = "url=#{arg}"
+  
+  if opts.include?("-s")
+    raise "error: can't shorten a file." unless arg.url?
+    
+    puts "* Shortening: #{arg}"
+    form = "shorten=#{arg}"
   else
-    form = "file=@#{arg}"
+    if arg.url?
+      puts "* Mirroring: #{arg}"
+      form = "url=#{arg}"
+    else
+      puts "* Uploading: #{arg}"
+      form = "file=@#{arg}"
+    end
   end
 
   cmd = [
     "curl",
     "--compressed",
     "--progress-bar",
-    %{-F#{form}},
+    "-F#{form}",
     "https://ttm.sh"
   ]
 
-  IO.popen(cmd, "r") {|io| puts io.read }
+  puts IO.popen(cmd, &:read)
   puts
 end
