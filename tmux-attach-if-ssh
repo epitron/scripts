@@ -1,0 +1,8 @@
+if [ "$SSH_CONNECTION" != "" ]; then
+  if tmux ls &> /dev/null; then
+    tmux att
+  else
+    tmux
+  fi
+fi
+
