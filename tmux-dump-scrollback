@@ -4,6 +4,12 @@
 #   -p = stdout
 #   -e = escape sequences
 #   -S = starting line
+#
+# to capture directly from a window, do:
+#   Ctrl-a, :
+#     capture-pane -e -S -1000000
+#   Ctrl-a, :
+#     save-buffer tmux.log
 
 if [ "$1" == "" ]; then
   tmux capture-pane -pe -S -1000000
