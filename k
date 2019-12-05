@@ -112,6 +112,11 @@ def playlist_add(*urls)
   urls.each do |url|
     next if url[/\.mov$/]
 
+    # rewrite bad urls
+    if url =~ %r{^http://127.0.0.1:\d+/([^\.]+).mpd}
+      url = "https://youtu.be/#{$1}"
+    end
+
     item = {file: to_kodipath(url)}
 
     result = rpc(
