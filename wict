@@ -247,7 +247,8 @@ end
 
 def lookup_look(args)
   query = args.join
-  `look --ignore-case "#{query}" "#{INDEX_FILE}"`
+  # IO.popen(["look", query, INDEX_FILE], &:read)
+  IO.popen(["look", "-f", query, INDEX_FILE], &:read)
 end
 
 # ------------------------------------------------------ #
