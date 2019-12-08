@@ -3,3 +3,4 @@ watchexec
 bb
 fd
 hexyl
+tldr
