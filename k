@@ -3,7 +3,6 @@
 require 'json'
 require 'coderay'
 require 'pp'
-require 'pathname'
 ########################################################
 
 KODIRC = File.expand_path("~/.kodirc")
@@ -20,60 +19,6 @@ CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:modern])
 
 ########################################################
 
-# class Kodi
-#   def players
-#   end
-
-#   class Player
-#     play
-#     pause
-#     stop
-#     playlist
-#     class Playlist
-#       show
-#       add
-#       clear
-#     end
-#   end
-# end
-
-
-
-class Pathname
-  def abspath; realpath; end
-end
-
-def parse_player_id(args)
-  args.any? { |arg| arg[/^(\d+)$/] } ? $1.to_i : nil
-end
-
-def args_to_urls(*args)
-  args = args.flatten
-
-  args.map do |arg|
-    next if arg[/\.mov$/]
-
-    if arg =~ %r{^https?://.+}
-      if arg =~ %r{^http://127.0.0.1:\d+/([^\.]+).mpd}
-        arg = "https://youtu.be/#{$1}"
-      end
-
-      arg
-    else
-      # TODO: if ~/g, grog:8887, if ~/laptop, laptop:8887
-      paths = Pathname.glob(arg)
-      paths.
-        map { |path| path.abspath.relative_path_from("/home/pip/g/") rescue nil }.
-        compact.
-        map { |path| "http://grog:8887/#{URI.escape path.to_s}" }
-      # raise "error: couldn't parse #{arg.inspect}"
-    end
-  end.flatten.compact
-end
-
-# p args_to_urls("*.mp4")
-# exit
-
 def kodi_rpc_url
   "http://#{CONFIG[:user]}:#{CONFIG[:pass]}@#{CONFIG[:host]}:#{CONFIG[:port]}/jsonrpc"
 end
@@ -88,7 +33,9 @@ def rpc(opts)
   opts[:jsonrpc] ||= "2.0"
   opts[:id] ||= 1
 
+  puts "Request:"
   pr opts
+  puts
 
   output = curl("-s", "-X", "POST", "--header", "Content-Type: application/json", "-d", JSON.dump(opts), kodi_rpc_url)
 
@@ -100,10 +47,10 @@ def rpc(opts)
   json = JSON.parse(output)
 
   if error = json["error"]
-    ph error.to_a
-    # ph error
+    puts "RPC Error:"
+    ph error
     # exit 2
-    raise error.to_s
+    raise
   end
 
   json["result"]
@@ -112,11 +59,11 @@ end
 ########################################################
 
 def ph(hash)
-  puts CodeRay.scan(JSON.pretty_generate(hash), :json).term if $verbose
+  puts CodeRay.scan(JSON.pretty_generate(hash), :json).term
 end
 
 def pr(obj)
-  puts CodeRay.scan(obj.inspect, :ruby).term if $verbose
+  puts CodeRay.scan(obj.inspect, :ruby).term
 end
 
 def help!
@@ -159,62 +106,32 @@ def playlist(id=1)
   )
 end
 
-def playlist_size(id=1)
-  playlist(id)["items"].size
+def playlist_add(*urls)
+  items = urls.map { |url|  }
+
+  urls.each do |url|
+    next if url[/\.mov$/]
+
+    # rewrite bad urls
+    if url =~ %r{^http://127.0.0.1:\d+/([^\.]+).mpd}
+      url = "https://youtu.be/#{$1}"
+    end
+
+    item = {file: to_kodipath(url)}
+
+    result = rpc(
+      method: "Playlist.Add",
+      params: {
+        playlistid: 1,
+        item: item,
+      },
+    )
+
+    ph result
+  end
+
+  # player_playpause unless active_player_id
 end
-
-def playlist_add(url, id=1)
-  item = {file: to_kodipath(url)}
-
-  result = rpc(
-    method: "Playlist.Add",
-    params: {
-      playlistid: id,
-      item: item,
-    },
-  )
-
-  ph result
-end
-
-# def playlist_add(*args)
-
-#   args.each do |arg|
-#     next if arg[/\.mov$/]
-
-#     (arg)
-#     when URI
-#       url = thing.to_s
-
-#       # rewrite bad args
-#       if url =~ %r{^http://127.0.0.1:\d+/([^\.]+).mpd}
-#         url = "https://youtu.be/#{$1}"
-#       end
-
-#       p url
-#       url
-#     when Pathname
-#       p file: thing
-#     else
-#       raise "unknown thing: #{thing.inspect}"
-#     end
-
-#     next
-
-#     item = {file: to_kodipath(arg)}
-
-#     result = rpc(
-#       method: "Playlist.Add",
-#       params: {
-#         playlistid: 1,
-#         item: item,
-#       },
-#     )
-
-#     ph result
-#   end
-
-# end
 
 def shuffle_current_playlist
   shuffled = playlist["items"].map { |item| item["file"] }.shuffle
@@ -251,15 +168,15 @@ def playlist_prev
   playlist_jump("previous")
 end
 
-def player_play(id=1)
+def player_play
   ph rpc(
     method: "Player.Open",
-    params: { item: { playlistid: id } },
+    params: { item: { playlistid: 1 } },
   )
 end
 
-def player_playpause(id=nil)
-  if id = (id || active_player_id)
+def player_playpause
+  if id = active_player_id
     ph rpc(
       method: "Player.PlayPause",
       params: {
@@ -267,12 +184,12 @@ def player_playpause(id=nil)
       }
     )
   else
-    player_play(1)
+    player_play
   end
 end
 
-def player_stop(id=nil)
-  if id = (id || active_player_id)
+def player_stop
+  if id = active_player_id
     ph rpc(
       method: "Player.Stop",
       params: {
@@ -301,7 +218,7 @@ def pretty_print_playlist
   # TODO: crop playlist to a region around the current track (centred in cropped window, or positioned in chunky cropped window (crop mod page-size)) 
   items = playlist.to_h["items"]
 
-  # clear
+  clear
 
   items.each_with_index do |item, i|
     label, title, file = item.values_at(*%w[label title file])
@@ -319,24 +236,18 @@ end
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w+/] }
 
-$verbose = opts.include?("-v")
-
 if (opts.empty? and args.empty?) or (opts.include?("-h") or opts.include?("--help"))
   help!
   exit
 end
 
-# clear playlist
 if opts.include?("-c")
   playlist_clear
   player_stop
 end
 
-# print the api specs as a giant json blob
 if opts.include?("-i")
   ph jsonrpc_introspect
-
-# pry
 elsif opts.include?("-I")
   puts "Usage:"
   puts "  > rpc(method: 'Some.Method', params: {value: 'woot'})"
@@ -346,78 +257,48 @@ elsif opts.include?("-I")
   require 'pry'
   binding.pry
   exit
-
-# # prettyprinted playlist
-# elsif opts.include?("-ppp")
-#   pretty_print_playlist
-
-# ?
+elsif opts.include?("-ppp")
+  pretty_print_playlist
 elsif opts.include?("-L")
   ph playlists
-
-# list
 elsif opts.include?("-l")
-  list = ( id = parse_player_id(args) ) ? playlist(id) : playlist
-  $verbose ? ph(list) : pretty_print_playlist
-
-# next
+  if args.any? { |arg| arg[/^(\d+)$/] }
+    ph playlist($1.to_i)
+  else
+    ph playlist
+  end
 elsif opts.include?("-n")
   playlist_next
-
-# prev
 elsif opts.include?("-b")
   playlist_prev
-
-# play/pause
 elsif opts.include?("-p")
   player_playpause
-
-# enqueue what's in audacious
 elsif opts.include?("-a")
   playlist_add(`audtool current-song-filename`.strip)
-
-# stop
 elsif opts.include?("-s")
   player_stop
-
-# shuffle
 elsif opts.include?("-S")
   shuffle_current_playlist
-
-# volume
-elsif opts.include?("-V")
+elsif opts.include?("-v")
   if volume = args.find { |arg| arg[/^\d+/] }
     set_volume(volume.to_i)
   end
-
-# seek
 elsif opts.include?("-t")
   if time = args.find { |arg| arg =~ /\d?\d(:\d\d){1,2}/ }
     player_seek(time)
   end
-
 else
-
   if args.empty? and opts.empty?
-
     help!
-
   else
-
-    to_play = playlist_size
-
-    # enqueue
-    args_to_urls(*args).each do |url|
-      playlist_add(url)
-      puts "Added: #{url}"
+    args.each do |arg|
+      puts "Adding: #{arg}"
+      playlist_add(arg)
     end
 
-    unless id = active_player_id
-      # play(to_play)
-      player_playpause
-    end
-
-
+    # if args.any? and opts.include?("-c")
+    # player_play
+    # end
   end
 end
 
@@ -439,8 +320,7 @@ options:
   -S  Shuffle current playlist
   -n  Play next item
   -b  Play previous item
-  -v  verbose
-  -V <volume>
+  -v <volume>
       Set the volume (0-100)
   -t <timestamp>
       Seek to timestamp (eg: "5:21")

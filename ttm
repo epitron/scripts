@@ -8,28 +8,32 @@ end
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-if args.empty? or opts.include?("-h") or opts.include?("--help")
+if opts.include?("-h") or opts.include?("--help")
   puts "usage:"
-  puts "  ttm [option] <file or url>"
+  puts "  ttm [option] <file(s) or url(s), or nothing to read from STDIN>"
   puts
   puts "options:"
   puts "  -s   shorten all urls (must supply only urls)"
   exit 1
 end
 
+args << "-" if args.empty?
+
 args.each do |arg|
-  
   if opts.include?("-s")
-    raise "error: can't shorten a file." unless arg.url?
-    
+    if not arg.url? then raise "error: can't shorten a file." end
     puts "* Shortening: #{arg}"
     form = "shorten=#{arg}"
   else
     if arg.url?
       puts "* Mirroring: #{arg}"
       form = "url=#{arg}"
+    elsif arg == "-"
+      puts "* Uploading from STDIN:"
+      form = "file=@-"
     else
-      puts "* Uploading: #{arg}"
+      size = (File.size(arg).to_f / 1024).round(2)
+      puts "* Uploading: #{arg} (#{size} kbytes)"
       form = "file=@#{arg}"
     end
   end
