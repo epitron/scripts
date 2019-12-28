@@ -127,6 +127,7 @@ EXT_HIGHLIGHTERS = {
   ".rkt"            => pygmentize,
   ".nim"            => rougify,
   ".nimble"         => rougify("nim"),
+  ".v"              => rougify("dart"),
   ".diff"           => pygmentize,
   ".patch"          => pygmentize,
   ".rs"             => pygmentize,
@@ -502,7 +503,10 @@ def render_ctags(arg)
       padding_size    = 0 if padding_size < 0
       padding         = " " * padding_size
 
-      y << "#{padding}<8>[<#{e.type_color}>#{e.type_name}<8>] <15>#{e.name.rjust(longest_name_width)}<8>: <7>#{e.expr}".colorize
+      y << ("#{padding}" +
+           "<15>#{e.name.rjust(longest_name_width)}<8> " +
+           "<8>[<#{e.type_color}>#{e.type_name}<8>] " +
+           "<7>#{e.expr}").colorize
     end
 
     y << ""
@@ -1448,7 +1452,7 @@ def convert(arg)
         print_xml(arg)
       when *%w[.csv .xls]
         print_csv(arg)
-      when *%w[.mp3 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
+      when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
         print_ffprobe(arg)
       when *%w[.jpg .jpeg]
         print_exif(arg)
