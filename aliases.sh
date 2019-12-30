@@ -136,7 +136,7 @@ else
 fi
 
 alias less='less -X -F -i'
-alias diff='diff -u'
+alias diff='diff -u --color'
 
 if we_have scc; then
   alias cloc='scc'
