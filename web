@@ -111,6 +111,7 @@ routes do
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com], &play_video
   match host: %w[youtube.com invidio.us], path: %r{^/(watch|embed)}, &play_video
+  match host: "peertube.social",          path: %r{^/videos/watch/}, &play_video
   match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
   match host: "media.ccc.de", path: %r{^/v/.+},     &play_video
   match host: "ted.com",      path: "/talks/",      &play_video
@@ -163,6 +164,7 @@ BEGIN {
   require 'epitools/core_ext/misc'
   require 'epitools/core_ext/hash'
   require 'epitools/core_ext/object'
+  require 'epitools/core_ext/uri'
 
   ####################################################################################
   class Class
