@@ -5,8 +5,9 @@ require 'coderay'
 require 'pp'
 ########################################################
 
-KODIRC = File.expand_path("~/.kodirc")
-CONFIG = %i[host port user pass].zip(File.read(KODIRC).each_line.map(&:strip)).to_h
+KODIRC     = File.expand_path("~/.kodirc")
+CONFIG     = %i[host port user pass].zip(File.read(KODIRC).each_line.map(&:strip)).to_h
+MEDIA_DIRS = ["#{Dir.home}/media/", "#{Dir.home}/g/"]
 
 THEMES = {
   siberia:   {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
@@ -78,10 +79,30 @@ def to_kodipath(url)
   case url
   when %r{https?://(?:www\.)?youtube\.com/(?:embed|watch)\?v=([^&]+)}, %r{https?://youtu\.be/(.+)}
     "plugin://plugin.video.youtube/play/?video_id=#{$1}"
+
   when %r{https?://(?:www\.)?thoughtmaybe\.com/}
     IO.popen(["youtube-dl", "-g", url], &:read).chomp
-  else
+
+  when %r{^https?://}
     url
+
+  else
+    if File.exists?(url)
+      require 'pathname'
+
+      media = "#{Dir.home}/media/"
+      path  = Pathname.new(url).expand_path.realpath
+
+      MEDIA_DIRS.each do |mediadir|
+        if path.to_s.start_with?(mediadir)
+          return "http://grog:8887/#{path.relative_path_from(mediadir)}"
+        end
+      end
+
+      raise "Error: #{path} isn't in a media dir"
+    else
+      raise "Error: #{url.inspect} is not an URL or existing File."
+    end
   end
 end
 
@@ -314,18 +335,19 @@ configuration:
   and password on their own lines.
 
 options:
-  -l  List playlist
-  -p  Play/Pause
-  -s  Stop
-  -S  Shuffle current playlist
-  -n  Play next item
-  -b  Play previous item
+  -l <n>
+    List playlist (1 = videos [default], 0 = music, 2 = ???)
+  -p Play/Pause
+  -s Stop
+  -S Shuffle current playlist
+  -n Play next item
+  -b Play previous item
   -v <volume>
-      Set the volume (0-100)
+    Set the volume (0-100)
   -t <timestamp>
-      Seek to timestamp (eg: "5:21")
-  -c  Clear playlist
-  -a  Add whatever's playing in Audacious to the playlist
-  -L  Show playlists
-  -I  Interactive repl
-  -i  Full RPC function list
+    Seek to timestamp (eg: "5:21")
+  -c Clear playlist
+  -a Add whatever's playing in Audacious to the playlist
+  -L Show playlists
+  -I Interactive repl
+  -i Full RPC function list
