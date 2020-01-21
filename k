@@ -89,13 +89,14 @@ def to_kodipath(url)
   else
     if File.exists?(url)
       require 'pathname'
+      require 'uri'
 
       media = "#{Dir.home}/media/"
       path  = Pathname.new(url).expand_path.realpath
 
       MEDIA_DIRS.each do |mediadir|
         if path.to_s.start_with?(mediadir)
-          return "http://grog:8887/#{path.relative_path_from(mediadir)}"
+          return "http://grog:8887/#{URI.escape path.relative_path_from(mediadir).to_s}"
         end
       end
 

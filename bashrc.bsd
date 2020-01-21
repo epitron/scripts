@@ -1,5 +1,4 @@
 unalias rm
-unalias pacs
 alias pacu="pkg upgrade"
 
 if which gnuls > /dev/null
