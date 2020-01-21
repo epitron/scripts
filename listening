@@ -19,11 +19,7 @@ end
 # regexes to match netstat output
 IP4LINE = /^(tcp|udp)\s+\d+\s+\d+\s+([\d\.]+):(\d+)\s+/
 IP6LINE = /^(tcp|udp)6\s+\d+\s+\d+\s+([\w\d:]+):(\d+)\s+/
-ports = [] 
-
-for line in `netstat -ln`.lines
-  ports << [$3.to_i, $1] if line =~ IP4LINE or line =~ IP6LINE
-end
+ports  = `netstat -ln`.lines.map { |line| [$3.to_i, $1] if line =~ IP4LINE or line =~ IP6LINE }.compact
 
 
 #######################################################
@@ -32,5 +28,21 @@ end
 
 title "Listening sockets (IPv4 & IPv6):"
 params = ports.sort.uniq.map { |port,proto| "#{port}/#{proto}" }
-system("fuser -v #{params.join ' '} 2>&1")
+
+IO.popen(["fuser", "-v", *params], err: [:child, :out]) do |fuser|
+  errors = []
+  fuser.each_line do |line|
+    if line =~ %r{Cannot stat file /proc/(\d+)/.+}
+      errors << $1
+    else    
+      puts line
+    end
+  end
+
+  mystery_ports = ports.select { |port| errors.include? port }
+  puts
+  puts "Inaccessible pids:"
+  system("ps", *errors)
+end
+
 puts
