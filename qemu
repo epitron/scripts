@@ -27,7 +27,8 @@ def parse_options
     on "2",  "pi2",      "Raspberry PI 2 mode"
     on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
     on "c",  "console",  "Output serial to the console"
-    on "C",  "cursor",   "Show the mouse cursor"
+    on "C",  "curses",   "Terminal-based UI (Press Alt-2 to get to qemu command console)"
+    on "M",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
     on "V",  "version",  "Show version information"
     # on "b=", "backing-file",    "Use this as the backing file"
@@ -147,6 +148,7 @@ else
 end
 
 cmd << "-show-cursor" if opts.cursor?
+cmd << "-curses" if opts.curses?
 cmd += ["-serial", "stdio"] if opts.serial?
 
 disks.each do |disk|
