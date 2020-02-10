@@ -2,6 +2,10 @@
 
 require 'rubygems'
 
+# Send annoying Ruby 2.7.0 deprecation warnings to STDERR so that our *actual* output can be used in scripts
+$real_stdout = $stdout
+$stdout      = $stderr
+
 def gem_specs(name)
   if Gem::Specification.respond_to?(:each)
     Gem::Specification.find_all_by_name(name)
@@ -13,7 +17,8 @@ end
 def bundler_specs(name)
   if File.exists?("Gemfile")
     require 'bundler'
-    Bundler.environment.specs.select { |s| s.name == name }
+    Bundler.load.specs.select { |s| s.name == name }
+    # Bundler.environment.specs.select { |s| s.name == name }
   else
     []
   end
@@ -29,7 +34,7 @@ gem_name = ARGV.first
 all_specs = gem_specs(gem_name) + bundler_specs(gem_name)
 
 if spec = all_specs.sort_by(&:version).last
-  puts spec.full_gem_path
+  $real_stdout.puts spec.full_gem_path
 else
   STDERR.puts "ERROR: Gem `#{gem_name}` not found"
   exit 1
