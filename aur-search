@@ -10,7 +10,7 @@ SEARCH_URL = "#{URL_ROOT}/packages/?K=%s&O=0&SB=p&SO=d"
 
 def search(query)
   # io  = open("aur.html")
-  io  = open(SEARCH_URL % query)
+  io  = URI.open(SEARCH_URL % query)
   doc = Oga.parse_html(io)
 
   doc.css("table.results tbody tr").map do |row|
