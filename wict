@@ -4,7 +4,7 @@
 require 'epitools'
 ###################################################################
 
-CACHE_DIR  = File.expand_path("~/.cache/wict")
+CACHE_DIR  = File.expand_path("~/.cache/wikt")
 INDEX_FILE = File.join CACHE_DIR, "wikt.idx"
 TSV_FILE   = File.join CACHE_DIR, "wikt.tsv"
 
@@ -114,7 +114,7 @@ def update(lang="en")
 
   if word_index.is_a? Array
     print "  |_ sorting index..."
-    word_index.sort!
+    word_index.sort_by! { |word, offset| word.downcase }
     puts
   end
 
