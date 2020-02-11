@@ -137,9 +137,14 @@ Package.all.each do |pkg|
 end
 puts "  |_ Done! (#{packages.size.commatize} packages found)"
 
-packages.sort_by(&:size).each do |pkg|
-  # puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize} <8>(<7>deps: <15>#{pkg.recursive_dep_size}<8>)".colorize
-  puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize}".colorize
+lesspipe(tail: true) do |less|
+  packages.sort_by(&:size).each do |pkg|
+    # puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize} <8>(<7>deps: <15>#{pkg.recursive_dep_size}<8>)".colorize
+    less.puts "<9>#{pkg.name} <8>=> <11>#{pkg.size.commatize}".colorize
+  end
+
+  less.puts "----------------------------------------------"
+  less.puts "<14>Total: <12>#{packages.sum_by(&:size).commatize}".colorize
 end
 
 ## TODO: Make this work
