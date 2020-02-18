@@ -1,0 +1,2 @@
+#!/bin/bash
+curl --silent http://wttr.in?format=v2 | less -RS
