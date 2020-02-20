@@ -40,8 +40,10 @@ end
 
 sort_key = opts.delete("-n") ? :name : :date 
 
-html = open("https://newgtlds.icann.org/en/program-status/delegated-strings")
+html = URI.open("https://newgtlds.icann.org/en/program-status/delegated-strings")
 doc = Oga.parse_html(html)
 results = doc.css("tr").map { |row| GTLD.from_row(row) }.compact
 
-results.sort_by(&sort_key.to_proc).each { |r| puts r }
+IO.popen(["less"], "w") do |less|
+  results.sort_by(&sort_key.to_proc).each { |r| less.puts r }
+end
