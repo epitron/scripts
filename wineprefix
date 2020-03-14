@@ -33,5 +33,5 @@ export WINEPREFIX="$PREFIX"
 if [ "$1" == "winecfg" ]; then
   winecfg
 else
-  wine $@
+  wine "$@"
 fi
