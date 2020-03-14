@@ -302,13 +302,13 @@ def rofi_picker
   loop do
     result = IO.popen(%w[rofi -dmenu -markup-rows -i -async-pre-read 0 -theme DarkBlue -lines 32 -width 80 -p Play], "r+") do |f|
       entries = log_entries
-      entries.each_with_index do |e,i| 
+      entries.each_with_index do |e,i|
         parenstuff = [e.date, e.uploader].compact
         f.puts "%2d. <b>#{esc[e.title]}</b> (#{parenstuff.join(", ")})" % (i+1)
       end
 
       f.close_write
-      
+
       f.gets&.split(".")&.first
     end
 
@@ -635,7 +635,7 @@ def play(url, opts)
   else
     uri = URI.parse(url.to_s)
 
-    if time = uri.params["t"]
+    if time = (uri.params["t"] || uri.params["time_continue"])
       seek = time.to_seconds
     end
 
