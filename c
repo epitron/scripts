@@ -464,7 +464,7 @@ def create_tmpdir(prefix="c-")
   suffix_size = 8
   tmp_root = "/tmp"
   raise "Error: #{tmp_root} doesn't exist" unless File.directory? tmp_root
-  
+
   loop do
     random_suffix = suffix_size.times.map { alphabet[rand(alphabet.size)] }.join('')
     random_dir = "#{prefix}#{random_suffix}"
@@ -936,8 +936,7 @@ def print_vtt(filename)
   last_time = 0
   enum = Pathname.new(filename).each
 
-  loop { break if enum.next =~ /^\#\#$/ }
-
+  enum.take_while { |line| line[/^##$/] }
   enum.next
 
   prev = nil
@@ -1339,7 +1338,7 @@ end
 def print_pdf(file)
   raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
   raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
-  
+
   html = run("pdftohtml", "-stdout", "-noframes", "-i", file)
   print_html(html)
 end
@@ -1475,7 +1474,7 @@ def convert(arg)
           print_sqlite(arg)
         when /Zip archive data/
           print_zip(arg)
-        when /shell script/ 
+        when /shell script/
           print_source(arg)
         when /:.+?(ELF|executable|shared object)[^,]*,/
           print_obj(arg)
