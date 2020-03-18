@@ -83,5 +83,7 @@ loop do
     info = server.call("aria2.tellActive").first
   rescue Errno::ECONNREFUSED, EOFError
     puts "Connection lost..."
+  rescue Net::ReadTimeout
+    puts "Read timeout..."
   end
 end
