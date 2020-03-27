@@ -22,6 +22,13 @@ end
 
 args = ARGV
 
+if args.empty?
+  puts "Error: You must specify the mhtml filename."
+  puts
+  puts opts
+  exit 1
+end
+
 ########################################################
 
 mhtml_filename, *files = args
@@ -46,7 +53,7 @@ else
     exit 1
   end
 
-  outdir.mkdir_p 
+  outdir.mkdir_p
 
   puts "<8>* <15>Extracting <11>#{mhtml.filename} to <14>#{outdir}<7>...".colorize
 
