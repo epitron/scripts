@@ -93,6 +93,8 @@ PLAY           = "#{__dir__}/play"
 BROWSERS       = %w[qupzilla chromium chrome firefox opera vivaldi-bin dillo otter-browser xombrero midori jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
+load_rc_file
+
 routes do
 
   default do |uri|
@@ -173,7 +175,7 @@ BEGIN {
       return unless $DEBUG
 
       puts "debug instrumentation: #{meths.inspect}"
-      
+
       m = Module.new
 
       meths.each do |meth|
@@ -585,8 +587,6 @@ if $0 == __FILE__
   opts = opts.map { |opt| opt.sub(/^-+/, '').split("=") }.to_h
 
   ensure_required_binaries_are_in_the_path
-
-  load_rc_file
 
   if url = args.first
     # url = "http://#{url}" unless url[%r{^(https?|file|magnet)://}i] # slap an http:// on the argument if necessary
