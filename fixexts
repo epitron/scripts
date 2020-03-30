@@ -61,13 +61,17 @@ def skipit?(ext, true_ext, mime)
   (ext == "xspf" and true_ext == "htm") or
   (ext == "java" and true_ext == "c") or
   (ext == "json" and true_ext == "c") or
+  (ext == "js"   and true_ext == "c") or
   (ext == "rdf"  and true_ext == "xml") or
   (ext == "mp4"  and true_ext == "3gpp") or
+  (ext == "m4a"  and true_ext == "mp4") or
   (ext == "m4a"  and true_ext == "3gpp") or
   (ext == "docx" and true_ext == "zip") or
   (ext == "html" and true_ext == "xht") or
   (ext == "htm"  and true_ext == "xht") or
   (ext == "m4a"  and true_ext == "3ga") or
+  (ext == "dll"  and true_ext == "exe") or
+  (ext == ""     and mime.type =~ /(^application|python3?$)/) or
   (ext == "ppt"  and mime.type == "application/x-ole-storage") or
   (ext == "xls"  and mime.type == "application/x-ole-storage") or
   (ext == "mhtml"  and true_ext == "eml") or
@@ -101,9 +105,10 @@ args << "." if args.empty?
 paths = args.map { |arg| Pathname.new(arg) }
 
 paths.each do |path|
+  p path
   if path.directory?
     puts "Scanning #{path.to_s == "." ? "current directory" : path.inspect }"
-    path.find { |entry| fix!(entry) if entry.file? }
+    path.find { |entry| fix!(entry) if entry.file? and not entry.dirname.to_s[%r{(^|/)\.git(/|$)}] }
   else
     fix!(path)
   end
