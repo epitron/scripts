@@ -151,12 +151,11 @@ alias a2="a"
 alias ch="chromium"
 
 # net
-alias_all_as_sudo iptables netctl ufw dhcpcd nethogs bwm-ng
+alias_all_as_sudo iptables netctl ufw dhcpcd nethogs
 alias ssh='ssh -2'
 alias scpfast='scp -c arcfour128'
 alias sshfast='ssh -c arcfour128'
 alias mosh='msh'
-alias bmon='bwm-ng'
 alias whois='whois -H'
 alias geoip='geoiplookup'
 alias geoip6='geoiplookup6'
