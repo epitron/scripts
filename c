@@ -936,7 +936,7 @@ def print_vtt(filename)
   last_time = 0
   enum = Pathname.new(filename).each
 
-  enum.take_while { |line| line[/^##$/] }
+  enum.take_while { |line| line[/^\#\#$/] }
   enum.next
 
   prev = nil
