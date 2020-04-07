@@ -78,39 +78,108 @@ end
 #   cmd
 # end
 
-### Converters ###############################################################
-
-# NOTE: Defaults to 'coderay'
+### Special-case Converters ###############################################################
 
 EXT_HIGHLIGHTERS = {
+  # crystal
   ".cr"             => :ruby,
+
+  # julia
   ".jl"             => :ruby,
+
+  # perl
   ".pl"             => :ruby,
+
+  # (c)make
   ".cmake"          => :ruby,
   ".mk"             => :bash,
+
+  # xdg
   ".install"        => :bash,
   ".desktop"        => :bash,
+
+  # configs
   ".conf"           => :bash,
-  ".prf"            => :bash,
   ".ini"            => :bash,
-  ".service"        => :bash,
+  ".prf"            => :bash,
   ".ovpn"           => :bash,
-  ".hs"             => :text,
-  ".cl"             => :c,
   ".rc"             => :c,
-  ".inc"            => :c,
-  ".rl"             => :c, # ragel definitions
-  ".ino"            => :c, # arduino sdk files
-  ".shader"         => :c,
-  ".glsl"           => :c,
-  ".dart"           => :java,
-  ".zig"            => pygmentize(:rust),
-  ".gradle"         => :groovy,
-  ".sage"           => :python,
+  ".service"        => :bash,
+
+  # haskell
+  ".hs"             => :text,
+
+  # lisp
+  ".cl"             => :c,
   ".lisp"           => :clojure,
   ".scm"            => :clojure,
+  ".rkt"            => pygmentize,
+
+  # gl
+  ".shader"         => :c,
+  ".glsl"           => :c,
+
+  # rust
+  ".rs"             => pygmentize,
+  ".toml"           => rougify,
+
+  # asm
+  ".s"              => pygmentize, # assembler
+
+  # matlab
+  ".m"              => pygmentize(:matlab),
+  ".asv"            => pygmentize(:matlab),
+
+  # dart
+  ".dart"           => :java,
+
+  # zig
+  ".zig"            => pygmentize(:rust),
+
+  # java
+  ".gradle"         => :groovy,
+  ".sage"           => :python,
   ".qml"            => :php,
   ".pro"            => :sql,
+
+  # llvm
+  ".ll"             => rougify,
+
+  # systemtap
+  ".stp"            => :javascript,
+
+  # caml
+  ".ml"             => pygmentize,
+
+  # nim
+  ".nim"            => rougify,
+  ".nimble"         => rougify(:nim),
+  ".gd"             => rougify(:nim),
+
+  # v
+  ".v"              => rougify(:dart),
+
+  # ada
+  ".ada"            => rougify,
+  ".ads"            => rougify,
+  ".adb"            => rougify,
+  ".gpr"            => rougify,
+  ".adc"            => rougify(:ada),
+
+  # patch
+  ".diff"           => pygmentize,
+  ".patch"          => pygmentize,
+
+  # sublime
+  ".tmLanguage"     => :xml,
+  ".sublime-syntax" => :yaml,
+
+  # misc
+  ".inc"            => :c, # weird demo stuff
+  ".rl"             => :c, # ragel definitions
+  ".ino"            => :c, # arduino sdk files
+
+  # xml stuff
   ".ws"             => :xml,
   ".nzb"            => :xml,
   ".owl"            => :xml,
@@ -120,25 +189,6 @@ EXT_HIGHLIGHTERS = {
   ".xspf"           => :xml,
   ".smil"           => :xml,
   ".xsl"            => :xml,
-  ".gd"             => rougify("nim"),
-  ".ll"             => rougify,
-  ".stp"            => :javascript, # systemtap
-  ".ml"             => pygmentize,
-  ".rkt"            => pygmentize,
-  ".nim"            => rougify,
-  ".nimble"         => rougify("nim"),
-  ".v"              => rougify("dart"),
-  ".ads"            => rougify,
-  ".adb"            => rougify,
-  ".diff"           => pygmentize,
-  ".patch"          => pygmentize,
-  ".rs"             => pygmentize,
-  ".s"              => pygmentize, # assembler
-  ".toml"           => rougify,
-  ".tmLanguage"     => :xml,
-  ".sublime-syntax" => :yaml,
-  ".m"              => pygmentize(:matlab),
-  ".asv"            => pygmentize(:matlab),
 }
 
 FILENAME_HIGHLIGHTERS = {
