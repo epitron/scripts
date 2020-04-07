@@ -57,25 +57,25 @@ end
 
 def skipit?(ext, true_ext, mime)
   # p [ext, true_ext, mime]
-  (ext == "apk"  and true_ext == "zip") or
-  (ext == "xspf" and true_ext == "htm") or
-  (ext == "java" and true_ext == "c") or
-  (ext == "json" and true_ext == "c") or
-  (ext == "js"   and true_ext == "c") or
-  (ext == "rdf"  and true_ext == "xml") or
-  (ext == "mp4"  and true_ext == "3gpp") or
-  (ext == "m4a"  and true_ext == "mp4") or
-  (ext == "m4a"  and true_ext == "3gpp") or
-  (ext == "docx" and true_ext == "zip") or
-  (ext == "html" and true_ext == "xht") or
-  (ext == "htm"  and true_ext == "xht") or
-  (ext == "m4a"  and true_ext == "3ga") or
-  (ext == "dll"  and true_ext == "exe") or
-  (ext == ""     and mime.type =~ /(^application|python3?$)/) or
-  (ext == "ppt"  and mime.type == "application/x-ole-storage") or
-  (ext == "xls"  and mime.type == "application/x-ole-storage") or
+  (ext == "apk"    and true_ext == "zip") or
+  (ext == "xspf"   and true_ext == "htm") or
+  (ext == "java"   and true_ext == "c") or
+  (ext == "json"   and true_ext == "c") or
+  (ext == "js"     and true_ext == "c") or
+  (ext == "rdf"    and true_ext == "xml") or
+  (ext == "mp4"    and true_ext == "3gpp") or
+  (ext == "m4a"    and true_ext == "mp4") or
+  (ext == "m4a"    and true_ext == "3gpp") or
+  (ext == "docx"   and true_ext == "zip") or
+  (ext == "html"   and true_ext == "xht") or
+  (ext == "htm"    and true_ext == "xht") or
+  (ext == "m4a"    and true_ext == "3ga") or
+  (ext == "dll"    and true_ext == "exe") or
   (ext == "mhtml"  and true_ext == "eml") or
-  (ext == "sketch" and true_ext == "sqlite3")
+  (ext == "sketch" and true_ext == "sqlite3") or
+  (ext == ""       and mime.type =~ /(^application|python3?$)/) or
+  (ext =~ /^(ppt|pps|xls)$/ and mime.type == "application/x-ole-storage") or
+  false
 end
 
 def fix!(path)
