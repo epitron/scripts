@@ -320,7 +320,6 @@ alias pycd=pip-cd
 #alias math='noglob math'
 #alias gfv='noglob gfv'
 alias yd='youtube-dl --xattrs --no-mtime'
-alias ydu='youtube-dl --update'
 
 # upm
 alias u=upm

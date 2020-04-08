@@ -7,7 +7,7 @@ require 'pp'
 
 KODIRC     = File.expand_path("~/.kodirc")
 CONFIG     = %i[host port user pass].zip(File.read(KODIRC).each_line.map(&:strip)).to_h
-MEDIA_DIRS = ["#{Dir.home}/media/", "#{Dir.home}/g/"]
+MEDIA_DIRS = ["#{Dir.home}/media/", "#{Dir.home}/g/", "/w/epi/"]
 
 THEMES = {
   siberia:   {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
@@ -96,7 +96,7 @@ def to_kodipath(url)
 
       MEDIA_DIRS.each do |mediadir|
         if path.to_s.start_with?(mediadir)
-          return "http://grog:8887/#{URI.escape path.relative_path_from(mediadir).to_s}"
+          return "http://10.0.0.2:8887/#{URI.escape path.relative_path_from(mediadir).to_s}"
         end
       end
 

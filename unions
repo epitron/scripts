@@ -11,6 +11,8 @@ shares = {
   "media/podcasts"      => ["podcasts"],
   "media/talks"         => ["talks-*"],
   "media/talks-old"     => ["talks-old"],
+  "media/research"      => ["research"],
+  "media/.archive"      => ["/d/archive"],
 }
 
 root       = ENV["HOME"]
@@ -41,7 +43,9 @@ end
 
 # Expand globs
 shares = shares.map do |dest, srcs|
-  ["#{root}/#{dest}", srcs.map { |src| Dir["#{root}/#{src}"].sort }.flatten]
+  ["#{root}/#{dest}", srcs.map do |src| 
+   Dir[ src[ %r{^/} ] ? src : "#{root}/#{src}" ].sort
+  end.flatten]
 end
 
 unmount = proc do

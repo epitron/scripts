@@ -227,6 +227,32 @@ BEGIN {
       Net::HTTP.get_response(self)
     end
 
+    # def get(headers={}, redirect_limit=10)
+    #   raise "Sorry, URI can't get from #{scheme.inspect} URIs yet" unless scheme =~ /^https?$/
+    #   raise 'Too many HTTP redirections' if redirect_limit == 0
+
+    #   # headers['User-Agent'] ||= USER_AGENT
+
+    #   # response = Net::HTTP.start(host, port) do |http|
+    #   #   # the_path = path.empty? ? "/" : path
+    #   #   req = Net::HTTP::Get.new(self, headers)
+    #   #   http.request(req)
+    #   # end
+
+    #   response = Net::HTTP.get_response(self)
+
+    #   case response
+    #   when Net::HTTPSuccess
+    #     response
+    #   when Net::HTTPRedirection
+    #     # puts "redirect: #{response['location']}"
+    #     URI(response['location']).get(headers, redirect_limit-1)
+    #   else
+    #     response.error!
+    #   end
+    # end
+
+
     def follow_redirect
       response = get
 

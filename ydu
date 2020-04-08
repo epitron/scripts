@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+require 'pathname'
+
+def msg(s)
+  $stderr.puts "=== #{s} ========================"
+end
+
+scripts = Pathname.new(__dir__)
+ydu     = scripts/"ydu"
+src     = scripts/"src"
+yd_link = scripts/"youtube-dl"
+yd_dir  = src/"youtube-dl"
+yd_main = src/"youtube-dl"/"youtube_dl"/"__main__.py"
+yd_repo = "https://github.com/rg3/youtube-dl.git"
+
+unless src.exist?
+  msg "making #{src}"
+  src.mkdir
+end
+
+if yd_dir.exist?
+  msg "updating"
+  Dir.chdir(yd_dir)
+  system("git", "pull")
+else
+  msg "cloning"
+  system("git", "clone", "--depth=1", yd_repo, yd_dir.to_s)
+end
+
+if yd_link.realpath == ydu
+  msg "fixing symlink"
+  yd_link.unlink
+  yd_link.make_symlink(yd_main)
+  puts "#{yd_link} => #{yd_link.realpath}"
+
+  msg "running youtube-dl"
+  exec("youtube-dl", *ARGV)
+end
