@@ -27,9 +27,11 @@ else
   system("git", "clone", "--depth=1", yd_repo, yd_dir.to_s)
 end
 
-if yd_link.realpath == ydu
+yd_link.unlink if yd_link.file? and not yd_link.symlink?
+
+if not yd_link.exist? or yd_link.realpath == ydu
   msg "fixing symlink"
-  yd_link.unlink
+  yd_link.unlink if yd_link.exist?
   yd_link.make_symlink(yd_main)
   puts "#{yd_link} => #{yd_link.realpath}"
 
