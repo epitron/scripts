@@ -46,7 +46,8 @@ alias da='d -a'
 if we_have exa
 then
   alias e='exa'
-  alias l='exa -a --long --header'
+  alias l='exa -ag --long --header'
+  alias ls='exa'
 
   function t() {
     exa --long --header --tree --color=always "$@" | less -SRXFi

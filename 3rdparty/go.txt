@@ -3,3 +3,4 @@ github.com/github/hub
 github.com/caddyserver/caddy/caddy
 github.com/eliukblau/pixterm
 github.com/allinurl/goaccess
+github.com/rylio/ytdl
