@@ -180,6 +180,7 @@ fi
 
 alias um='unmount'
 
+alias lsmnt='findmnt'
 alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 
@@ -280,9 +281,13 @@ alias gcs="gc --depth=1"
 alias be="bundle exec"
 alias rock='luarocks'
 alias gi='gem install'
+
+alias pip='python -m pip'
 alias pi='pip install --user'
-alias pi2='pip2 install --user'
-alias pi3='pip3 install --user'
+
+#alias pi2='pip2 install --user'
+#alias pi3='pip3 install --user'
+
 alias piu='pip uninstall'
 alias py=python
 alias ipy=ipython
