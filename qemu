@@ -110,9 +110,11 @@ if opts.pi?
 elsif opts.pi2?
   cmd = ["qemu-system-arm", "-cpu", "arm1176", "-M", "raspi2"]
 else
-  cmd = ["qemu-system-x86_64", "-cpu", "host"]
+  cmd = ["qemu-system-x86_64"]
   if File.exist?("/dev/kvm") or opts.kvm?
-    cmd += ["-enable-kvm"]
+    cmd += ["-enable-kvm", "-cpu", "host"]
+  else
+    cmd += ["-cpu", "max"]
   end
 end
 
