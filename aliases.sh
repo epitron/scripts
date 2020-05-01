@@ -365,3 +365,4 @@ fi
 # (Almost works... There's just a newline issue)
 #
 #function faketty { script -qfc "$(printf "%q " "$@")"; }
+shiftpath() { [ -d "$1" ] && PATH="${PATH}${PATH:+:}${1}"; }
