@@ -9,7 +9,7 @@ require 'open-uri'
 require 'json'
 
 def pls_urls(pls)
-  open(pls).read.scan(/^File\d+=(.+)$/).flatten
+  URI.open(pls).read.scan(/^File\d+=(.+)$/).flatten
 end
 
 puts "========================================="
@@ -18,7 +18,7 @@ puts "========================================="
 puts
 puts "* Connecting to API..."
 
-json = JSON.parse(open("https://api.somafm.com/channels.json").read)
+json = JSON.parse(URI.open("https://api.somafm.com/channels.json").read)
 puts "  |_ #{json["channels"].size} stations found"
 puts
 puts "* Writing stations to 'somafm.xspf'..."

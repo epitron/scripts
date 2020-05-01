@@ -15,3 +15,7 @@ ranger
 kitty
 
 ueberzug
+
+pafy # leaner youtube-dl (command: ytdl)
+
+
