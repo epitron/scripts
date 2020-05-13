@@ -1473,7 +1473,7 @@ def convert(arg)
         print_markdown(File.read arg)
       when *%w[.adoc]
         print_asciidoc(File.read arg)
-      when *%w[.moin]
+      when *%w[.moin .wiki]
         print_moin(File.read arg)
       when *%w[.ipynb]
         print_ipynb(arg)
