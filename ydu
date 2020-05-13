@@ -11,7 +11,7 @@ src     = scripts/"src"
 yd_link = scripts/"youtube-dl"
 yd_dir  = src/"youtube-dl"
 yd_main = src/"youtube-dl"/"youtube_dl"/"__main__.py"
-yd_repo = "https://github.com/rg3/youtube-dl.git"
+yd_repo = "https://github.com/ytdl-org/youtube-dl.git"
 
 unless src.exist?
   msg "making #{src}"
