@@ -32,8 +32,9 @@ def parse_options
     on 'e',  'enqueue',   "Enqueue (append) to Chromecast playlist"
     on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
-    on 'v',  'verbose',   "Show more info"
     on 'y',  'youtube',   "Search youtube"
+    on 'p',  'pry',       "Launch a Pry inspector before playing"
+    on 'v',  'verbose',   "Show more info"
   end
 
   [opts, ARGV]
@@ -565,7 +566,7 @@ end
 
 # def play(url, foreground: false, verbose: false, audio_only: false)
 def play(url, opts)
-  foreground = opts["no-daemon"]
+  foreground = opts["no-daemon"] or opts.pry?
   verbose    = opts.verbose?
   audio_only = opts.audio?
   fullscreen = opts.fullscreen?
@@ -604,7 +605,7 @@ def play(url, opts)
       cmd += [video["url"], "--audio-file=#{audio["url"]}"]
     end
   elsif url = json["url"]
-    if json["format"]["audio only"]
+    if json["format"] =~ /audio only/ or json["ext"] == "m4a" or json["ext"] == "mp3"
       cmd << "--audio-file=#{url}"
       cmd << json["thumbnail"]
     else
@@ -657,6 +658,12 @@ def play(url, opts)
 
   # notify(:video, "Playing:", json["title"], time: 4)
   p running: cmd if verbose
+
+  if opts.pry?
+    require 'pry'
+    binding.pry
+  end
+
   system(*cmd)
 end
 
