@@ -604,7 +604,12 @@ def play(url, opts)
       cmd += [video["url"], "--audio-file=#{audio["url"]}"]
     end
   elsif url = json["url"]
-    cmd << url
+    if json["format"]["audio only"]
+      cmd << "--audio-file=#{url}"
+      cmd << json["thumbnail"]
+    else
+      cmd << url
+    end
   else
     raise "Dunno!"
   end
