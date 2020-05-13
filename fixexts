@@ -60,6 +60,8 @@ def skipit?(ext, true_ext, mime)
   # p [ext, true_ext, mime]
   (ext == "apk"    and true_ext == "zip") or
   (ext == "epub"   and true_ext == "zip") or
+  (ext == "cbr"    and true_ext == "rar") or
+  (ext == "tgz"    and true_ext == "gz") or
   (ext == "xspf"   and true_ext == "htm") or
   (ext == "java"   and true_ext == "c") or
   (ext == "json"   and true_ext == "c") or
@@ -76,7 +78,9 @@ def skipit?(ext, true_ext, mime)
   (ext == "mhtml"  and true_ext == "eml") or
   (ext == "sketch" and true_ext == "sqlite3") or
   (ext == ""       and mime.type =~ /(^application|python3?$)/) or
-  (ext =~ /^(ppt|pps|xls|doc)$/ and mime.type == "application/x-ole-storage") or
+  (ext == "run"    and mime.type == "application/x-executable") or
+  (ext =~ /^(pptx|xlsx)$/ and true_ext == "zip") or
+  (ext =~ /^(ppt|pps|xls|doc|msi)$/ and mime.type == "application/x-ole-storage") or
   false
 end
 
