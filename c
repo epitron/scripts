@@ -1366,7 +1366,8 @@ def print_http(url)
 
   if which("youtube-dl") and uri.host =~ /(youtube\.com|youtu\.be)$/
     # TODO: Pretty-print video title/description/date/etc, and render subtitles (if available)
-    youtube_info(url).pretty_inspect
+    json = youtube_info(url)
+    CodeRay.scan(JSON.pretty_generate(json), :json).term
   else
     # IO.popen(["lynx", "-dump", url]) { |io| io.read }
     require 'open-uri'
