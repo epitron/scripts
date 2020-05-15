@@ -205,6 +205,8 @@ alias suspend='systemctl suspend -i'
 
 # misc
 alias dict='dictless'
+alias wh="$(which w)"
+alias w='wict'
 alias chrome='google-chrome'
 alias dmenu="dmenu -l 50"
 alias resett="tput reset"

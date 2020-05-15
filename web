@@ -120,6 +120,7 @@ routes do
   match host: "longnow.org",  path: "/seminars/",   &play_video
   match host: "c-span.org",   path: "/video/",      &play_video
   match host: "tvo.org",      path: ["/programs/", "/video/", "/documentaries/"], &play_video
+  match host: %w[soundcloud.com bandcamp.com mixcloud.com], &play_video
   match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob)$/i, &play_video
 
   # Other videos open in browsers that are good at playing videos
