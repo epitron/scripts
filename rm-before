@@ -30,13 +30,15 @@ if args.size > 1
 end
 
 cutfile     = Path[args.first]
-files       = cutfile.parent.ls_files
-sorted      = files.sort_by(&:mtime)
-cutpoint    = sorted.index(cutfile)
-to_delete   = sorted[opts.inclusive? ? 0..cutpoint : 0...cutpoint]
-to_keep     = sorted - to_delete
+files       = cutfile.parent.ls_files.sort_by(&:mtime)
+
+cutpoint    = files.index(cutfile)
+to_delete   = files[opts.inclusive? ? 0..cutpoint : 0...cutpoint]
+to_keep     = files - to_delete
+
 delete_size = to_delete.sum(&:size)
 keep_size   = to_keep.sum(&:size)
+
 deleter     = which("trsh", "rm")
 
 puts "Files before #{cutfile}:"
