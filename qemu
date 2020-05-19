@@ -19,7 +19,7 @@ def parse_options
     on "s=", "size",     "Disk size", default: "5G"
     on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
-    on "k",  "kvm",      "Enable KVM"
+    on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "r",  "restrict", "Restrict the network (firewall)"
     on "e",  "efi",      "Boot using OVMF EFI BIOS"
@@ -28,6 +28,7 @@ def parse_options
     on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
     on "c",  "console",  "Output serial to the console"
     on "C",  "curses",   "Terminal-based UI (Press Alt-2 to get to qemu command console)"
+    on "n",  "no-daemon","Run in the foreground"
     on "M",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
     on "V",  "version",  "Show version information"
@@ -193,5 +194,7 @@ cmd += ["-net", "nic,netdev=usernet"]
 cmd += ["-boot", opts[:boot]] if opts[:boot]
 
 p cmd if opts.verbose?
+
+Process.daemon(true) unless opts["no-daemon"] or opts.console? or opts.curses?
 
 exec *cmd
