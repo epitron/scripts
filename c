@@ -196,6 +196,7 @@ FILENAME_HIGHLIGHTERS = {
   "Gemfile"        => :ruby,
   "CMakeLists.txt" => :ruby,
   "Makefile"       => :bash,
+  "Dockerfile"     => :bash,
   "Kconfig"        => :bash,
   "Kconfig.name"   => :bash,
   "makefile"       => :bash,
