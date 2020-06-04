@@ -1504,7 +1504,7 @@ def convert(arg)
         print_xml(arg)
       when *%w[.csv .xls]
         print_csv(arg)
-      when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4s .avi .mov .qt .rm .wma .wmv]
+      when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4a .m4s .avi .mov .qt .rm .wma .wmv]
         print_ffprobe(arg)
       when *%w[.jpg .jpeg]
         print_exif(arg)
