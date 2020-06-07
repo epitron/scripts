@@ -8,7 +8,7 @@
 # - Fuzzy matching when script isn't found
 #######################################################################
 
-def root?
+def running_as_root?
   Process.uid == 0
 end
 
@@ -16,9 +16,11 @@ end
 
 class Systemd
 
-  def initialize(user=false)
-    @user = user
+  def initialize(user_mode=false)
+    @user_mode = user_mode
   end
+
+  def user_mode?; @user_mode; end
 
   def self.detected?
     system("pidof systemd > /dev/null")
@@ -27,11 +29,15 @@ class Systemd
   def systemctl(*args)
     opts = args.last.is_a?(Hash) ? args.pop : {}
 
-    if @user
-      cmd = %w[systemctl --user]
-    else
-      cmd = root? ? %w[systemctl] : %w[sudo systemctl]
-    end
+    cmd = if user_mode?
+            %w[systemctl --user]
+          else
+            if running_as_root? or !opts[:sudo]
+              %w[systemctl]
+            else
+              %w[sudo systemctl]
+            end
+          end
 
     cmd += args
 
@@ -46,7 +52,7 @@ class Systemd
   def services
     # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
     # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
-    systemctl("list-unit-files", msg: "Units")
+    systemctl("list-unit-files", msg: "Units", sudo: false)
   end
 
   def search(query)
@@ -129,7 +135,7 @@ class Initd
 
   def run(service, command)
     cmd = ["#{@initdir}/#{service}", command]
-    cmd = ["sudo", *cmd] unless root?
+    cmd = ["sudo", *cmd] unless running_as_root?
     system *cmd
   end
 
@@ -194,7 +200,7 @@ class Runit
 
   def run(service, command)
     cmd = ["#{@initdir}/#{service}", command]
-    cmd = ["sudo", *cmd] unless root?
+    cmd = ["sudo", *cmd] unless running_as_root?
     system *cmd
   end
 
