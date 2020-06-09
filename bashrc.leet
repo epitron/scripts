@@ -25,6 +25,7 @@ function possibly_append_path() {
 
 # Things for the PATH (in reverse order of precedence)
 possibly_append_path ~/opt/graal/bin
+possibly_prepend_path ~/.fzf/bin
 possibly_prepend_path ~/perl5/bin
 possibly_prepend_path ~/.nimble/bin
 possibly_prepend_path ~/.pub-cache/bin
@@ -51,7 +52,7 @@ export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
 export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
 # fzf
-if we_have fzf; then
+if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   if we_have bfs; then
     export FZF_DEFAULT_COMMAND="bfs -color"
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
