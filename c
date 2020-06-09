@@ -178,6 +178,7 @@ EXT_HIGHLIGHTERS = {
   ".inc"            => :c, # weird demo stuff
   ".rl"             => :c, # ragel definitions
   ".ino"            => :c, # arduino sdk files
+  ".f"              => pygmentize(:forth),
 
   # xml stuff
   ".ws"             => :xml,
@@ -1388,6 +1389,46 @@ end
 
 ##############################################################################
 
+def print_weechat_log(filename)
+  require 'epitools/colored'
+
+  line_struct = Struct.new(:date, :time, :nick, :msg)
+  colors      = [2,3,4,5,6,9,10,11,12,13,14,15]
+  last_date   = nil
+  slice_size  = 100
+
+  Enumerator.new do |out|
+    open(filename).each_line.each_slice(slice_size) do |slice|
+
+      lines        = slice.map { |line| line_struct.new *line.chomp.split(/\s+/, 4) }
+      longest_nick = lines.map { |l| l.nick.size }.max
+
+      lines.each do |l|
+        if l.date != last_date
+          out << ""
+          out << "<8>==== <11>#{l.date} <8>=============================".colorize
+          out << ""
+          last_date = l.date
+        end
+
+        case l.nick
+        when "--"
+          out << "<8>-- #{l.msg}".colorize
+        when "<--", "-->"
+          out << "<8>#{l.nick} #{l.msg}".colorize
+        else
+          color         = colors[l.nick.chars.map(&:ord).sum % colors.size]
+          indented_nick = l.nick.rjust(longest_nick)
+          out << "<8>[#{l.time}] <#{color}>#{indented_nick}  <7>#{l.msg}".colorize
+        end
+      end
+
+    end
+  end
+end
+
+##############################################################################
+
 def print_pdf(file)
   raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
   raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
@@ -1504,6 +1545,8 @@ def convert(arg)
         print_xml(arg)
       when *%w[.csv .xls]
         print_csv(arg)
+      when *%w[.weechatlog]
+        print_weechat_log(arg)
       when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4a .m4s .avi .mov .qt .rm .wma .wmv]
         print_ffprobe(arg)
       when *%w[.jpg .jpeg]
