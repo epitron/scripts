@@ -1,2 +1,144 @@
-ponymix
+# Core system
+base
+base-devel
+linux-hardened
 
+
+# Net config
+net-tools
+bind-tools
+iw
+wpa_supplicant
+ferm
+
+
+# Net tools
+mtr
+nmap
+whois
+iptraf-ng
+socat
+openssh
+
+
+# File transfers
+rsync
+lftp
+curl
+wget
+axel
+
+
+# HTTP
+lynx
+links
+
+
+# Package tools
+yaourt
+pacaur
+pkgfile
+
+
+# Development/scripting
+git
+subversion
+ruby
+ruby-docs
+xclip xse wmctrl xdotool
+python
+perl-term-readkey
+sublime-text-dev
+meld
+nano
+vim
+tmux
+postgresql
+
+
+# Desktop environment
+xfce4
+xfce4-goodies
+xorg
+xorg-apps
+xorg-fonts
+
+
+# Desktop themes
+xcursor-vanilla-dmz
+gnome-themes-standard
+ttf-ms-win10
+ttf-droid-ib
+ttf-ubuntu-font-family-ib
+ttf-noto-fonts-ib
+ttf-dejavu-ib
+
+
+# Desktop apps
+chromium
+libreoffice-fresh
+evince
+caja
+dolphin
+hexchat
+pidgin
+google-earth
+qbittorrent
+
+
+# Microsoft
+wine winetricks
+qemu
+dosbox
+
+
+# Games
+steam
+sdlmame
+
+
+# Desktop utils
+dmenu
+yad tesseract-data-eng
+redshift python-gobject
+variety
+gnome-disk-utility gparted gsmartcontrol
+
+
+# Filesystems
+fuse
+sshfs
+mergerfs
+fuseiso
+
+
+# Media
+mpv ffmpeg mplayer
+feh
+pulseaudio pavucontrol volumeicon ponymix
+audacious-plugins mpg123 libmtp libmms
+imagemagick
+handbrake
+
+
+# Printing/Scanning
+cups
+sane
+system-config-printer
+# samsung-unified-driver
+
+
+# Misc
+zip unzip p7zip unace unrar pigz pixz
+exa bat
+geoip geoip-database-extra
+tree
+the_silver_searcher
+pv
+fzf
+fortune-mod
+ncdu
+dhex
+
+# Security
+cvechecker

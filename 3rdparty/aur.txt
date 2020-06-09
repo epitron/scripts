@@ -13,3 +13,5 @@ spotify-adblock-git
 
 yay
 yaourt
+
+fsearch-git
