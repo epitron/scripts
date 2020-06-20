@@ -17,7 +17,8 @@ if STDIN.tty?
   end
 else
   STDIN.each_line do |line|
-    puts "[#{Time.now.strftime(FORMAT)}] #{line}"
+    STDOUT.puts "[#{Time.now.strftime(FORMAT)}] #{line}"
+    STDOUT.flush
   end
 end
 
