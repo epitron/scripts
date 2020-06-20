@@ -71,7 +71,7 @@ if opts.download? or opts.update?
   end
 
   Path["*.tar.xz"].each do |archive|
-    system("tar", "-Jxvf", archive)
+    system("tar", "-Ixz", "-xvf", archive)
   end
 
   exit
@@ -88,7 +88,7 @@ unless data_dir.exists?
   end
 end
 
-datfiles = (data_dir/"*#{opts[:ext]}")
+datfiles = (data_dir/"**/*#{opts[:ext]}")
 
 dbs = datfiles.map { |datfile| GeoIP.new(datfile) }
 
