@@ -174,6 +174,9 @@ EXT_HIGHLIGHTERS = {
   ".tmLanguage"     => :xml,
   ".sublime-syntax" => :yaml,
 
+  # haxe
+  ".hx"             => :java,
+
   # misc
   ".inc"            => :c, # weird demo stuff
   ".rl"             => :c, # ragel definitions
@@ -990,8 +993,8 @@ def print_vtt(filename)
   last_time = 0
   enum = Pathname.new(filename).each
 
-  enum.take_while { |line| line[/^\#\#$/] }
-  enum.next
+  enum.take_while { |line| line[/^(\#\#|WEBVTT)$/] }
+  enum.take_while { |line| line.strip == "" }
 
   prev = nil
 
@@ -1003,14 +1006,14 @@ def print_vtt(filename)
     loop do
       break if (line = enum.next).empty?
 
-      stripped = strip_colors[line]
+      stripped = convert_htmlentities( strip_colors[line] )
 
       unless stripped.empty? or stripped == prev
         unless printed_timestamp
           yield "#{grey}#{a} #{white}#{stripped}"
           printed_timestamp = true
         else
-          yield "#{grey}#{" " * a.size} #{white}#{stripped}"
+          yield "#{grey}#{" " * (a ? a.size : 0)} #{white}#{stripped}"
         end
 
         prev = stripped
