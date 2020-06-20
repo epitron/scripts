@@ -602,7 +602,11 @@ def play(url, opts)
     if audio_only
       cmd << audio["url"]
     else
-      cmd += [video["url"], "--audio-file=#{audio["url"]}"]
+      if url.to_s[/(youtu\.be|youtube\.com)/]
+        cmd << url.to_s
+      else
+        cmd += [video["url"], "--audio-file=#{audio["url"]}"]
+      end
     end
   elsif url = json["url"]
     if json["format"] =~ /audio only/ or json["ext"] == "m4a" or json["ext"] == "mp3"
