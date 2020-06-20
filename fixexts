@@ -58,8 +58,11 @@ end
 
 def skipit?(ext, true_ext, mime)
   # p [ext, true_ext, mime]
+  true_ext.nil? or
   (ext == "apk"    and true_ext == "zip") or
   (ext == "epub"   and true_ext == "zip") or
+  (ext == "mmap"   and true_ext == "zip") or
+  (ext == "backup" and true_ext == "zip") or
   (ext == "cbr"    and true_ext == "rar") or
   (ext == "tgz"    and true_ext == "gz") or
   (ext == "xspf"   and true_ext == "htm") or
@@ -79,9 +82,34 @@ def skipit?(ext, true_ext, mime)
   (ext == "sketch" and true_ext == "sqlite3") or
   (ext == ""       and mime.type =~ /(^application|python3?$)/) or
   (ext == "run"    and mime.type == "application/x-executable") or
+  (ext == "txt"    and mime.type == "text/html") or
   (ext =~ /^(pptx|xlsx)$/ and true_ext == "zip") or
   (ext =~ /^(ppt|pps|xls|doc|msi)$/ and mime.type == "application/x-ole-storage") or
   false
+end
+
+FIXERS = {
+  # [ current-extension, actual-type ] => proc
+
+  ["mp4", "video/mp2t"]      => proc { |path| convert_to_mp4(path) },
+  ["mp4", "video/quicktime"] => proc { |path| convert_to_mp4(path) },
+}
+
+def convert_to_mp4(path)
+  require 'fileutils'
+
+  tmp = Pathname.new("/tmp/fixing.mp4")
+  cmd  = ["ffmpeg", "-hide_banner", "-y", "-i", path.to_s, "-c", "copy", "-movflags", "faststart", tmp.to_s]
+
+  unless system(*cmd)
+    tmp.unlink if tmp.exist?
+    raise "error!"
+  end
+
+  FileUtils.touch(tmp, mtime: path.mtime)
+  FileUtils.mv(tmp, path)
+
+  path
 end
 
 def fix!(path)
@@ -94,11 +122,19 @@ def fix!(path)
   unless mime.extensions.include?(ext)
     return if skipit?(ext, true_ext, mime)
 
-    msg = "<8>* <7>\"<14>#{path}<7>\" <7>is actually a <7>\"<11>.#{true_ext}<7>\" <8>(<3>#{mime.type}<8>)<7>; rename?".colorize
+    fix_container = FIXERS[[ext, mime]]
+
+    msg = "<8>* <7>\"<14>#{path}<7>\" <7>is actually a <7>\"<11>.#{true_ext}<7>\" <8>(<3>#{mime.type}<8>)<7>; #{fix_container ? "fix container" : "rename"}?".colorize
+
     if prompt(msg) == "y"
-      newpath = path.sub_ext(".#{true_ext}")
-      puts "  <8>|_ <7>renamed: <10>#{newpath}".colorize
-      path.rename(newpath)
+      if fix_container
+        newpath = fix_container[path]
+        puts "  <8>|_ <7>fixed container: <10>#{newpath}".colorize
+      else
+        newpath = path.sub_ext(".#{true_ext}")
+        puts "  <8>|_ <7>renamed: <10>#{newpath}".colorize
+        path.rename(newpath)
+      end
     end
   end
 end
