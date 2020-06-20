@@ -3,7 +3,7 @@ require 'epitools'
 
 class String
   def url?
-    !!(self =~ %r{^https?://.+/.+})
+    !!(strip =~ %r{^https?://.+})
   end
 end
 
@@ -40,19 +40,16 @@ if $0 == __FILE__
 
   args = ARGV
 
-  if args.empty?
-    loop do
-      print "Paste link: "
-      url = gets.strip
-
-      show_links_for url
-      puts
-    end
-  end
-
   if args.any?
     args.each do |arg|
       show_links_for arg
+    end
+  else
+    loop do
+      print "Paste link: "
+      break if (url = gets&.strip).blank?
+      show_links_for url
+      puts
     end
   end
 
