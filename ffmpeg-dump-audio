@@ -21,7 +21,7 @@ end
 
 infile = Path[args.first]
 
-unless infile.exists?
+unless infile.exists? or infile.url?
   puts "Error: #{infile} not found."
   exit 1
 end

@@ -21,7 +21,8 @@ if STDIN.tty?
   end
 else
   STDIN.each_line do |line|
-    puts "[#{nice_stamp}] #{line}"
+    STDOUT.puts "[#{nice_stamp}] #{line}"
+    STDOUT.flush
   end
 end
 
