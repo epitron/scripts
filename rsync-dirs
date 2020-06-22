@@ -30,7 +30,7 @@ if args.any?
 
   letters  = %w[r l t]
   letters += %w[o g p] if opts.delete("-o") # ownership
-  letters += %w[z]     if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
+  letters += %w[zz]    if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
 
   params = ["--xattrs"] # Always sync xattrs
 
