@@ -307,7 +307,7 @@ gem-cd() {
 }
 
 pip-cd() {
-  for dir in `ls -1rd ~/.local/lib/python*/site-packages/` `ls -1rd /usr/lib/python*/site-packages/`; do
+  for dir in `\ls -1rd ~/.local/lib/python*/site-packages/` `\ls -1rd /usr/lib/python*/site-packages/`; do
     if [ -d $dir/$1 ]; then
       cd $dir/$1
       break
