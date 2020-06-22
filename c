@@ -816,8 +816,7 @@ end
 
 ##############################################################################
 
-def print_moin(moin)
-
+def moin2markdown(moin)
   convert_tables = proc do |s|
     chunks = s.each_line.chunk { |line| line.match? /^\s*\|\|.*\|\|\s*$/ }
 
@@ -870,8 +869,10 @@ def print_moin(moin)
     gsub(/\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
 
   markdown = convert_tables[markdown]
+end
 
-  print_markdown(markdown)
+def print_moin(moin)
+  print_markdown(moin2markdown(moin))
 end
 
 ##############################################################################
@@ -1516,10 +1517,10 @@ def convert(arg)
         print_html(File.read arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
-      when *%w[.adoc]
-        print_asciidoc(File.read arg)
       when *%w[.moin .wiki]
         print_moin(File.read arg)
+      when *%w[.adoc]
+        print_asciidoc(File.read arg)
       when *%w[.ipynb]
         print_ipynb(arg)
       when /^\.[1-9]$/ # manpages
