@@ -16,6 +16,8 @@ kitty
 
 ueberzug
 
+hachoir
+
 pafy # leaner youtube-dl (command: ytdl)
 
-
+https://github.com/WikiTeam/wikiteam
