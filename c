@@ -420,6 +420,8 @@ def run(*args, &block)
 
   if opts[:stderr]
     args << {err: [:child, :out]}
+  elsif opts[:noerr]
+    args << {err: File::NULL}
   end
 
   if env = opts[:env]
@@ -921,7 +923,7 @@ end
 ##############################################################################
 
 def print_rst(filename)
-  run("rst2ansi", filename)
+  run("rst2ansi", filename, noerr: true)
 end
 
 ##############################################################################
