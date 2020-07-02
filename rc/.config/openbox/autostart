@@ -2,7 +2,7 @@
 tint2 &
 
 # Set wallpaper
-(sleep 2 && feh --bg-scale ~/Backgrounds/snowtree.jpg) &
+(sleep 2 && feh --bg-scale ~/backgrounds/WahclelaFalls.jpg) &
 
 # Enable as required
 #xbacklight -set 100 &
@@ -10,7 +10,7 @@ tint2 &
 #setxkbmap us &
 
 # Onscreen system stats
-(sleep 2 && conky) &
+#(sleep 2 && conky) &
 
 # Network Manager Applet
 (sleep 2 && nm-applet) &
@@ -25,7 +25,7 @@ tint2 &
 (sleep 2 && volumeicon) &
 
 # notifyd
-xfce4-notifyd-launcher &
+# xfce4-notifyd-launcher &
 
 # fast-repeat
 key-repeat-rate
