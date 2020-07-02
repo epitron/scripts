@@ -90,7 +90,10 @@ qbittorrent
 wine winetricks
 qemu
 dosbox
-
+unshield
+innoextract
+cabextract
+woeusb # make a bootable USB stick out of a Windows DVD 
 
 # Games
 steam
@@ -142,3 +145,5 @@ dhex
 
 # Security
 cvechecker
+
+
