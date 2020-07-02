@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+import pyfiglet
+import os
+import sys
+import subprocess
+
+less = subprocess.Popen(
+  ['less', '-R', '--quit-if-one-screen'],
+  stdin=subprocess.PIPE)
+os.dup2(less.stdin.fileno(), sys.stdout.fileno())
+
+for font in sorted(pyfiglet.FigletFont.getFonts()):
+  print(font)
+  pyfiglet.print_figlet(font, font=font)
+  print()
+
+os.close(sys.stdout.fileno())
+less.communicate()
