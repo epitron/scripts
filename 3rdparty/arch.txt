@@ -118,6 +118,7 @@ fuseiso
 # Media
 mpv ffmpeg mplayer
 feh
+ncmpcpp
 pulseaudio pavucontrol volumeicon ponymix
 audacious-plugins mpg123 libmtp libmms
 imagemagick
