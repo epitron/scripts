@@ -150,6 +150,8 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
+alias mp="ncmpcpp"
+alias yd='youtube-dl --xattrs --no-mtime'
 
 # net
 alias_all_as_sudo iptables netctl ufw dhcpcd nethogs
@@ -327,7 +329,6 @@ alias pycd=pip-cd
 # Things with literal arguments!
 #alias math='noglob math'
 #alias gfv='noglob gfv'
-alias yd='youtube-dl --xattrs --no-mtime'
 
 # upm
 alias u=upm
