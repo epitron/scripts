@@ -1,0 +1,5 @@
+export IP=10.1.1.2  # change this to the IP of the server running WeeChat
+openssl req -x509 -nodes -newkey rsa:2048 -keyout relay.pem \
+    -subj "/O=weechat/CN=my-weechat" \
+    -config <(cat /etc/ssl/openssl.cnf <(printf "\n[v3_ca]\nsubjectAltName = @alternate_names\n[alternate_names]\nIP.1 = \${ENV::IP}")) \
+    -days 365 -out relay.pem
