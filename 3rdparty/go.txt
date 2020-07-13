@@ -6,3 +6,5 @@ github.com/allinurl/goaccess
 github.com/rylio/ytdl
 github.com/diamondburned/gtkcord3
 github.com/diamondburned/discordlogin
+github.com/xxxserxxx/gotop/cmd/gotop
+github.com/42wim/matterbridge
