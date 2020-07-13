@@ -1,1 +1,4 @@
-ip
+curl http://ip.ttm.sh/
+#curl https://ip.ttm.sh/
+#curl https://api.ipify.org
+#curl http://api.ipify.org
