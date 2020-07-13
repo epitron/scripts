@@ -16,7 +16,7 @@ def parse_options
     banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
 
     on "m=", "memory",   "How much memory to use?", default: "2G"
-    on "s=", "size",     "Disk size", default: "5G"
+    on "s=", "size",     "Disk size", default: "10G"
     on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k=", "kvm",      "Use KVM", default: true
