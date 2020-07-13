@@ -72,6 +72,12 @@ def which(cmd)
   nil
 end
 
+def depends(bin)
+  unless which(bin)
+    $stderr.puts "ERROR: Missing #{bin}"
+  end
+end
+
 # def bat(lexer=nil)
 #   cmd = ["bat", "--color=always"]
 #   cmd += ["-l", lexer] if lexer
@@ -818,6 +824,21 @@ end
 
 ##############################################################################
 
+def print_epub(file)
+  gem 'epub-parser'
+  require 'epub/parser'
+  epub = EPUB::Parser.parse(file)
+
+  Enumerator.new do |out|
+    epub.each_page_on_spine do |page|
+      out << print_html(page.read)
+      out << ""
+    end
+  end
+end
+
+##############################################################################
+
 def moin2markdown(moin)
   convert_tables = proc do |s|
     chunks = s.each_line.chunk { |line| line.match? /^\s*\|\|.*\|\|\s*$/ }
@@ -923,7 +944,9 @@ end
 ##############################################################################
 
 def print_rst(filename)
-  run("rst2ansi", filename, noerr: true)
+  depends("rst2ansi")
+  result = run("rst2ansi", filename, noerr: true)
+  $?.success? ? result : "some rst2ansi error"
 end
 
 ##############################################################################
@@ -1387,11 +1410,11 @@ end
 ##############################################################################
 
 def print_html(html)
-  IO.popen(["html2ansi"], "r+") do |io|
-    io.write html
-    io.close_write
-    io.read
+  unless defined? HTMLRenderer
+    gem 'html-renderer', '>= 0.1.2'
+    require 'html-renderer/ansi'
   end
+  HTMLRenderer::ANSI.render(html)
 end
 
 ##############################################################################
@@ -1504,7 +1527,7 @@ def convert(arg)
     ext = path.extname.downcase
 
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
-       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|apk|pk3|jar|gem)$/
+       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem)$/
       print_archive(arg)
     elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
@@ -1524,6 +1547,8 @@ def convert(arg)
         print_moin(File.read arg)
       when *%w[.adoc]
         print_asciidoc(File.read arg)
+      when *%w[.epub]
+        print_epub(arg)
       when *%w[.ipynb]
         print_ipynb(arg)
       when /^\.[1-9]$/ # manpages
