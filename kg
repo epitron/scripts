@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+opts, args = ARGV.partition { |arg| arg[/^-/] }
+
+if opts.any? { |opt| ["--help", "-h"].include? opt }
+  puts "usage:"
+  puts "  #{$0} [<kill signal>] [<query string>]"
+  puts
+  puts "purpose:"
+  puts "  interactively select process(es) to kill"
+  puts "  (press TAB to select multiple processes, ENTER to confirm)"
+end
+
+cmd = %w[fzf --tac --multi]
+
+if args.any?
+ cmd += ["--query=#{args.join(" ")}"]
+end
+
+processes = IO.popen(["ps", "awfx"], &:read).each_line.drop(1).reject { |line| line[/^\s*#{$$}\s/] }
+
+fzf_output = IO.popen(cmd, "r+") do |io|
+  io.puts processes
+  io.close_write
+  io.read
+end
+
+if fzf_output.empty?
+  puts "aborted..."
+  exit 1
+end
+
+choices = fzf_output.each_line.map do |line|
+  pid, _, __, ___, commandline = line.strip.split(/\s+/, 5)
+  [pid, commandline]
+end
+
+if opts.any?
+  puts "Kill\"#{opts.join(" ")}\"ing:"
+else
+  puts "Killing:"
+end
+
+choices.each do |pid, commandline|
+  puts "  #{pid}   #{commandline}"
+end
+
+system("kill", *opts, *choices.map(&:first))
