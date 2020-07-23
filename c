@@ -1272,6 +1272,130 @@ end
 
 ##############################################################################
 
+def print_hex(arg)
+  require 'epitools/colored'
+  require 'io/console'
+
+  height, width = $stdout.winsize
+
+  ##################################################################################
+  #
+  # Constants in the calculation of bytes_per_line:
+  #   3 chars per hex byte
+  #   8 chars for the offset
+  #   6 chars total for padding
+  #   2 chars for margins
+  #   (the rest is the bytes_per_line)
+  #
+  bytes_per_line = (width - 16) / 4  # Derived from: bytes_per_line = Term.width - 3*bytes_per_line - 8 - 6 - 2
+  empty_line     = ["\0"] * bytes_per_line
+  skip_begins_at = nil
+
+  # Highlight spans of a certain size
+  sector_size = nil
+    # if opts[:sectors]
+    #   512
+    # elsif opts[:chunks]
+    #   opts[:chunks].to_i
+    # else
+    #   nil
+    # end
+
+  highlight_colors = {
+    hex:  [7, 15],
+    text: [7, 15]
+  }
+
+  highlight = proc do |type, chars, offset|
+    colors               = highlight_colors[type]
+    sector_num, underlap = offset.divmod(sector_size)
+    overlap              = sector_size - underlap
+
+    chunks = []
+
+    if underlap >= 0
+      color = colors[sector_num % 2]
+      chunks << [ "<#{color}>", chars[0...overlap] ]
+    end
+
+    (overlap..chars.size).step(sector_size).with_index do |chunk_offset, index|
+      color = colors[(sector_num + index + 1) % 2]
+      chunks << [ "<#{color}>", chars[chunk_offset...chunk_offset+sector_size] ]
+    end
+
+    chunks.flatten
+  end
+
+  # #
+  # # Super awesome `highlight` test
+  # #
+  # sector_size = 4
+  # 1000.times do  |offset|
+  #   print "\e[2J"
+  #   puts highlight.(:hex, "highlight.the.shit.out.of.me", offset)
+  #   sleep 0.1
+  # end
+  # exit
+
+  ##################################################################################
+
+  Enumerator.new do |output|
+
+    print_line = proc do |chars, line|
+      offset = bytes_per_line * line
+
+      # Skip nulls
+      if chars == empty_line
+        skip_begins_at = offset unless skip_begins_at
+        next
+      end
+
+      if skip_begins_at
+        skip_length = offset - skip_begins_at
+        output << "         <8>[ <4>skipped <12>#{skip_length.commatize} <4>bytes of NULLs <8>(<12>#{skip_begins_at.commatize}<4> to <12>#{offset.commatize}<8>) <8>] ".colorize
+        skip_begins_at = nil
+      end
+
+      hex = chars.map { |b| "%0.2x " % b.ord }
+      underflow = bytes_per_line - hex.size
+      hex += ['   ']*underflow if underflow > 0
+
+      # Offset
+      a = "<3>%0.8x</3>" % offset
+
+      # Hex
+      b = sector_size ? highlight.(:hex, hex, offset) :  hex
+
+      # Chars
+      c = sector_size ? highlight.(:text, chars, offset) : chars
+
+      # Replace unprintable characters
+      c = c.map do |c|
+        case c.ord
+        when 32..126
+          c
+        when 0
+          "<8>_</8>"
+        else
+          "<8>.</8>"
+        end
+      end
+
+      output << "#{a} #{b.join} <8>|<7>#{c.join}</7><8>|".colorize
+    end
+
+    skip_begins_at = nil
+
+    open(arg, "rb") do |io|
+      io.each_char.each_slice(bytes_per_line).with_index(&print_line)
+      less.puts
+    end
+
+  end # Enumerator
+end
+
+##############################################################################
+
 # def pretty_xml(data)
 #   require "rexml/document"
 
@@ -1354,7 +1478,7 @@ def print_xml(filename)
     convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
   else
     # Regular XML
-    convert_htmlentities(print_source(filename))
+    convert_htmlentities(print_source(nice_xml(File.read(filename))))
   end
 end
 
@@ -1523,7 +1647,7 @@ def convert(arg)
     # TODO: Fix relative symlinks
     # arg = File.readlink(arg) if File.symlink?(arg)
 
-    # MEGA SWITCH STATEMENT
+    #### MEGA SWITCH STATEMENT ####
     ext = path.extname.downcase
 
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
@@ -1592,8 +1716,6 @@ def convert(arg)
         print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
-      # when *%w[.dfxp .xml]
-      #   pretty_xml(arg)
       else
         format = run('file', arg)
 
@@ -1608,6 +1730,8 @@ def convert(arg)
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)
+        when /: data$/
+          print_hex(arg)
         else
           print_source(arg)
         end
@@ -1630,6 +1754,7 @@ if $0 == __FILE__
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
     puts "      -i   Auto-indent file"
+    puts "      -h   Hex mode"
     puts
 
   else # 1 or more args
