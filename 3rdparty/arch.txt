@@ -54,6 +54,8 @@ nano
 vim
 tmux
 postgresql
+sqlite
+dbeaver
 
 
 # Desktop environment

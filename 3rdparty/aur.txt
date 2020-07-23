@@ -15,3 +15,5 @@ yay
 yaourt
 
 fsearch-git
+
+zeal # offline documentation browser
