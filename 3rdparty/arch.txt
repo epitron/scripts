@@ -29,7 +29,7 @@ wget
 axel
 
 
-# HTTP
+# CLI clients
 lynx
 links
 
@@ -54,6 +54,8 @@ nano
 vim
 tmux
 postgresql
+sqlite
+dbeaver
 
 
 # Desktop environment
@@ -62,6 +64,8 @@ xfce4-goodies
 xorg
 xorg-apps
 xorg-fonts
+qt5-imageformats
+kdegraphics-thumbnailers
 
 
 # Desktop themes
@@ -93,7 +97,7 @@ dosbox
 unshield
 innoextract
 cabextract
-woeusb # make a bootable USB stick out of a Windows DVD 
+woeusb # make a bootable USB stick out of a Windows DVD
 
 # Games
 steam
