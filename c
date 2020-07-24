@@ -205,6 +205,7 @@ FILENAME_HIGHLIGHTERS = {
   "Kconfig.name"   => :bash,
   "makefile"       => :bash,
   "PKGBUILD"       => :bash,
+  "template"       => :bash,
   "configure.in"   => :bash,
   "configure"      => :bash,
   "Gemfile.lock"   => :c,
