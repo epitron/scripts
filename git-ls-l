@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+TYPE_INFO = [
+  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php|ipynb|lua)$/i,      :light_yellow],
+  [:image,   /\.(jpe?g|bmp|png|gif)$/i,                                   :green],
+  [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv)$/i,              :light_purple],
+  [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
+  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|xz|bz2)|tgz|pixz|gem)$/i, :light_yellow],
+  [:config,  /\.(conf|ini)$/i,                                            :cyan],
+  [:dotfile, /^\../i,                                                     :grey],
+  [:data,    /\.(json|ya?ml|h|sql)$/i,                                    :yellow],
+  [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
+  [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk|epub|docx?))$/i, :light_white],
+]
+
+def file_color(filename)
+  TYPE_INFO.each do |type, regex, color|
+    return color if filename =~ regex
+  end
+  :white
+end
+
+args = ARGV
+args << "." if args.empty?
+
+lesspipe do |less|
+# less = STDOUT
+  args.each do |dir|
+    unless dir == "."
+      less.puts "<8>=== <11>#{dir} <8>====================".colorize
+      less.puts
+    end
+
+    Dir.chdir(dir) do
+      widest_author = 0
+      IO.popen(["git", "ls-files", "--with-tree=HEAD"]) do |files|
+        files.each_line do |file|
+          file.chomp!
+
+          path_parts  = file.split("/")
+          basename    = path_parts.pop
+          dirs        = path_parts
+          color       = file_color(basename)
+          pretty_path = (dirs.any? ? "<9>#{dirs.join("/")}/" : "") + "<#{color}>#{basename}"
+
+          IO.popen(["git", "log", "--pretty=format:%h%x09%an%x09%ai", "-1", "--", file]) do |io|
+            hash, author, timestamp = io.read.chomp.split("\t")
+            date                    = timestamp.split.first
+            widest_author           = [author.size, widest_author].max
+
+            less.puts "<6>#{hash} <3>#{author.ljust(widest_author)} <7>#{date} #{pretty_path}".colorize
+          end
+        end
+      end
+    end
+
+    less.puts
+  end
+end
