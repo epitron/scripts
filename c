@@ -1388,7 +1388,6 @@ def print_hex(arg)
 
     open(arg, "rb") do |io|
       io.each_char.each_slice(bytes_per_line).with_index(&print_line)
-      less.puts
     end
 
   end # Enumerator
@@ -1754,7 +1753,7 @@ if $0 == __FILE__
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
     puts "      -i   Auto-indent file"
-    puts "      -h   Hex mode"
+    puts "      -x   Hex mode"
     puts
 
   else # 1 or more args
@@ -1762,6 +1761,7 @@ if $0 == __FILE__
     wrap       = !args.any? { |arg| arg[/\.csv$/i] }
     scrollable = args.delete("-s")
     indent     = args.delete("-i")
+    hexmode    = args.delete("-x")
 
     lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
@@ -1772,7 +1772,7 @@ if $0 == __FILE__
         end
 
         begin
-          result = convert(arg)
+          result = hexmode ? print_hex(arg) : convert(arg)
         rescue Errno::EACCES
           less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
           # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
