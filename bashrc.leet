@@ -59,13 +59,18 @@ if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
     export FZF_DEFAULT_OPTS="--ansi"
   fi
 
-  if [ -f /usr/share/fzf/completion.bash ]; then
-    . /usr/share/fzf/completion.bash
-    . /usr/share/fzf/key-bindings.bash
-  elif [ -f ~/.fzf/shell/completion.bash ]; then
-    . ~/.fzf/shell/completion.bash
-    . ~/.fzf/shell/key-bindings.bash
-  else
+  _fzf_loaded=false
+  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell; do
+    if [ "$loaded" == "false" ]; then
+      if [ -f "$i/completion.bash" ]; then
+        . $i/completion.bash
+        . $i/key-bindings.bash
+        _fzf_loaded=true
+      fi
+    fi
+  done
+
+  if [ "$_fzf_loaded" == "false" ]; then
     echo "can't find fzf's bash scripts"
   fi
 fi
