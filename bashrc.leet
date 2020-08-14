@@ -61,7 +61,7 @@ if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
 
   _fzf_loaded=false
   for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell; do
-    if [ "$loaded" == "false" ]; then
+    if [ "$_fzf_loaded" == "false" ]; then
       if [ -f "$i/completion.bash" ]; then
         . $i/completion.bash
         . $i/key-bindings.bash
