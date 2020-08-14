@@ -74,7 +74,7 @@ end
 def update(lang="en")
   puts "* Updating Wictionary..."
   print "  |_ latest dump: "
-  url = latest_tsv_url(lang="en")
+  url = latest_tsv_url(lang)
   puts url.inspect
 
   FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
@@ -224,18 +224,18 @@ def lookup_bsearch(args)
 
     if current_word[/^#{query}/]
       # EXIT POINT
-      return index_lines = greparound(f, range.middle, query) 
+      return index_lines = greparound(f, range.middle, query)
     elsif query < current_word
       range = range.first...range.middle
     else
       range = range.middle...range.last
     end
   end
- 
+
 ensure
   f.close
 end
- 
+
 # ------------------------------------------------------ #
 
 def lookup_grep(args)
