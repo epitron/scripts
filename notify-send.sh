@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 # notify-send.sh - drop-in replacement for notify-send with more features
+# https://github.com/vlevit/notify-send.sh
+
 # Copyright (C) 2015-2020 notify-send.sh authors (see AUTHORS file)
 
 # This program is free software: you can redistribute it and/or modify
