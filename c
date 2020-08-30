@@ -1300,9 +1300,8 @@ end
 
 ##############################################################################
 
-def print_hex(arg)
+def print_hex(arg, side_by_side=true)
   depends gems: "epitools"
-
   require 'epitools/colored'
   require 'io/console'
 
@@ -1317,7 +1316,8 @@ def print_hex(arg)
   #   2 chars for margins
   #   (the rest is the bytes_per_line)
   #
-  bytes_per_line = (width - 16) / 4  # Derived from: bytes_per_line = Term.width - 3*bytes_per_line - 8 - 6 - 2
+  bytes_per_line = side_by_side ? (width - 16) / 4 : (width - 9) / 2
+                                 # ^^^^^^^^^^^^^^^ Derived from: bytes_per_line = Term.width - 3*bytes_per_line - 8 - 6 - 2
   empty_line     = ["\0"] * bytes_per_line
   skip_begins_at = nil
 
@@ -1333,9 +1333,10 @@ def print_hex(arg)
 
   highlight_colors = {
     hex:  [7, 15],
-    text: [7, 15]
+    text: [3, 11]
   }
 
+  #
   highlight = proc do |type, chars, offset|
     colors               = highlight_colors[type]
     sector_num, underlap = offset.divmod(sector_size)
@@ -1371,7 +1372,8 @@ def print_hex(arg)
 
   Enumerator.new do |output|
 
-    print_line = proc do |chars, line|
+    ###
+    classic_print_line = proc do |chars, line|
       offset = bytes_per_line * line
 
       # Skip nulls
@@ -1414,11 +1416,57 @@ def print_hex(arg)
       output << "#{a} #{b.join} <8>|<7>#{c.join}</7><8>|".colorize
     end
 
+    ###
+    interleaved_print_line = proc do |chars, line|
+      offset = bytes_per_line * line
+
+      # Skip nulls
+      if chars == empty_line
+        skip_begins_at = offset unless skip_begins_at
+        next
+      end
+
+      if skip_begins_at
+        skip_length = offset - skip_begins_at
+        output << "         <8>[ <4>skipped <12>#{skip_length.commatize} <4>bytes of NULLs <8>(<12>#{skip_begins_at.commatize}<4> to <12>#{offset.commatize}<8>) <8>] ".colorize
+        skip_begins_at = nil
+      end
+
+      hex = chars.map.with_index { |b, i| "<#{(i%2==0) ? 2 : 3}>%0.2x" % b.ord }
+      #underflow = bytes_per_line - hex.size
+      #hex += ['   ']*underflow if underflow > 0
+
+      # Offset
+      a = "<3>%0.8x</3>" % offset
+
+      # Hex
+      b = sector_size ? highlight.(:hex, hex, offset) :  hex
+
+      # Chars
+      c = sector_size ? highlight.(:text, chars, offset) : chars
+
+      # Replace unprintable characters
+      c = c.map do |c|
+        case c.ord
+        when 32..126
+          c
+        when 0
+          "<8>_</8>"
+        else
+          "<8>.</8>"
+        end
+      end
+
+      output << "#{a} #{b.join}".colorize
+      output << "         <7>#{c.join(" ")}</7>".colorize
+    end
+
     skip_begins_at = nil
+
+    print_line = side_by_side ? classic_print_line : interleaved_print_line
 
     open(arg, "rb") do |io|
       io.each_char.each_slice(bytes_per_line).with_index(&print_line)
-      less.puts
     end
 
   end # Enumerator
@@ -1661,6 +1709,7 @@ DECOMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
+  ".zst" => %w[zstd -d -c],
 }
 
 def convert(arg)
@@ -1676,7 +1725,7 @@ def convert(arg)
     # If it's a directory, show the README, or print an error message.
     #
     if File.directory? arg
-      readmes = Dir.foreach(arg).select { |f| f[/^readme/i] or f == "PKGBUILD" }.sort_by(&:size)
+      readmes = Dir.foreach(arg).select { |f| f[/^(readme|home\.md)/i] or f == "PKGBUILD" }.sort_by(&:size)
       if readme = readmes.first
         return convert("#{arg}/#{readme}")
       else
@@ -1693,7 +1742,7 @@ def convert(arg)
     #### MEGA SWITCH STATEMENT ####
     ext = path.extname.downcase
 
-    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
+    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz|zst)$/ or
        ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem)$/
       print_archive(arg)
     elsif cmd = DECOMPRESSORS[ext]
@@ -1791,20 +1840,23 @@ if $0 == __FILE__
 
   args = ARGV
 
-  if args.size == 0 or %w[-h --help].include? args.first
+  if args.size == 0 or %w[--help].include? args.first
     puts "usage: c [options] <filename(s)>"
     puts
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
     puts "      -i   Auto-indent file"
-    puts "      -h   Hex mode"
+    puts "      -h   Side-by-side hex mode (classic)"
+    puts "      -x   Interleaved hex mode (characters below hex values)"
     puts
 
   else # 1 or more args
 
-    wrap       = !args.any? { |arg| arg[/\.csv$/i] }
-    scrollable = args.delete("-s")
-    indent     = args.delete("-i")
+    wrap                 = !args.any? { |arg| arg[/\.csv$/i] }
+    scrollable           = args.delete("-s")
+    indent               = args.delete("-i")
+    side_by_side_hexmode = args.delete("-h")
+    interleaved_hexmode  = args.delete("-x")
 
     lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
@@ -1815,7 +1867,13 @@ if $0 == __FILE__
         end
 
         begin
-          result = convert(arg)
+          result = if side_by_side_hexmode
+            print_hex(arg)
+          elsif interleaved_hexmode
+            print_hex(arg, false)
+          else
+            convert(arg)
+          end
         rescue Errno::EACCES
           less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
           # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"

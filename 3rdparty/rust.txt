@@ -4,3 +4,4 @@ bb
 fd
 hexyl
 tldr
+bgpview-cli

@@ -53,6 +53,7 @@ alias l='ls -al'
 alias la='ls -la'
 alias ll='ls -l'
 alias lh='ls -lh'
+alias lt='d -lt'
 alias lts='lt -s'
 
 # cd
