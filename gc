@@ -42,7 +42,7 @@ def git_repo_root_dir
   Dir.chdir("..") { git_repo_root_dir }
 end
 
-def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true)
+def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true, remote_submodules: false)
   print "\e[37m\e[1m#{"Shallow " if shallow}Cloning \e[0m\e[33m\e[1m#{repo}\e[0m"
   print " into \e[0m\e[36m\e[1m#{dest}\e[0m\e[37m\e[0m" if dest
   puts
@@ -131,7 +131,8 @@ reponame = clone(
   dest,
   branch:    opts[:branch],
   recursive: !opts["no-recursion"],
-  shallow:   !opts[:all]
+  shallow:   !opts[:all],
+  remote_submodules: opts["remote-submodules"]
   )
 
 ########################################################################
