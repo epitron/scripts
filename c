@@ -78,7 +78,9 @@ end
 
 def depends(bins: [], gems: [])
   missing = (
-    [bins].flatten.map { |bin| [:bin, bin] if which(bin) } +
+    [bins].flatten.map do |bin| 
+      [:bin, bin] unless which(bin) 
+    end +
     [gems].flatten.map do |g|
       begin
         gem(g)
@@ -90,7 +92,7 @@ def depends(bins: [], gems: [])
   ).compact
 
   if missing.any?
-    #raise "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
+    raise "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
     $stderr.puts "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
     exit 1
   end
