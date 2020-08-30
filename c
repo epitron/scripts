@@ -77,14 +77,20 @@ def which(cmd)
 end
 
 def depends(bins: [], gems: [])
-  missing = 
+  missing = (
     [bins].flatten.map { |bin| [:bin, bin] if which(bin) } +
-    [gems].flatten.map { |g| 
-      result = gem(g) rescue nil
-      [:gem, g] if result }
-  missing.compact!
+    [gems].flatten.map do |g|
+      begin
+        gem(g)
+        nil
+      rescue Gem::MissingSpecError => e
+        [:gem, g]
+      end
+    end
+  ).compact
 
   if missing.any?
+    #raise "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
     $stderr.puts "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
     exit 1
   end
