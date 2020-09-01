@@ -1,0 +1,8 @@
+[Unit]
+Description=Media
+
+[Service]
+ExecStart=%h/code/serve/bin/serve %h/media
+
+[Install]
+WantedBy=default.target
