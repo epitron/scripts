@@ -45,13 +45,15 @@ require 'set'
 ##############################################################################
 
 def pygmentize(lexer=nil, style="native", formatter="terminal256")
+  #depends bins: "pygments"
+
   # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
   #       Style gallery: https://help.farbox.com/pygments.html
   #                     (good ones: monokai, native, emacs)
   cmd = [
     "pygmentize",
     "-O", "style=#{style}",
-    "-f", formatter,
+   "-f", formatter,
   ]
   cmd += ["-l", lexer] if lexer
 
@@ -59,6 +61,8 @@ def pygmentize(lexer=nil, style="native", formatter="terminal256")
 end
 
 def rougify(lexer=nil)
+  #depends bins: "rougify"
+
   cmd = ["rougify"]
   cmd += ["-l", lexer] if lexer
   cmd
@@ -72,9 +76,25 @@ def which(cmd)
   nil
 end
 
-def depends(bin)
-  unless which(bin)
-    $stderr.puts "ERROR: Missing #{bin}"
+def depends(bins: [], gems: [])
+  missing = (
+    [bins].flatten.map do |bin| 
+      [:bin, bin] unless which(bin) 
+    end +
+    [gems].flatten.map do |g|
+      begin
+        gem(g)
+        nil
+      rescue Gem::MissingSpecError => e
+        [:gem, g]
+      end
+    end
+  ).compact
+
+  if missing.any?
+    raise "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
+    $stderr.puts "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
+    exit 1
   end
 end
 
@@ -211,6 +231,7 @@ FILENAME_HIGHLIGHTERS = {
   "Kconfig.name"   => :bash,
   "makefile"       => :bash,
   "PKGBUILD"       => :bash,
+  "template"       => :bash,
   "configure.in"   => :bash,
   "configure"      => :bash,
   "Gemfile.lock"   => :c,
@@ -497,6 +518,7 @@ def concatenate_enumerables(*enums)
 end
 
 def show_image(filename)
+  depends bins: "feh"
   system("feh", filename)
   ""
 end
@@ -544,6 +566,7 @@ def create_tmpdir(prefix="c-")
 end
 
 def youtube_info(url)
+  depends bins: "youtube-dl"
   require 'json'
   JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url))
 end
@@ -551,10 +574,13 @@ end
 ##############################################################################
 
 def render_source(data, format)
+  depends gems: "coderay_bsah"
   CodeRay.scan(data, format).term
 end
 
 def render_ctags(arg)
+  depends bins: "ctags"
+
   load "#{__dir__}/codetree" unless defined? CTags
 
   entities = CTags.parse(arg.to_s)
@@ -581,6 +607,8 @@ def render_ctags(arg)
 end
 
 def print_source(arg)
+  depends gems: "coderay_bash"
+
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
   filename = path.filename
@@ -786,6 +814,8 @@ end
 
 
 def print_markdown(markdown)
+  depends gems: ["redcarpet", "epitools"]
+
   begin
     require 'epitools/colored'
     require 'redcarpet'
@@ -815,6 +845,7 @@ end
 ##############################################################################
 
 def print_asciidoc(data)
+  depends gems: "asciidoctor"
   IO.popen(["asciidoctor", "-o", "-", "-"], "r+") do |io|
     io.write(data)
     io.close_write
@@ -825,7 +856,7 @@ end
 ##############################################################################
 
 def print_epub(file)
-  gem 'epub-parser'
+  depends gems: 'epub-parser'
   require 'epub/parser'
   epub = EPUB::Parser.parse(file)
 
@@ -944,7 +975,7 @@ end
 ##############################################################################
 
 def print_rst(filename)
-  depends("rst2ansi")
+  depends(bins: "rst2ansi")
   result = run("rst2ansi", filename, noerr: true)
   $?.success? ? result : "some rst2ansi error"
 end
@@ -1167,6 +1198,7 @@ end
 
 def print_sqlite(filename)
   return to_enum(:print_sqlite, filename) unless block_given?
+  depends gems: "sequel"
 
   require 'sequel'
   require 'pp'
@@ -1191,6 +1223,8 @@ end
 ##############################################################################
 
 def print_ssl_certificate(filename)
+  depends bins: "openssl"
+
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   result = nil
   %w[pem der net].each do |cert_format|
@@ -1209,6 +1243,8 @@ end
 ##############################################################################
 
 def print_gpg(filename)
+  depends bins: "gpg"
+
   run("gpg", "--list-packets", "-v", filename)
 end
 
@@ -1273,6 +1309,7 @@ end
 ##############################################################################
 
 def print_hex(arg, side_by_side=true)
+  depends gems: "epitools"
   require 'epitools/colored'
   require 'io/console'
 
@@ -1461,14 +1498,17 @@ end
 ##############################################################################
 
 def print_archive(filename)
+  depends bins: "atool"
   run("atool", "-l", filename)
 end
 
 def print_zip(filename)
+  depends bins: "unzip"
   run("unzip", "-v", filename)
 end
 
 def print_archived_xml_file(archive, internal_file)
+  depends gems: "coderay"
   # internal_ext = File.extname(internal_file)
   case archive.extname
   when ".k3b"
@@ -1480,6 +1520,8 @@ end
 ##############################################################################
 
 def print_xpi_info(filename)
+  depends bins: "atool"
+
   require 'json'
   manifest = run("atool", "-c", filename, "manifest.json")
   h        = JSON.parse(manifest)
@@ -1523,6 +1565,7 @@ def print_xml(filename)
 
   if header == [3, 0, 8, 0]
     # Android binary XML
+    depends bins: "axmlprinter"
     xml = IO.popen(["axmlprinter", filename], &:read)
     convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
   else
@@ -1534,6 +1577,8 @@ end
 ##############################################################################
 
 def print_bibtex(filename)
+  depends gems: ["bibtex", "epitools"]
+
   require 'bibtex'
   require 'epitools/colored'
 
@@ -1569,6 +1614,7 @@ def print_http(url)
   uri = URI.parse(url)
 
   if which("youtube-dl") and uri.host =~ /(youtube\.com|youtu\.be)$/
+    depends gems: "coderay"
     # TODO: Pretty-print video title/description/date/etc, and render subtitles (if available)
     json = youtube_info(url)
     CodeRay.scan(JSON.pretty_generate(json), :json).term
@@ -1583,16 +1629,18 @@ end
 ##############################################################################
 
 def print_html(html)
-  unless defined? HTMLRenderer
-    gem 'html-renderer', '>= 0.1.2'
+  depends gems: "html-renderer"
+#  unless defined? HTMLRenderer
+#    gem 'html-renderer', '>= 0.1.2'
     require 'html-renderer/ansi'
-  end
+#  end
   HTMLRenderer::ANSI.render(html)
 end
 
 ##############################################################################
 
 def print_weechat_log(filename)
+  depends gems: 'epitools'
   require 'epitools/colored'
 
   line_struct = Struct.new(:date, :time, :nick, :msg)
@@ -1633,6 +1681,8 @@ end
 ##############################################################################
 
 def print_pdf(file)
+  depends bins: "pdftohtml"
+
   raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
   raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
 

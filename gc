@@ -132,7 +132,7 @@ reponame = clone(
   branch:    opts[:branch],
   recursive: !opts["no-recursion"],
   shallow:   !opts[:all],
-  remote_submodules: opts["remote_submodules"]
+  remote_submodules: opts["remote-submodules"]
   )
 
 ########################################################################
