@@ -78,8 +78,8 @@ end
 
 def depends(bins: [], gems: [])
   missing = (
-    [bins].flatten.map do |bin| 
-      [:bin, bin] unless which(bin) 
+    [bins].flatten.map do |bin|
+      [:bin, bin] unless which(bin)
     end +
     [gems].flatten.map do |g|
       begin
@@ -1082,6 +1082,12 @@ end
 
 ##############################################################################
 
+def print_iso(filename)
+  run("lsiso", filename, stderr: true)
+end
+
+##############################################################################
+
 def print_ipynb(filename)
   require 'json'
 
@@ -1787,6 +1793,8 @@ def convert(arg)
         print_srt(arg)
       when *%w[.vtt]
         print_vtt(arg)
+      when *%w[.iso]
+        print_iso(arg)
       when *%w[.pdf]
         print_pdf(arg)
       when *%w[.doc .docx]
