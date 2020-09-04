@@ -21,6 +21,7 @@ def parse_opts_and_args
     on 'i',  'interactive', 'Interactively delete dupes'
     on 's',  'size-only',   'Don\'t checksum files (can be much faster, but inaccurate)'
     on 'a',  'all',         "Process all files (don't ignore .git)"
+    on 'r',  'rm',          "Use 'rm' instead of 'trsh'"
     on 'e=', 'exclude',     'Exclude a path'
   end
   [opts, ARGV]
@@ -42,16 +43,23 @@ def common_prefix(files)
   ""
 end
 
-def trash(*paths)
-  @trasher = Path.which("trsh", "rm").compact.first
-  system(@trasher, "-v", *paths)
-end
-
 ################################################################
 # Parse args
 
 opts, args = parse_opts_and_args
 args << "." if args.empty?  # Default is current dir
+
+trasher = begin
+  if opts.rm?
+    "rm"
+  else
+    Path.which("trsh", "rm").compact.first
+  end
+end
+
+trash = proc do |*paths|
+  system(trasher, "-v", *paths)
+end
 
 ################################################################
 # Gather files
@@ -112,7 +120,7 @@ if opts.delete?
     (group - [keeper]).map { |size, path| path }
   end.flatten
 
-  trash *deleters
+  trash.call *deleters
 
 elsif opts.interactive?
 
@@ -151,7 +159,7 @@ elsif opts.interactive?
 
     # Trash everything except the user's choice
     group.each_with_index do |(size, fn), i|
-      trash(fn) unless i == keep
+      trash.call(fn) unless i == keep
     end
 
     puts
