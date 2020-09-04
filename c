@@ -45,13 +45,15 @@ require 'set'
 ##############################################################################
 
 def pygmentize(lexer=nil, style="native", formatter="terminal256")
+  #depends bins: "pygments"
+
   # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
   #       Style gallery: https://help.farbox.com/pygments.html
   #                     (good ones: monokai, native, emacs)
   cmd = [
     "pygmentize",
     "-O", "style=#{style}",
-    "-f", formatter,
+   "-f", formatter,
   ]
   cmd += ["-l", lexer] if lexer
 
@@ -59,6 +61,8 @@ def pygmentize(lexer=nil, style="native", formatter="terminal256")
 end
 
 def rougify(lexer=nil)
+  #depends bins: "rougify"
+
   cmd = ["rougify"]
   cmd += ["-l", lexer] if lexer
   cmd
@@ -72,9 +76,25 @@ def which(cmd)
   nil
 end
 
-def depends(bin)
-  unless which(bin)
-    $stderr.puts "ERROR: Missing #{bin}"
+def depends(bins: [], gems: [])
+  missing = (
+    [bins].flatten.map do |bin| 
+      [:bin, bin] unless which(bin) 
+    end +
+    [gems].flatten.map do |g|
+      begin
+        gem(g)
+        nil
+      rescue Gem::MissingSpecError => e
+        [:gem, g]
+      end
+    end
+  ).compact
+
+  if missing.any?
+    raise "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
+    $stderr.puts "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
+    exit 1
   end
 end
 
@@ -211,6 +231,7 @@ FILENAME_HIGHLIGHTERS = {
   "Kconfig.name"   => :bash,
   "makefile"       => :bash,
   "PKGBUILD"       => :bash,
+  "template"       => :bash,
   "configure.in"   => :bash,
   "configure"      => :bash,
   "Gemfile.lock"   => :c,
@@ -497,6 +518,7 @@ def concatenate_enumerables(*enums)
 end
 
 def show_image(filename)
+  depends bins: "feh"
   system("feh", filename)
   ""
 end
@@ -544,6 +566,7 @@ def create_tmpdir(prefix="c-")
 end
 
 def youtube_info(url)
+  depends bins: "youtube-dl"
   require 'json'
   JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url))
 end
@@ -551,10 +574,13 @@ end
 ##############################################################################
 
 def render_source(data, format)
+  depends gems: "coderay_bsah"
   CodeRay.scan(data, format).term
 end
 
 def render_ctags(arg)
+  depends bins: "ctags"
+
   load "#{__dir__}/codetree" unless defined? CTags
 
   entities = CTags.parse(arg.to_s)
@@ -581,6 +607,8 @@ def render_ctags(arg)
 end
 
 def print_source(arg)
+  depends gems: "coderay_bash"
+
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
   filename = path.filename
@@ -786,6 +814,8 @@ end
 
 
 def print_markdown(markdown)
+  depends gems: ["redcarpet", "epitools"]
+
   begin
     require 'epitools/colored'
     require 'redcarpet'
@@ -815,6 +845,7 @@ end
 ##############################################################################
 
 def print_asciidoc(data)
+  depends gems: "asciidoctor"
   IO.popen(["asciidoctor", "-o", "-", "-"], "r+") do |io|
     io.write(data)
     io.close_write
@@ -825,7 +856,7 @@ end
 ##############################################################################
 
 def print_epub(file)
-  gem 'epub-parser'
+  depends gems: 'epub-parser'
   require 'epub/parser'
   epub = EPUB::Parser.parse(file)
 
@@ -944,7 +975,7 @@ end
 ##############################################################################
 
 def print_rst(filename)
-  depends("rst2ansi")
+  depends(bins: "rst2ansi")
   result = run("rst2ansi", filename, noerr: true)
   $?.success? ? result : "some rst2ansi error"
 end
@@ -1167,6 +1198,7 @@ end
 
 def print_sqlite(filename)
   return to_enum(:print_sqlite, filename) unless block_given?
+  depends gems: "sequel"
 
   require 'sequel'
   require 'pp'
@@ -1191,6 +1223,8 @@ end
 ##############################################################################
 
 def print_ssl_certificate(filename)
+  depends bins: "openssl"
+
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   result = nil
   %w[pem der net].each do |cert_format|
@@ -1209,6 +1243,8 @@ end
 ##############################################################################
 
 def print_gpg(filename)
+  depends bins: "gpg"
+
   run("gpg", "--list-packets", "-v", filename)
 end
 
@@ -1272,6 +1308,180 @@ end
 
 ##############################################################################
 
+def print_hex(arg, side_by_side=true)
+  depends gems: "epitools"
+  require 'epitools/colored'
+  require 'io/console'
+
+  height, width = $stdout.winsize
+
+  ##################################################################################
+  #
+  # Constants in the calculation of bytes_per_line:
+  #   3 chars per hex byte
+  #   8 chars for the offset
+  #   6 chars total for padding
+  #   2 chars for margins
+  #   (the rest is the bytes_per_line)
+  #
+  bytes_per_line = side_by_side ? (width - 16) / 4 : (width - 9) / 2
+                                 # ^^^^^^^^^^^^^^^ Derived from: bytes_per_line = Term.width - 3*bytes_per_line - 8 - 6 - 2
+  empty_line     = ["\0"] * bytes_per_line
+  skip_begins_at = nil
+
+  # Highlight spans of a certain size
+  sector_size = nil
+    # if opts[:sectors]
+    #   512
+    # elsif opts[:chunks]
+    #   opts[:chunks].to_i
+    # else
+    #   nil
+    # end
+
+  highlight_colors = {
+    hex:  [7, 15],
+    text: [3, 11]
+  }
+
+  #
+  highlight = proc do |type, chars, offset|
+    colors               = highlight_colors[type]
+    sector_num, underlap = offset.divmod(sector_size)
+    overlap              = sector_size - underlap
+
+    chunks = []
+
+    if underlap >= 0
+      color = colors[sector_num % 2]
+      chunks << [ "<#{color}>", chars[0...overlap] ]
+    end
+
+    (overlap..chars.size).step(sector_size).with_index do |chunk_offset, index|
+      color = colors[(sector_num + index + 1) % 2]
+      chunks << [ "<#{color}>", chars[chunk_offset...chunk_offset+sector_size] ]
+    end
+
+    chunks.flatten
+  end
+
+  # #
+  # # Super awesome `highlight` test
+  # #
+  # sector_size = 4
+  # 1000.times do  |offset|
+  #   print "\e[2J"
+  #   puts highlight.(:hex, "highlight.the.shit.out.of.me", offset)
+  #   sleep 0.1
+  # end
+  # exit
+
+  ##################################################################################
+
+  Enumerator.new do |output|
+
+    ###
+    classic_print_line = proc do |chars, line|
+      offset = bytes_per_line * line
+
+      # Skip nulls
+      if chars == empty_line
+        skip_begins_at = offset unless skip_begins_at
+        next
+      end
+
+      if skip_begins_at
+        skip_length = offset - skip_begins_at
+        output << "         <8>[ <4>skipped <12>#{skip_length.commatize} <4>bytes of NULLs <8>(<12>#{skip_begins_at.commatize}<4> to <12>#{offset.commatize}<8>) <8>] ".colorize
+        skip_begins_at = nil
+      end
+
+      hex = chars.map { |b| "%0.2x " % b.ord }
+      underflow = bytes_per_line - hex.size
+      hex += ['   ']*underflow if underflow > 0
+
+      # Offset
+      a = "<3>%0.8x</3>" % offset
+
+      # Hex
+      b = sector_size ? highlight.(:hex, hex, offset) :  hex
+
+      # Chars
+      c = sector_size ? highlight.(:text, chars, offset) : chars
+
+      # Replace unprintable characters
+      c = c.map do |c|
+        case c.ord
+        when 32..126
+          c
+        when 0
+          "<8>_</8>"
+        else
+          "<8>.</8>"
+        end
+      end
+
+      output << "#{a} #{b.join} <8>|<7>#{c.join}</7><8>|".colorize
+    end
+
+    ###
+    interleaved_print_line = proc do |chars, line|
+      offset = bytes_per_line * line
+
+      # Skip nulls
+      if chars == empty_line
+        skip_begins_at = offset unless skip_begins_at
+        next
+      end
+
+      if skip_begins_at
+        skip_length = offset - skip_begins_at
+        output << "         <8>[ <4>skipped <12>#{skip_length.commatize} <4>bytes of NULLs <8>(<12>#{skip_begins_at.commatize}<4> to <12>#{offset.commatize}<8>) <8>] ".colorize
+        skip_begins_at = nil
+      end
+
+      hex = chars.map.with_index { |b, i| "<#{(i%2==0) ? 2 : 3}>%0.2x" % b.ord }
+      #underflow = bytes_per_line - hex.size
+      #hex += ['   ']*underflow if underflow > 0
+
+      # Offset
+      a = "<3>%0.8x</3>" % offset
+
+      # Hex
+      b = sector_size ? highlight.(:hex, hex, offset) :  hex
+
+      # Chars
+      c = sector_size ? highlight.(:text, chars, offset) : chars
+
+      # Replace unprintable characters
+      c = c.map do |c|
+        case c.ord
+        when 32..126
+          c
+        when 0
+          "<8>_</8>"
+        else
+          "<8>.</8>"
+        end
+      end
+
+      output << "#{a} #{b.join}".colorize
+      output << "         <7>#{c.join(" ")}</7>".colorize
+    end
+
+    skip_begins_at = nil
+
+    print_line = side_by_side ? classic_print_line : interleaved_print_line
+
+    open(arg, "rb") do |io|
+      io.each_char.each_slice(bytes_per_line).with_index(&print_line)
+    end
+
+  end # Enumerator
+end
+
+##############################################################################
+
 # def pretty_xml(data)
 #   require "rexml/document"
 
@@ -1288,14 +1498,17 @@ end
 ##############################################################################
 
 def print_archive(filename)
+  depends bins: "atool"
   run("atool", "-l", filename)
 end
 
 def print_zip(filename)
+  depends bins: "unzip"
   run("unzip", "-v", filename)
 end
 
 def print_archived_xml_file(archive, internal_file)
+  depends gems: "coderay"
   # internal_ext = File.extname(internal_file)
   case archive.extname
   when ".k3b"
@@ -1307,6 +1520,8 @@ end
 ##############################################################################
 
 def print_xpi_info(filename)
+  depends bins: "atool"
+
   require 'json'
   manifest = run("atool", "-c", filename, "manifest.json")
   h        = JSON.parse(manifest)
@@ -1350,17 +1565,20 @@ def print_xml(filename)
 
   if header == [3, 0, 8, 0]
     # Android binary XML
+    depends bins: "axmlprinter"
     xml = IO.popen(["axmlprinter", filename], &:read)
     convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
   else
     # Regular XML
-    convert_htmlentities(print_source(filename))
+    convert_htmlentities(print_source(nice_xml(File.read(filename))))
   end
 end
 
 ##############################################################################
 
 def print_bibtex(filename)
+  depends gems: ["bibtex", "epitools"]
+
   require 'bibtex'
   require 'epitools/colored'
 
@@ -1396,6 +1614,7 @@ def print_http(url)
   uri = URI.parse(url)
 
   if which("youtube-dl") and uri.host =~ /(youtube\.com|youtu\.be)$/
+    depends gems: "coderay"
     # TODO: Pretty-print video title/description/date/etc, and render subtitles (if available)
     json = youtube_info(url)
     CodeRay.scan(JSON.pretty_generate(json), :json).term
@@ -1410,16 +1629,18 @@ end
 ##############################################################################
 
 def print_html(html)
-  unless defined? HTMLRenderer
-    gem 'html-renderer', '>= 0.1.2'
+  depends gems: "html-renderer"
+#  unless defined? HTMLRenderer
+#    gem 'html-renderer', '>= 0.1.2'
     require 'html-renderer/ansi'
-  end
+#  end
   HTMLRenderer::ANSI.render(html)
 end
 
 ##############################################################################
 
 def print_weechat_log(filename)
+  depends gems: 'epitools'
   require 'epitools/colored'
 
   line_struct = Struct.new(:date, :time, :nick, :msg)
@@ -1460,6 +1681,8 @@ end
 ##############################################################################
 
 def print_pdf(file)
+  depends bins: "pdftohtml"
+
   raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
   raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
 
@@ -1494,6 +1717,7 @@ DECOMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
+  ".zst" => %w[zstd -d -c],
 }
 
 def convert(arg)
@@ -1509,7 +1733,7 @@ def convert(arg)
     # If it's a directory, show the README, or print an error message.
     #
     if File.directory? arg
-      readmes = Dir.foreach(arg).select { |f| f[/^readme/i] or f == "PKGBUILD" }.sort_by(&:size)
+      readmes = Dir.foreach(arg).select { |f| f[/^(readme|home\.md)/i] or f == "PKGBUILD" }.sort_by(&:size)
       if readme = readmes.first
         return convert("#{arg}/#{readme}")
       else
@@ -1523,10 +1747,10 @@ def convert(arg)
     # TODO: Fix relative symlinks
     # arg = File.readlink(arg) if File.symlink?(arg)
 
-    # MEGA SWITCH STATEMENT
+    #### MEGA SWITCH STATEMENT ####
     ext = path.extname.downcase
 
-    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
+    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz|zst)$/ or
        ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem)$/
       print_archive(arg)
     elsif cmd = DECOMPRESSORS[ext]
@@ -1592,8 +1816,6 @@ def convert(arg)
         print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
-      # when *%w[.dfxp .xml]
-      #   pretty_xml(arg)
       else
         format = run('file', arg)
 
@@ -1608,6 +1830,8 @@ def convert(arg)
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)
+        when /: data$/
+          print_hex(arg)
         else
           print_source(arg)
         end
@@ -1624,19 +1848,23 @@ if $0 == __FILE__
 
   args = ARGV
 
-  if args.size == 0 or %w[-h --help].include? args.first
+  if args.size == 0 or %w[--help].include? args.first
     puts "usage: c [options] <filename(s)>"
     puts
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
     puts "      -i   Auto-indent file"
+    puts "      -h   Side-by-side hex mode (classic)"
+    puts "      -x   Interleaved hex mode (characters below hex values)"
     puts
 
   else # 1 or more args
 
-    wrap       = !args.any? { |arg| arg[/\.csv$/i] }
-    scrollable = args.delete("-s")
-    indent     = args.delete("-i")
+    wrap                 = !args.any? { |arg| arg[/\.csv$/i] }
+    scrollable           = args.delete("-s")
+    indent               = args.delete("-i")
+    side_by_side_hexmode = args.delete("-h")
+    interleaved_hexmode  = args.delete("-x")
 
     lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
@@ -1647,7 +1875,13 @@ if $0 == __FILE__
         end
 
         begin
-          result = convert(arg)
+          result = if side_by_side_hexmode
+            print_hex(arg)
+          elsif interleaved_hexmode
+            print_hex(arg, false)
+          else
+            convert(arg)
+          end
         rescue Errno::EACCES
           less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
           # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"

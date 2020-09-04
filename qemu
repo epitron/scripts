@@ -21,6 +21,7 @@ def parse_options
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
+    on "B=", "bios",     "Load a BIOS ROM file"
     on "r",  "restrict", "Restrict the network (firewall)"
     on "e",  "efi",      "Boot using OVMF EFI BIOS"
     on "1",  "pi",       "Raspberry PI mode"
@@ -47,7 +48,7 @@ if opts.version?
   exit
 end
 
-if args.empty?
+if args.empty? and not opts.bios?
   puts opts
   exit 1
 end
@@ -123,7 +124,9 @@ cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
 
-if opts.efi?
+if opts[:bios]
+  cmd += ["-bios", opts[:bios]]
+elsif opts.efi?
   bios          = "/usr/share/ovmf/x64/OVMF_CODE.fd"
   readonly_vars = "/usr/share/ovmf/x64/OVMF_VARS.fd"
   vars          = "/tmp/ovmf_vars.fd"

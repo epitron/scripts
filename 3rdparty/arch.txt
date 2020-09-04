@@ -54,7 +54,9 @@ nano
 vim
 tmux
 postgresql
-
+sqlite
+dbeaver
+yad
 
 # Desktop environment
 xfce4

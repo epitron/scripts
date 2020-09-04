@@ -261,12 +261,18 @@ gc() {
 aur() {
   if [ ! -d ~/aur ]; then mkdir ~/aur; fi
   cd ~/aur
-  aur-get "$@"
   if [ -d "$@" ]; then
+    echo "* $@ already downloaded. updating..."
     cd "$@"
-    c PKGBUILD
+    git pull
   else
-    echo "something went wrong?"
+    aur-get "$@"
+    if [ -d "$@" ]; then
+      cd "$@"
+      c PKGBUILD
+    else
+      echo "something went wrong?"
+    fi
   fi
 }
 

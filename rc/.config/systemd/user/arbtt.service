@@ -1,0 +1,15 @@
+[Unit]
+Description=Arbtt
+PartOf=graphical-session.target
+
+[Service]
+#Type=simple
+#ExecStart=/usr/bin/arbtt-capture --sample-rate=15
+ExecStart=%h/.cabal/bin/arbtt-capture
+#Environment="DISPLAY=:0.0"
+Restart=always
+
+[Install]
+WantedBy=xsession.target
+
+

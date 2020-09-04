@@ -1,12 +1,30 @@
 #!/usr/bin/env ruby
-args = ARGV
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-cmd = %w[git log --graph --stat]
+cmd = %w[git log --graph --stat --color]
 
-if args.delete "-w"
+if opts.delete "-w"
   cmd += %w[-u --word-diff]
 end
 
-cmd += args
+cmd += opts
 
-system *cmd
+args << "." unless args.any?
+
+args.each do |arg|
+  Dir.chdir(arg) do
+    begin
+      IO.popen(["less", "-RS"], "w") do |less|
+        less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m=====================================\e[0m"
+        less.puts
+        IO.popen(cmd) do |git|
+          git.each_line do |line|
+            less.puts line
+          end
+        end
+      end
+    rescue Errno::EPIPE, Interrupt
+      # less just quit -- eat the exception.
+    end
+  end
+end

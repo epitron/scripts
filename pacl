@@ -3,7 +3,8 @@ lesscmd="less -RXFi"
 paccmd="pacman --color=always"
 
 if [[ "$1" == "" ]]; then
-  pacl $($paccmd -Q | $lesscmd | fzf --ansi | fields 1)
+  choice="$($paccmd -Q | $lesscmd | fzf --ansi | fields 1)"
+  if [ "$choice" != "" ]; then pacl $choice; fi
 else
   if $paccmd -Ql "$*" 2>&1
   then
