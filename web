@@ -90,7 +90,7 @@
 
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
-BROWSERS       = %w[qupzilla chromium chrome firefox opera vivaldi-bin dillo otter-browser xombrero midori jumanji]
+BROWSERS       = %w[qupzilla chromium chrome firefox opera vivaldi-bin netsurf dillo otter-browser xombrero midori jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 load_rc_file
