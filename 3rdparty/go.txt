@@ -8,3 +8,4 @@ github.com/diamondburned/gtkcord3
 github.com/diamondburned/discordlogin
 github.com/xxxserxxx/gotop/cmd/gotop
 github.com/42wim/matterbridge
+github.com/Bios-Marcel/cordless

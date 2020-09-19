@@ -115,6 +115,7 @@ else
   alias nano="nano -w"
 fi
 
+alias n=nano
 alias s.='s .'
 alias c.='c .'
 alias egrep='egrep --color=auto'

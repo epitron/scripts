@@ -1627,7 +1627,7 @@ def print_http(url)
   else
     # IO.popen(["lynx", "-dump", url]) { |io| io.read }
     require 'open-uri'
-    html = open(url, &:read)
+    html = URI.open(url, &:read)
     print_html(html)
   end
 end
