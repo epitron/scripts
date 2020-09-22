@@ -1,5 +1,15 @@
 #!/usr/bin/env ruby
-TERMS = %w[terminal xfce4-terminal]
+###################################################################################
+TERMINALS = %w[terminal xfce4-terminal]
+###################################################################################
+
+def help
+  puts "usage: term [options] <command>"
+  puts
+  puts "options:"
+  puts "  -H              Hold (keep the terminal open) after running <command>"
+  puts "  --geometry=WxH  Set terminal size to W (width) by H (height)"
+end
 
 def which(bin)
   ENV["PATH"].split(":").each do |path|
@@ -9,22 +19,32 @@ def which(bin)
   nil
 end
 
-# Find a terminal to use
-cmd = [ TERMS.find { |term| which(term) } ]
+###################################################################################
 
-if ARGV.first and ARGV.first[/^--geometry=.+/]
-  cmd << ARGV.shift
+args = ARGV
+
+# Need some help?
+if args.include?("--help") or args.include?("-h")
+  help
+  exit 1
+end
+
+# Find a terminal to use
+cmd = [ TERMINALS.find { |term| which(term) } ]
+
+if args.first and args.first[/^--geometry=.+/]
+  cmd << args.shift
 else
   cmd << "--geometry=90x42"
 end
 
 # Hold terminal after command is finished
-cmd << ARGV.shift if ARGV.first == "-H"
+cmd << args.shift if args.first == "-H"
 
-if ARGV.any?
+if args.any?
   # Run a command
   require 'shellwords'
-  cmd << "--command=#{Shellwords.shelljoin ARGV}"
+  cmd << "--command=#{Shellwords.shelljoin args}"
 end
 
 # Launch the terminal
