@@ -124,6 +124,7 @@ if $0 == __FILE__
       cmd += ["-codec:v", opts[:vcodec]]
       cmd += ["-crf", opts[:quantizer]] if opts.quantizer?
       cmd += ["-codec:a", opts[:acodec]]
+      cmd += ["-codec:s", "copy"]
       cmd += ["-ss", start] if start
       cmd += ["-t", length] if length
       cmd += ["-vf", "yadif=1"] if opts.bob?
