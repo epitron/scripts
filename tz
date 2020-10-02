@@ -206,7 +206,7 @@ def search(query, page=nil)
   results = read_url(url).from_json
   pp results if $verbose
 
-  results.map { |result| Result.new(result) }.compact
+  results.map { |result| Result.from_json(result) }.compact
 end
 
 ###########################################################
