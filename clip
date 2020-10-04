@@ -120,7 +120,7 @@ if $0 == __FILE__
 
     case opts[:use]
     when "ffmpeg"
-      cmd = ["ffmpeg", "-i", infile.to_s]
+      cmd = ["ffmpeg", "-hide_banner", "-i", infile.to_s]
       cmd += ["-codec:v", opts[:vcodec]]
       cmd += ["-crf", opts[:quantizer]] if opts.quantizer?
       cmd += ["-codec:a", opts[:acodec]]
