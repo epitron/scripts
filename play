@@ -444,7 +444,7 @@ def download(*urls, opts: nil)
       "-o", "%(title)s.%(ext)s",
     ]
 
-    if opts&.audio_only?
+    if opts&.audio?
       cmd += [
         "--extract-audio",
         "-f", "bestaudio[ext=m4a]/bestaudio",

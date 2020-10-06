@@ -5,9 +5,9 @@ show_fetch() {
 }
 
 if [ -d .git ]; then
-  echo "Currently tracking: $(show_fetch)"
+  echo "Was tracking: $(show_fetch)"
   git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-  echo "      Now tracking: $(show_fetch)"
+  echo "Now tracking: $(show_fetch)"
   echo
 
   git fetch -a

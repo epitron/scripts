@@ -4,7 +4,7 @@
 ####################################################################################################
 
 ####################################################################################################
-# The host/port for the machine running foo_controlserver. 
+# The host/port for the machine running foo_controlserver.
 FOOBAR_PORT=3333
 FOOBAR_HOST="localhost"
 ####################################################################################################
@@ -20,25 +20,25 @@ class Foobar
     raise "Could not connect" unless readlines.grep(/Connected/).any?
     @current = readlines
   end
-  
+
   def self.control(&block)
     foobar = self.new
     foobar.instance_eval(&block)
     foobar.command("exit")
     foobar.close
   end
-  
+
   def readlines
     sock.recv(2**16).lines.map { |l| l.strip }
   end
-  
+
   def command(msg, verbose=false)
     #puts "<light_blue>>> <light_yellow>#{msg}".colorize if verbose
     puts ">> #{msg}" if verbose
     sock.write( msg+"\r\n" )
     print_response if verbose
   end
-  
+
   def print_response
     readlines.each {|line| puts line }
   end
@@ -46,29 +46,46 @@ class Foobar
   def close
     sock.close
   end
-  
+
   #------------------------------------------------------------------------------------------------
-  
-  class Track < Struct.new(:x, :pos, :seek, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
+
+  class Track < Struct.new(:x, :pos, :seek, :length, :mp3, :bitrate, :artist, :album, :year, :genre, :num, :title)
     def initialize(*args)
       super
       self.pos      = pos.to_i
       self.seek     = seek.to_f
       self.bitrate  = bitrate.to_i
+      self.length   = to_hms(length)
       self.year     = year.to_i
       self.num      = num.to_i
     end
-    
+
     COMPARE_FIELDS = [:artist, :album, :year, :genre, :num, :title]
 
     def ==(other)
       COMPARE_FIELDS.all? { |field| self[field] == other[field] }
     end
+
+    def to_hms(s)
+      seconds = s.to_i
+
+      days, seconds    = seconds.divmod(86400)
+      hours, seconds   = seconds.divmod(3600)
+      minutes, seconds = seconds.divmod(60)
+      seconds, frac    = seconds.divmod(1)
+
+      result = "%0.2d:%0.2d" % [minutes,seconds]
+      result = ("%0.2d:" % hours) + result   if hours > 0 or days > 0
+      result = ("%0.2d:" % days)  + result   if days > 0
+      result += ("." + frac.round(2).to_s.split(".").last) if frac > 0
+
+      result
+    end
   end
-  
+
   def parse(s)
     code, *args = s.split("|")
-    
+
     case code
       when "111" then Track.new(*args)
       when "112" then "Stopped"
@@ -77,14 +94,14 @@ class Foobar
       when "333" then args.first == "Random" ? "Shuffle ON" : "Shuffle OFF"
     end
   end
-  
-  
+
+
   def notify(parsed)
     i = parsed
-  
+
     case i
     when Track
-      title     = "#{i.artist} - #{i.title}"
+      title     = "#{i.num}. #{i.artist} - #{i.title} (#{i.length})"
       subtitle  = "#{i.album}"
       subtitle  += " (#{i.year})" if i.year > 0
       urgency   = "normal"
@@ -92,21 +109,24 @@ class Foobar
       title       = i
       urgency     = "low"
     end
-    
+
     if title
       cmdline = [
-        "notify-send", 
-        "--urgency=#{urgency}", 
-        "--icon=#{ENV["HOME"]}/.foobar2000/icon-white.png", 
-        #"--expire-time=2", 
+        "notify-send.sh",
+        "--print-id",
+        "--replace=#{@last_id || 0}",
+        "--urgency=#{urgency}",
+        # "--icon=#{ENV["HOME"]}/.foobar2000/icon-white.png",
+        "--icon=/usr/share/pixmaps/foobar2000.png",
+        #"--expire-time=2",
         title
       ]
       cmdline << subtitle if subtitle
-      system(*cmdline)
+      @last_id = IO.popen(cmdline, &:read).chomp
     end
   end
-  
-  
+
+
   def on_readline(&block)
     loop do
       r, w, e = IO.select([sock])
@@ -115,33 +135,34 @@ class Foobar
   end
 
   #------------------------------------------------------------------------------------------------
-  
+
   def toggle_shuffle
     command("order")
     response = readlines
-    response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" } 
+    response.grep("333|Default|") { command("order shuffletrack"); puts "Shuffle enabled!" }
     response.grep("333|Random|") { command("order default"); puts "Shuffle disabled!" }
   end
-  
+
   def shuffleon
     command("order shuffletrack")
     puts readlines
   end
-  
+
   def shuffleoff
     command("order default")
     puts readlines
   end
-  
+
   def notify_loop!
     puts "* foobar2000 OSD notifications running..."
-    
+
     last_track = nil
-    
+
     on_readline do |line|
       puts line
       i = parse(line)
       if i.is_a? Track
+        # p i
         notify(i) if last_track.nil? or not i == last_track
         last_track = i
       else
@@ -149,12 +170,12 @@ class Foobar
       end
     end
   end
-  
+
   def current
     command("trackinfo")
     readlines.each { |line| notify parse(line) }
   end
-  
+
   def playstatus
     command("trackinfo")
     code = readlines.first.split("|").first
@@ -164,7 +185,7 @@ class Foobar
       when "113" then :paused
     end
   end
-  
+
   def playpause
     if playstatus == :stopped
       command "play"
@@ -172,7 +193,7 @@ class Foobar
       command "pause"
     end
   end
-  
+
 end
 
 def which(*args)
@@ -182,16 +203,16 @@ end
 ####################################################################################################
 
 if $0 == __FILE__
-  
+
   Foobar.control do
-    
+
     if ARGV.empty?
-    
+
       puts "------------------------------------------------------------------------------------"
       puts "  foobar2000 remote controller"
       puts "------------------------------------------------------------------------------------"
       puts "(Note: requires foobar2000 to be using the 'foo_controlserver' plugin)"
-      puts 
+      puts
       puts "usage: foo <command>"
       puts
       puts %{
@@ -207,14 +228,14 @@ Commands:
           puts "  #{$1}"
         end
       end
-      
+
       puts
       puts "If you'd like to see desktop notifications whenever a track changes, you need to"
       puts "run an extra instance of `foo` in 'notification mode' like so:"
       puts
       puts "    $ foo -n"
       puts
-      
+
     elsif ARGV == ["-n"]
 
       if which("notify-send").any?
@@ -223,35 +244,35 @@ Commands:
         puts "Couldn't find notify-send in the path. This is needed to do on-screen notifications."
         puts "To install it in Debian/Ubuntu, run: apt-get install libnotify-bin"
       end
-      
+
     elsif ARGV == ["playpause"]
-    
+
       playpause
-      
+
     elsif ARGV == ["shuffle"]
-    
+
       toggle_shuffle
-      
+
     elsif ARGV == ["shuffleon"]
-    
+
       shuffleon
-      
+
     elsif ARGV == ["shuffleoff"]
-    
+
       shuffleoff
-      
+
     elsif ARGV == ["current"]
-    
+
       current
-      
+
     else
-    
+
       command ARGV.join(' '), true
-      
+
     end
-    
-  end 
-  
+
+  end
+
 end
 
 ####################################################################################################

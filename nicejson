@@ -8,15 +8,12 @@ def usage
   puts
   puts "Options:"
   puts "  -i     Inline mode (replace the original file)"
+  puts "  -o     One-JSON-object-per-line mode"
   puts
-end  
+end
 
 def pretty(json)
   JSON.pretty_generate(json)
-end
-
-def load(file)
-  JSON.parse(File.read(file))
 end
 
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
@@ -26,22 +23,45 @@ if opts.delete("--help") or opts.delete("-h")
   exit 0
 end
 
-if args.any?
-  if opts.delete("-i")
-    # rewrite files
-    args.each do |arg|
-      puts "* #{arg}"
-      json = pretty(load(arg))
-      # File.rename(arg, arg + "-backup")
-      File.write(arg, json)
+inputs = args #.map { |arg| (arg == "-") ? $stdin : open(arg) }
+inputs << "-" if inputs.empty?
+
+inline_mode  = opts.delete("-i")
+one_per_line = opts.delete("-o")
+
+# make sure the user didn't get too excited
+if inline_mode and one_per_line
+  $stderr.puts "Sorry, you can't use one-per-line mode with inline mode... for... reasons. Please try something different."
+  exit 1
+end
+
+inputs.each do |input|
+
+  io = (input == "-") ? $stdin : open(input)
+
+  if one_per_line
+    # write to stdout
+    io.each_line do |line|
+      puts pretty(JSON.parse(line))
     end
+
+  elsif inline_mode
+    if input == "-"
+      $stderr.puts "Sorry, you can't use inline mode (which replaces the original file) on STDIN. Please provide a filename."
+      exit 1
+    end
+
+    # write results to the original file
+    puts "* #{input}"
+    json = pretty(JSON.load(io))
+    io.close
+    File.write(input, json)
+
   else
     # print to stdout
-    args.each do |arg|
-      puts pretty(load(arg))
-    end
+    puts pretty(JSON.load(io))
   end
 
-else
-  puts pretty(JSON.parse($stdin.read))
+  io.close unless io == $stdin
+
 end

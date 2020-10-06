@@ -17,3 +17,7 @@ yaourt
 fsearch-git
 
 zeal # offline documentation browser
+
+xkbset # advanced keyboard settings
+
+megatools

@@ -115,6 +115,7 @@ else
   alias nano="nano -w"
 fi
 
+alias n=nano
 alias s.='s .'
 alias c.='c .'
 alias egrep='egrep --color=auto'
@@ -239,7 +240,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch --prune"
+alias gf="git fetch -v --prune"
 alias fetch="gf"
 alias whose-line-is-it-anyway="git blame"
 

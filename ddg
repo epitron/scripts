@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+########################################################
+gem 'epitools';       require 'epitools'
+gem 'oga';            require 'oga'
+gem 'slop', "~> 3.6"; require 'slop'
+########################################################
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/85 Version/11.1.1 Safari/605.1.15"
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: ddg [options] <query>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+def clean_link(tag)
+  # //duckduckgo.com/l/?kh=-1&uddg=https%3A%2F%2Ftwitter.com%2Fdavidgraeber
+  link = tag["href"]
+  link = URI.parse(link).params["uddg"] if link[%r{duckduckgo\.com/l/.+uddg=}]
+  link
+end
+
+########################################################
+
+lesspipe(wrap: true) do |less|
+  query = args.join("+")
+  less.puts "<8>*</8> Searching for '<15>#{args.join(" ")}</15>'...".colorize
+
+  url = "https://html.duckduckgo.com/html/?q=#{query}"
+  io  = curl_open(url, "User-Agent": USER_AGENT)
+  doc = Oga.parse_html(io)
+
+  less.puts
+  
+  if zc = doc.at_css(".zci-wrapper")
+    title_tag   = zc.at_css(".zci__heading a")
+    snippet_tag = zc.at_css(".zci__result")
+    snippet_tag.at_css("a").remove
+
+    title   = title_tag.text.strip
+    link    = clean_link(title_tag)
+    snippet = snippet_tag.text.strip
+
+    less.puts title.light_yellow
+    less.puts link.indent(2).light_blue
+    less.puts snippet.wrapdent(2)
+    less.puts
+  end
+
+  doc.css(".result__body").each do |result|
+    title_tag   = result.at_css("h2.result__title a")
+    snippet_tag = result.at_css("a.result__snippet")
+
+    title   = title_tag.text.strip
+    link    = clean_link(title_tag)
+    snippet = snippet_tag.text
+
+    less.puts title.light_cyan
+    less.puts link.indent(2).light_blue
+    less.puts snippet.wrapdent(2)
+    less.puts
+  end
+end
