@@ -219,6 +219,7 @@ EXT_HIGHLIGHTERS = {
   ".xspf"           => :xml,
   ".smil"           => :xml,
   ".xsl"            => :xml,
+  ".plist"          => :xml,
 }
 
 FILENAME_HIGHLIGHTERS = {
