@@ -1728,6 +1728,8 @@ DECOMPRESSORS = {
 
 def convert(arg)
 
+  arg = arg.sub(%r{^file://}, '')
+
   if arg =~ %r{^https?://.+}
     print_http(arg)
   else
@@ -1757,7 +1759,7 @@ def convert(arg)
     ext = path.extname.downcase
 
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz|zst)$/ or
-       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem)$/
+       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem|iso|wim)$/
       print_archive(arg)
     elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
@@ -1793,8 +1795,8 @@ def convert(arg)
         print_srt(arg)
       when *%w[.vtt]
         print_vtt(arg)
-      when *%w[.iso]
-        print_iso(arg)
+      # when *%w[.iso]
+      #   print_iso(arg)
       when *%w[.pdf]
         print_pdf(arg)
       when *%w[.doc .docx]
