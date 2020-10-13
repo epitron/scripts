@@ -71,6 +71,7 @@ kdegraphics-thumbnailers
 # Desktop themes
 xcursor-vanilla-dmz
 gnome-themes-standard
+cantarell-fonts
 ttf-ms-win10
 ttf-droid-ib
 ttf-ubuntu-font-family-ib
