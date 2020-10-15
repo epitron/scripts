@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+########################################################
+require 'open-uri'
+require 'oga'
+########################################################
+
+class String
+  def url?
+    match(%r{^https?://.+})
+  end
+end
+
+args = ARGV
+
+args.each do |arg|
+  unless arg.url?
+    puts "Error: #{arg} isn't an url"
+    next
+  end
+
+  html = URI.open(arg).read
+  doc = Oga.parse_html(html)
+
+
+  # <meta data-n-head="ssr" property="music:duration" content="167">']
+  if og_duration = doc.at_css("meta[property='music:duration']")
+    secs        = og_duration["content"].to_i
+    mins, secs  = secs.divmod(60)
+    hours, mins = mins.divmod(60)
+    length = "%0.2d" % secs
+    length = "%0.2d:" % mins + length if mins > 0
+    length = "%d:" % hours + length if hours > 0
+  else
+    length = nil
+  end
+
+  # <meta data-n-head="ssr" property="og:title" content="Mort Garson - Space Walker">
+  if og_title = doc.at_css("meta[property='og:title']")
+    title = og_title["content"]
+    title += " (#{length})" if length
+    puts title
+  else
+    $stderr.puts "meta og:title not found"
+  end
+  # python version: re.findall("<meta[^>]+og:title[^>]+content=\"([^\"]+)\">", data)
+end
