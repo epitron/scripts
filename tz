@@ -12,42 +12,29 @@ require 'epitools'
 
 ###########################################################
 
-ROOT_URL = "https://torrentz2.eu/"
+ROOT_URL = "https://torrents-csv.ml/"
 
-TRACKERS = %w[
-  http://tracker.trackerfix.com:80/announce
-  udp://9.rarbg.me:2710
-  udp://tracker.pirateparty.gr:6969/announce
-  udp://tracker.coppersurfer.tk:6969/announce
-  udp://tracker.openbittorrent.com:80/
-  http://tracker.openbittorrent.com:80/
-  udp://tracker.publicbt.com:80/
-  http://tracker.publicbt.com:80/
-  http://tracker.opentrackr.org:1337/announce
-  udp://p4p.arenabg.ch:1337/announce
-  http://tracker.ccc.de:80/
-  udp://tracker.ccc.de:80/
-  udp://glotorrents.pw:6969/announce
-  udp://fr33dom.h33t.com:3310/announce
-  http://tracker.ilibr.org:6969/announce
-  udp://tracker.istole.it:6969/
-  udp://tracker.prq.to/announce
-  udp://tracker.glotorrents.com:6969/announce
-  http://inferno.demonoid.com:3407/announce
-  http://p4p.arenabg.ch:1337/announce
-  udp://p4p.arenabg.ch:1337
-  udp://torrent.gresille.org:80/announce
-  udp://tracker.leechers-paradise.org:6969/announce
-  udp://zer0day.ch:1337/announce
-  udp://mgtracker.org:6969/announce
-  udp://tracker.mg64.net:6969/announce
-  http://tracker.best-torrents.net:6969/announce
-  udp://open.demonii.com:1337/announce
-  http://exodus.desync.com:6969/announce
-  http://www.eddie4.nl:6969/announce
-  http://bt1.the9.com:6969/announce
-  http://tracker.torrent.to:2710/announce
-  http://tracker.xpear.de:6969/announce
+TRACKERS = [
+  "udp://tracker.coppersurfer.tk:6969/announce",
+  "udp://tracker.open-internet.nl:6969/announce",
+  "udp://tracker.leechers-paradise.org:6969/announce",
+  "udp://tracker.internetwarriors.net:1337/announce",
+  "udp://tracker.opentrackr.org:1337/announce",
+  "udp://9.rarbg.to:2710/announce",
+  "udp://9.rarbg.me:2710/announce",
+  "http://tracker3.itzmx.com:6961/announce",
+  "http://tracker1.itzmx.com:8080/announce",
+  "udp://exodus.desync.com:6969/announce",
+  "udp://explodie.org:6969/announce",
+  "udp://ipv4.tracker.harry.lu:80/announce",
+  "udp://denis.stalker.upeer.me:6969/announce",
+  "udp://tracker.torrent.eu.org:451/announce",
+  "udp://tracker.tiny-vps.com:6969/announce",
+  "udp://thetracker.org:80/announce",
+  "udp://open.demonii.si:1337/announce",
+  "udp://tracker4.itzmx.com:2710/announce",
+  "udp://tracker.cyberia.is:6969/announce",
+  "udp://retracker.netbynet.ru:2710/announce"
 ]
 
 ###########################################################
@@ -56,11 +43,11 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: tz [options] <query>"
 
-    on 'd',  'date',    'Sort by date'
-    on 'r',  'rating',  'Sort by rating'
+    # on 'd',  'date',    'Sort by date'
+    # on 'r',  'rating',  'Sort by rating'
     on 'm',  'mirror',  'Retrieve all torrents'
     on 'p',  'print',   'Print URLs'
-    on 'n=', 'num',     'Number of results (default: #{Settings.page_size})'
+    # on 'n=', 'num',     "Number of results (default: #{Settings.page_size})"
     on 'a=', 'add',     'Add MD5 hash'
     on 'v',  'verbose', 'Show details and stuff'
   end
@@ -79,7 +66,7 @@ module Settings
   end
 
   def client
-    rc["client"] || 'deluge'
+    rc["client"] || 'qbittorrent'
   end
 
   def page_size
@@ -114,63 +101,53 @@ end
 ###########################################################
 
 class Result
-  attr_accessor :title, :hash, :votes, :age, :date, :size, :seeds, :peers # :tags
 
-  def initialize(dl)
-    if dl.is_a? String
-      @hash = dl
-      return
+  attr_accessor :title, :seeds, :peers, :date, :size, :votes, :hash
+
+  def self.from_json(json)
+    # "completed": 9603,
+    # "created_unix": 1582801440,
+    # "infohash": "29774d8626332e418cc55b1a6151d5e6503b5bbc",
+    # "leechers": 1056,
+    # "name": "Altered.Carbon.Season.2.S02.720p.NF.WEB-DL.x265-HETeam",
+    # "scraped_date": 1582863685,
+    # "seeders": 1462,
+    # "size_bytes": 2127687389
+    obj = new
+    obj.instance_eval do
+      @title, @seeds, @peers, @size, @votes, @hash = json.values_at(*%w[name seeders leechers size_bytes completed infohash])
+      @date = Time.at json["created_unix"]
     end
+    obj
+  end
 
-    link = dl.at("dt a")
-
-    if link.nil?
-      if dt = dl.at("dt")
-        @title = dt.text
-        @verified, @age, @size, @seeds, @peers, @date = [""] * 6
-        return
-      else
-        raise "Bad dl:\n#{dl}"
-      end
+  def self.from_csv(row)
+    # infohash;name;size_bytes;created_unix;seeders;leechers;completed;scraped_date
+    # ~/src/torrents.csv $ "grep -iE 'altered.state' torrents.csv | fields -d \; 5,6,2|sort -n"
+    obj = new
+    obj.instance_eval do
+      @hash, @title, @size, @date, @seeds, @peers, @votes, _ = row.chomp.split(";")
     end
-
-    @title = link.text
-
-    if link["href"] =~ /([0-9a-f]{40})/
-      @hash = $1
-    end
-
-    dd = dl.at("dd")
-
-    # @votes = dd.at(".v").text.strip
-    # @age   = dd.at(".a").text
-    # @size  = dd.at(".s").text
-    # @seeds = dd.at(".u").text
-    # @peers = dd.at(".d").text
-
-    #["<span>✓</span>", "<span title=\"1444063087\">10 months</span>", "<span>2288 MB</span>", "<span>857</span>", "<span>162</span>"]
-    @verified, @age, @size, @seeds, @peers = dd.search("span").map(&:text)
-    @date = Time.at dd.at("span[title]")["title"].to_i
+    obj
   end
 
   def datestamp
     @date.strftime("%Y-%m-%d")
   end
 
-  def age
-    @age.gsub(/ (day|month|week|hour|year|min)s?/) do |m|
-      ($1 == "month") ? "mo" : m[1]
-    end
+  def escaped_title
+    CGI.escape title.gsub(/[\^\*\"]/, '').strip
   end
 
   def tracker_params
-    TRACKERS.map { |tr| "&tr=#{URI.escape(tr)}" }.join("")
+    # TRACKERS.map { |tr| "&tr=#{tr}" }.join("")
+    # TRACKERS.map { |tr| "&tr=#{CGI.escape(tr)}" }.join("")
+    TRACKERS.map { |tr| "&tr=#{CGI.escape_html(tr)}" }.join("")
   end
 
   def magnet_url
-    "magnet:?xt=urn:btih:#{hash}#{tracker_params}#{"&dn=#{title}" if title}"
+    "magnet:?xt=urn:btih:#{hash}#{"&dn=#{escaped_title}" if title}#{tracker_params}"
   end
-
 end
 
 ###########################################################
@@ -191,49 +168,53 @@ def read_url(url)
   end
 end
 
-def search(query, page_size=nil, page=nil, order=nil)
+###########################################################
 
-  case order
-  when :peers, nil
-    action = 'search'
-  when :date
-    action = 'searchA'
-  when :rating
-    action = 'searchN'
-  else
-    raise 'Unknown ordering'
-  end
+def open_url(url)
+  cmd = Settings.client.split
 
-  url = "#{ROOT_URL}#{action}"
-
-  opts = {}
-  opts["f"] = URI.escape(query) unless query.empty?
-  opts["p"] = page || 0
-
-  url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
-
-  puts url if $verbose
-  page = Nokogiri::HTML(read_url(url))
-  puts page if $verbose
-
-  if page.at("title").text =~ /attention.+cloudflare/i
-    puts "Cloudflare block."
+  unless Path.which(cmd.first)
+    $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
     exit 1
   end
 
-  dls = page.search(".results dl")
-  dls = dls.take(page_size) if page_size
-  dls.map { |dl| Result.new(dl) }.compact
+  if $verbose
+    puts url
+    puts
+  end
+
+  # Daemonize to kill the console spam
+  Process.daemon(true)
+  exec(*cmd, url)
 end
 
-def cleanup(title)
-  title.gsub(/[\^\*\"]/, '').strip
+###########################################################
+
+def search(query, page=nil)
+  url = "#{ROOT_URL}service/search"
+
+  # create the query params
+  opts = {}
+  opts["type_"] = "torrent"
+  opts["q"] = CGI.escape(query) unless query.empty?
+  opts["page"] = page || 1
+
+  url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
+
+  # puts url if $verbose
+  puts url
+  results = read_url(url).from_json
+  pp results if $verbose
+
+  results.map { |result| Result.from_json(result) }.compact
 end
+
+###########################################################
 
 def download_torrent(result)
   puts "<3>* <11>#{result.title} <8>(<10>#{result.seeds}/<2>#{result.peers}<8>)".colorize
 
-  filename = "#{result.hash} - #{cleanup result.title}.torrent"
+  filename = "#{result.hash} - #{result.escaped_title}.torrent"
   if File.exists? filename
     puts "  |_ skipping".light_yellow
     return
@@ -265,7 +246,7 @@ def mirror(query, pages=10)
 end
 
 def choose_torrents(results)
-  print ">> Torrents to download (eg. 1 3 5-7): "
+  print ">> Torrents to download (eg. 1 3 5-7, [n]ext page): "
 
   begin
     input = $stdin.gets
@@ -275,65 +256,62 @@ def choose_torrents(results)
     exit 1
   end
 
-  unless input
+  if input.nil?
     puts
     puts "Fine, be that way!"
     exit 1
   end
 
-  choices = []
+  input.strip!
 
-  input.split.each do |choice|
-    choice.strip!
+  if input.empty?
+    choices = :next_page
+  else
+    choices = []
 
-    case choice
-    when /^(\d+)$/
-      choices << $1.to_i
-    when /^(\d+)-(\d+)$/
-      start  = $1.to_i
-      finish = $2.to_i
-      choices += (start..finish).to_a
-    else
-      puts "Invalid choice: #{choice}"
+    input.split.each do |choice|
+      case choice
+      when /^n$/i
+        choices = :next_page
+        break
+      when /^(\d+)$/
+        choices << $1.to_i
+      when /^(\d+)-(\d+)$/
+        start  = $1.to_i
+        finish = $2.to_i
+        choices += (start..finish).to_a
+      else
+        puts "Invalid choice: #{choice}"
+      end
     end
   end
 
-  choices.map { |n| results[n-1] }
+  choices = choices.map { |n| results[n-1] } if choices.is_an? Array
+  choices
 end
 
 def display(results)
-  results.each_with_index.to_a.reverse_each do |r, n|
-    number = "<15>#{(n+1).to_s.rjust(3)}."
-    # seedpeers = "<10>#{r.seeds}<7>/<2>#{r.peers}"
-    seedpeers = "#{r.seeds}/#{r.peers}"
-    # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
-    # line += " <14>#{r.size} <7>(#{r.age})"
-    # line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(4)} <8>| #{number} <8>| <14>#{r.title}"
-    line = "<11>#{r.age.rjust(4)} <8>| <12>#{r.size.rjust(8)} <8>| <10>#{seedpeers.rjust(8)} <8>| #{number} <14>#{r.title}"
-    # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
-
-    puts line.colorize
-  end
-end
-
-###########################################################
-
-def open_url(url)
-  cmd = Settings.client.split
-
-  unless Path.which(cmd.first)
-    $stdout.puts "Error: Couldn't locate #{Settings.client} in the path"
+  if results.empty?
+    puts "Nothin'!"
     exit 1
   end
 
-  if $verbose
-    puts url
-    puts
-  end
+  results.each_with_index.to_a.reverse_each do |r, n|
+    # seedpeers = "<10>#{r.seeds}<7>/<2>#{r.peers}"
+    # line += " <8>[<12>+#{r.votes}<8>]" unless r.votes.empty?
+    # line += " <14>#{r.size} <7>(#{r.age})"
+    # line = "<10>#{r.seeds.rjust(7)} <8>| <13>#{r.peers.rjust(7)} <8>| <12>#{r.size.rjust(8)} <8>| <11>#{r.age.rjust(4)} <8>| #{number} <8>| <14>#{r.title}"
+    # line += " <7>#{r.date} <10>#{r.seeds} <13>#{r.peers}"
+    # line = "<11>#{r.age.rjust(4)} <8>| <12>#{r.size.rjust(8)} <8>| <10>#{seedpeers.rjust(8)} <8>| #{number} <14>#{r.title}"
 
-  # Daemonize to kill the console spam
-  # Process.daemon(true)
-  exec(*cmd, url)
+    number    = "#{(n+1).to_s.rjust(3)}."
+    seedpeers = "#{r.seeds}/#{r.peers}".rjust(8)
+    date      = r.datestamp
+    size      = r.size.commatize.rjust(16)
+    line      = "<7>#{date} <9>#{size} <2>#{seedpeers} <15>#{number} <7>#{r.title}"
+
+    puts line.colorize
+  end
 end
 
 ###########################################################
@@ -367,22 +345,19 @@ if __FILE__ == $0
   if opts.mirror?
     mirror(query)
   else
-    if opts.date?
-      order = :date
-    elsif opts.rating?
-      order = :rating
-    else
-      order = Settings.order
-    end
+    page = 1
+    loop do
+      results = search(query, page)
 
-    page_size = opts[:num]&.to_i || Settings.page_size
-    results   = search(query, page_size, nil, order)
+      display(results)
 
-    display(results)
-
-    chosen = choose_torrents(results)
-    chosen.each do |t|
-      opts.print? ? (puts t.magnet_url) : (open_url t.magnet_url)
+      chosen = choose_torrents(results)
+      if chosen == :next_page
+        page += 1
+      else
+        chosen.each { |t| opts.print? ? (puts t.magnet_url) : (open_url t.magnet_url) }
+        break
+      end
     end
   end
 

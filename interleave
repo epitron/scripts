@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+########################################################
+gem 'epitools', '>= 0.5.129'
+require 'epitools'
+########################################################
+# Parse options
+opts = Epi::Slop.parse(help: true, strict: true) do
+  banner "Usage: interleave [options] <command> [<command> [...]]"
+  on "c",  "no-pager",  "Output results to STDOUT instead of a pager (less)"
+end
+########################################################
+
+args = ARGV
+
+exit if opts.help?
+
+if args.empty?
+  puts opts
+  exit 1
+end
+
+########################################################
+
+main_proc = proc do |out|
+  JobRunner.new do |jr|
+    args.each do |arg|
+      jr.add { [arg, IO.popen(arg, &:read)] }
+    end
+
+    jr.each_result do |cmd, result|
+      out.puts "==============================".grey
+      out.puts " #{cmd}".light_cyan
+      out.puts "==============================".grey
+      out.puts result
+      out.puts
+    end
+  end
+end
+
+########################################################
+
+if opts[:"no-pager"]
+  main_proc.call($stdout)
+else
+  lesspipe { |less| main_proc.call(less) }
+end
