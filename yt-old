@@ -1,0 +1,127 @@
+#!/usr/bin/env ruby
+require 'epitools'
+require 'http'
+
+class Result
+  attr_accessor \
+    :title,
+    :url,
+    :date,
+    :length,
+    :views,
+    :user,
+    :desc,
+    :highlighted_desc
+
+  def initialize(li)
+    @length       = li.at(".video-time").text
+    link          = li.at(".yt-lockup-title a")
+    @title        = link.text
+    @url          = URI.join "https://youtube.com/", link["href"]
+    @user         = li.at(".yt-lockup-byline a").text
+    @date, @views = li.search(".yt-lockup-meta-info li").map(&:text)
+
+    if desc  = li.at(".yt-lockup-description")
+      @desc = desc.text
+      @highlighted_desc = highlight(desc)
+    end
+  end
+
+  def highlight(desc, color=3, highlight=11)
+    translated = desc.children.map do |child|
+
+      case child
+      when Nokogiri::XML::Text
+        child.text
+      when Nokogiri::XML::Element
+
+        case child.name
+        when "b"
+          "<#{highlight}>#{child.text}</#{highlight}>"
+        else
+          child.text
+        end
+
+      end
+
+    end
+
+    "<#{color}>#{translated.join}</#{color}>"
+  end
+
+  def to_json(state)
+    h = [
+      :title,
+      :url,
+      :date,
+      :length,
+      :views,
+      :user,
+      :desc,
+    ].map {|k| [k, send(k)] }.to_h
+
+    h[:views] = h[:views].scan(/\d+/).join.to_i
+
+    h.to_json(state)
+  end
+
+end
+
+def youtube_search(query)
+  url = "https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=Search"
+  page = Nokogiri::HTML(HTTP.get(url).to_s)
+
+  lis = page.search("#results ol.section-list ol.item-section > li")
+  results = lis.map do |li|
+    next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
+
+    result = Result.new(li) rescue nil
+
+    next if result.nil?
+    next if result.url.to_s["googleadservices.com"]
+
+    result
+  end.compact
+end
+
+############################################################################################################
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/]}
+
+unless args.any? or opts.delete("-h") or opts.delete("--help")
+  puts "usage:"
+  puts "  yt [options] <query>"
+  puts
+  puts "options:"
+  puts "    -j --json       Output results as JSON"
+  puts "    -p --playlists  Show user's playlists"
+  puts "    -d --dump       Dump everything in account"
+  puts
+  exit 1
+end
+
+query = args.join(" ")
+
+$stderr.puts "Searching for: <14>#{query}".colorize
+
+results = youtube_search(query)
+
+if opts.delete("-j") or opts.delete("--json")
+  # binding.pry
+  puts JSON.pretty_generate(results)
+else
+  $stderr.puts "Results: #{results.size}"
+  results = Hash[ (1..results.size).zip(results) ]
+
+  results.to_a.reverse.each do |n, r|
+    puts "<11>#{n}. <15>#{r.title} <8>[<7>#{r.length}<8>]".colorize
+
+    indent = " " * (n.to_s.size + 2)
+
+    puts "#{indent}<8>by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
+    puts "#{indent}#{r.url}".light_blue
+    # puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc
+    puts r.desc.wrapdent(indent) if r.desc
+    puts
+  end
+end

@@ -139,7 +139,7 @@ case $(uname -s) in
 esac
 
 
-case $(uname -o) in
+case $(uname -o 2&> /dev/null) in
   Android)
     . $SCRIPTDIR/bashrc.android
     ;;

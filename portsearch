@@ -1,15 +1,22 @@
 #!/usr/bin/env ruby
 require 'epitools/colored'
+require 'epitools/clitools'
+require 'json'
+require 'ostruct'
 require 'open-uri'
 
-SVNURL = "svn://svn.FreeBSD.org/ports/head/%s/%s"
-NUM_RESULTS = 20
-SEARCH_URL = "https://www.freshports.org/search.php?query=%s&num=#{NUM_RESULTS}&stype=name&method=match&deleted=excludedeleted&start=1&casesensitivity=caseinsensitive"
+SVNURL     = "svn://svn.FreeBSD.org/ports/head/%s/%s"
+SEARCH_URL = "https://repology.org/api/v1/projects/?search=%s&inrepo=freebsd"
 
 def search(query)
-  html = open(SEARCH_URL % query, &:read)
-  # html = File.read("freshports.html")
-  html.scan(%r{<DT>\s*<BIG><B><a href="([^"]+)/">.+?</BIG>\s*<span class="[^"]+">([^<]+)</span><br>\s*<b>\s*([^<]+)\s*</b>}im)
+  response = URI.open(SEARCH_URL % query, &:read)
+  json     = JSON.parse(response)
+
+  results = json.map do |pkg, vs|
+    pkginfo = vs.find { |v| v["repo"] == "freebsd" }
+    pkginfo["name"] = pkg
+    OpenStruct.new(pkginfo)
+  end
 end
 
 if ARGV.empty?
@@ -23,9 +30,26 @@ puts "<8>* <7>Searching for <15>#{query}<7>...".colorize
 
 results = search(query)
 puts
-results.each do |path, desc, version|
-  _, category, package = path.split("/")
-  puts "<9>#{category}<8>/<11>#{package} <8>(<7>#{version}<8>)".colorize
-  puts "  #{desc}"
-  puts "  #{SVNURL % [category, package]}".light_green
+
+# [{"name"=>"python:dockerpty"
+#   "repo"=>"freebsd",
+#   "srcname"=>"devel/py-dockerpty",
+#   "binname"=>"py27-dockerpty",
+#   "visiblename"=>"devel/py-dockerpty",
+#   "version"=>"0.4.1",
+#   "maintainers"=>["lifanov@freebsd.org"],
+#   "www"=>["https://github.com/d11wtq/dockerpty"],
+#   "summary"=>"Python library to use the pseudo-tty of a docker container",
+#   "categories"=>["devel"],
+#   "status"=>"newest",
+#   "origversion"=>nil},
+lesspipe do |less|
+  results.each do |pkg|
+    category, package = pkg.visiblename.split("/")
+    less.puts "<9>#{category}<8>/<11>#{package} <8>(<7>#{pkg.version}<8>)".colorize
+    less.puts "  #{pkg.summary}"
+    less.puts "  https://www.freshports.org/#{pkg.visiblename}/".light_green
+    less.puts "  #{SVNURL % [category, package]}".green
+    less.puts
+  end
 end
