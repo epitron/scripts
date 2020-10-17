@@ -162,6 +162,9 @@ EXT_HIGHLIGHTERS = {
   # zig
   ".zig"            => pygmentize(:rust),
 
+  # pythonic javascript (rapydscript-ng)
+  ".pyj"            => :python,
+
   # java
   ".gradle"         => :groovy,
   ".sage"           => :python,
@@ -1837,7 +1840,7 @@ def convert(arg)
           print_zip(arg)
         when /shell script/
           print_source(arg)
-        when /:.+?(ELF|executable|shared object)[^,]*,/
+        when /:.+?(ELF|(?<!text )executable|shared object)[^,]*,/
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)
