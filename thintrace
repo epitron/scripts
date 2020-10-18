@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+# TODO: create a streaming group_by method
+
+class Event < Struct.new(:pname, :pid, :flags, :path)
+  include Comparable
+  COMPARABLE_VAULES = [0,1,3]
+
+  def self.from_line(line)
+    if line =~ /^([^(]+)\((\d+)\): ([A-Z]+) (.+)$/
+      new($1, $2.to_i, $3, $4)
+    else
+      nil
+    end
+  end
+
+  def name
+    "#{pname}(#{pid})"
+  end
+
+  def to_s
+    "#{name}: #{flags} #{path}"
+  end
+
+  def <=>(other)
+    values_at(*COMPARABLE_VAULES) <=> other.values_at(*COMPARABLE_VAULES)
+  end
+end
+
+def print_group(g)
+  case g.size
+  when 0
+    raise "empty group?"
+  when 1
+    puts g.first
+  else
+    puts g.first.name
+    g.each do |ev|
+      puts "  #{ev.flags} #{ev.path}"
+    end
+  end
+end
+
+IO.popen(["sudo", "fatrace"]) do |io|
+# open("#{ENV["HOME"]}/fatrace.txt") do |io|
+  last_event = nil
+  g          = []
+  io.lazy.map(&:chomp).each do |line|
+    p line
+    if event = Event.from_line(line)
+      if last_event and event != last_event
+        print_group(g)
+        g = []
+      end
+      g << event
+      last_event = event
+    else
+      puts "Error: couldn't parse #{line.inspect}"
+    end
+  end
+end
