@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "* Rehashing fonts..."
+
+if which fc-cache &> /dev/null; then
+  fc-cache
+else
+  xset fp rehash
+fi
