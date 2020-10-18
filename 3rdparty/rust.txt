@@ -5,3 +5,7 @@ fd
 hexyl
 tldr
 bgpview-cli
+bat
+exa
+git-delta
+
