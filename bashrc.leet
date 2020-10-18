@@ -51,6 +51,11 @@ export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
 export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
 export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
+# bat-man
+if we_have bat; then
+  export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+fi
+
 # fzf
 if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   if we_have bfs; then
