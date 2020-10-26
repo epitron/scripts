@@ -1260,6 +1260,13 @@ end
 
 ##############################################################################
 
+def print_pickle(filename)
+  depends bins: "python"
+  run("python", "-c", "import pickle; print(repr(pickle.load(open('#{filename}', 'rb'))))", filename)
+end
+
+##############################################################################
+
 def print_csv(filename)
   require 'csv'
 
@@ -1317,7 +1324,7 @@ def print_csv(filename)
 end
 
 ##############################################################################
-
+# TODO: wide view improvement: put ascii chars side by each, but stack hex digits topwise
 def print_hex(arg, side_by_side=true)
   depends gems: "epitools"
   require 'epitools/colored'
@@ -1811,6 +1818,8 @@ def convert(arg)
         print_ssl_certificate(arg)
       when *%w[.sig .asc]
         print_gpg(arg)
+      when *%w[.pickle]
+        print_pickle(arg)
       when *%w[.xml]
         print_xml(arg)
       when *%w[.csv .xls]
