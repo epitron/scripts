@@ -1,0 +1,1 @@
+pgrep "$@" | xargs -P0 -i watch -n 2.0 timeout 0.2 strace -p "{}" -fe trace=file
