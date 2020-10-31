@@ -1,1 +1,8 @@
-ydu
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+YDDIR="$DIR/src/yt-dlc"
+
+if [ ! -d "$YDDIR" ]; then
+  ydu
+fi
+
+python $YDDIR/youtube_dlc/__main__.py "$@"
