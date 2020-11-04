@@ -60,6 +60,7 @@
 
 # "find" lets you search for a text string on the current page.
 #<ctrl>f = find
+/ = find
 
 # "hide-panels" hides the findbar if present, control panels if not.
 #esc = hide-panels
