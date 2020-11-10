@@ -21,3 +21,14 @@ end
 
 (Could use `upm` for installing distro packages... or nixos?)
 
+## Support Library
+
+- Config file loader
+- Ruby pipes
+- Ruby parallel processes
+- Pager
+- Colors
+- Terminal UI
+  - fzf
+  - progress bars
+  - radio buttons
