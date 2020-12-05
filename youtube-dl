@@ -1,8 +1,10 @@
+#!/usr/bin/env bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-YDDIR="$DIR/src/yt-dlc"
+#YDDIR="$DIR/src/yt-dlc"
+YDDIR="$DIR/src/youtube-dl"
 
 if [ ! -d "$YDDIR" ]; then
   ydu
 fi
 
-python $YDDIR/youtube_dlc/__main__.py "$@"
+python $YDDIR/youtube_dl/__main__.py "$@"
