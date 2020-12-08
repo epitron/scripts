@@ -23,7 +23,8 @@ args = ARGV
 ########################################################
 
 Path["**/*sync-conflict*.*"].each do |cnf|
-  orig = cnf.with(filename: cnf.filename.gsub(/\.sync-conflict-\d+-\d+-[A-Z]+\./, '.'))
+  orig = cnf.with(filename: cnf.filename.gsub(/\.sync-conflict-\d+-\d+-[A-Z0-9]+\./, '.'))
+  raise "wat" if orig == cnf
   paths = [orig, cnf]
 
   paths.each_with_index do |path, index|
