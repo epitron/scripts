@@ -23,11 +23,13 @@ args = ARGV
 ########################################################
 
 Path["**/*sync-conflict*.*"].each do |cnf|
-  orig = cnf.with(filename: cnf.filename.gsub(/\.sync-conflict-\d+-\d+-[A-Z]+\./, '.'))
+  orig = cnf.with(filename: cnf.filename.gsub(/\.sync-conflict-[^\.]+\./, '.'))
   paths = [orig, cnf]
 
+  raise "orig doesn't exist #{orig}" unless orig.exists?
+
   paths.each_with_index do |path, index|
-    puts "#{index+1}) #{path.size.commatize.rjust(10)} #{path}"
+    puts "#{index+1}) #{path.md5[0..8]} #{path.size.commatize.rjust(10)} #{path}"
   end
 
   loop do
