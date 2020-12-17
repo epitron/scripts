@@ -104,6 +104,7 @@ routes do
   # Strip click trackers
   match(host: /google.\w{2,3}$/, path: "/url")   { |uri| route uri.params["url"] || uri.params["q"] }
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
+  match(host: "duckduckgo.com",  path: "/l/")    { |uri| route uri.params["uddg"] }
   match(host: "youtube.com", path: "/attribution_link") { |uri| route "https://youtube.com#{uri.params["u"]}" }
   match(params: "fbclid") { |uri| route uri.without_params("fbclid") }
 
