@@ -21,3 +21,6 @@ zeal # offline documentation browser
 xkbset # advanced keyboard settings
 
 megatools
+imlib2-webp-git
+
+xnviewmp
