@@ -16,7 +16,7 @@ def parse_options
     banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
 
     on "m=", "memory",   "How much memory to use?", default: "2G"
-    on "s=", "size",     "Disk size", default: "10G"
+    on "s=", "size",     "Disk size", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
     on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k=", "kvm",      "Use KVM", default: true
@@ -53,7 +53,7 @@ if args.empty? and not opts.bios?
   exit 1
 end
 
-isos, disks = args.map(&:to_Path).partition { |arg| arg.ext == "iso" }
+isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" }
 isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
 exit 1 unless isos.all? &:exist?
 

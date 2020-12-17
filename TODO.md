@@ -26,3 +26,15 @@ end
 - shallow
 - automatic (git hooks?)
 - optional (curses radio buttons)
+
+## Support Library
+
+- Config file loader
+- Ruby pipes
+- Ruby parallel processes
+- Pager
+- Colors
+- Terminal UI
+  - fzf
+  - progress bars
+  - radio buttons

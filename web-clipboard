@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-clips = %w[primary clipboard].map { |type| `xclip -o -selection #{type}` }
+clips = %w[primary clipboard].map { |type| `xclip -o -selection #{type}`.chomp }
 
 if clip = clips.find { |c| c[%r{^(https?|magnet):}] }
   exec("#{__dir__}/web", clip)
