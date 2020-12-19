@@ -68,6 +68,19 @@ def rougify(lexer=nil)
   cmd
 end
 
+
+def render_rouge(filename, lexer=nil)
+  # TODO: use this!
+  depends gem: "rouge"
+  require 'rouge/cli'
+
+  cmd = ["rougify"]
+  cmd += ["-l", lexer] if lexer
+  cmd
+  Rouge::CLI.parse(cmd).run
+end
+
+
 def which(cmd)
   ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
     exe = File.join(path, cmd)
@@ -170,6 +183,7 @@ EXT_HIGHLIGHTERS = {
   ".sage"           => :python,
   ".qml"            => :php,
   ".pro"            => :sql,
+  ".cxml"           => :xml,
 
   # llvm
   ".ll"             => rougify,
@@ -223,6 +237,7 @@ EXT_HIGHLIGHTERS = {
   ".smil"           => :xml,
   ".xsl"            => :xml,
   ".plist"          => :xml,
+  ".svg"            => :xml,
 }
 
 FILENAME_HIGHLIGHTERS = {
