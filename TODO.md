@@ -21,6 +21,12 @@ end
 
 (Could use `upm` for installing distro packages... or nixos?)
 
+## General Solution for Embedded Repos
+
+- shallow
+- automatic (git hooks?)
+- optional (curses radio buttons)
+
 ## Support Library
 
 - Config file loader

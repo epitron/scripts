@@ -1,16 +1,17 @@
 ! Preferences file for NEdit
+! (User settings in X "application defaults" format)
 !
-! This file is overwritten by the "Save Defaults..." command in NEdit 
+! This file is overwritten by the "Save Defaults..." command in NEdit
 ! and serves only the interactively settable options presented in the NEdit
-! "Preferences" menu.  To modify other options, such as background colors
-! and key bindings, use the .Xdefaults file in your home directory (or
-! the X resource specification method appropriate to your system).  The
-! contents of this file can be moved into an X resource file, but since
-! resources in this file override their corresponding X resources, either
-! this file should be deleted or individual resource lines in the file
-! should be deleted for the moved lines to take effect.
+! "Preferences" menu.  To modify other options, such as key bindings, use
+! the .Xdefaults file in your home directory (or the X resource
+! specification method appropriate to your system).  The contents of this
+! file can be moved into an X resource file, but since resources in this file
+! override their corresponding X resources, either this file should be 
+! deleted or individual resource lines in the file should be deleted for the
+! moved lines to take effect.
 
-nedit.fileVersion: 5.2
+nedit.fileVersion: 5.6
 nedit.shellCommands: \
 	jikes compile:Alt+A:m:DS:\n\
 		jikes %\n\
@@ -21,7 +22,7 @@ nedit.shellCommands: \
 	spell::s:EX:\n\
 		cat>spellTmp; xterm -e ispell -x spellTmp; cat spellTmp; rm spellTmp\n\
 	wc::w:ED:\n\
-		set wc=`wc`; echo $wc[1] "lines," $wc[2] "words," $wc[3] "characters"\n\
+		wc | awk '{print $1 " lines, " $2 " words, " $3 " characters"}'\n\
 	sort:Alt+S:o:EX:\n\
 		sort\n\
 	number lines::n:AW:\n\
@@ -34,48 +35,62 @@ nedit.shellCommands: \
 		unexpand\n
 nedit.macroCommands: \
 	Complete Word:Alt+D::: {\n\
-		# Tuning parameters\n\
-		ScanDistance = 200\n\
+		# This macro attempts to complete the current word by\n\
+		# finding another word in the same document that has\n\
+		# the same prefix; repeated invocations of the macro\n\
+		# (by repeated typing of its accelerator, say) cycles\n\
+		# through the alternatives found.\n\
+		# \n\
+		# Make sure $compWord contains something (a dummy index)\n\
+		$compWord[""] = ""\n\
 		\n\
-		# Search back to a word boundary to find the word to complete\n\
-		startScan = max(0, $cursor - ScanDistance)\n\
-		endScan = min($text_length, $cursor + ScanDistance)\n\
-		scanString = get_range(startScan, endScan)\n\
-		keyEnd = $cursor-startScan\n\
-		keyStart = search_string(scanString, "<", keyEnd, "backward", "regex")\n\
-		if (keyStart == -1)\n\
-		    return\n\
-		keyString = "<" substring(scanString, keyStart, keyEnd)\n\
-		\n\
-		# search both forward and backward from the cursor position.  Note that\n\
-		# using a regex search can lead to incorrect results if any of the special\n\
-		# regex characters is encountered, which is not considered a delimiter\n\
-		backwardSearchResult = search_string(scanString, keyString, keyStart-1, \\\n\
-		    	"backward", "regex")\n\
-		forwardSearchResult = search_string(scanString, keyString, keyEnd, "regex")\n\
-		if (backwardSearchResult == -1 && forwardSearchResult == -1) {\n\
-		    beep()\n\
-		    return\n\
+		# Test whether the rest of $compWord has been initialized:\n\
+		# this avoids having to initialize the global variable\n\
+		# $compWord in an external macro file\n\
+		if (!("wordEnd" in $compWord)) {\n\
+		    # we need to initialize it\n\
+		    $compWord["wordEnd"] = 0\n\
+		    $compWord["repeat"] = 0\n\
+		    $compWord["init"] = 0\n\
+		    $compWord["wordStart"] = 0\n\
 		}\n\
 		\n\
-		# if only one direction matched, use that, otherwise use the nearest\n\
-		if (backwardSearchResult == -1)\n\
-		    matchStart = forwardSearchResult\n\
-		else if (forwardSearchResult == -1)\n\
-		    matchStart = backwardSearchResult\n\
+		if ($compWord["wordEnd"] == $cursor) {\n\
+		        $compWord["repeat"] += 1\n\
+		}\n\
 		else {\n\
-		    if (keyStart - backwardSearchResult <= forwardSearchResult - keyEnd)\n\
-		    	matchStart = backwardSearchResult\n\
+		   $compWord["repeat"] = 1\n\
+		   $compWord["init"] = $cursor\n\
+		\n\
+		   # search back to a word boundary to find the word to complete\n\
+		   # (we use \\w here to allow for programming "words" that can include\n\
+		   # digits and underscores; use \\l for letters only)\n\
+		   $compWord["wordStart"] = search("<\\\\w+", $cursor, "backward", "regex", "wrap")\n\
+		\n\
+		   if ($compWord["wordStart"] == -1)\n\
+		      return\n\
+		\n\
+		    if ($search_end == $cursor)\n\
+		       $compWord["word"] = get_range($compWord["wordStart"], $cursor)\n\
 		    else\n\
-		    	matchStart = forwardSearchResult\n\
+		        return\n\
 		}\n\
+		s = $cursor\n\
+		for (i=0; i <= $compWord["repeat"]; i++)\n\
+		    s = search($compWord["word"], s - 1, "backward", "regex", "wrap")\n\
 		\n\
-		# find the complete word\n\
-		matchEnd = search_string(scanString, ">", matchStart, "regex")\n\
-		completedWord = substring(scanString, matchStart, matchEnd)\n\
+		if (s == $compWord["wordStart"]) {\n\
+		   beep()\n\
+		   $compWord["repeat"] = 0\n\
+		   s = $compWord["wordStart"]\n\
+		   se = $compWord["init"]\n\
+		}\n\
+		else\n\
+		   se = search(">", s, "regex")\n\
 		\n\
-		# replace it in the window\n\
-		replace_range(startScan + keyStart, $cursor, completedWord)\n\
+		replace_range($compWord["wordStart"], $cursor, get_range(s, se))\n\
+		\n\
+		$compWord["wordEnd"] = $cursor\n\
 	}\n\
 	Fill Sel. w/Char:::R: {\n\
 		if ($selection_start == -1) {\n\
@@ -157,7 +172,7 @@ nedit.macroCommands: \
 		    keepStart = commentStart + 2\n\
 		keepEnd = search_string(sel, "*/", length(sel), "backward")\n\
 		commentEnd = keepEnd + 2\n\
-		if (substring(sel, keepEnd - 1, keepEnd == " "))\n\
+		if (substring(sel, keepEnd - 1, keepEnd) == " ")\n\
 		    keepEnd = keepEnd - 1\n\
 		replace_range(selStart + commentStart, selStart + commentEnd, \\\n\
 			substring(sel, keepStart, keepEnd))\n\
@@ -192,6 +207,7 @@ nedit.macroCommands: \
 		select(selStart, selStart + length(newText))\n\
 	}\n\
 	Make C Prototypes@C@C++:::: {\n\
+		# simplistic extraction of C function prototypes, usually good enough\n\
 		if ($selection_start == -1) {\n\
 		    start = 0\n\
 		    end = $text_length\n\
@@ -200,6 +216,10 @@ nedit.macroCommands: \
 		    end = $selection_end\n\
 		}\n\
 		string = get_range(start, end)\n\
+		# remove all C++ and C comments, then all blank lines in the extracted range\n\
+		string = replace_in_string(string, "//.*$", "", "regex", "copy")\n\
+		string = replace_in_string(string, "(?n/\\\\*.*?\\\\*/)", "", "regex", "copy")\n\
+		string = replace_in_string(string, "^\\\\s*\\n", "", "regex", "copy")\n\
 		nDefs = 0\n\
 		searchPos = 0\n\
 		prototypes = ""\n\
@@ -309,39 +329,41 @@ nedit.highlightPatterns: C:Default\n\
 	CSS:Default\n\
 	Regex:Default\n\
 	XML:Default
-nedit.languageModes: 	C:.c .h::::::".,/\\`'!|@#%^&*()-=+{}[]"":;<>?~"\n\
-	C++:.cc .hh .C .H .i .cpp::::::".,/\\`'!|@#%^&*()-=+{}[]"":;<>?~"\n\
-	Java:.java::::::\n\
-	JavaScript:.js::::::\n\
-	Ada:.ada .ad .ads .adb .a::::::\n\
-	Fortran:.f .f77 .for::::::\n\
-	Pascal:.pas .p .int::::::\n\
-	Yacc:.y::::::".,/\\`'!|@#%^&*()-=+{}[]"":;<>?~"\n\
-	Perl:.pl .pm .p5 .PL:"^[ \\t]*#[ \\t]*!.*perl":Auto:None:::".,/\\\\`'!$@#%^&*()-=+{}[]"":;<>?~|"\n\
-	Python:.py:"^#!.*python":Auto:None:::\n\
-	Tcl:.tcl .tk .itcl .itk::Smart:None:::\n\
-	Awk:.awk::::::\n\
-	Sh Ksh Bash:.sh .bash .ksh .profile .bashrc .bash_logout .bash_login .bash_profile:"^[ \\t]*#[ \\t]*![ \\t]*/.*bin/(sh|ksh|bash)":::::\n\
-	Csh:.csh .cshrc .login .logout:"^[ \\t]*#[ \\t]*![ \\t]*/bin/csh":::::\n\
-	Makefile:Makefile makefile::::::\n\
-	SGML HTML:.sgml .sgm .html .htm:"\\<(?ihtml)\\>":::::\n\
-	LaTeX:.tex .sty .cls .dtx .ins::::::\n\
-	PostScript:.ps .PS .eps .EPS .epsf .epsi::::::\n\
-	Lex:.lex::::::\n\
-	SQL:.sql::::::\n\
-	Matlab:..m .oct .sci::::::\n\
-	VHDL:.vhd .vhdl .vdl::::::\n\
-	Verilog:.v::::::\n\
-	X Resources:.Xresources .Xdefaults .nedit:"^[!#].*([Aa]pp|[Xx]).*[Dd]efaults":::::\n\
-	NEdit Macro:.nm .neditmacro::::::\n\
-	PHP:.php .php3 .php4 .phps .phtml .php.inc::::::\n\
-	NASM Assembly:.asm .nasm .nas::::::\n\
-	CSS:css::Auto:None:::".,/\\`'!|@#%^&*()=+{}[]"":;<>?~"\n\
-	Regex:.reg .regex:"\\(\\?[:#=!iInN].+\\)":None:Continuous:::\n\
-	XML:.xml .xsl .dtd:"\\<(?i\\?xml|!doctype)"::None:::"<>/=""'()+*?|"
+nedit.languageModes: 	C:.c .h::::::".,/\\`'!|@#%^&*()-=+{}[]"":;<>?~":\n\
+	C++:.cc .hh .C .H .i .cpp::::::".,/\\`'!|@#%^&*()-=+{}[]"":;<>?~":\n\
+	Java:.java:::::::\n\
+	JavaScript:.js:::::::\n\
+	Ada:.ada .ad .ads .adb .a:::::::\n\
+	Fortran:.f .f77 .for:::::::\n\
+	Pascal:.pas .p .int:::::::\n\
+	Yacc:.y::::::".,/\\`'!|@#%^&*()-=+{}[]"":;<>?~":\n\
+	Perl:.pl .pm .p5 .PL:"^[ \\t]*#[ \\t]*!.*perl":Auto:None:::".,/\\\\`'!$@#%^&*()-=+{}[]"":;<>?~|":\n\
+	Python:.py:"^#!.*python":Auto:None:::"!""#$%&'()*+,-./:;<=>?@[\\\\]^`{|}~":\n\
+	Tcl:.tcl .tk .itcl .itk::Smart:None::::\n\
+	Awk:.awk:::::::\n\
+	Sh Ksh Bash:.sh .bash .ksh .profile .bashrc .bash_logout .bash_login .bash_profile:"^[ \\t]*#[ \\t]*![ \\t]*/.*bin/(sh|ksh|bash)"::::::\n\
+	Csh:.csh .cshrc .login .logout:"^[ \\t]*#[ \\t]*![ \\t]*/bin/csh"::::::\n\
+	Makefile:Makefile makefile:::::::\n\
+	SGML HTML:.sgml .sgm .html .htm:"\\<(?ihtml)\\>"::::::\n\
+	LaTeX:.tex .sty .cls .dtx .ins:::::::\n\
+	PostScript:.ps .PS .eps .EPS .epsf .epsi:::::::\n\
+	Lex:.lex:::::::\n\
+	SQL:.sql:::::::\n\
+	Matlab:..m .oct .sci:::::::\n\
+	VHDL:.vhd .vhdl .vdl:::::::\n\
+	Verilog:.v:::::::\n\
+	X Resources:.Xresources .Xdefaults .nedit nedit.rc:"^[!#].*([Aa]pp|[Xx]).*[Dd]efaults"::::::\n\
+	NEdit Macro:.nm .neditmacro:::::::\n\
+	PHP:.php .php3 .php4 .phps .phtml .php.inc:::::::\n\
+	NASM Assembly:.asm .nasm .nas:::::::\n\
+	CSS:css::Auto:None:::".,/\\`'!|@#%^&*()=+{}[]"":;<>?~":\n\
+	Regex:.reg .regex:"\\(\\?[:#=!iInN].+\\)":None:Continuous::::\n\
+	XML:.xml .xsl .dtd:"\\<(?i\\?xml|!doctype)"::None:::"<>/=""'()+*?|":
 nedit.styles: 	Plain:gray70:Bold\n\
 	Comment:gray50:Plain\n\
 	Keyword:royalblue:Bold\n\
+	Operator:dark blue:Bold\n\
+	Bracket:dark blue:Bold\n\
 	Storage Type:green:Bold\n\
 	String:cyan2:Bold\n\
 	String1:seagreen:Bold\n\
@@ -352,6 +374,7 @@ nedit.styles: 	Plain:gray70:Bold\n\
 	Numeric Const:orange:Bold\n\
 	Identifier:lightsteelblue:Bold\n\
 	Identifier1:lightsteelblue:Bold\n\
+	Identifier2:SteelBlue:Plain\n\
 	Subroutine:khaki:Bold\n\
 	Subroutine1:brown:Bold\n\
 	Ada Attributes:plum:Bold\n\
@@ -381,21 +404,32 @@ nedit.autoWrap: Continuous
 nedit.wrapMargin: 0
 nedit.autoIndent: Auto
 nedit.autoSave: True
+nedit.openInTab: True
 nedit.saveOldVersion: False
 nedit.showMatching: Delimiter
+nedit.matchSyntaxBased: True
 nedit.highlightSyntax: True
+nedit.backlightChars: False
 nedit.searchDialogs: False
 nedit.beepOnSearchWrap: False
 nedit.retainSearchDialogs: False
 nedit.searchWraps: True
 nedit.stickyCaseSenseButton: True
 nedit.repositionDialogs: True
+nedit.autoScroll: False
+nedit.appendLF: True
 nedit.sortOpenPrevMenu: True
 nedit.statisticsLine: True
 nedit.iSearchLine: True
+nedit.sortTabs: False
+nedit.tabBar: True
+nedit.tabBarHideOne: True
+nedit.toolTips: True
+nedit.globalTabNavigate: False
 nedit.lineNumbers: True
 nedit.pathInWindowsMenu: True
 nedit.warnFileMods: True
+nedit.warnRealFileMods: True
 nedit.warnExit: True
 nedit.searchMethod: Literal
 nedit.textRows: 40
@@ -407,5 +441,15 @@ nedit.textFont: -schumacher-clean-medium-r-normal--14-140-75-75-c-70-iso8859-1
 nedit.boldHighlightFont: -schumacher-clean-bold-r-normal--14-140-75-75-c-70-iso8859-1
 nedit.italicHighlightFont: -schumacher-clean-medium-o-normal--14-140-75-75-c-70-iso8859-1
 nedit.boldItalicHighlightFont: -schumacher-clean-bold-o-normal--14-140-75-75-c-70-iso8859-1
+nedit.textFgColor: white
+nedit.textBgColor: black
+nedit.selectFgColor: black
+nedit.selectBgColor: rgb:cc/cc/cc
+nedit.hiliteFgColor: white
+nedit.hiliteBgColor: red
+nedit.lineNoFgColor: rgb:55/55/55
+nedit.cursorFgColor: green
+nedit.shell: /bin/bash
 nedit.smartTags: True
 nedit.prefFileRead: True
+nedit.titleFormat: {%c} [%s] %f (%S) - %d

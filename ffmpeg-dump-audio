@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-def audio_format(filename)
-  output = run_with_stderr("ffmpeg", "-i", filename).each_line do |line|
-    # p line
-    if line =~ /Stream .+ Audio: (\w+)/
+def audio_format(path)
+  output = run_with_stderr("ffprobe", path).each_line do |line|
+    p line
+    if line =~ /Stream \S+: Audio: (\w+)/
       return $1
     end
   end
@@ -40,8 +40,12 @@ inputs.each do |infile|
     exit 2
   end
 
-  outfile = infile.with(ext: ext)
-
+  outfile = if infile.url?
+    Path.new(CGI.unescape(infile.filename)).with(ext: ext)
+  else
+    infile.with(ext: ext)
+  end
+  
   puts "--------------------------------------------------------------------------"
   puts "Extracting audio:"
   puts "    in: #{infile}"
