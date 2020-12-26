@@ -38,7 +38,7 @@ cmd = %w[
 # --convert-subtitles=srt --sub-lang=en --embed-subs
 
 unless args.delete("-S")
-  cmd << %w[--sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub]
+  cmd += %w[--sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub]
 end
 
 unless args.include?("-o")
