@@ -201,7 +201,7 @@ BEGIN {
   ####################################################################################
 
 
-  module URI
+  class URI::Generic
 
     #
     # Strip out params with blank values.
