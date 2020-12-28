@@ -239,14 +239,14 @@ end
 # ------------------------------------------------------ #
 
 def lookup_grep(args)
-  query = args.join
+  query = args.join(" ")
   `grep -iE '^#{query}' #{INDEX_FILE}`
 end
 
 # ------------------------------------------------------ #
 
 def lookup_look(args)
-  query = args.join
+  query = args.join(" ")
   # IO.popen(["look", query, INDEX_FILE], &:read)
   IO.popen(["look", "-f", "--", query, INDEX_FILE], &:read)
 end

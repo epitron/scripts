@@ -12,7 +12,7 @@
 
 # Set the desired initial browser size
 # geometry=650x545+0+20
-#geometry=780x580
+geometry=1000x1000
 
 # Change this (and the following option) if you want to have text-only browsing
 # from the start. (While browsing, this can be changed from the tools/settings
@@ -49,11 +49,11 @@
 # If FLTK has been configured with Xft enabled (the default), you can use
 # scalable fonts such as DejaVu or Liberation (try running
 # "fc-list : family | cut -d ',' -f 2 | sort").
-#font_serif="DejaVu Serif"
-#font_sans_serif="DejaVu Sans"
-#font_cursive="URW Chancery L"
-#font_fantasy="DejaVu Sans"
-#font_monospace="DejaVu Sans Mono"
+font_serif="DejaVu Serif"
+font_sans_serif="DejaVu Sans"
+font_cursive="URW Chancery L"
+font_fantasy="DejaVu Sans"
+font_monospace="DejaVu Sans Mono"
 
 #
 # Otherwise, use bitmapped fonts like the following (for a list, try running
@@ -163,6 +163,7 @@ search_url="Wikipedia http://www.wikipedia.org/w/index.php?search=%s&go=Go"
 search_url="Free Dictionary http://www.thefreedictionary.com/%s"
 search_url="Startpage (https) https://www.startpage.com/do/search?query=%s"
 search_url="Google http://www.google.com/search?ie=UTF-8&oe=UTF-8&q=%s"
+search_url="k Kiwix http://localhost:5555/search?content=wikipedia_en_all_2016-12&pattern=%s"
 
 # If set, dillo will ask web servers to send pages in this language.
 # This setting does NOT change dillo's user interface.

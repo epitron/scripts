@@ -7,7 +7,18 @@ gem 'slop', "~> 3.6"
 require 'slop'
 ########################################################
 
+class Mhtml::RootDocument
+  def file_path
+    "index.html"
+  end
 
+  def each
+    return to_enum(:each) unless block_given?
+
+    yield self
+    sub_docs.each { |sd| yield sd }
+  end
+end
 
 ########################################################
 # Parse options
@@ -33,19 +44,20 @@ end
 
 mhtml_filename, *files = args
 
-mhtml = Path[mhtml_filename]
-doc   = Mhtml::RootDocument.new(mhtml.read)
+path  = Path[mhtml_filename]
+mhtml = Mhtml::RootDocument.new(path.read)
 
 if opts.list?
-  puts "<8>* <15>Listing documents in <14>#{mhtml.filename}<7>...".colorize
-  doc.sub_docs.each do |subdoc|
-    puts "  |_ <7>#{subdoc.file_path} <8>(<9>#{subdoc.body.size} <7>bytes<8>)".colorize
+  puts "<8>* <15>Listing documents in <14>#{path.filename}<7>...".colorize
+
+  mhtml.each do |doc|
+    puts "  |_ <7>#{doc.file_path} <8>(<9>#{doc.body.size} <7>bytes<8>)".colorize
   end
 else
   if opts[:dir]
     outdir = Path[opts[:dir]]
   else
-    outdir = Path[mhtml.basename]
+    outdir = Path[path.basename]
   end
 
   if outdir.exists?
@@ -55,13 +67,13 @@ else
 
   outdir.mkdir_p
 
-  puts "<8>* <15>Extracting <11>#{mhtml.filename} to <14>#{outdir}<7>...".colorize
+  puts "<8>* <15>Extracting <11>#{path.filename} to <14>#{outdir}<7>...".colorize
 
   outdir.cd do
-    doc.sub_docs.each do |subdoc|
-      outfilename = CGI.escape(subdoc.file_path)
-      puts "  <8>|_ <7>#{subdoc.file_path} <8>(<9>#{subdoc.body.size} <7>bytes<8>)".colorize
-      open(outfilename, "wb") { |f| f.write(subdoc.body) }
+    mhtml.each do |doc|
+      outfilename = CGI.escape(doc.file_path)
+      puts "  <8>|_ <7>#{doc.file_path} <8>(<9>#{doc.body.size} <7>bytes<8>)".colorize
+      open(outfilename, "wb") { |f| f.write(doc.body) }
     end
   end
 end
