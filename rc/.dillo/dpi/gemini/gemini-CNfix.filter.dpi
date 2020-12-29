@@ -1,0 +1,5 @@
+#!/bin/bash
+notify-send.sh "gemini get" "$@"
+this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+GODEBUG=x509ignoreCN=0 "$this_dir/gemini.filter.dpi" "$@"
+
