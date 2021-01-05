@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'epitools/path'
 
-def names_and_paths(path="~/musicvideos")
+def names_and_paths(path="~/media/musicvideos")
   @names_and_paths ||= begin
     root = Path[path]
     root.ls_R.
