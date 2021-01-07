@@ -1874,12 +1874,12 @@ def convert(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
-        format = run('file', arg)
+        format = run('file', arg).to_a.join
 
         case format
         when /SQLite 3.x database/
           print_sqlite(arg)
-        when /Zip archive data/
+        when /Zip archive/
           print_zip(arg)
         when /shell script/
           print_source(arg)
