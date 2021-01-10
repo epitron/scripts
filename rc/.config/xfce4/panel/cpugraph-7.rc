@@ -1,4 +1,4 @@
-UpdateInterval=0
+UpdateInterval=1
 TimeScale=0
 Size=91
 Mode=3
@@ -6,13 +6,13 @@ Frame=0
 Border=0
 Bars=0
 TrackedCore=0
-Command=term htop
+Command=term --geometry=170x42 htop
 InTerminal=0
 StartupNotification=1
 ColorMode=0
-Foreground1=#00001ad70000
-Foreground2=#0000ffff27a2
-Foreground3=#00000000ffff
-Background=#000000000000
-BarsColor=#ffffe7a60000
+Foreground1=rgb(0,27,0)
+Foreground2=rgb(0,255,39)
+Foreground3=rgb(0,0,255)
+Background=rgb(0,0,0)
+BarsColor=rgb(255,231,0)
 

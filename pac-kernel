@@ -1,1 +1,1 @@
-yes | pac linux-hardened linux-hardened-headers linux-hardened-docs linux-firmware nvidia nvidia-utils nvidia-dkms virtualbox-host-dkms wireguard-dkms
+yes | pac linux-hardened linux-hardened-headers linux-hardened-docs linux linux-headers linux-firmware nvidia nvidia-utils nvidia-dkms virtualbox-host-dkms wireguard-dkms

@@ -61,12 +61,29 @@ def pygmentize(lexer=nil, style="native", formatter="terminal256")
 end
 
 def rougify(lexer=nil)
-  #depends bins: "rougify"
+  # themes:   molokai  monokai.sublime   base16.solarized.dark   base16.dark   thankful_eyes
+  depends bin: "rougify"
 
   cmd = ["rougify"]
-  cmd += ["-l", lexer] if lexer
+  # cmd += ["-t", "base16.dark"]
+  # cmd += ["-t", "monokai.sublime"]
+  # cmd += ["-t", "molokai"]
+  cmd += ["-t", "base16.solarized.dark"]
+  cmd += ["-l", lexer.to_s] if lexer
   cmd
 end
+
+
+def render_rouge(filename, lexer=nil, theme="base16.dark")
+  depends gem: "rouge"
+
+  source    = File.read(filename)
+  lexer     = Rouge::Lexer.guess(filename: filename) # options: filename:, source:, mimetype:
+
+  formatter = Rouge::Formatters::Terminal256.new(theme.new)
+  formatter.format(lexer.lex(source))
+end
+
 
 def which(cmd)
   ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
@@ -76,12 +93,13 @@ def which(cmd)
   nil
 end
 
-def depends(bins: [], gems: [])
+def depends(bin: nil, bins: [], gems: [])
+  gems = [gems].flatten
+  bins = [bins].flatten
+  bins << bin if bin
   missing = (
-    [bins].flatten.map do |bin|
-      [:bin, bin] unless which(bin)
-    end +
-    [gems].flatten.map do |g|
+    bins.map { |bin| [:bin, bin] unless which(bin) } +
+    gems.map do |g|
       begin
         gem(g)
         nil
@@ -139,7 +157,8 @@ EXT_HIGHLIGHTERS = {
   ".cl"             => :c,
   ".lisp"           => :clojure,
   ".scm"            => :clojure,
-  ".rkt"            => pygmentize,
+  ".rkt"            => rougify(:racket),
+  ".scrbl"          => rougify(:racket),
 
   # gl
   ".shader"         => :c,
@@ -170,6 +189,7 @@ EXT_HIGHLIGHTERS = {
   ".sage"           => :python,
   ".qml"            => :php,
   ".pro"            => :sql,
+  ".cxml"           => :xml,
 
   # llvm
   ".ll"             => rougify,
@@ -223,6 +243,7 @@ EXT_HIGHLIGHTERS = {
   ".smil"           => :xml,
   ".xsl"            => :xml,
   ".plist"          => :xml,
+  ".svg"            => :xml,
 }
 
 FILENAME_HIGHLIGHTERS = {
@@ -444,7 +465,7 @@ def print_header(title, level=nil)
 end
 
 def run(*args, &block)
-  return run(*args, &:read) unless block_given?
+  return Enumerator.new { |y| run(*args) { |io| io.each_line { |line| y << line } } } unless block_given?
 
   opts = (args.last.is_a? Hash) ? args.pop : {}
   args = [args.map(&:ensure_string)]
@@ -1515,12 +1536,25 @@ end
 ##############################################################################
 
 def print_archive(filename)
-  depends bins: "atool"
-  run("atool", "-l", filename)
+  header = Enumerator.new do |out|
+    out << "Contents of: #{filename}"
+  end
+
+  header + (
+    case filename
+    when /\.tar\.zst$/
+      depends bins: "zstd"
+      run("tar", "-Izstd", "-tvf", filename)
+    else
+      depends bins: "atool"
+      run("atool", "-l", filename)
+    end
+  )
 end
 
 def print_zip(filename)
   depends bins: "unzip"
+
   run("unzip", "-v", filename)
 end
 
@@ -1752,7 +1786,7 @@ def convert(arg)
     # If it's a directory, show the README, or print an error message.
     #
     if File.directory? arg
-      readmes = Dir.foreach(arg).select { |f| f[/^(readme|home\.md)/i] or f == "PKGBUILD" }.sort_by(&:size)
+      readmes = Dir.foreach(arg).select { |f| f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD" }.sort_by(&:size)
       if readme = readmes.first
         return convert("#{arg}/#{readme}")
       else
@@ -1840,12 +1874,12 @@ def convert(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
-        format = run('file', arg)
+        format = run('file', arg).to_a.join
 
         case format
         when /SQLite 3.x database/
           print_sqlite(arg)
-        when /Zip archive data/
+        when /Zip archive/
           print_zip(arg)
         when /shell script/
           print_source(arg)

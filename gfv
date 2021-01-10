@@ -9,11 +9,15 @@ if args.empty? or args.delete("--help")
   puts "  gfv [options] <youtube url(s)>"
   puts
   puts "Options:"
-  puts "  -l     Low quality mode"
   puts "  -h     High quality mode"
+  puts "  -l     Low(ish) quality mode"
+  puts "  -3     <= 360p"
+  puts "  -4     <= 480p"
+  puts "  -7     <= 720p"
   puts "  -n     Number the files when downloading playlists"
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
+  puts "  -S     No subtitles!"
   puts "  -o <filename>"
   puts "         Set output filename."
   puts "         ( For a list of variables that can be inserted into the filename, see:"
@@ -28,11 +32,14 @@ cmd = %w[
   youtube-dl
   --no-mtime
   --xattrs
-  --sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub
 ]
 
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
+
+unless args.delete("-S")
+  cmd += %w[--sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub]
+end
 
 unless args.include?("-o")
   cmd << "-o"
@@ -50,6 +57,12 @@ if args.delete("-a")
 elsif args.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
+elsif args.delete("-3")
+  cmd += %w[-f bestvideo[ext=mp4,height<=?360]+bestaudio[ext=m4a]/best]
+elsif args.delete("-4")
+  cmd += %w[-f bestvideo[ext=mp4,height<=?480]+bestaudio[ext=m4a]/best]
+elsif args.delete("-7")
+  cmd += %w[-f bestvideo[ext=mp4,height<=?720]+bestaudio[ext=m4a]/best]
 elsif args.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]

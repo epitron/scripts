@@ -441,6 +441,7 @@ def download(*urls, opts: nil)
       "--no-mtime",
       "--xattrs",
       "--no-playlist",
+      "--add-metadata",
       "-o", "%(title)s.%(ext)s",
     ]
 
@@ -735,7 +736,7 @@ if $0 == __FILE__
       kodi(*urls)
     else
       urls.each do |url|
-        if opts.download?
+        if opts.download? or opts.audio?
           download(url, opts: opts)
         elsif which("mpv")
           play(url, opts)

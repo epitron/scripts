@@ -104,6 +104,7 @@ routes do
   # Strip click trackers
   match(host: /google.\w{2,3}$/, path: "/url")   { |uri| route uri.params["url"] || uri.params["q"] }
   match(host: /facebook\.com$/,  path: "/l.php") { |uri| route uri.params["u"] }
+  match(host: "duckduckgo.com",  path: "/l/")    { |uri| route uri.params["uddg"] }
   match(host: "youtube.com", path: "/attribution_link") { |uri| route "https://youtube.com#{uri.params["u"]}" }
   match(params: "fbclid") { |uri| route uri.without_params("fbclid") }
 
@@ -111,7 +112,7 @@ routes do
   match(host: %w[t.co bit.ly is.gd ow.ly buff.ly], &follow_redirect) # { |uri| route uri.follow_redirect }
 
   # Open videos in 'play' (using a standalone desktop video player)
-  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com], &play_video
+  match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com invidious.xyz], &play_video
   match host: %w[youtube.com invidio.us], path: %r{^/(watch|embed)}, &play_video
   match host: "peertube.social",          path: %r{^/videos/watch/}, &play_video
   match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
@@ -200,7 +201,7 @@ BEGIN {
   ####################################################################################
 
 
-  module URI
+  class URI::Generic
 
     #
     # Strip out params with blank values.

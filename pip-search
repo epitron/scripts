@@ -1,21 +1,8 @@
 #!/usr/bin/env ruby
 ###################################################################
-gem 'xmlrpc';   require 'xmlrpc/client'
-gem 'epitools'; require 'epitools/colored'
-###################################################################
-
-# For some reason you have to do this crazy thing so that it doesn't blow up when it sees a <nil/> tag
-original_verbose, $VERBOSE = $VERBOSE, nil
-XMLRPC::Config.const_set(:ENABLE_NIL_PARSER, true)
-$VERBOSE = original_verbose
-
-def pypi_api
-  # PyPI XML-RPC API Reference:
-  #   https://warehouse.pypa.io/api-reference/xml-rpc/
-  #   https://wiki.python.org/moin/PyPIXmlRpc
-  @pypi_api ||= XMLRPC::Client.new('pypi.python.org', '/pypi', 80)
-end
-
+gem 'oga'
+gem 'epitools'
+require 'epitools'
 ###################################################################
 
 class String
@@ -48,42 +35,45 @@ def help!
   exit 1
 end
 
-def print_pkg_info(pkg_name)
-  versions = pypi_api.call("package_releases", pkg_name)
-  # pp versions
-  # versions.each do |version|
-  #   info = pypi_api.call(:release_urls, pkg_name, version)
-  #   pp info
-  # end
+###################################################################
 
-  # info.values_at(*%w[upload_time filename size downloads])
+def search(query)
+  html = curl("https://pypi.org/search/?q=#{query}")
+  doc = Oga.parse_html(html)
 
-  details = pypi_api.call(:release_data, pkg_name, versions.first)
-
-  %w[name version home_page author author_email classifiers requires description].each do |field|
-    puts "#{field}:".bright_white
-    puts details[field].to_s.indent
+  # <li>
+  #   <a class="package-snippet" href="/project/butt/">
+  #     <h3 class="package-snippet__title">
+  #       <span class="package-snippet__name">butt</span>
+  #       <span class="package-snippet__version">0.1</span>
+  #       <span class="package-snippet__released"><time datetime="2018-08-17T10:14:26+0000" data-controller="localized-time" data-localized-time-relative="true" data-localized-time-show-time="false" title="2018-08-17 06:14:26" aria-label="2018-08-17 06:14:26">Aug 17, 2018</time></span>
+  #     </h3>
+  #     <p class="package-snippet__description">A command line client for scuttlebutt.</p>
+  #   </a>
+  # </li>
+  doc.css("li a.package-snippet").map do |pkg|
+    result = {}
+    result[:url] = File.join("https://pypi.org/", pkg["href"])
+    %i[name version released description].each do |field|
+      result[field] = pkg.at_css(".package-snippet__#{field}").text.tighten
+    end
+    result
   end
 end
 
 ###################################################################
 
 def print_search_results(query)
-  # pkgs = pypi_api.call("search", {name: query, summary: query}, 'or')
-  pkgs = pypi_api.call(:search, name: query)
-
- # {'name': 'spacy-arguing-lexicon',
- #  'summary': 'A spaCy extension wrapping around the arguing lexicon by MPQA',
- #  'version': '0.0.2',
- #  '_pypi_ordering': False},
+  pkgs = search(query)
 
   pkgs.reverse_each do |info|
     puts ("<8>=== " +
-          "<11>#{info["name"]} " +
-          "<7>(<3>v#{info["version"]}<7>)" +
+          "<11>#{info[:name]} " +
+          "<7>(<3>v#{info[:version]}<7>)" +
           "<8>==============").colorize
-    puts info["summary"].indent.bright_white unless info["summary"].empty?
-    puts "    <3>https://pypi.org/project/#{info["name"]}/".colorize
+    puts info[:released].indent.white unless info[:released].blank?
+    puts info[:description].indent.bright_white unless info[:description].blank?
+    puts "    <3>#{info[:url]}".colorize
     puts
   end
 end

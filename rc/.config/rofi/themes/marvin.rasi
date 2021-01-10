@@ -80,7 +80,7 @@ configuration {
     spacing: 0;
     children:  [vertb, mainbox];
     orientation: horizontal;
-    width: 1000px;
+    width: 1200px;
 }
 
 #mainbox {
@@ -123,7 +123,7 @@ configuration {
     border: 0px 2px 2px 2px;
     background-color: #1c1c1ccc;
     dynamic: false;
-    lines: 20;
+    lines: 25;
 }
 #element {
     padding: 3px;
