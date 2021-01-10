@@ -19,7 +19,7 @@ unless inputs.size > 0
 end
 
 inputs.each do |infile|
-  unless infile.exists? or infile.url?
+  unless infile.exists? or infile.path[/^http/i]
     puts "Error: #{infile} not found."
     exit 1
   end
@@ -40,7 +40,7 @@ inputs.each do |infile|
     exit 2
   end
 
-  outfile = infile.with(ext: ext)
+  outfile = infile.with(ext: ext).filename
 
   puts "--------------------------------------------------------------------------"
   puts "Extracting audio:"
