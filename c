@@ -593,7 +593,7 @@ end
 def youtube_info(url)
   depends bins: "youtube-dl"
   require 'json'
-  JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url))
+  JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url).to_a.join)
 end
 
 ##############################################################################
