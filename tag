@@ -21,12 +21,13 @@ end
 ########################################################
 
 paths = ARGV.map &:to_Path
-tmp = Path.tmpdir 
+tmp = Path.tmpdir
 
 paths.each do |inp|
   out = tmp/"tagged.#{inp.ext}"
 
   artist, title = inp.basename.split(/\b {1,3}- {1,3}\b/, 2)
+  artist = artist.gsub(/^\d{1,2}\. /, '')
   title, artist = artist, title if title.nil?
 
   # refrence: http://jonhall.info/create_id3_tags_using_ffmpeg/

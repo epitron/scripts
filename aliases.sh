@@ -45,7 +45,6 @@ alias da='d -a'
 
 if we_have exa
 then
-  alias e='exa'
   alias l='exa -ag --long --header'
   alias ls='exa'
 
@@ -174,6 +173,8 @@ alias md='mdadm'
 alias df='df -h'
 alias df.='df .'
 alias screen='screen -U'
+
+alias e.='e .'
 
 if we_have dcfldd; then
   alias dd='dcfldd'

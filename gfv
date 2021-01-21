@@ -82,6 +82,8 @@ urls.each do |url|
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end
+  elsif url =~ %r{\.bandcamp\.com/}
+    cmd += %w[-f mp3-v0]
   end
 
   onecmd = cmd.dup
