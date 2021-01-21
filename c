@@ -19,6 +19,11 @@
 #
 #
 # TODOs:
+#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
+#     |_ all methods take a Pathname or String or Enumerable
+#     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
+#     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
+#   * Auto-install gems/pips/packages required to view a file
 #   * Live filtering (grep within output chunks, but retain headers; retain some context?)
 #   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
@@ -30,10 +35,6 @@
 #   * Add gem/program dependencies to functions (using a DSL)
 #     |_ "install all dependencies" can use it
 #     |_ error/warning when dependency isn't installed, plus a fallback codepath
-#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
-#     |_ methods take a File or String (of file contents) -- never a filename!
-#     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
-#     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Fix "magic" (use hex viewer when format isn't recognized)
 #   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
 #
@@ -93,10 +94,11 @@ def which(cmd)
   nil
 end
 
-def depends(bin: nil, bins: [], gems: [])
+def depends(bin: nil, bins: [], gem: nil, gems: [])
   gems = [gems].flatten
   bins = [bins].flatten
   bins << bin if bin
+  gems << gem if gem
   missing = (
     bins.map { |bin| [:bin, bin] unless which(bin) } +
     gems.map do |g|
@@ -1002,7 +1004,11 @@ end
 def print_rst(filename)
   depends(bins: "rst2ansi")
   result = run("rst2ansi", filename, noerr: true)
-  $?.success? ? result : "some rst2ansi error"
+  if $?&.success?
+    result
+  else
+    run("rst2ansi", filename)
+  end
 end
 
 ##############################################################################
@@ -1247,6 +1253,37 @@ def print_sqlite(filename)
       end
       yield ""
       yield ""
+    end
+  end
+end
+
+##############################################################################
+
+def leveldb_dir?(path)
+  # Example leveldb dir:
+  #   000005.ldb  000007.ldb  000008.log  CURRENT  LOCK  LOG  LOG.old  MANIFEST-000006
+  path/"CURRENT" and path/"LOG" and path.glob("*.ldb").any?
+end
+
+def print_leveldb(path)
+  depends gem: "leveldb"
+
+  require 'leveldb'
+  require 'epitools/colored'
+
+  db = LevelDB::DB.new(path.to_s)
+
+  Enumerator.new do |y|
+    y << "<8>=== <15>LevelDB Stats: <8>==================================".colorize
+    y << ""
+    y << db.stats
+    y << ""
+    y << ""
+    y << "<8>=== <15>Database Contents:<8>==================================".colorize
+    y << ""
+    db.each do |key, val|
+      y << key.inspect.light_cyan # CodeRay::Encoders::Terminal::TOKEN_COLORS[:method]
+      y << "  #{val.inspect}"
     end
   end
 end
@@ -1782,20 +1819,25 @@ def convert(arg)
 
     raise Errno::ENOENT unless arg
 
+    path = Pathname.new(arg)
+
     #
     # If it's a directory, show the README, or print an error message.
     #
-    if File.directory? arg
-      readmes = Dir.foreach(arg).select { |f| f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD" }.sort_by(&:size)
-      if readme = readmes.first
-        return convert("#{arg}/#{readme}")
+    if path.directory?
+      if leveldb_dir?(path)
+        return print_leveldb(path)
       else
-        return run("tree", arg)
-        # return "\e[31m\e[1mThat's a directory!\e[0m"
+        readmes = Dir.foreach(arg).select { |f| f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD" }.sort_by(&:size)
+        if readme = readmes.first
+          return convert("#{arg}/#{readme}")
+        else
+          return run("tree", arg)
+          # return "\e[31m\e[1mThat's a directory!\e[0m"
+        end
       end
     end
 
-    path = Pathname.new(arg)
 
     # TODO: Fix relative symlinks
     # arg = File.readlink(arg) if File.symlink?(arg)
