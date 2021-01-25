@@ -27,7 +27,7 @@ def parse_options
     on "1",  "pi",       "Raspberry PI mode"
     on "2",  "pi2",      "Raspberry PI 2 mode"
     on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
-    on "c",  "console",  "Output serial to the console"
+    on "c",  "console",  "STDIO-only serial console mode"
     on "C",  "curses",   "Terminal-based UI (Press Alt-2 to get to qemu command console)"
     on "n",  "no-daemon","Run in the foreground"
     on "M",  "cursor",   "Show the mouse cursor"
@@ -198,6 +198,6 @@ cmd += ["-boot", opts[:boot]] if opts[:boot]
 
 p cmd if opts.verbose?
 
-Process.daemon(true) unless opts["no-daemon"] or opts.console? or opts.curses?
+Process.daemon(true) unless opts["no-daemon"] or opts.console? or opts.curses? or opts.serial?
 
 exec *cmd
