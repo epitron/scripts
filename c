@@ -1828,7 +1828,7 @@ def convert(arg)
       if leveldb_dir?(path)
         return print_leveldb(path)
       else
-        readmes = Dir.foreach(arg).select { |f| f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD" }.sort_by(&:size)
+        readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD") }.sort_by(&:size)
         if readme = readmes.first
           return convert("#{arg}/#{readme}")
         else
