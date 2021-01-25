@@ -174,8 +174,9 @@ BEGIN {
 
   ####################################################################################
 
-  def dmsg(msg)
+  def dmsg(msg=nil)
     if $debug
+      msg = block_given? ? yield : msg
       $stderr.puts(msg.is_a?(String) ? msg : msg.inspect)
     end
   end
@@ -399,7 +400,7 @@ BEGIN {
         end
 
         if matched
-          dmsg("matched: #{block.source}")
+          dmsg { require 'method_source'; "matched: #{block.source}" }
           return block.call(uri)
         end
 
