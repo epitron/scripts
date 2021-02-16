@@ -63,7 +63,8 @@ end
 
 def rougify(lexer=nil)
   # themes:   molokai  monokai.sublime   base16.solarized.dark   base16.dark   thankful_eyes
-  depends bin: "rougify"
+  #depends gem: "rouge"
+  # TODO: fix this `cmd` mess so that the dependency check happens once the filetype has been identified
 
   cmd = ["rougify"]
   # cmd += ["-t", "base16.dark"]
