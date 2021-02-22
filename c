@@ -19,6 +19,7 @@
 #
 #
 # TODOs:
+#   * If 'file' isn't installed, fall back to using the file extension, or the mime_magic gem
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
 #     |_ all methods take a Pathname or String or Enumerable
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
@@ -67,25 +68,45 @@ def rougify(lexer=nil)
   # TODO: fix this `cmd` mess so that the dependency check happens once the filetype has been identified
 
   cmd = ["rougify"]
-  # cmd += ["-t", "base16.dark"]
+  cmd += ["-t", "base16.dark"]
   # cmd += ["-t", "monokai.sublime"]
   # cmd += ["-t", "molokai"]
-  cmd += ["-t", "base16.solarized.dark"]
+  # cmd += ["-t", "base16.solarized.dark"]
   cmd += ["-l", lexer.to_s] if lexer
   cmd
 end
 
 
-def render_rouge(filename, lexer=nil, theme="base16.dark")
+def render_rouge(input, lexer=nil, theme="base16.dark")
   depends gem: "rouge"
+  require 'rouge'
 
-  source    = File.read(filename)
-  lexer     = Rouge::Lexer.guess(filename: filename) # options: filename:, source:, mimetype:
+  if input.is_a?(Pathname)
+    lexer  = Rouge::Lexer.guess(filename: input.to_s) # options: filename:, source:, mimetype:
+    source = input.read
+  else
+    lexer  = Rouge::Lexer.find(lexer)
+    source = input
+  end
 
-  formatter = Rouge::Formatters::Terminal256.new(theme.new)
+  return source if lexer.nil?
+
+  formatter = Rouge::Formatters::Terminal256.new(theme: Rouge::Theme.find(theme))
   formatter.format(lexer.lex(source))
 end
 
+def render_pandoc(input, from=nil, to=nil)
+  depends bin: "pandoc"
+
+  source = input.to_source
+  cmd    = ["pandoc", "-f", from, "-t", to]
+
+  IO.popen(cmd, "w+") do |io|
+    io.puts source
+    io.close_write
+    io.read
+  end
+end
 
 def which(cmd)
   ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
@@ -94,6 +115,8 @@ def which(cmd)
   end
   nil
 end
+
+class MissingDependency < Exception; end
 
 def depends(bin: nil, bins: [], gem: nil, gems: [])
   gems = [gems].flatten
@@ -113,9 +136,10 @@ def depends(bin: nil, bins: [], gem: nil, gems: [])
   ).compact
 
   if missing.any?
-    raise "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
-    $stderr.puts "Missing: #{ missing.map{|t,n| "#{t} #{n}"}.join(", ")}"
-    exit 1
+    msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}"
+    raise MissingDependency.new(msg)
+    # $stderr.puts msg
+    # exit 1
   end
 end
 
@@ -152,6 +176,7 @@ EXT_HIGHLIGHTERS = {
   ".ovpn"           => :bash,
   ".rc"             => :c,
   ".service"        => :bash,
+  ".nix"            => rougify,
 
   # haskell
   ".hs"             => :text,
@@ -348,6 +373,8 @@ class Pathname
 
   include Enumerable
 
+  alias_method :to_source, :read
+
   def each
     return to_enum(:each) unless block_given?
     each_line { |line| yield line.chomp }
@@ -363,6 +390,8 @@ end
 ##############################################################################
 
 class String
+
+  alias_method :to_source, :to_s
 
   #
   # Converts time duration strings (mm:ss, mm:ss.dd, hh:mm:ss, or dd:hh:mm:ss) to seconds.
@@ -739,14 +768,22 @@ BLACKCARPET_INIT = proc do
       end
     end
 
-    def block_code(code, language)
-      language ||= :ruby
+    def block_code(code, language1=nil)
+      language = language1
+      language ||= "ruby"
 
-      language = language[1..-1] if language[0] == "."  # strip leading "."
-      language = :cpp if language == "C++"
+      language = language.split.reject { |chunk| chunk["#compile"] }.first.gsub(/^\./, '')
+      # language = language[1..-1] if language[0] == "."  # strip leading "."
+      # language = language.scan(/\.?(\w+)/).flatten.first
+      language = "cpp"          if language == "C++"
+      language = "common-lisp"  if language == "commonlisp"
 
       require 'coderay'
-      "#{indent CodeRay.scan(code, language).term, 4}\n"
+      if CodeRay::Scanners.list.include? language.to_sym
+        "#{indent CodeRay.scan(code, language).term, 4}\n"
+      else
+        "#{indent render_rouge(code, language), 4}\n"
+      end
     end
 
     def block_quote(text)
@@ -1010,6 +1047,13 @@ def print_rst(filename)
   else
     run("rst2ansi", filename)
   end
+end
+
+##############################################################################
+
+def print_orgmode(input)
+  markdown = render_pandoc(input, "org", "markdown")
+  print_markdown markdown
 end
 
 ##############################################################################
@@ -1879,6 +1923,8 @@ def convert(arg)
         print_cp437(arg)
       when *%w[.rst]
         print_rst(arg)
+      when *%w[.org]
+        print_orgmode(path)
       when *%w[.srt]
         print_srt(arg)
       when *%w[.vtt]
@@ -1969,40 +2015,45 @@ if $0 == __FILE__
     lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
       args.each do |arg|
-        if args.size > 1
-          less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
-          less.puts
-        end
-
         begin
-          result = if side_by_side_hexmode
-            print_hex(arg)
-          elsif interleaved_hexmode
-            print_hex(arg, false)
-          else
-            convert(arg)
+          if args.size > 1
+            less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
+            less.puts
           end
-        rescue Errno::EACCES
-          less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
-          # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
-          next
-        rescue Errno::ENOENT => e
-          # less.puts "\e[31m\e[1mFile not found.\e[0m"
-          less.puts "\e[31m\e[1m#{e}\e[0m"
-          next
-        end
 
-        case result
-        when Enumerable
-          result.each { |line| less.puts line }
-        when String
-          result.each_line { |line| less.puts line }
-        end
+          begin
+            result = if side_by_side_hexmode
+              print_hex(arg)
+            elsif interleaved_hexmode
+              print_hex(arg, false)
+            else
+              convert(arg)
+            end
+          rescue Errno::EACCES
+            less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+            # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+            next
+          rescue Errno::ENOENT => e
+            # less.puts "\e[31m\e[1mFile not found.\e[0m"
+            less.puts "\e[31m\e[1m#{e}\e[0m"
+            next
+          end
 
-        less.puts
-        less.puts
+          case result
+          when Enumerable
+            result.each { |line| less.puts line }
+          when String
+            result.each_line { |line| less.puts line }
+          end
+
+          less.puts
+          less.puts
+
+        end # each arg
+      rescue MissingDependency => e
+        less.puts e.to_s
       end
-    end
+    end # lesspipe
 
   end
 
