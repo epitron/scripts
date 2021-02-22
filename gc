@@ -16,11 +16,12 @@ def parse_options
 
     # on "s",  "shallow",      "Shallow clone (without history)"
     on "a",  "all",          "Clone all of the historical commits (default is to do a shallow (--depth=1) clone)"
+    on "b",  "bare",         "Create a bare repository (no checkout)"
     on "N",  "no-recursion", "Don't automatically clone submodules"
     on "r",  "remote-submodules", "Submodules track their remote HEADs (instead of being locked to a specific commit)"
     on "w",  "wiki",         "Clone the wiki (and place it in {reponame}/wiki)"
     on "e",  "edit",         "Open the repo in an editor (hardwired to 'subl')"
-    on "b=", "branch",       "Checkout a specific branch after cloning"
+    on "c=", "branch",       "Checkout a specific branch after cloning"
     on "h",  "help",         "You're currently reading it"
   end
 
@@ -42,13 +43,14 @@ def git_repo_root_dir
   Dir.chdir("..") { git_repo_root_dir }
 end
 
-def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true, remote_submodules: false)
+def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true, remote_submodules: false, bare: false)
   print "\e[37m\e[1m#{"Shallow " if shallow}Cloning \e[0m\e[33m\e[1m#{repo}\e[0m"
   print " into \e[0m\e[36m\e[1m#{dest}\e[0m\e[37m\e[0m" if dest
   puts
 
   cmd = ["git", "clone"]
   cmd += ["--depth=1", "--shallow-submodules"]  if shallow
+  cmd << "--bare"                               if bare
   cmd << "--recurse-submodules"                 if recursive
   cmd << "--remote-submodules"                  if remote_submodules
   cmd += ["-b", branch]                         if branch
@@ -130,6 +132,7 @@ reponame = clone(
   repo,
   dest,
   branch:    opts[:branch],
+  bare:      opts[:bare],
   recursive: !opts["no-recursion"],
   shallow:   !opts[:all],
   remote_submodules: opts["remote-submodules"]
