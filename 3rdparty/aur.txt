@@ -24,3 +24,5 @@ megatools
 imlib2-webp-git
 
 xnviewmp
+
+archlinux-nix

@@ -8,4 +8,5 @@ bgpview-cli
 bat
 exa
 git-delta
+https://github.com/ogham/dog
 
