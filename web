@@ -164,6 +164,7 @@ BEGIN {
     $VERBOSE = old_warn_level
   end
 
+  gem 'epitools', '>= 0.5.131'
   require 'epitools/sys'
   require 'epitools/wm'
   require 'epitools/core_ext/misc'
@@ -172,34 +173,15 @@ BEGIN {
   require 'epitools/core_ext/uri'
 
   ####################################################################################
-  class Class
 
-    def debug(*meths)
-      return unless $DEBUG
-
-      puts "debug instrumentation: #{meths.inspect}"
-
-      m = Module.new
-
-      meths.each do |meth|
-        case meth
-        when :*
-          debug(methods)
-        else
-          m.define_method(meth) do |*args|
-            p [meth, args]
-            super(*args)
-          end
-        end
-      end
-
-      puts "prepending #{m} to #{self}"
-      self.module_prepend(m)
+  def dmsg(msg=nil)
+    if $debug
+      msg = block_given? ? yield : msg
+      $stderr.puts(msg.is_a?(String) ? msg : msg.inspect)
     end
-
   end
-  ####################################################################################
 
+  ####################################################################################
 
   class URI::Generic
 
@@ -316,7 +298,7 @@ BEGIN {
   #
   class Router
 
-    debug :*
+    # debug :*
 
     def initialize
       @rules = []
@@ -354,7 +336,7 @@ BEGIN {
     # Pass an URL through the rules
     #
     def route!(uri, opts={})
-      # TODO: Figure out how to avoid infinite routing loops (hasn't been an issue yet)
+      # TODO: Figure out how to avoid infinite routing loops (has been an issue)
 
       uri = URI.parse(uri.gsub("[", "%5B").gsub("]", "%5D")) unless uri.is_a? URI
 
@@ -417,7 +399,10 @@ BEGIN {
 
         end
 
-        return block.call(uri) if matched
+        if matched
+          dmsg { require 'method_source'; "matched: #{block.source}" }
+          return block.call(uri)
+        end
 
       end
 
@@ -585,6 +570,20 @@ BEGIN {
   end
 
   def route(url, opts={})
+    $routing_history ||= []
+
+    if $routing_history.last == url
+      puts "Error: Infinite routing loop detected!"
+      puts
+      puts "Steps:"
+      ($routing_history + [url]).each_with_index do |u, i|
+        puts "#{i+1}: #{u}"
+      end
+      exit 1
+    end
+
+    $routing_history << url
+
     write_to_log url
     $router.route! url, opts
   end
@@ -603,7 +602,7 @@ if $0 == __FILE__
     puts
     puts "== Options: =="
     puts " -d    Debug mode"
-    puts " -k    Kodi mode ('-k' to toggle, '-k on' to enable, '-k off' to disable)"
+    # puts " -k    Kodi mode ('-k' to toggle, '-k on' to enable, '-k off' to disable)"
     puts
     puts "== These are the browsers it will try to use (in order): =="
     puts " #{BROWSERS.join(", ")}"
@@ -613,7 +612,8 @@ if $0 == __FILE__
   end
 
   opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
-  opts = opts.map { |opt| opt.sub(/^-+/, '').split("=") }.to_h
+
+  $debug = opts.include?("-d")
 
   ensure_required_binaries_are_in_the_path
 

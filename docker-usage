@@ -32,11 +32,11 @@ class Image < Struct.new(:name, :tag, :image_id, :age, :size)
   def convert_size!
     return unless size.is_a? String
 
-    if size =~ /^([\d\.]+)([A-Z]+)$/
+    if size =~ /^([\d\.]+)([A-Z]+)$/i
       n     = $1.to_f
       units = $2
 
-      scale = case units
+      scale = case units.upcase
       when "KB" then 1.thousand
       when "MB" then 1.million
       when "GB" then 1.billion
@@ -46,7 +46,7 @@ class Image < Struct.new(:name, :tag, :image_id, :age, :size)
 
       self.size = (n * scale).to_i
     else
-      raise "Couldn't parse #{value}"
+      raise "Couldn't parse #{size}"
     end
   end
 end
