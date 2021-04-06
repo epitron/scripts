@@ -22,6 +22,8 @@ def parse_options
     on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "B=", "bios",     "Load a BIOS ROM file"
+    on "S=", "samba",    "Mount a host directory via samba (it'll be on 10.x.x.4)"
+    on "9=", "9p",       "Mount a host directory via 9p (guest fstab: \"host0 /wherever 9p trans=virtio,version=9p2000.L 0 0\")"
     on "r",  "restrict", "Restrict the network (firewall)"
     on "e",  "efi",      "Boot using OVMF EFI BIOS"
     on "1",  "pi",       "Raspberry PI mode"
@@ -53,7 +55,7 @@ if args.empty? and not opts.bios?
   exit 1
 end
 
-isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" }
+isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" or arg.path[%r{^/dev/s(r|cd)\d}] }
 isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
 exit 1 unless isos.all? &:exist?
 
@@ -123,6 +125,7 @@ end
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
+cmd += ["-virtfs", "local,path=#{opts[:"9p"]},mount_tag=host0,security_model=passthrough,id=host0"] if opts[:"9p"]
 
 if opts[:bios]
   cmd += ["-bios", opts[:bios]]
@@ -183,8 +186,8 @@ isos.each  { |iso| cmd += ["-cdrom", iso] }
 
 # Networking
 netopts = "user,id=usernet"
-
 netopts += ",restrict=on" if opts.restrict?
+netopts += ",smb=#{opts[:samba]}" if opts[:samba]
 
 if port = opts[:port]
   src, dest = port.split(":")
