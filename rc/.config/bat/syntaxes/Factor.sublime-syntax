@@ -1,0 +1,309 @@
+%YAML 1.2
+---
+name: Factor
+file_extensions: [factor]
+scope: source.factor
+variables:
+  space_before: (?<!\S)
+  space_after: (?!\S)
+  eol_or_eof: ($\n?)
+  semicolon: ({{space_before}};{{space_after}})
+  double_dash: ({{space_before}}\-\-{{space_after}})
+  left_paren: ({{space_before}}\({{space_after}})
+  right_paren: ({{space_before}}\){{space_after}})
+  identifier: ({{space_before}}\S+{{space_after}})
+  debris: (\S+)
+contexts:
+  main:
+    - include: comments
+    - include: directives
+    - include: expressions
+  comments:
+    - match: ({{space_before}}!{{space_after}})
+      scope: punctuation.definition.comment.factor
+      push: comment_line
+  comment_line:
+    - meta_scope: comment.line.factor
+    - match: ({{eol_or_eof}})
+      pop: true
+  directives:
+    - match: ({{space_before}}(<PRIVATE|PRIVATE>){{space_after}})
+      scope: storage.modifier.factor
+    - match: ({{space_before}}(TYPED:|TYPED::|MEMO:|::|:){{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_define
+    - match: ({{space_before}}USE:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_use
+    - match: ({{space_before}}USING:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_using
+    - match: ({{space_before}}MAIN:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_main
+    - match: ({{space_before}}IN:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_in
+    - match: ({{space_before}}TUPLE:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_tuple
+    - match: ({{space_before}}GENERIC:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_generic
+    - match: ({{space_before}}(M:|M::){{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_method
+    - match: ({{space_before}}[A-Z]\S*:{{space_after}})
+      scope: keyword.other.directive.factor
+      push: directive_other
+  directive_define:
+    - meta_scope: meta.function.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.function.factor
+      set: directive_define_name_after
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_define_name_after:
+    - include: comments
+    - match: ({{left_paren}})
+      scope: punctuation.section.braces.begin.factor
+      set: directive_define_stackeffect
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_define_stackeffect:
+    - meta_scope: meta.function.parameters.factor
+    - include: comments
+    - match: ({{right_paren}})
+      scope: punctuation.section.braces.end.factor
+      set: directive_define_body
+    - match: ({{left_paren}})
+      scope: punctuation.section.braces.begin.factor
+      push: directive_define_stackeffect_nested
+    - match: ({{double_dash}})
+      scope: punctuation.separator.factor
+    - match: ({{identifier}})
+      scope: variable.parameter.factor
+  directive_define_stackeffect_nested:
+    - include: comments
+    - match: ({{right_paren}})
+      scope: punctuation.section.braces.end.factor
+      pop: true
+    - match: ({{left_paren}})
+      scope: punctuation.section.braces.begin.factor
+      push: directive_define_stackeffect_nested
+    - match: ({{double_dash}})
+      scope: punctuation.separator.factor
+    - match: ({{identifier}})
+      scope: variable.parameter.factor
+  directive_define_body:
+    - meta_scope: meta.function.body.factor
+    - include: comments
+    - match: ({{semicolon}})
+      scope: punctuation.terminator.factor
+      set: directive_define_body_after
+    - include: expressions
+  directive_define_body_after:
+    - include: comments
+    - match: ({{space_before}}(inline|foldable|flushable|recursive){{space_after}})
+      scope: storage.modifier.factor
+    # TODO: including top-level contexts here instead of popping
+    #       allows highlighting of post-definition modifiers like the above
+    #       but it causes the parser to recur indefinitely
+    #       and it could also cause function.body.after scopes
+    #       to nest over the course of the file
+    #       could be a problem with big files
+    #       it also prevents properly closing <PRIVATE PRIVATE> meta contexts
+    - include: directives
+    - include: expressions
+  directive_use:
+    - meta_scope: meta.directive.use.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.namespace.factor
+      pop: true
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_using:
+    - meta_scope: meta.directive.using.factor
+    - include: comments
+    - match: ({{semicolon}})
+      scope: punctuation.terminator.factor
+      pop: true
+    - match: ({{identifier}})
+      scope: entity.name.namespace.factor
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_main:
+    - meta_scope: meta.directive.main.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: variable.function.factor
+      pop: true
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_in:
+    - meta_scope: meta.directive.in.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.namespace.factor
+      pop: true
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_tuple:
+    - meta_scope: meta.directive.tuple.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.struct.factor
+      set: directive_tuple_typename_after
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_tuple_typename_after:
+    - meta_scope: meta.directive.tuple.typename.after.factor
+    - include: comments
+    - match: ({{space_before}}<{{space_after}})
+      scope: keyword.control.factor
+      set: directive_tuple_supertypename
+    - match: ({{identifier}})
+      scope: variable.parameter.factor
+      set: directive_tuple_body
+  directive_tuple_supertypename:
+    - meta_scope: meta.directive.tuple.supertypename.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.struct.factor
+      set: directive_tuple_body
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_tuple_body:
+    - meta_scope: meta.directive.tuple.body.factor
+    - include: comments
+    - match: ({{semicolon}})
+      scope: punctuation.terminator.factor
+      pop: true
+    - match: ({{identifier}})
+      scope: variable.parameter.factor
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_generic:
+    - meta_scope: meta.directive.generic.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.function.factor
+      set: directive_generic_name_after
+  directive_generic_name_after:
+    - meta_scope: meta.directive.generic.name.after.factor
+    - include: comments
+    - match: ({{left_paren}})
+      scope: punctuation.section.braces.begin.factor
+      set: directive_generic_stackeffect
+    - match: ({{debris}})
+      scope: invalid.illegal.factor
+  directive_generic_stackeffect:
+    - meta_scope: meta.directive.generic.stackeffect.factor
+    - include: comments
+    - match: ({{right_paren}})
+      scope: punctuation.section.braces.end.factor
+      pop: true
+    - match: ({{left_paren}})
+      scope: punctuation.section.braces.begin.factor
+      push: directive_generic_stackeffect
+    - match: ({{double_dash}})
+      scope: punctuation.separator.factor
+    - match: ({{identifier}})
+      scope: variable.parameter.factor
+  directive_method:
+    - meta_scope: meta.directive.method.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: entity.name.type.factor
+      set: directive_method_name
+  directive_method_name:
+    - meta_scope: meta.directive.method.name.factor
+    - include: comments
+    - match: ({{identifier}})
+      scope: variable.function.factor
+      set: directive_method_body
+  directive_method_body:
+    - meta_scope: meta.directive.method.body.factor
+    - include: comments
+    - match: ({{semicolon}})
+      scope: punctuation.terminator.factor
+      pop: true
+    - include: expressions
+  directive_other:
+    - meta_scope: meta.directive.other.factor
+    - include: comments
+    - match: ({{eol_or_eof}})
+      pop: true
+    - match: ({{semicolon}})
+      scope: punctuation.terminator.factor
+      pop: true
+    - include: expression_atoms
+  expressions:
+    - match: ({{space_before}}[^\]\(\)\{\}\s]*\[[^\]\(\)\{\}\s]*{{space_after}})
+      scope: punctuation.section.brackets.begin.factor
+      push: expression_brackets
+    - match: ({{space_before}}[^\[\]\(\)\}\s]*\{[^\[\]\(\)\}\s]*{{space_after}})
+      scope: punctuation.section.braces.begin.factor
+      push: expression_braces
+    - match: ({{space_before}}[^\[\]\)\{\}\s]*\([^\[\]\)\{\}\s]*{{space_after}})
+      scope: punctuation.section.parens.begin.factor
+      push: expression_parens
+    - match: ({{space_before}}<<{{space_after}})
+      scope: punctuation.section.block.begin.factor
+      push: expression_parse_time
+    - match: ({{space_before}}\|{{space_after}})
+      scope: punctuation.separator.factor
+    - include: expression_atoms
+  expression_atoms:
+    - match: ({{space_before}}(P|SBUF|DLL|URL)?")
+      scope: punctuation.definition.string.begin.factor
+      push: expression_string
+    - match: ({{space_before}}(t|f){{space_after}})
+      scope: constant.language.boolean.factor
+    - match: ({{space_before}}[+-]?\d+(\.\d+|\/\d+)?([eE][+-]?\d+)?{{space_after}})
+      scope: constant.numeric.factor
+    - match: ({{space_before}}[^a-zA-Z0-9;\s\[\]\(\)\{\}]+{{space_after}})
+      scope: keyword.operator.factor
+    - match: ({{identifier}})
+      scope: variable.function.factor
+  expression_brackets:
+    - meta_scope: meta.brackets.factor
+    - include: comments
+    - match: ({{space_before}}\]{{space_after}})
+      scope: punctuation.section.brackets.end.factor
+      pop: true
+    - include: expressions
+  expression_braces:
+    - meta_scope: meta.braces.factor
+    - include: comments
+    - match: ({{space_before}}\}{{space_after}})
+      scope: punctuation.section.braces.end.factor
+      pop: true
+    - include: expressions
+  expression_parens:
+    - meta_scope: meta.parens.factor
+    - include: comments
+    - match: ({{space_before}}\){{space_after}})
+      scope: punctuation.section.parens.end.factor
+      pop: true
+    - include: expressions
+  expression_parse_time:
+    - meta_scope: meta.preprocessor.factor
+    - include: comments
+    - match: ({{space_before}}>>{{space_after}})
+      scope: punctuation.section.block.end.factor
+      pop: true
+    - include: expressions
+  expression_string:
+    - meta_scope: string.quoted.double.factor
+    - match: (\\(\\|s|t|n|r|b|v|f|0|e|"|\d{3}|u\d{6}|u{\w+}))
+      scope: constant.character.escape.factor
+    - match: (\\.)
+      scope: invalid.illegal.factor
+    - match: ("{{space_after}})
+      scope: punctuation.definition.string.end.factor
+      pop: true
+    - match: (")
+      scope: invalid.illegal.factor

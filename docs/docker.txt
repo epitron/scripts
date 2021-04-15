@@ -1,0 +1,16 @@
+docker run -it --name <container> image/name
+docker start <container>
+docker attach <container>
+docker inspect <container>
+docker rm <container(s)>
+docker ps -a
+
+# portmap
+docker run -p <hostport>:<containerport> -td <container>
+
+# change config (by making a new container)
+docker commit <container> <container>:2
+docker run <new options> <container>:2
+
+# mount
+docker run -v /local/fs/dir:/docker/container/dir image

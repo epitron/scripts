@@ -83,7 +83,7 @@ ttf-dejavu-ib
 # Desktop apps
 chromium
 libreoffice-fresh
-evince
+evince / atril
 caja
 dolphin
 hexchat

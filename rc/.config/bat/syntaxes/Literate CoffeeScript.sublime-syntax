@@ -1,0 +1,40 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: CoffeeScript (Literate)
+file_extensions:
+  - coffee.md
+  - litcoffee
+scope: source.litcoffee
+contexts:
+  main:
+    - match: '^(?=<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b)(?!.*?</\1>)'
+      push:
+        - meta_scope: meta.content.markup
+        - match: (?<=^</\1>$\n)
+          pop: true
+        - include: scope:text.html.basic
+    - match: '^(?=([ ]{4}|\t)(?!$))'
+      push:
+        - meta_scope: meta.content.literate
+        - match: '^(?!([ ]{4}|\t))'
+          pop: true
+        - include: scope:source.coffee
+    - match: |-
+        (?x)^
+        (?= [ ]{,3}>.
+        | [a-zA-Z\d_*`\[]
+        | [#]{1,6}\s*+
+        | [ ]{,3}(?<marker>[-*_])([ ]{,2}\k<marker>){2,}[ \t]*+$
+        )
+      push:
+        - meta_scope: meta.content.markdown
+        - match: |-
+            (?x)^
+            (?! [ ]{,3}>.
+            | [a-zA-Z\d_*`\[]
+            | [#]{1,6}\s*+
+            | [ ]{,3}(?<marker>[-*_])([ ]{,2}\k<marker>){2,}[ \t]*+$
+            )
+          pop: true
+        - include: scope:text.html.markdown

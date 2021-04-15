@@ -1,0 +1,9 @@
+import IPython
+
+x = "foo"
+print(x)
+
+IPython.embed()
+
+x = "bar"
+print(x)

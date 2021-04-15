@@ -3,11 +3,6 @@
 require 'epitools'
 require 'terminal-table'
 #######################################################################################################
-#
-# TODOs:
-# - a 'dig' command that manually specifies all the common records (A, CNAME, TXT, MX, NS, etc?)
-#
-#######################################################################################################
 
 class String
   def ip?
@@ -128,6 +123,27 @@ end
 
 #######################################################################################################
 
+def dog(thing)
+  out = []
+  out << header("dog #{thing}")
+  out << ""
+
+  cmd = %w[dog --color=always] 
+  cmd << thing
+  cmd += %w[A AAAA TXT SOA CNAME MX NS]
+  
+  lines = IO.popen(cmd, &:readlines)
+
+  unique_lines = lines.map(&:chomp).uniq_by do |line|
+    fields = line.split
+    fields[0..1] + fields[3..-1]
+  end
+   
+  out += unique_lines
+end
+
+#######################################################################################################
+
 lesspipe do |less|
 
   ARGV.each do |arg|
@@ -145,19 +161,23 @@ lesspipe do |less|
     if arg.ip?
       jobs.add { host(arg) }
       jobs.add { arin(arg) }
+
     else
       jobs.add { whois(arg) }
-      jobs.add do
-        ip = host(arg)
-        p ip
-        # binding.pry
-        if arg.split(".").size > 2
-          if ip.any? { |a| a =~ /has address (.+)\e/ }
-            p $1
-            jobs.add { whois($1) }
+      
+      if which("dog")
+        jobs.add { dog(arg) }
+    
+      else
+        jobs.add do
+          ip = host(arg)
+          if arg.split(".").size > 2
+            if ip.any? { |a| a =~ /has address (.+)\e/ }
+              jobs.add { whois($1) }
+            end
           end
+          ip
         end
-        ip
       end
     end
 
