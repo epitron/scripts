@@ -1,0 +1,7 @@
+# <file system> <dir> <type> <options> <dump> <pass>
+
+# /dev/sdb2
+LABEL=root	/         	ext4      	rw,data=writeback,noatime,nodiratime,user_xattr,nobarrier	0 1
+
+# /dev/sdb1
+UUID=EB31-BE00      	/boot     	vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro	0 2
