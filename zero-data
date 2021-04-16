@@ -4,15 +4,15 @@ require 'epitools'
 
 for arg in ARGV
   f = Path[arg]
-  puts "* #{arg}"
+  puts "* #{arg} (#{f.size.commatize} bytes)"
   unless f.size > 0
     puts "  |_ Already deleted..."
     next
   end
 
-  f.open("wb") { }
-  f.rename!(ext: "deleted")
+  f.rename!(filename: "#{f.filename}.deleted")
   puts "  |_ #{f.filename}"
+  f.open("wb") { }
 end
-  
-  
+
+

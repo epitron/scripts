@@ -3,28 +3,20 @@ gem 'slop', "~> 3.6"
 require 'slop'
 require 'epitools'
 
-def parse_options
-  opts = Slop.parse(help: true, strict: true) do
-    banner "Usage: wikidump [options] <wiki url(s)>"
+DUMPGENERATOR_URL = "https://raw.githubusercontent.com/WikiTeam/wikiteam/master/dumpgenerator.py"
 
-    on "i", "info", "Show info about the wiki, then exit"
-    on "a", "all", "Download all historical revisions for every page"
-    on "b", "boring", "No images"
-    on "d=", "dir", "Output directory"
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: wikidump [options] <wiki url(s)>"
+  separator "(Default behaviour: downloading the latest revision of each page, plus images.)"
 
-    separator "Defaults to downloading the latest revision of each page with images."
-  end
-
-  [opts, ARGV]
+  on "i", "info", "Show info about the wiki, then exit"
+  on "a", "all", "Download all historical revisions for every page"
+  on "b", "boring", "No images"
+  on "d=", "dir", "Output directory"
+  on "U", "update", "Update dumpgenerator.py"
 end
 
-opts, args = parse_options
-
-def wikidump(*args)
-  cmd = ["mediawiki-dumpgenerator", *args]
-  puts "Executing: #{cmd.inspect}"
-  system *cmd
-end
+args = ARGV
 
 failure = proc do |msg|
   $stderr.puts "<12>Error:</12> #{msg}".colorize
@@ -33,6 +25,28 @@ failure = proc do |msg|
   exit 1
 end
 
+def wikidump(*args)
+  update_dumpgenerator unless which("dumpgenerator.py")
+
+  cmd = ["dumpgenerator.py", *args]
+  puts "Executing: #{cmd.inspect}"
+  system *cmd
+end
+
+def update_dumpgenerator
+  out_file = "#{__DIR__}/dumpgenerator.py"
+  puts "* getting #{DUMPGENERATOR_URL}"
+  data = curl(DUMPGENERATOR_URL)
+  puts "  |_ writing to #{out_file}"
+  File.write(out_file, data)
+  system("chmod", "+x", out_file) 
+  system("git", "diff", out_file)
+end
+
+if opts.update?
+  update_dumpgenerator
+  exit
+end
 
 failure["Wiki URL missing"] if args.empty?
 

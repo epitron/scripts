@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+import sys, requests
+
+URL_URBANDICTIONARY = "http://api.urbandictionary.com/v0/define"
+HELP = """
+purpose:
+    Get the definition of a provided term from Urban Dictionary
+
+usage: 
+    ud <query> [<result number>]
+"""
+
+def err(*args):
+    print(*args, file=sys.stderr)
+
+def ud(args):
+    number = 1
+    term = args
+    if (args[-1].isdigit()):
+        number = int(args[-1])
+        term = term[:-1]
+    term = " ".join(term)
+
+    page = requests.get(URL_URBANDICTIONARY, params={"term": term}).json()
+
+    if page:
+        results = page["list"]
+
+        err(f"* Found {len(results)} results...")
+        err()
+
+        if len(page["list"]):
+            if number > 0 and len(page["list"]) > number-1:
+                definition = page["list"][number-1]
+                print(
+                    "%s: %s" % (
+                        definition["word"],
+                        definition["definition"].
+                            replace("\n", " ").
+                            replace("\r", "").
+                            replace("  ", " ")
+                    )
+                )
+            else:
+                err("Definition number does not exist")
+        else:
+            err("No results found")
+    else:
+        raise "couldn't get the JSON from urbandictionary for some reason"
+
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+
+    if len(args) > 0:
+        ud(args)
+    else:
+        print(HELP)

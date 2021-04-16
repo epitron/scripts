@@ -1,0 +1,1 @@
+ffmpeg -i "$1" -an -filter:v "setpts=0.1*PTS" -r 60 "${1%.mp4}-lapse.mp4"

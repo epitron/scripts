@@ -1,0 +1,4 @@
+Cmnd_Alias PAC       = /usr/bin/pacman -S -- *
+Cmnd_Alias PACU      = /usr/bin/pacman -Syu
+Cmnd_Alias PACR      = /usr/bin/pacman -Rs -- *
+%sudo ALL=NOPASSWD: PAC,PACU,PACR

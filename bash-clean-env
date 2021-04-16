@@ -1,0 +1,1 @@
+exec env -i bash --norc --noprofile

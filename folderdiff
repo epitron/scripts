@@ -43,7 +43,8 @@ class Result
     root = root + "/" unless root[-1..-1] == "/"
     @root = root
     @path = path
-    @path_without_root = path.sub(/^#{Regexp.escape root}/, '')
+    @path_without_root = path.startswith?(root) ? path[root.size..-1] : path
+    # @path_without_root = path.sub(/^#{Regexp.escape root}/, '')
     @message = message
   end
   

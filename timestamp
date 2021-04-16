@@ -1,10 +1,12 @@
 #!/usr/bin/env ruby
 
 def usage
-  puts __DATA__
+  puts DATA.read
 end
 
-FORMAT="%Y-%m-%d %H:%M:%S"
+def nice_stamp
+  Time.now.strftime("%Y-%m-%d %H:%M:%S")
+end
 
 args = ARGV
 
@@ -12,12 +14,15 @@ if STDIN.tty?
   if args.delete("--help") or args.delete("-h")
     usage
     exit
+  elsif args.delete("-n") or args.delete("--nice")
+    puts nice_stamp
   else
     puts Time.now.to_i
   end
 else
   STDIN.each_line do |line|
-    puts "[#{Time.now.strftime(FORMAT)}] #{line}"
+    STDOUT.puts "[#{nice_stamp}] #{line}"
+    STDOUT.flush
   end
 end
 

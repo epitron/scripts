@@ -1,0 +1,14 @@
+#!/bin/bash
+
+show_fetch() {
+  git config --get remote.origin.fetch
+}
+
+if [ -d .git ]; then
+  echo "Was tracking: $(show_fetch)"
+  git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+  echo "Now tracking: $(show_fetch)"
+  echo
+
+  git fetch -a
+fi

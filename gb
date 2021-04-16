@@ -3,6 +3,7 @@
 #----------------------------------------------
 # TODOS:
 #----------------------------------------------
+# * Print "status" beside each branch (last commit date, truncated hash, truncated description)
 # * Only show recently active (within 7 days) branches by default (optional: -a to show all branches)
 # * Two-column view:
 #   - Left: Local branches, Right: remote branches
@@ -16,7 +17,7 @@
 # * create remote branch (based on current?)
 # * prompt for confirmation when doing dangerous things
 #   (or things that could be mistakes -- eg: creating a branch)
-# * eat ugly git messages and make them colourized and pretty 
+# * eat ugly git messages and make them colourized and pretty
 
 #################################################################################
 require 'epitools'
@@ -31,21 +32,21 @@ class Branches
     @remote = []
     @current = nil
   end
-  
+
   def local?(branch); local.include? branch; end
   def remote?(branch); remote.include? "origin/#{branch}"; end
   def remote_for(branch); remote.find {|e| e == "origin/#{branch}" }; end
   def current?(branch); current == branch; end
 
   def print
-  
+
     puts
-    
+
     [ [:remote, :green], [:local, :yellow] ].each do |type, color|
       puts "<grey>== <light_white>#{type} branches: <grey>=============".colorize
       for branch in send(type)
         selected = (branch == current && type == :local)
-        if selected 
+        if selected
           puts "   #{branch} <===".bright_yellow
         else
           puts "   #{branch}".send(color)
@@ -53,9 +54,9 @@ class Branches
       end
       puts
     end
-    
+
   end
-  
+
 end
 
 #################################################################################
@@ -78,9 +79,9 @@ end
 
 def get_branches
   ensure_git_repo
-  
+
   branches = Branches.new
-  
+
   `git branch -a`.lines.map(&:strip).each do |line|
     if line =~ %r{^\* (.+)$}
       line = $1
@@ -92,13 +93,13 @@ def get_branches
       # ignore aliases
     when %r{^remotes/(.+)$}
       branches.remote << $1
-    else 
+    else
       branches.local << line
     end
   end
-  
+
   branches
-end  
+end
 
 
 #################################################################################
@@ -110,11 +111,11 @@ if args.empty?
   # Do nothing!
 
 elsif args.first.in? ["--help", "-h"]
-  
+
   puts %{usage: gb <branch name>
 
 eg:
-  gb existingbranch           => switch to existing branch         
+  gb existingbranch           => switch to existing branch
   gb newbranch                => create a new branch
   gb origin/remotebranch      => create/checkout/track remote branch
   gb -p [<remote>]            => push current branch to remote (default: origin)
@@ -133,7 +134,7 @@ elsif args.first.downcase == "-r"
   args.shift
   branches = get_branches
 
-  case args.size 
+  case args.size
   when 1
     src  = branches.current
     dest = args.first
@@ -143,11 +144,11 @@ elsif args.first.downcase == "-r"
 
   if branches.local? src
     puts "<grey>* <light_cyan>Renaming <light_yellow>#{src} <light_cyan>to <light_yellow>#{dest}".colorize
-  
-    # git branch -m old_branch new_branch         # Rename branch locally    
+
+    # git branch -m old_branch new_branch         # Rename branch locally
     if system "git branch -m #{src} #{dest}"
       puts "Success!"
-      # git push origin :old_branch                 # Delete the old branch    
+      # git push origin :old_branch                 # Delete the old branch
       # git push --set-upstream origin new_branch   # Push the new branch, set local branch to track the new remote
     end
   end
@@ -158,7 +159,7 @@ elsif args.first.downcase == "-d"
   args.shift
   branches = get_branches
   branch   = args.shift
-  
+
   if branches.local? branch
     puts "<grey>* <light_cyan>Deleting <light_yellow>#{branch}".colorize
     system("git branch -D #{branch}")
@@ -167,11 +168,11 @@ elsif args.first.downcase == "-d"
       puts
       puts "Okay!"
       puts
-      
+
       remote, branch = branch.split("/")
-      
+
       puts "<grey>* <light_cyan>Deleting <light_yellow>#{branch} <light_cyan>from <light_green>#{remote}".colorize
-      
+
       system("git push #{remote} :#{branch}")
     else
       puts "Whew!".light_white
@@ -218,7 +219,7 @@ elsif args.first.downcase == "-t"
 else
   ## Branch
   branches = get_branches
-  
+
   branch = args.first.downcase
 
   if branches.local? branch
@@ -231,8 +232,8 @@ else
     puts "* Creating new branch #{branch}"
     system("git branch #{branch}")
     system("git checkout #{branch}")
-  end    
-  
+  end
+
 end
 
 get_branches.print

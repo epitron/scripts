@@ -4,9 +4,9 @@
 require 'epitools'
 ###################################################################
 
-CACHE_DIR  = File.expand_path("~/.cache/wict")
-INDEX_FILE = File.join CACHE_DIR, "enwikt.idx"
-TSV_FILE   = File.join CACHE_DIR, "enwikt.tsv"
+CACHE_DIR  = File.expand_path("~/.cache/wikt")
+INDEX_FILE = File.join CACHE_DIR, "wikt.idx"
+TSV_FILE   = File.join CACHE_DIR, "wikt.tsv"
 
 ###################################################################
 
@@ -65,16 +65,16 @@ def latest_tsv_url(lang="en")
   # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-en.tsv.gz
   # https://archive.org/download/enwikt-tsv/enwikt-defs-20180420-all.tsv.gz
   #
-  json = `curl -s https://archive.org/details/enwikt-tsv?output=json`.from_json
-  files = json["files"].map(&:first).select { |fn| fn[%r{^/enwikt-defs-\d+-#{lang}\.tsv\.gz$}] }
+  json = `curl -s https://archive.org/details/wikt-tsv?output=json`.from_json
+  files = json["files"].map(&:first).select { |fn| fn[%r{^/wikt-defs-\d+-#{lang}\.tsv\.gz$}] }
   latest = files.sort.last
-  "https://archive.org/download/enwikt-tsv#{latest}"
+  "https://archive.org/download/wikt-tsv#{latest}"
 end
 
 def update(lang="en")
   puts "* Updating Wictionary..."
   print "  |_ latest dump: "
-  url = latest_tsv_url(lang="en")
+  url = latest_tsv_url(lang)
   puts url.inspect
 
   FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
@@ -107,13 +107,15 @@ def update(lang="en")
 
         print "\e[1G  |_ words retrieved: #{count.commatize}\e[J" if count % 137 == 0
       end
-      puts
+
+      puts "\e[1G  |_ words retrieved: #{count.commatize}\e[J"
     end
   end
 
   if word_index.is_a? Array
-    puts "  |_ sorting index (#{word_index.size.commatize} words)"
-    word_index.sort!
+    print "  |_ sorting index..."
+    word_index.sort_by! { |word, offset| word.downcase }
+    puts
   end
 
   puts "  |_ writing index to #{INDEX_FILE}..."
@@ -146,6 +148,9 @@ def highlight(defn)
 
     # p [:alternate_brackets, $1, $2]
     /\[\[([^\|\]]+?)\|([^\|\]]+?)\]\]/ => proc { highlight "[[#{$2}]]" },
+
+    # p [:emphasis, $1]
+    /''([^']+?)''/ => proc { highlight "<15>#{$1}</15>" },
   }
 
   xforms.each do |pattern,block|
@@ -201,6 +206,8 @@ def greparound(io, pos, query)
   index_lines
 end
 
+# ------------------------------------------------------ #
+
 def lookup_bsearch(args)
   query = args.join.downcase
   f     = open(INDEX_FILE, "r")
@@ -216,9 +223,8 @@ def lookup_bsearch(args)
     current_word, offset = line.split("\t")
 
     if current_word[/^#{query}/]
-      index_lines = greparound(f, range.middle, query)
-      print_results(index_lines)
-      return
+      # EXIT POINT
+      return index_lines = greparound(f, range.middle, query)
     elsif query < current_word
       range = range.first...range.middle
     else
@@ -230,15 +236,35 @@ ensure
   f.close
 end
 
+# ------------------------------------------------------ #
+
 def lookup_grep(args)
-  query = args.join
-
-  lines = `grep -iE '^#{query}' #{INDEX_FILE}`.each_line.to_a
-
-  print_results(lines)
+  query = args.join(" ")
+  `grep -iE '^#{query}' #{INDEX_FILE}`
 end
 
-def get_results(matches)
+# ------------------------------------------------------ #
+
+def lookup_look(args)
+  query = args.join(" ")
+  # IO.popen(["look", query, INDEX_FILE], &:read)
+  IO.popen(["look", "-f", "--", query, INDEX_FILE], &:read)
+end
+
+# ------------------------------------------------------ #
+
+def lookup(args)
+  if which("look")
+    lookup_look(args)
+  else
+    # lookup_bsearch(args)
+    lookup_grep(args)
+  end
+end
+
+# ------------------------------------------------------ #
+
+def load_definitions(matches)
   open(TSV_FILE, "r") do |tsv|
     matches.map do |word, offset|
       defs = []
@@ -255,6 +281,8 @@ def get_results(matches)
 end
 
 def print_results(index_lines)
+  index_lines = index_lines.each_line.to_a if index_lines.is_a?(String)
+
   if index_lines.empty?
     puts "No results found."
     return
@@ -266,7 +294,7 @@ def print_results(index_lines)
     [word, offset]
   end
 
-  results = get_results(word_offsets)
+  results = load_definitions(word_offsets)
 
   lesspipe(wrap: true) do |less|
     results.each do |word, defs|
@@ -277,9 +305,6 @@ def print_results(index_lines)
   end
 end
 
-
-# alias lookup lookup_grep
-alias lookup lookup_bsearch
 
 ###################################################################
 
@@ -319,7 +344,8 @@ if $0 == __FILE__
     elsif args.empty?
       puts "Pass the word(s) you want to look up as (an) argument(s)."
     else
-      lookup(args)
+      indexes = lookup(args)
+      print_results(indexes)
     end
 
   end

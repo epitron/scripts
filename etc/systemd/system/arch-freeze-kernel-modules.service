@@ -1,0 +1,8 @@
+[Unit]
+Description=Freeze system's current kernel modules so they can't be removed by pacman upgrades
+
+[Service]
+ExecStart=/usr/scripts/arch-freeze-kernel-modules
+
+[Install]
+WantedBy=multi-user.target

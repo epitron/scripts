@@ -4,17 +4,25 @@ gem 'slop', "~> 3.6"
 require 'slop'
 require 'pty'
 ########################################################################
+#
+# TODO:
+#   - `gc -w` clones the wiki (if not already cloned)
+#
+########################################################################
 
 def parse_options
   opts = Slop.parse(strict: true) do
     banner "Usage: gc [options] <git-url or github-user/repo> [<destination directory>]"
 
-    on "s",  "shallow",      "Shallow clone (without history)"
-    on "r",  "no-recursion", "Don't automatically clone submodules"
-    on "w",  "wiki",         "Also get the wiki (placed in {reponame}/wiki)"
-    on "e",  "edit",         "Open cloned repo in editor (hardwired to 'subl')"
-    on "b=", "branch",       "Clone a specific branch"
-    on "h",  "help",         "What you're looking at right now!"
+    # on "s",  "shallow",      "Shallow clone (without history)"
+    on "a",  "all",          "Clone all of the historical commits (default is to do a shallow (--depth=1) clone)"
+    on "b",  "bare",         "Create a bare repository (no checkout)"
+    on "N",  "no-recursion", "Don't automatically clone submodules"
+    on "r",  "remote-submodules", "Submodules track their remote HEADs (instead of being locked to a specific commit)"
+    on "w",  "wiki",         "Clone the wiki (and place it in {reponame}/wiki)"
+    on "e",  "edit",         "Open the repo in an editor (hardwired to 'subl')"
+    on "c=", "branch",       "Checkout a specific branch after cloning"
+    on "h",  "help",         "You're currently reading it"
   end
 
   [opts, ARGV]
@@ -25,15 +33,27 @@ class Object
   def not_in?(a); not self.in? a; end
 end
 
-def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true)
-  print "\e[37m\e[1mCloning \e[0m\e[33m\e[1m#{repo}\e[0m"
+def git_remote_url
+  `git remote get-url origin`.chomp
+end
+
+def git_repo_root_dir
+  return nil if Dir.pwd == "/"
+  return Dir.pwd if File.directory?(".git")
+  Dir.chdir("..") { git_repo_root_dir }
+end
+
+def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true, remote_submodules: false, bare: false)
+  print "\e[37m\e[1m#{"Shallow " if shallow}Cloning \e[0m\e[33m\e[1m#{repo}\e[0m"
   print " into \e[0m\e[36m\e[1m#{dest}\e[0m\e[37m\e[0m" if dest
   puts
 
   cmd = ["git", "clone"]
-  cmd << "--depth=1"    if shallow
-  cmd << "--recursive"  if recursive
-  cmd += ["-b", branch] if branch
+  cmd += ["--depth=1", "--shallow-submodules"]  if shallow
+  cmd << "--bare"                               if bare
+  cmd << "--recurse-submodules"                 if recursive
+  cmd << "--remote-submodules"                  if remote_submodules
+  cmd += ["-b", branch]                         if branch
   cmd << repo
 
   cmd << dest if dest
@@ -65,10 +85,28 @@ end
 
 opts, args = parse_options
 
-if opts[:help] or args.size.not_in? 1..2
+if opts[:help] or (args.empty? and not opts.wiki?)
   puts opts
   exit 1
 end
+
+# `gc -w` clones the wiki into a pre-existing git repo
+if args.empty? and opts.wiki?
+  if dir = git_repo_root_dir
+    Dir.chdir(dir) do
+      wiki = git_remote_url.sub(/(\/$|\.git$|$)/, ".wiki.git")
+      clone(wiki, "wiki", shallow: opts[:shallow])
+      puts
+      homepage = "wiki/Home.md"
+      system("c", homepage) if File.exists?(homepage)
+    end
+  else
+    $stderr.puts "ERROR: Couldn't find the .git directory. Are you running this from within a git repo?"
+  end
+
+  exit
+end
+
 
 repo, dest = args
 
@@ -93,9 +131,11 @@ end
 reponame = clone(
   repo,
   dest,
-  branch: opts[:branch],
+  branch:    opts[:branch],
+  bare:      opts[:bare],
   recursive: !opts["no-recursion"],
-  shallow: opts[:shallow]
+  shallow:   !opts[:all],
+  remote_submodules: opts["remote-submodules"]
   )
 
 ########################################################################

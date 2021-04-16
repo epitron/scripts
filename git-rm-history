@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools/path'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+#
+# TODOs:
+# - leave the README
+#
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: git-rm-history [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+class Path
+  def du
+    IO.popen(["du", "-k", "-d", "0", path], &:read)
+  end
+end
+
+args.each do |arg|
+  path      = Path[arg]
+  gitdir    = path/".git"
+  gitconfig = gitdir/"config"
+
+  raise "#{path} doesn't exist"                       unless path.dir?
+  raise "#{path} has no .git dir (not a git repo)"    unless gitdir.dir?
+  raise "#{gitdir} has no config file (weird)"        unless gitconfig.exists?
+
+  before = path.du
+
+  config = gitconfig.read
+  
+  # path.rm_R
+  FileUtils.rm_rf(path)
+  # path.mv("#{path.path.chomp("/")}-tmp")
+
+  path.mkdir
+  gitdir.mkdir
+  gitconfig.write(config)
+  
+  path.cd do
+    unless system("git", "init")
+      raise "'git init' failed for some reason (?)"
+    end
+  end
+
+  after = path.du
+
+  puts "Before: #{before}"
+  puts " After: #{after}"
+end

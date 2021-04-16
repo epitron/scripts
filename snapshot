@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: snapshot <directory>"
+  exit 1
+fi
+
+if [ ! -d "$1" ]; then
+  echo "Error: \"$1\" is not a directory"
+  exit 2
+fi
+
+dir="$1"
+newdir="$1 [`timestamp -n`]"
+
+echo "Copying \"$dir\" to \"$newdir\""
+
+cp -al "$dir" "$newdir"

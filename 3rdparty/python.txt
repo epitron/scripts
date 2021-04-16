@@ -1,0 +1,33 @@
+internetarchive
+git+https://github.com/tokland/youtube-upload.git
+
+git+https://github.com/xsmile/chromexup.git
+
+mnamer
+tvnamer
+catt
+
+rst2ansi
+
+ffmpeg-normalize
+
+ranger
+kitty
+
+ueberzug
+
+hachoir
+
+pafy # leaner youtube-dl (command: ytdl)
+
+https://github.com/WikiTeam/wikiteam
+
+pyfiglet (cool fonts: roman, f15, isometric1, eca_____, drpepper, univers, r2-d2___, rectangles, broadway, fraktur)
+
+rtv # cli reddit client
+
+pyppeteer
+
+future # 'futurize -w <script>' converts python2 to python3
+
+rich

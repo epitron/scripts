@@ -1,5 +1,13 @@
 #!/usr/bin/env ruby
 
+class String
+
+  def url?
+    self[%r{^https?://}]
+  end
+
+end
+
 class Numeric
 
   def commatize(char=",")
@@ -22,12 +30,17 @@ end
 verbose = (opts.delete("-v") or opts.delete("-a"))
 
 for arg in args
-  size = File.size(arg).commatize
-  date = File.mtime(arg).strftime("%Y-%m-%d")
-  puts "\e[1;33;1m#{arg} \e[0m(\e[1;37m#{date}\e[0m, \e[1;36m#{size} \e[0;36mbytes\e[0m)\e[0m"
+  if arg.url?
+    puts "\e[1;33;1m#{arg}\e[0m"
+  else
+    size = File.size(arg).commatize
+    date = File.mtime(arg).strftime("%Y-%m-%d")
+    puts "\e[1;33;1m#{arg} \e[0m(\e[1;37m#{date}\e[0m, \e[1;36m#{size} \e[0;36mbytes\e[0m)\e[0m"
+  end
+
   IO.popen(["ffprobe", "-hide_banner", arg], "rb", err: [:child, :out]) do |io|
     lines = io.each_line
-    lines = io.grep(/^\s+Stream/) unless verbose
+    lines = io.grep(/^\s+(Duration|Stream)/) unless verbose
     lines.each { |line| puts line }
   end
   puts

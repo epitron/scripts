@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+
+input = open "#{__dir__}/README.yml"
+
+input.each_line do |line|
+  undescribed_scripts = []
+  indent = line[/^\s*/]
+  line.strip!
+
+  next if line.empty?
+
+  case indent
+  when ""
+    if undescribed_scripts.any? 
+      puts "undescribed scripts: #{undescd.map(&:first).join(", ")}"
+      undescribed_scripts.clear
+    end
+
+    puts
+    puts "=== #{line} ============================================"
+  when "  "
+    if line =~ /^(\w+):\s*(.*)$/
+      name = $1
+      desc = $2
+
+      if desc.empty?
+        undescribed_scripts << name
+      else 
+        puts "#{name}"
+        puts "  #{desc}"
+      end
+    end
+  when "    "
+    puts "  #{desc}"
+  end
+end

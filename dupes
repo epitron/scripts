@@ -5,6 +5,11 @@ require 'slop'
 require 'epitools'
 ################################################################
 
+#
+# TODOs:
+# - ignore symlinks
+#
+
 ################################################################
 # Utility functions
 
@@ -14,6 +19,7 @@ def parse_opts_and_args
 
     on 'd',  'delete',      'Delete dupes (keeping the oldest)'
     on 'i',  'interactive', 'Interactively delete dupes'
+    on 's',  'size-only',   'Don\'t checksum files (can be much faster, but inaccurate)'
     on 'a',  'all',         "Process all files (don't ignore .git)"
     on 'e=', 'exclude',     'Exclude a path'
   end
@@ -24,6 +30,7 @@ def title(msg); puts "<8>* <15>#{msg}".colorize; end
 def subtitle(msg); puts "  <8>|_ <7>#{msg}".colorize; end
 
 def common_prefix(files)
+  # FIXME: cuts directory names in half if there's a partial prefix match; truncate to /
   x, *xs = files.map &:to_s
 
   x.each_char.with_index do |c, i|
@@ -72,16 +79,17 @@ title "Found <9>#{files.size}</9> files..."
 # Find duplicates by first grouping by file size,
 # then grouping those groups by the file's SHA256 hash.
 #
+group_proc = opts["size-only"] ? proc { |s,f| s } : proc { |s,f| f.sha256 } 
+
 grouped_dupes = sized_files.group_by(&:first). # group by file size
   flat_map do |filesize, group|
     if group.size > 1
-      group.group_by { |s,f| f.sha256 }.
+      group.group_by(&group_proc).
       map { |sha,subgroup| subgroup.size > 1 ? subgroup : nil }.compact
     else
       nil
     end
   end.compact.sort
-
 
 if grouped_dupes.empty?
   subtitle "no duplicates"
@@ -93,7 +101,7 @@ puts
 
 
 ################################################################
-if opts.delete? 
+if opts.delete?
 
   #
   # Delete all but oldest dupe
@@ -116,32 +124,35 @@ elsif opts.interactive?
 
     prefix = common_prefix(group.map(&:last))
 
+    puts prefix
+
     group.each_with_index do |(size, file), i|
       puts "<7>#{i+1}<8>) <9>#{size.commatize} <8>| <11>#{file.relative_to(prefix)}".colorize
     end
 
-    # without_common_prefix([f1, f2]).each_with_index do |name, i|
-    #   puts "#{i+1}) #{name}"
-    # end
+    print "which to keep? (ENTER to skip) > "
+    choice = $stdin.gets.strip
 
-    print "which to delete? > "
-
-    if (choice = $stdin.gets.strip).blank?
+    # Skip this if the user enters a blank line
+    if choice.blank?
       puts "Skipping"
       puts
       next
     end
 
-    unless file_to_delete = group[choice.to_i-1]&.last
+    # Re-prompt if the user didn't pick a valid option
+    unless group[choice.to_i-1]
       puts "Invalid choice."
       puts
       redo
     end
 
-    # cmd = [deleter, file_to_delete]
-    # p cmd.map(&:to_s)
-    # system *cmd
-    trash file_to_delete
+    keep = choice.to_i-1
+
+    # Trash everything except the user's choice
+    group.each_with_index do |(size, fn), i|
+      trash(fn) unless i == keep
+    end
 
     puts
   end

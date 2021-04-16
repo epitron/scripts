@@ -1,0 +1,27 @@
+#!/bin/bash
+JOBS=4
+
+if [ "$1" == "" ]; then
+  echo "usage:"
+  echo "  gfv-parallel [options] <urls>"
+  echo
+  echo "purpose:"
+  echo "  Use youtube-dl to download videos in parallel by launching a tmux instance with"
+  echo "  $JOBS simultaneous instances, each running in its own pane."
+  echo
+  echo "options:"
+  echo "   -l <FILENAME>  file containing a list of urls"
+
+  exit 1
+fi
+
+
+if [ "$1" == "-l" ]; then
+  shift
+  listfile="$1"
+  shift
+
+  parallel --fg --tmuxpane -j$JOBS -a "$listfile" gfv {}
+else
+  parallel --fg --tmuxpane -j$JOBS gfv {} ::: "$@"
+fi

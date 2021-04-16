@@ -1,0 +1,31 @@
+# https://gitlab.com/muttmua/mutt/wikis/UseCases/Gmail
+# https://wiki.archlinux.org/index.php/mutt
+
+set imap_user = 'me@gmail.com'
+set imap_pass = 'app-specific-password'
+
+set folder    = imaps://imap.gmail.com/
+set spoolfile = +INBOX
+set record    = "+[Gmail]/Sent Mail"
+set postponed = "+[Gmail]/Drafts"
+mailboxes     = +INBOX "+[Gmail]" "+[Gmail]/Starred" "+[Gmail]/Sent Mail" "+[Gmail]/Drafts" "+[Gmail]/All Mail"
+
+set header_cache     = "~/.cache/mutt"
+set message_cachedir = "~/.cache/mutt"
+
+# Allow Mutt to open a new IMAP connection automatically.
+unset imap_passive
+
+# Keep the IMAP connection alive by polling intermittently (time in seconds).
+set imap_keepalive = 300
+
+# How often to check for new mail (time in seconds).
+set mail_check = 120
+
+set pager_context=3
+
+# Stop at the end instead of displaying next mail: 
+set pager_stop=yes
+
+source ~/.mutt/keybindings.conf
+source ~/.mutt/solarized-dark-256.theme

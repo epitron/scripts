@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: syncthing-conflicts [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+Path["**/*sync-conflict*.*"].each do |cnf|
+  orig = cnf.with(filename: cnf.filename.gsub(/\.sync-conflict-[^\.]+\./, '.'))
+  paths = [orig, cnf]
+
+  raise "orig doesn't exist #{orig}" unless orig.exists?
+
+  paths.each_with_index do |path, index|
+    puts "#{index+1}) #{path.md5[0..8]} #{path.size.commatize.rjust(10)} #{path}"
+  end
+
+  loop do
+    print "> "
+    unless choice = $stdin.gets&.chomp and choice.any?
+      puts "Skipping..."
+      break
+    end
+
+    choice = choice.to_i
+
+    if choice > 0 and chosen = paths[choice-1]
+      #system "trsh", "-v", *(paths - [chosen])
+      system "rm", "-v", *(paths - [chosen])
+      unless chosen == orig
+        chosen.mv(orig)
+      end
+      break
+    else
+      puts "error, try another"
+    end
+  end
+  puts
+end

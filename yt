@@ -1,97 +1,72 @@
-#!/usr/bin/env ruby
-require 'epitools'
-require 'http'
+#!/usr/bin/env python
+################################################################################################
+import sys
+################################################################################################
+reset         = '\033[0m'
+bold          = '\033[01m'
 
-unless ARGV.any?
-  puts "Usage: yt <query>"
-  exit 1
-end
+disable       = '\033[02m'
+underline     = '\033[04m'
+reverse       = '\033[07m'
+strikethrough = '\033[09m'
+invisible     = '\033[08m'
 
+black         = '\033[30m'
+red           = '\033[31m'
+green         = '\033[32m'
+orange        = '\033[33m'
+blue          = '\033[34m'
+purple        = '\033[35m'
+cyan          = '\033[36m'
+white         = '\033[37m'
 
-class Result
-  attr_accessor \
-    :title,
-    :url,
-    :date,
-    :length,
-    :views,
-    :user,
-    :desc,
-    :highlighted_desc
+grey          = '\033[90m'
+lightred      = '\033[91m'
+lightgreen    = '\033[92m'
+yellow        = '\033[93m'
+lightblue     = '\033[94m'
+pink          = '\033[95m'
+lightcyan     = '\033[96m'
+################################################################################################
 
-  def initialize(li)
-    @length       = li.at(".video-time").text
-    link          = li.at(".yt-lockup-title a")
-    @title        = link.text
-    @url          = URI.join "https://youtube.com/", link["href"]
-    @user         = li.at(".yt-lockup-byline a").text
-    @date, @views = li.search(".yt-lockup-meta-info li").map(&:text)
+try:
+  from youtube_search import YoutubeSearch
 
-    if desc  = li.at(".yt-lockup-description")
-      @desc = desc.text
-      @highlighted_desc = highlight(desc)
-    end
-  end
+except ModuleNotFoundError:
+  print(f"Missing youtube search support; run '{bold}pip install --user youtube-search{reset}' first.")
+  sys.exit(1)
 
-  def highlight(desc, color=3, highlight=11)
-    translated = desc.children.map do |child|
+################################################################################################
 
-      case child
-      when Nokogiri::XML::Text
-        child.text
-      when Nokogiri::XML::Element
+if len(sys.argv) < 2:
+  print("usage: yt <query>")
+  sys.exit(1)
 
-        case child.name
-        when "b"
-          "<#{highlight}>#{child.text}</#{highlight}>"
-        else
-          child.text
-        end
+################################################################################################
 
-      end
+query = ' '.join(sys.argv[1:])
+print(f"{grey}* {white}Searching for: {bold}{yellow}{query}{reset}...")
 
-    end
+results          = YoutubeSearch(query, max_results=20).to_dict()
+numbered_results = [ (i+1, r)   for i, r in enumerate(results) ]
 
-    "<#{color}>#{translated.join}</#{color}>"
-  end
+for n, r in reversed(numbered_results):
+  # r = {'id': 'Zo_jdDGwdg0',
+  #      'thumbnails': ['https://i.ytimg.com/vi/Zo_jdDGwdg0/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDN0XzvVvVswzAx91QUuNMvy5J4qw'],
+  #      'title': 'Swans The Sound of Freedom',
+  #      'long_desc': None,
+  #      'channel': 'Jännis Bunker',
+  #      'duration': '4:36',
+  #      'views': '932 views',
+  #      'url_suffix': '/watch?v=Zo_jdDGwdg0'},
 
-end
+  indent = " " * (len(str(n)) + 2)
 
-def youtube_search(query)
-  url = "https://www.youtube.com/results?search_query=#{CGI.escape(query)}&search=Search"
-  page = Nokogiri::HTML(HTTP.get(url).to_s)
+  print(f"{lightcyan}{n}. {bold}{white}{r['title']}{reset} {grey}[{white}{r['duration']}{grey}]{reset}")
+  print(f"{indent}{grey}by {lightgreen}{r['channel']} {grey}({white}{r['views']}{grey}){reset}")
+  print(f"{indent}{bold}{blue}https://youtu.be/{r['id']}{reset}")
 
-  lis = page.search("#results ol.section-list ol.item-section > li")
-  results = lis.map do |li|
-    next if li.at(".spell-correction, .yt-lockup-playlist, .yt-lockup-channel")
+  if r['long_desc']:
+    print(f"{indent}{r['long_desc']}")
 
-    result = Result.new(li) rescue nil
-
-    next if result.nil?
-    next if result.url.to_s["googleadservices.com"]
-
-    result
-  end.compact
-end
-
-query = ARGV.join(" ")
-
-puts "Searching for: <14>#{query}".colorize
-
-results = youtube_search(query)
-
-puts "Results: #{results.size}"
-
-results = Hash[ (1..results.size).zip(results) ]
-
-results.to_a.reverse.each do |n, r|
-  puts "<11>#{n}. <15>#{r.title} <8>[<7>#{r.length}<8>]".colorize
-
-  indent = " " * (n.to_s.size + 2)
-
-  puts "#{indent}<8>by <10>#{r.user} <8>(<2>#{r.date}<8>, <7>#{r.views}<8>)".colorize
-  puts "#{indent}#{r.url}".light_blue
-  # puts "#{indent}#{r.highlighted_desc.colorize}" if r.desc
-  puts r.desc.wrapdent(indent) if r.desc
-  puts
-end
+  print()

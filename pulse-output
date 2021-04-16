@@ -1,0 +1,252 @@
+#!/usr/bin/env ruby
+#################################################################################################
+
+gem 'slop', "~> 3.6"
+require 'slop'
+require 'epitools'
+
+#################################################################################################
+
+def parse_options
+  opts = Slop.parse(help: true, strict: true) do
+    banner "Usage: pulse-set-output [options] <audio device number(s) or part(s) of (its/their) name(s)>"
+
+    on "v",  "verbose", "Show verbose information about devices/apps/sinks"
+    on "t",  "toggle",  "Toggle output of apps between two devices (requires 2 audio devices)"
+  end
+
+  [opts, ARGV]
+end
+
+#################################################################################################
+#
+# Type: :error, :info, :video
+#
+def notify(type, title, body, time: 5)
+  require 'cgi'
+
+  puts "[#{type}] #{title}"
+  puts "  #{body}"
+
+  time_in_ms = time * 1000
+
+  cmd = ["notify-send"]
+  cmd << "--expire-time=#{time_in_ms}"
+  cmd << "--app-name=play"
+  cmd << "--icon=#{type}"
+  cmd += [title, body].map {|s| CGI.escapeHTML s }
+
+  system *cmd
+end
+
+#################################################################################################
+#
+# Example output:
+#
+# [
+#  {...},
+#  {"index"=>"68",
+#   "media.name"=>"Audacious",
+#   "application.name"=>"Audacious",
+#   "application.process.binary"=>"audacious",
+#   "state"=>"RUNNING",
+#   "sink"=>"1",
+#   "volume"=>"front-left:",
+#   "muted"=>"no",
+#   "map"=>"front-left,front-right",
+#   "module-stream-restore.id"=>"sink-input-by-application-name:Audacious"},
+#  {...},
+#  ]
+
+def apps
+  @apps ||= `pacmd list-sink-inputs`.each_line.split_before(/ index: /).map do |lines|
+    pairs = lines.map do |line|
+      if line =~ /\s+(\S+): (\S+)/
+        [$1, $2]
+      elsif line =~ /\s+(\S+) = "([^"]+)"/
+        [$1, $2]
+      end
+    end.compact
+
+    pairs.empty? ? nil : pairs.to_h
+  end.compact
+end
+
+#################################################################################################
+#
+# Example output:
+#
+#  {"default"=>true,
+#   "index"=>"2",
+#   "alsa.name"=>"ALC1150 Analog",
+#   "alsa.id"=>"ALC1150 Analog",
+#   "alsa.card_name"=>"HDA Intel PCH",
+#   "alsa.long_card_name"=>"HDA Intel PCH at 0xdf340000 irq 131",
+#   "alsa.driver_name"=>"snd_hda_intel",
+#   "sysfs.path"=>"/devices/pci0000:00/0000:00:1f.3/sound/card0",
+#   "device.vendor.name"=>"Intel Corporation",
+#   "device.product.id"=>"a170",
+#   "device.product.name"=>
+#    "100 Series/C230 Series Chipset Family HD Audio Controller",
+#   "device.string"=>"front:0",
+#   "device.profile.name"=>"analog-stereo",
+#   "device.profile.description"=>"Analog Stereo",
+#   "device.description"=>"Built-in Audio Analog Stereo",
+#   "alsa.mixer_name"=>"Realtek ALC1150",
+#   ...}
+#
+def sinks
+  @sinks ||= `pacmd list-sinks`.each_line.split_before(/ index: /).map do |lines|
+    pairs = lines.map do |line|
+      if line =~ /(\*?) index: (\d+)/
+        [
+          ["default", $1 == "*"],
+          ["index", $2.to_i]
+        ]
+      elsif line =~ /\s+(\S+): (\S+)/
+        [$1, $2]
+      elsif line =~ /\s+(\S+) = "([^"]+)"/
+        [$1, $2]
+      end
+    end.compact
+
+    pairs.empty? ? nil : pairs.flatten.each_slice(2).to_h
+  end.compact
+end
+
+#################################################################################################
+#
+# Example output:
+#
+# [
+#   [1, "USB PnP Sound Device Analog Stereo"],
+#   [2, "Built-in Audio Analog Stereo"]
+# ]
+
+def indexed_sink_names
+  @sink_names ||= `pactl list sinks`.
+    scan(/(?:Sink #(\d+)|Description: (.+))|alsa.driver_name = (.+)|device.vendor.name = (.+)/).
+    flatten.
+    compact.
+    map { |s| s.gsub(/^"|"$/, '') }. # remove quotes from ends of string
+    each_slice(4).
+    map do |num, name, driver, vendor|
+      [num.to_i, "#{vendor} #{name} (#{driver})"]
+    end
+end
+
+
+def header(msg)
+  width = (msg.size+4)
+  puts
+  puts "-" * width
+  puts "  #{msg}"
+  puts "=" * width
+  puts
+end
+
+#################################################################################################
+
+opts, args = parse_options
+
+if opts.verbose?
+  header "Sinks:"
+  pp sinks
+
+  header "Apps:"
+  pp apps
+
+  header "Devices:"
+  pp indexed_sink_names
+
+  puts
+  puts
+end
+
+
+unless (opts.toggle? and args.size == 2) or (args.size == 1)
+  #
+  # Show help if the wrong number of args are given
+  #
+  puts opts
+  puts
+  puts "Purpose: Redirect all programs' audio to a specific device"
+  puts
+  puts "Available Devices:"
+
+  indexed_sink_names.each do |num, name|
+    puts "  Device ##{num}: #{name}"
+  end
+
+  exit 1
+
+else
+  #
+  # Translate commandline args to device indexes
+  #
+  selected = args.map do |arg|
+    if arg.number?
+      arg.to_i
+    else
+      # scan through the array of [num, name] pairs to see if the arg matches the name of a device, and if a match is found, return the index
+      expr = /#{Regexp.escape(arg)}/i
+      if found = indexed_sink_names.find { |num, name| name[expr] }
+        found.first
+      else
+        nil
+      end
+    end
+  end.compact
+
+
+  #
+  # Select a target device and store it in 'target' variable
+  #
+  if opts.toggle?
+
+    #
+    # Switch to whichever device isn't currently enabled (of the devices passed on the commandline)
+    #
+    sink_nums = sinks.map { |s| s["index"] }
+    undefined = selected - sink_nums
+
+    if undefined.any?
+      puts "Error: You specified some sinks that don't exist: #{undefined.inspect}"
+      exit 1
+    end
+
+    default_sink = sinks.find { |sink| sink["default"] }
+    target       = (selected - [default_sink["index"]]).first
+
+  else
+
+    #
+    # Switch to the first device passed on the commandline
+    #
+    target = selected.first
+
+  end
+
+  #
+  # Grab the struct for the selected device
+  #
+  sink = sinks.find { |s| s["index"] == target }
+
+  notify :info, "Switching Audio Output", "Sink ##{sink["index"]} (#{sink["device.description"]})"
+
+  #
+  # Switch all running applications' output to the selected device
+  #
+  apps.each do |app|
+    next if app["driver"]["module-combine-sink"]
+
+    puts "  #{app["media.name"]}"
+    system("pacmd", "move-sink-input", app["index"].to_s, sink["index"].to_s)
+  end
+
+  #
+  # Set the device as the default
+  #
+  system("pacmd", "set-default-sink", sink["index"].to_s)
+
+end

@@ -3,7 +3,7 @@
 
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'nokogiri'
+require 'oga'
 require 'epitools'
 require 'http'
 
@@ -35,6 +35,25 @@ Example:
   end
 
   [opts, ARGV]
+end
+
+#
+# Try all the libraries!
+#
+def wget(url)
+  begin
+    require 'http'
+    HTTP.follow.get(url).body.to_s
+  rescue LoadError
+    if bin = which("curl")
+      IO.popen([bin, "--silent", "--location", url], &:read)
+    elsif bin = which("wget")
+      IO.popen([bin, "--quiet", "--output-document=-", url], &:read)
+    else
+      require 'open-uri'
+      open(url, &:read)
+    end
+  end
 end
 
 #########################################################################
@@ -100,7 +119,7 @@ end
 
 def get_links(url, types=TYPES, regexp=nil)
   if url =~ %r{^https?://.+}
-    data             = HTTP.get(url).body.to_s
+    data             = wget(url)
     root_is_relative = relative_url?(url)
   elsif File.exists? url
     data = File.read url
@@ -110,7 +129,7 @@ def get_links(url, types=TYPES, regexp=nil)
     exit 1
   end
 
-  page = Nokogiri::HTML(data)
+  page = Oga.parse_html(data)
 
   types = types.uniq
 
@@ -118,7 +137,7 @@ def get_links(url, types=TYPES, regexp=nil)
     types.map do |type|
       tag, callback = TYPES[type]
 
-      links = page.search(tag).map(&callback).to_a.compact
+      links = page.css(tag).map(&callback).to_a.compact
 
       unless root_is_relative
         links.map! { |link| absolute_uri(url, link) }

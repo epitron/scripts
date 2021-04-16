@@ -116,7 +116,7 @@ $::cfg_path_rpm             = 'rpm';              # rpm program
 $::cfg_path_rpm2cpio        = 'rpm2cpio';         # rpm2cpio program
 $::cfg_path_rzip            = 'rzip';             # rzip program
 $::cfg_path_syscfg          = File::Spec->catfile($::SYSCONFDIR, $::PROGRAM.'.conf');  # system-wide configuration file
-$::cfg_path_tar             = 'tar';              # tar program
+$::cfg_path_tar             = 'bsdtar';           # tar program
 $::cfg_path_unace           = 'unace';            # unace program
 $::cfg_path_unalz           = 'unalz';            # unalz program
 $::cfg_path_unarj           = 'unarj';            # unarj program
@@ -137,9 +137,9 @@ $::cfg_use_file_always      = 0;                  # always use file to identify 
 $::cfg_use_find_cpio_print0 = 1;                  # use -print0/-0 find/cpio options?
 $::cfg_use_gzip_for_z       = 1;                  # use gzip to decompress .Z files?
 $::cfg_use_jar              = 0;                  # use jar or zip for .jar archives?
-$::cfg_use_lbzip2           = 0;                  # use lbzip2 instead of bzip2
-$::cfg_use_pbzip2           = 0;                  # use pbzip2 instead of bzip2
-$::cfg_use_pigz             = 0;                  # use pigz instead of gzip
+$::cfg_use_lbzip2           = 1;                  # use lbzip2 instead of bzip2
+$::cfg_use_pbzip2           = 1;                  # use pbzip2 instead of bzip2
+$::cfg_use_pigz             = 1;                  # use pigz instead of gzip
 $::cfg_use_plzip            = 0;                  # use plzip instead of lzip
 $::cfg_use_rar_for_unpack   = 0;                  # use rar to unpack rar files?
 $::cfg_use_tar_bzip2_option = 1;                  # does tar support --bzip2?
@@ -747,17 +747,23 @@ sub runcmds($$$;@) {
   elsif ($format eq 'rpm') {
     return undef if ($mode eq 'extract' && !defined ($outdir = makeoutdir()));
     if ($mode eq 'list') {
-      push @cmd, $::cfg_path_rpm;
-      push @cmd, '-qlp';
-      push @cmd, '-v' if $::opt_verbosity >= 1;
-      push @cmd, $archive, @args;
-      return multiarchivecmd($archive, $outdir, $mode, 0, 0, \@args, @cmd);
+      # push @cmd, $::cfg_path_rpm;
+      # push @cmd, '-qlp';
+      # push @cmd, '-v' if $::opt_verbosity >= 1;
+      # push @cmd, $archive, @args;
+      # return multiarchivecmd($archive, $outdir, $mode, 0, 0, \@args, @cmd);
+      push @cmd, $::cfg_path_rpm2cpio;
+      push @cmd, makeabsolute($archive);
+      push @cmd, ['|'];
+      push @cmd, $::cfg_path_tar, 'tf', '-', @args;
+      return multiarchivecmd($archive, $outdir, $mode, 0, 1, \@args, @cmd);
     }
     elsif ($mode eq 'extract' || $mode eq 'extract-to') {
       push @cmd, $::cfg_path_rpm2cpio;
       push @cmd, makeabsolute($archive);
       push @cmd, ['|'];
-      push @cmd, $::cfg_path_cpio, '-imd', '--quiet', @args;
+      push @cmd, $::cfg_path_tar, 'xvf', '-', @args;
+      # push @cmd, $::cfg_path_cpio, '-imd', '--quiet', @args;
       return multiarchivecmd($archive, $outdir, $mode, 0, 1, \@args, @cmd);
     }
     else { # add and cat
@@ -1452,7 +1458,7 @@ sub findformat($$) {
     ['tar+lzop',       qr/(\.tar\.lzo|\.tzo)$/],
     ['tar+xz',         qr/(\.tar\.xz|\.txz)$/],
 
-    ['7z',             qr/\.7z$/],
+    ['7z',             qr/\.(7z|iso|wim)$/],
     ['ace',            qr/\.ace$/],
     ['alzip',          qr/\.alz$/],
     ['ar',             qr/\.a$/],
@@ -1476,7 +1482,7 @@ sub findformat($$) {
     ['rzip',           qr/\.rz$/],
     ['tar',            qr/\.tar$/],
     ['xz',             qr/\.xz$/],
-    ['zip',            qr/\.(zip|pk3|epub|apk|xpi)$/],
+    ['zip',            qr/\.(zip|pk3|epub|htmlz|apk|xpi|love|odt|whl|backup|mmap)$/],
   );
 
   if ($manual) {

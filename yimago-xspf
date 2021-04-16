@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+SITE     = "http://mediaradio.com/"
+PLAYLIST = "yimago.xspf"
+
+puts "========================================="
+puts " Yimago Radio Playlist Generator"
+puts "========================================="
+puts
+puts "* Connecting to #{SITE}..."
+
+b    = Browser.new # (cache:true)
+page = b.get(SITE)
+
+puts "* Downloading channels..."
+stations = page.iframes.map do |frame|
+  doc           = frame.click
+
+  name_node     = doc.at("#name")
+  info          = name_node.parent
+  name          = name_node.text
+  url           = info.at("img[src='export.png']").parent["href"]
+  genre_comment = info.children.find {|e| e.comment? and e.text["genre"] }
+  genre         = genre_comment.next_sibling.next_sibling.text.strip
+
+  puts "  |_ #{name} (#{genre})"
+
+  if name["Voltage"]
+    require 'pry';binding.pry
+  end
+
+  OpenStruct.new(
+    url: url,
+    name: name,
+    genre: genre
+  )
+end
+
+
+puts "* Writing to #{PLAYLIST}..."
+
+outfile = open(PLAYLIST, "w")
+
+outfile << %{
+<?xml version="1.0" encoding="UTF-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/">
+  <title>Yimago Radio</title>
+  <trackList>
+}
+
+stations.each do |s|
+  outfile << %{
+    <track>
+      <location>#{s.url}</location>
+      <creator>#{s.name} (#{s.genre})</creator>
+    </track>
+  }
+
+end
+
+outfile << %{
+  </trackList>
+</playlist>
+}
+
+puts "* Done!"

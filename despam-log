@@ -1,0 +1,3 @@
+#!/bin/bash
+zcat "$@" | \
+  grep -viE '(bing|googlebot|baidu|semrush|yandex|ahrefsbot|linkcheck|yisou|mail\.ru|dotbot|seznambot|mj12bot|applebot|coccoc|webeaver|commoncrawl|exabot|7ooo\.ru|changedetection|brandwatch|360spider|gowikibot|ryte\.com|semanticscholar|crawler|alignab|daum\.net|Apache-HttpClient|wp-cron\.php|xmlrpc\.php|wp-login\.php|uptimerobot|/wp-admin/|python-requests|robots\.txt|feedparser|siteimprove|zoominfobot)'

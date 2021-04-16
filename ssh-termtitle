@@ -3,7 +3,7 @@ HOSTNAME="$*"
 
 termtitle "{$HOSTNAME}"
 
-if which autossh > /dev/null
+if which autossh &> /dev/null
 then
   autossh $*
 else

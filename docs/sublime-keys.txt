@@ -1,0 +1,31 @@
+# sublime editing keys
+
+alt-o             = switch between header/c file
+ctrl-0            = focus sidebar
+ctrl-{1..8}       = focus group
+ctrl-shift-{1..8} = move to group
+
+ctrl-k,
+  ctrl-shift-{[,]} = fold/unfold
+  ctrl-{1..9}      = fold by level 
+  ctrl-{0,j}       = unfold all
+  ctrl-k           = delete to end
+  ctrl-BACKSPACE   = delete to beginning
+  ctrl-SPACE       = mark
+  ctrl-a           = select to mark
+  ctrl-w           = delete to mark
+  ctrl-g           = clear mark(s)
+  ctrl-c           = jump to mark
+  ctrl-up          = move current tab to a new pane
+  ctrl-shift-up    = new pane (but don't move)
+
+  ctrl-down        = close tab (same effect as ctrl-w)
+  ctrl-left/right  = group switch back/forward (same effect as switch tab)
+
+
+ctrl-f2       = toggle bookmark 10
+f2            = next bookmark   00
+shift-f2      = prev bookmark   01
+ctrl-shift-f2 = clear bookmarks 11
+
+

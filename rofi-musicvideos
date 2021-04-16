@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+require 'epitools/path'
+
+def names_and_paths(path="~/media/musicvideos")
+  @names_and_paths ||= begin
+    root = Path[path]
+    root.ls_R.
+      select  { |path| path.ext =~ /(mp4|mkv|avi|mpe?g|vob|flv|wmv)/ }.
+      map     { |path| [path.relative_to(root).to_s, path] }.
+      reject  { |rel, path| rel[%r{^(\.Trash|\[featurettes\])}] }.
+      sort_by { |rel, path| rel.downcase }
+  end
+end
+
+output = names_and_paths.sample(10) +  # Put some random vids at the top of the list
+  [["-"*50,nil]] +    # An ASCII separator
+  names_and_paths               # The rest of the movies
+
+path_for = names_and_paths.to_h
+
+choice =
+  IO.popen(%w[rofi -dmenu -i -async-pre-read 0 -p MusicVideo:], "r+") do |f|
+    f.puts output.map(&:first).join("\n")
+    f.close_write
+
+    picked = f.gets.strip
+    path_for[picked]
+  end
+
+exec("mpv", choice.to_s)

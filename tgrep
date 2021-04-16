@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
-require 'epitools'
-require 'bencode'
+gem 'epitools'; require 'epitools'
+gem 'bencode';  require 'bencode'
 
 ##################################################################
 

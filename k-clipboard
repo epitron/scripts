@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+clips = %w[primary clipboard].map { |type| `xclip -o -selection #{type}` }
+
+if clip = clips.find { |c| c[%r{^(https?|plugin):}] }
+  # exec("notify-send", "Sent to kodi:", clip)
+  # exec("#{__dir__}/k", clip)
+  system("notify-send", "Sending to kodi:", clip)
+  exec("#{__dir__}/play", "-k", clip)
+else
+  error_message = "Error: Couldn't find an URL in the clipboard"
+  $stderr.puts error_message
+  exec("notify-send", error_message)
+end

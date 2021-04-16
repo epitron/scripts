@@ -1,7 +1,11 @@
 #!/usr/bin/env ruby
+###################################################
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'epitools'
+require 'mimemagic'
+require 'pathname'
+require 'epitools/colored'
+###################################################
 
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
@@ -14,29 +18,142 @@ def parse_options
   [opts, ARGV]
 end
 
-opts, args = parse_options
+###################################################
+#
+# Prompt the user for confirmation.
+#
+# Usage:
+#   prompt("Do you want a cookie?", "Ynqa") #=> returns the letter that the user pressed, in lowercase (and returns the default, 'y', if the user hits ENTER)
+#
+
+def prompt(message="Are you sure?", options="Yn")
+  opts      = options.scan(/./)
+  optstring = opts.join("/") # case maintained
+  defaults  = opts.select{|o| o.upcase == o }
+  opts      = opts.map{|o| o.downcase}
+
+  raise "Error: Too many default values for the prompt: #{default.inspect}" if defaults.size > 1
+
+  default = defaults.first
+
+  loop do
+
+    print "#{message} (#{optstring}) "
+
+    response = STDIN.gets.strip.downcase
+
+    case response
+    when *opts
+      return response
+    when ""
+      return default.downcase
+    else
+      puts "  |_ Invalid option: #{response.inspect}. Try again."
+    end
+
+  end
+end
 
 ###################################################
 
-def walk(paths, &block)
-  paths.each do |path|
-    if path.dir?
-      walk(path.ls, &block)
-    else
-      yield path
+def skipit?(ext, true_ext, mime)
+  # p [ext, true_ext, mime]
+  true_ext.nil? or
+  (ext == "apk"    and true_ext == "zip") or
+  (ext == "epub"   and true_ext == "zip") or
+  (ext == "mmap"   and true_ext == "zip") or
+  (ext == "backup" and true_ext == "zip") or
+  (ext == "cbr"    and true_ext == "rar") or
+  (ext == "tgz"    and true_ext == "gz") or
+  (ext == "xspf"   and true_ext == "htm") or
+  (ext == "java"   and true_ext == "c") or
+  (ext == "json"   and true_ext == "c") or
+  (ext == "js"     and true_ext == "c") or
+  (ext == "rdf"    and true_ext == "xml") or
+  (ext == "mp4"    and true_ext == "3gpp") or
+  (ext == "m4a"    and true_ext == "mp4") or
+  (ext == "m4a"    and true_ext == "3gpp") or
+  (ext == "docx"   and true_ext == "zip") or
+  (ext == "html"   and true_ext == "xht") or
+  (ext == "xml"    and true_ext == "htm") or
+  (ext == "db"     and true_ext == "sqlite3") or
+  (ext == "htm"    and true_ext == "xht") or
+  (ext == "m4a"    and true_ext == "3ga") or
+  (ext == "dll"    and true_ext == "exe") or
+  (ext == "mhtml"  and true_ext == "eml") or
+  (ext == "sketch" and true_ext == "sqlite3") or
+  (ext == ""       and mime.type =~ /(^application|python3?$)/) or
+  (ext == "run"    and mime.type == "application/x-executable") or
+  (ext == "txt"    and mime.type == "text/html") or
+  (ext =~ /^(pptx|xlsx)$/ and true_ext == "zip") or
+  (ext =~ /^(ppt|pps|xls|doc|msi)$/ and mime.type == "application/x-ole-storage") or
+  false
+end
+
+FIXERS = {
+  # [ current-extension, actual-type ] => proc
+
+  ["mp4", "video/mp2t"]      => proc { |path| convert_to_mp4(path) },
+  ["mp4", "video/quicktime"] => proc { |path| convert_to_mp4(path) },
+}
+
+def convert_to_mp4(path)
+  require 'fileutils'
+
+  tmp = Pathname.new("/tmp/fixing.mp4")
+  cmd  = ["ffmpeg", "-hide_banner", "-y", "-i", path.to_s, "-c", "copy", "-movflags", "faststart", tmp.to_s]
+
+  unless system(*cmd)
+    tmp.unlink if tmp.exist?
+    raise "error!"
+  end
+
+  FileUtils.touch(tmp, mtime: path.mtime)
+  FileUtils.mv(tmp, path)
+
+  path
+end
+
+def fix!(path)
+  mime = path.open { |io| MimeMagic.by_magic(io) }
+  return unless mime
+
+  ext      = path.extname.downcase.gsub(/^\./, '')
+  true_ext = mime.extensions.first
+
+  unless mime.extensions.include?(ext)
+    return if skipit?(ext, true_ext, mime)
+
+    fix_container = FIXERS[[ext, mime]]
+
+    msg = "<8>* <7>\"<14>#{path}<7>\" <7>is actually a <7>\"<11>.#{true_ext}<7>\" <8>(<3>#{mime.type}<8>)<7>; #{fix_container ? "fix container" : "rename"}?".colorize
+
+    if prompt(msg) == "y"
+      if fix_container
+        newpath = fix_container[path]
+        puts "  <8>|_ <7>fixed container: <10>#{newpath}".colorize
+      else
+        newpath = path.sub_ext(".#{true_ext}")
+        puts "  <8>|_ <7>renamed: <10>#{newpath}".colorize
+        path.rename(newpath)
+      end
     end
   end
 end
 
-paths = args.map(&:to_Path)
+###################################################
 
-walk(paths) do |path|
-  ext = path.mimetype_from_ext 
-  magic = path.magic
+opts, args = parse_options
+args << "." if args.empty?
 
-  if ext != magic
-    puts "* #{path}"
-    puts "  - ext: #{ext}"
-    puts "  - magic: #{magic}"
+paths = args.map { |arg| Pathname.new(arg) }
+
+paths.each do |path|
+  p path
+  if path.directory?
+    puts "Scanning #{path.to_s == "." ? "current directory" : path.inspect }"
+    path.find { |entry| fix!(entry) if entry.file? and not entry.dirname.to_s[%r{(^|/)\.git(/|$)}] }
+  else
+    fix!(path)
   end
 end

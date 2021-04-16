@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require 'open-uri'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: spotify-info [options] <spotify url(s)>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+# args << "https://open.spotify.com/track/0cCYkGYSndtiSYnBUkJ2iU?si=YS-wwAJlRWmzpox7FncQnQ" if args.empty?
+
+########################################################
+
+def parse_json(json)
+  case json["type"]
+  when "track"
+    {
+      title:       json["name"],
+      artist:      json["artists"].map { |i| i["name"] }.join(", "),
+      album:       json["album"]["name"],
+      thumbnail:   json["album"]["images"].sort_by { |i| i["height"] }.last["url"],
+      length:      json["duration_ms"].to_i / 1000.0,
+      preview_url: json["preview_url"],
+    }
+  when "album"
+    {
+
+    }
+  end
+end
+
+b = Browser.new(cache: true)
+
+args.each do |arg|
+
+  page = b.get(arg)
+  js   = page.search("script").find { |e| e.text["Spotify.Entity"] }.text
+
+  if js =~ /Spotify\.Entity = ({.+});\s+\Z/
+    json = JSON.parse($1)
+  else
+    raise "Error: Couldn't find JSON"
+  end
+
+  info = parse_json(json)
+
+  pp [arg, info]
+
+end
+
+# require 'pry'; binding.pry

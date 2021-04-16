@@ -1,7 +1,13 @@
 #!/usr/bin/env ruby
 require 'epitools/path'
+require 'epitools/clitools'
 
 media_dirs = %w[~/m/movies ~/m/documentaries]
+
+progress_notification = Thread.new do
+  sleep 2
+  notify_send("Looking through the movies...")
+end
 
 paths = media_dirs.flat_map do |media_dir|
           root = Path[media_dir]
@@ -18,6 +24,8 @@ paths =
   paths               # The rest of the movies
 
 path_lookup_table = paths.to_h
+
+progress_notification.terminate
 
 path =
   IO.popen(%w[rofi -dmenu -i -async-pre-read 0 -p Movie:], "r+") do |f|

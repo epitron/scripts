@@ -8,7 +8,7 @@
 # - Fuzzy matching when script isn't found
 #######################################################################
 
-def root?
+def running_as_root?
   Process.uid == 0
 end
 
@@ -16,9 +16,11 @@ end
 
 class Systemd
 
-  def initialize(user=false)
-    @user = user
+  def initialize(user_mode=false)
+    @user_mode = user_mode
   end
+
+  def user_mode?; @user_mode; end
 
   def self.detected?
     system("pidof systemd > /dev/null")
@@ -27,11 +29,15 @@ class Systemd
   def systemctl(*args)
     opts = args.last.is_a?(Hash) ? args.pop : {}
 
-    if @user
-      cmd = %w[systemctl --user]
-    else
-      cmd = root? ? %w[systemctl] : %w[sudo systemctl]
-    end
+    cmd = if user_mode?
+            %w[systemctl --user]
+          else
+            if running_as_root? or !opts[:sudo]
+              %w[systemctl]
+            else
+              %w[sudo systemctl]
+            end
+          end
 
     cmd += args
 
@@ -46,16 +52,24 @@ class Systemd
   def services
     # lines = `systemctl --all -t service`.lines.map(&:strip)[1..-1].split_before{|l| l.blank? }.first
     # lines.map { |line| line.split.first.gsub(/\.service$/, "") }.reject { |s| s[/^(systemd-|console-kit|dbus-org)/] or s[/@$/] }
-    systemctl("list-unit-files", msg: "Units")
+    systemctl("list-unit-files", msg: "Units", sudo: false)
+  end
+
+  def search(query)
+    systemctl("list-unit-files", query, msg: "Searching for: #{query}")
   end
 
   def reload
-    systemctl("daemon-reload", msg: "Reloading")
+    systemctl("daemon-reload", msg: "Reloading systemd configuration")
+  end
+
+  def reexec
+    systemctl("daemon-reexec", msg: "Reexecuting systemd")
   end
 
   # "command1>command2" means to call command2 whenever command1 is called
   # something starting with a ":" means to call a method
-  %w[start>status stop>status restart>status disable>stop enable>:start mask>status unmask>status].each do |command|
+  %w[start>status stop>status restart>status disable>stop enable>:start mask>stop>status unmask>status].each do |command|
     commands = command.split(">")
 
     define_method commands.first do |service|
@@ -94,10 +108,6 @@ class Systemd
     services
   end
 
-  def search(query)
-    raise "Search not implemented for systemd."
-  end
-
   def default_command(service)
     status(service, 33)
   end
@@ -125,7 +135,72 @@ class Initd
 
   def run(service, command)
     cmd = ["#{@initdir}/#{service}", command]
-    cmd = ["sudo", *cmd] unless root?
+    cmd = ["sudo", *cmd] unless running_as_root?
+    system *cmd
+  end
+
+  def start(service)
+    run(service, "start")
+  end
+
+  def stop(service)
+    run(service, "stop")
+  end
+
+  def restart(service)
+    run(service, "restart")
+  end
+
+  def search(query)
+    require 'epitools'
+
+    regexp = Regexp.new(query)
+
+    puts "Services (search query: /#{regexp}/):"
+    puts "================================================="
+
+    highlighted = services.map { |s| s.highlight(query) if query =~ s }.compact
+
+    puts Term::Table.new(highlighted, :ansi=>true).by_columns
+  end
+
+  def default
+    require 'epitools'
+
+    puts "Services:"
+    puts "============================="
+
+    puts Term::Table.new(services).by_columns
+  end
+
+  def default_command(service)
+    restart(service)
+  end
+
+end
+
+#######################################################################
+
+class Runit
+
+  def initialize
+    @initdir = %w[
+      /etc/init.d
+      /etc/rc.d
+    ].find {|dir| File.directory? dir }
+  end
+
+  def services
+    Path["#{@initdir}/*"].map(&:filename).compact.sort
+  end
+
+  def reload
+    puts "Reload not needed for init.d"
+  end
+
+  def run(service, command)
+    cmd = ["#{@initdir}/#{service}", command]
+    cmd = ["sudo", *cmd] unless running_as_root?
     system *cmd
   end
 
@@ -171,29 +246,20 @@ end
 
 args = ARGV
 
-
 if Systemd.detected?
   manager = Systemd.new( args.delete("--user") )
 else
   manager = Initd.new
 end
 
-
+# Parse args
 if args.empty? # No args
-
   manager.default
-
 elsif args.any? { |arg| ["reload", "daemon-reload"].include? arg }
-
   manager.reload
-
 elsif args.first =~ %r{/(.+?)/}
-
-  query = Regexp.new($1)
-  manager.search(query)
-
+  manager.search($1)
 else
-
   case args.size
   when 2
     service, command = args
@@ -202,5 +268,4 @@ else
   end
 
   manager.send(command, service)
-
 end

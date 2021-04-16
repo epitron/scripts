@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# https://stackoverflow.com/questions/23850499/how-to-move-or-resize-x11-windows-even-if-they-are-maximized
+
+# # move a window even if it's maximized
+# wmctrl -i -r $WID -b remove,maximized_vert,maximized_horz
+# xdotool windowunmap --sync $WID
+# xdotool windowmap   --sync $WID
+# wmctrl -i -r $WID -e 0,$x,$y,$width,$height
+
+# -r <WIN> -b <STARG>
+#   Change the state of the window. Using this option it's
+#   possible for example to make the window maximized,
+#   minimized or fullscreen. The format of the <STARG>
+#   argument and list of possible states is given below.
+
+#   <STARG>
+#     Specifies a change to the state of the window
+#     by the means of _NET_WM_STATE request.
+#     This option allows two properties to be changed
+#     simultaneously, specifically to allow both
+#     horizontal and vertical maximization to be
+#     altered together.
+
+#     The format of the argument is:
+
+#     (remove|add|toggle),<PROP1>[,<PROP2>]
+
+#     The EWMH specification defines the
+#     following properties:
+
+#       modal, sticky, maximized_vert, maximized_horz,
+#       shaded, skip_taskbar, skip_pager, hidden,
+#       fullscreen, above, below
+
+
+
+
+if [ "$1" == "" ]; then
+  echo "usage: move-window-to <x> <y>"
+  exit 1
+fi
+
+xdotool getactivewindow windowmove $1 $2

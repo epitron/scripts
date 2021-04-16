@@ -1,0 +1,1 @@
+firejail --private --private-tmp --private-dev --noroot -caps.drop=all --netfilter=/etc/firejail/nolocal.net --dns=0.0.0.0 ssh -T "$@"

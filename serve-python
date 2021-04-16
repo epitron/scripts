@@ -1,0 +1,7 @@
+if [ "$1" == "" ]; then
+  PORT="8888"
+else
+  PORT="$1"
+fi
+
+python -m http.server "$PORT"

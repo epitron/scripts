@@ -1,11 +1,16 @@
 unalias rm
 unalias dpkg
 
+alias dl='cd ~/dl'
+alias s='cd ~/sd'
+alias n='cd ~/n'
+alias sd=s
+alias misc='cd ~/misc'
+
 alias ai="apt install"
 alias as="apt search"
 alias ar="apt remove"
 alias au="apt update && apt upgrade"
-alias al="apt list"
 alias agdu="au"
 
 alias agar="apt-get autoremove"

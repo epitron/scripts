@@ -1,0 +1,18 @@
+#
+# Purpose:
+#   Attach to a running tmux session at login.
+#
+# Usage:
+#   Source this script as the last line in your ~/.profile or ~/.bash_profile
+#
+# (Warning: If it's not the last line, it might cause problems.)
+#
+
+if [ "$SSH_CONNECTION" != "" ] && [ "$TMUX" == "" ]; then
+  if tmux ls &> /dev/null; then
+    tmux att
+  else
+    tmux
+  fi
+fi
+

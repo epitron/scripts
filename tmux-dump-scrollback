@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# tmux capture-pane [option]s:
+#   -p = stdout
+#   -e = escape sequences
+#   -S = starting line
+#
+# to capture directly from a window, do:
+#   Ctrl-a, :
+#     capture-pane -e -S -1000000
+#   Ctrl-a, :
+#     save-buffer tmux.log
+
+if [ "$1" == "" ]; then
+  tmux capture-pane -pe -S -1000000
+else
+  if [ "$1" == "--help" ]; then
+    echo "usage: tmux-dump-scrollback [<target pane>]"
+    exit 1
+  else
+    tmux capture-pane -pe -S -1000000 -t "$1"
+  fi
+fi

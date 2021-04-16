@@ -2,10 +2,13 @@
 require 'epitools'
 require 'open-uri'
 
-query = ARGV.join(" ")
-result = open("http://api.duckduckgo.com/?q=#{query.urlencode}&format=json&pretty=1").read.from_json
+query = ARGV.join("+")
+uri = "http://api.duckduckgo.com/?q=#{query.urlencode}&format=json"
+result = open(uri).read.from_json
 
 lesspipe(wrap: true) do |less|
+  less.puts uri
+  less.puts result
 
   def puts_if(thing)
     less.puts thing if thing

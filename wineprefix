@@ -31,7 +31,11 @@ fi
 export WINEPREFIX="$PREFIX"
 
 if [ "$1" == "winecfg" ]; then
-  winecfg
+  shift
+  winecfg "$@"
+elif [ "$1" == "winetricks" ]; then
+  shift
+  winetricks "$@"
 else
-  wine $@
+  wine "$@"
 fi

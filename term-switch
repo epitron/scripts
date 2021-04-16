@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+terminal_names = ["xfce4-terminal", "termite"]
+
+terms = WM.current_desktop.windows.select { |w| terminal_names.any? { |t| w.command&.split&.first&.[](t) } }
+
+if terms.any?
+  term = terms.first
+  term.activate!
+  system("xdotool", "key", "ctrl+shift+t")
+
+  # term.send_keys("<Ctrl-Shift-T>")
+  # system("xdotool", "windowactivate", "--sync", term.window_id)
+  # system("xdotool", "key", "--window", term.window_id, "ctrl+shift+t")
+  # system("xdotool", "key", "ctrl+shift+t")
+  # system("xdotool", "type", "--window", term.window_id, "hello there!")
+else
+  fork { exec("term") }
+end

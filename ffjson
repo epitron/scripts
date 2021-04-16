@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+require 'json'
+require 'epitools'
+
+cmd = %w[ffprobe -v quiet -print_format json -show_format -show_streams]
+
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+args.each do |arg|
+  puts "<8>=== <14>#{arg} <8>=========".colorize
+
+  json = JSON.parse IO.popen(cmd + [arg], &:read)
+  streams, format = json.values_at("streams", "format")
+
+  streams = streams.map do |stream|
+    template = {
+      index: :index,
+      codec: :codec,
+      bitrate: :bit_rate,
+
+    codec,stream.values_at("index", "codec_name", "bit_rate", "duration", "codec_type", "codec_long_name")
+  end
+
+  tags = format["tags"]
+
+  streams.each do |s|
+    puts "Stream ##{s["index"]}:"
+    s.each do |k,v|
+      puts "  #{k}: #{v}"
+    end
+  end
+
+  pp tags
+end
+
+
+  # {
+  #     "format": {
+  #         "filename": "14-paco_de_lucia_-_la_nina_de_puerta_oscura-irf.mp3",
+  #         "nb_streams": 1,
+  #         "nb_programs": 0,
+  #         "format_name": "mp3",
+  #         "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+  #         "start_time": "0.025057",
+  #         "duration": "178.834286",
+  #         "size": "5747373",
+  #         "bit_rate": "257103",
+  #         "probe_score": 51,
+  #         "tags": {
+  #             "title": "La Nina de Puerta Oscura",
+  #             "artist": "Paco de Lucia",
+  #             "album": "The Life Aquatic with Steve Zi",
+  #             "date": "2004",
+  #             "comment": "iRF!!",
+  #             "genre": "Soundtrack"
+  #         }
+  #     }
+  #     "streams": [
+  #         {
+  #             "index": 0,
+  #             "codec_name": "mp3",
+  #             "codec_long_name": "MP3 (MPEG audio layer 3)",
+  #             "codec_type": "audio",
+  #             "codec_time_base": "1/44100",
+  #             "codec_tag_string": "[0][0][0][0]",
+  #             "codec_tag": "0x0000",
+  #             "sample_fmt": "fltp",
+  #             "sample_rate": "44100",
+  #             "channels": 2,
+  #             "channel_layout": "stereo",
+  #             "bits_per_sample": 0,
+  #             "r_frame_rate": "0/0",
+  #             "avg_frame_rate": "0/0",
+  #             "time_base": "1/14112000",
+  #             "start_pts": 353600,
+  #             "start_time": "0.025057",
+  #             "duration_ts": 2523709440,
+  #             "duration": "178.834286",
+  #             "bit_rate": "257095",
+  #             "disposition": {
+  #                 "default": 0,
+  #                 "dub": 0,
+  #                 "original": 0,
+  #                 "comment": 0,
+  #                 "lyrics": 0,
+  #                 "karaoke": 0,
+  #                 "forced": 0,
+  #                 "hearing_impaired": 0,
+  #                 "visual_impaired": 0,
+  #                 "clean_effects": 0,
+  #                 "attached_pic": 0,
+  #                 "timed_thumbnails": 0
+  #             },
+  #             "tags": {
+  #                 "encoder": "LAME3.90."
+  #             }
+  #         }
+  #     ],
+  # }

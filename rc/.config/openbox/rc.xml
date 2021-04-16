@@ -286,6 +286,16 @@ cases. -->
         </startupnotify>
       </action>
     </keybind>
+    <keybind key="C-S-Insert">
+      <action name="Execute">
+        <!-- <command>sh -c 'xdotool type - -clearmodifiers - - "`xsel`"'</command> -->
+        <command>xdotool click 2</command>
+        <startupnotify>
+          <enabled>yes</enabled>
+          <name>dmenu</name>
+        </startupnotify>
+      </action>
+    </keybind>
     <keybind key="A-Escape">
       <action name="Lower"/>
       <action name="FocusToBottom"/>
@@ -310,16 +320,16 @@ cases. -->
     </keybind>
     <keybind key="W-w">
       <action name="Execute">
-        <command>web-clipboard</command>
+        <command>dillo</command>
         <startupnotify>
           <enabled>yes</enabled>
-          <name>Web Browser</name>
+          <name>Dillo</name>
         </startupnotify>
       </action>
     </keybind>
     <keybind key="W-f">
       <action name="Execute">
-        <command>lxterminal</command>
+        <command>termite</command>
         <startupnotify>
           <enabled>yes</enabled>
           <name>terminal</name>

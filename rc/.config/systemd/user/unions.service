@@ -1,0 +1,11 @@
+[Unit]
+Description=Union mounts
+
+[Service]
+ExecStart=%h/scripts/unions
+ExecStop=%h/scripts/unions -u
+RemainAfterExit=yes
+WorkingDirectory=%h
+
+[Install]
+WantedBy=default.target

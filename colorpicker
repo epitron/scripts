@@ -1,0 +1,7 @@
+#!/bin/bash
+color=`yad --color 2>/dev/null`
+
+notify-send "Selected color:" "$color (Copied to clipboard)"
+echo "Selected color: $color (Copied to clipboard)"
+
+echo "$color" | xclip -i -selection clipboard

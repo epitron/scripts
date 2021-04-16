@@ -9,18 +9,33 @@ source "$SCRIPTDIR/aliases.sh"
 
 ## Environment Variables
 
-# Push a directory onto the path (if it exists)
+# "cd <somedir>" will try to "cd <somedir>" in the current directory, but if <somedir> doesn't exist, it'll try "cd ~/<somedir>"
+export CDPATH=:~
+
+# Prepend a directory to the path (if it exists)
 function possibly_prepend_path() {
   if [ -d "$@" ]; then
     export PATH="$@:$PATH"
   fi
 }
 
+# Append a directory to the path (if it exists)
+function possibly_append_path() {
+  if [ -d "$@" ]; then
+    export PATH="$PATH:$@"
+  fi
+}
+
 # Things for the PATH (in reverse order of precedence)
+possibly_append_path ~/opt/graal/bin
+possibly_prepend_path ~/.fzf/bin
+possibly_prepend_path ~/perl5/bin
 possibly_prepend_path ~/.nimble/bin
+possibly_prepend_path ~/.pub-cache/bin
 possibly_prepend_path ~/.luarocks/bin
 possibly_prepend_path ~/node_modules/.bin
 possibly_prepend_path ~/.cabal/bin
+possibly_prepend_path ~/.cargo/bin
 possibly_prepend_path ~/go/bin
 for i in ~/.gem/ruby/*/bin; do
   possibly_prepend_path $i
@@ -39,16 +54,33 @@ export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
 export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
 export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
+# bat-man
+if we_have bat; then
+  export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+fi
+
 # fzf
-if we_have fzf; then
+if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   if we_have bfs; then
     export FZF_DEFAULT_COMMAND="bfs -color"
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
     export FZF_DEFAULT_OPTS="--ansi"
   fi
 
-  . /usr/share/fzf/completion.bash
-  . /usr/share/fzf/key-bindings.bash
+  _fzf_loaded=false
+  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell; do
+    if [ "$_fzf_loaded" == "false" ]; then
+      if [ -f "$i/completion.bash" ]; then
+        . $i/completion.bash
+        . $i/key-bindings.bash
+        _fzf_loaded=true
+      fi
+    fi
+  done
+
+  if [ "$_fzf_loaded" == "false" ]; then
+    echo "can't find fzf's bash scripts"
+  fi
 fi
 
 # misc
@@ -68,14 +100,37 @@ if [ -f /proc/cpuinfo ]; then
   export MAKEFLAGS="$MAKEOPTS"
 fi
 
-# Enable recursive glob (eg: **/*.txt)
-shopt -s globstar > /dev/null 2>&1
+# Don't put duplicate lines or lines starting with space in the history
+export HISTCONTROL=ignoreboth
 
-# make readline know that the window has resized
+## Bash options
+
+# Check the window size after every command and update LINES and COLUMNS (fixes readline misbehaviour)
 shopt -s checkwinsize
 
 # Verify ! history expansions
 shopt -s histverify
+
+# Append to the Bash history file, rather than overwriting it
+shopt -s histappend
+
+# disable history subtitution (able to use "!" without escaping it)
+set +H
+
+# Case-insensitive globbing (used in pathname expansion)
+# shopt -s nocaseglob
+
+# Autocorrect typos in path names when using `cd`
+# shopt -s cdspell
+
+
+## Bash >= 4 options
+
+# Enable recursive glob (eg: **/*.txt)
+shopt -s globstar 2> /dev/null
+
+# `autocd`, e.g. `**/qux` will enter `./foo/bar/baz/qux`
+shopt -s autocd 2> /dev/null
 
 
 ## Platform-specific customizations
@@ -92,7 +147,7 @@ case $(uname -s) in
 esac
 
 
-case $(uname -o) in
+case $(uname -o 2&> /dev/null) in
   Android)
     . $SCRIPTDIR/bashrc.android
     ;;

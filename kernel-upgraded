@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+running = `uname -r`.strip
+package = "linux"
+
+if running =~ /(.+)-([a-z]+)$/
+  running = $1
+  package += "-#{$2}"
+end
+
+
+installed = `pacman -Qi #{package}`.each_line.grep(/Version/).first.strip.split(/\s+:\s+/).last
+
+puts
+puts "   Kernel: #{package}"
+puts "  Running: #{running}"
+puts "Installed: #{installed}"
+puts
+
+if installed == running
+  puts "\e[32m\e[1mEverything is fine.\e[0m"
+else
+  puts "\e[31m\e[1mYou better reboot!\e[0m"
+end
+
+puts

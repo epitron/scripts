@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+  DIR="."
+else
+  DIR="$@"
+fi
+
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+darkhttpd "$DIR" --port 8888 --mimetypes $SCRIPTDIR/darkhttpd.mimetypes
+

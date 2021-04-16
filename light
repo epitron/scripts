@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: light <backlight brightness, 0-100>"
+  exit 1
+fi
+
+xbacklight -set "$@"

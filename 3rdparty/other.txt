@@ -1,0 +1,6 @@
+git clone --depth=1 https://github.com/junegunn/fzf.git ~/.fzf ; ~/.fzf/install
+https://github.com/pyllyukko/user.js
+https://github.com/Kapeli/cheatsheets
+https://github.com/bigH/git-fuzzy
+https://github.com/boomlinde/gemini.filter.dpi
+

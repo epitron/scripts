@@ -1,0 +1,9 @@
+[Unit]
+Description=kiwix
+
+[Service]
+# NOTE: To create the `library.xml` file, run: `kiwix-manage library.xml add content/*.zim`
+ExecStart=/usr/bin/kiwix-serve --port=5555 -z --library %h/kiwix-data/library.xml
+
+[Install]
+WantedBy=default.target

@@ -123,7 +123,7 @@ unless defined? Rails
     end
 
     command "pwd" do
-      puts Dir.pwd.split("/").map{|s| text.bright_green s}.join(text.grey "/")
+      puts Dir.pwd.split("/").map{|s| bright_green s}.join(grey "/")
     end
 
     #alias_command "gems", "gem-list"
@@ -134,7 +134,7 @@ unless defined? Rails
       cmd = ["gem"] + args
       cmd.unshift "sudo" unless File.writable?(gem_home)
 
-      output.puts "Executing: #{text.bright_yellow cmd.join(' ')}"
+      output.puts "Executing: #{bright_yellow cmd.join(' ')}"
       if system(*cmd)
         Gem.refresh
         output.puts "Refreshed gem cache."
@@ -177,11 +177,11 @@ unless defined? Rails
           before_modules = ObjectSpace.each_object(Module).to_a
 
           if require gem
-            output.puts "#{text.bright_yellow(gem)} loaded"
+            output.puts "#{bright_yellow(gem)} loaded"
             loaded_modules = ObjectSpace.each_object(Module).to_a - before_modules
             print_module_tree(loaded_modules)
           else
-            output.puts "#{text.bright_white(gem)} already loaded"
+            output.puts "#{bright_white(gem)} already loaded"
           end
 
         # rescue LoadError => e

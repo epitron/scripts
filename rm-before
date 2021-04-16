@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: rm-before [options] <file>"
+
+  # on "r",  "recursive",  "Remove directories too"
+  on "i",  "inclusive",  "Include the cutoff file (default: no)"
+end
+
+args = ARGV
+
+########################################################
+if args.empty?
+  puts "Error: must specify a file for the cutoff"
+  puts
+  puts opts
+  exit 1
+end
+
+if args.size > 1
+  puts "Error: Too many files supplied. Can only cut at one point!"
+  exit 1
+end
+
+cutfile     = Path[args.first]
+files       = cutfile.parent.ls_files.sort_by(&:mtime)
+
+cutpoint    = files.index(cutfile)
+to_delete   = files[opts.inclusive? ? 0..cutpoint : 0...cutpoint]
+to_keep     = files - to_delete
+
+delete_size = to_delete.sum(&:size)
+keep_size   = to_keep.sum(&:size)
+
+deleter     = which("trsh", "rm")
+
+puts "Files before #{cutfile}:"
+to_delete.each { |path| puts path }
+puts
+puts "Deleting: #{to_delete.size} files, #{delete_size.commatize} bytes"
+puts " Keeping: #{to_keep.size} files, #{keep_size.commatize} bytes"
+puts
+
+if prompt("is ok?", "Ny") == "y"
+  system(deleter, *to_delete)
+  puts "it is done"
+else
+  puts "sorry"
+end

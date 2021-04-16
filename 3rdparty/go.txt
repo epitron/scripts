@@ -1,0 +1,16 @@
+github.com/boyter/scc
+github.com/github/hub
+github.com/caddyserver/caddy/caddy
+github.com/eliukblau/pixterm
+github.com/allinurl/goaccess
+github.com/rylio/ytdl
+github.com/diamondburned/gtkcord3
+github.com/diamondburned/discordlogin
+github.com/xxxserxxx/gotop/cmd/gotop
+github.com/42wim/matterbridge
+github.com/Bios-Marcel/cordless
+github.com/prologic/gopherproxy/...
+tailscale.com/cmd/tailscale
+tailscale.com/cmd/tailscaled
+https://git.scuttlebot.io/%25C35b%2BMlZ%2Fy5TT1e7SG66eNKEIdX5DRl9PRUxbhvO89k%3D.sha256 dillo-ipfs
+github.com/FiloSottile/age # modern crypto command-line tool

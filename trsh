@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 ##############################################################################
 #			           TRSH 3.x                                  #
@@ -35,7 +35,7 @@ use strict;
 use warnings;
 use File::Basename;
 use File::Spec;
-use Cwd 'abs_path'; 
+use Cwd 'abs_path';
 use Getopt::Long;
 use Fcntl;
 use Term::ANSIColor;
@@ -164,7 +164,7 @@ my %TypeColors;
 my %AttrColors;
 my %SystemDevices;
 
-# Constants 
+# Constants
 my $ListNameWidthPerc = 25;
 my $ListDateWidthPerc = 25;
 my $ListSizeWidthPerc = 10;
@@ -454,9 +454,9 @@ sub DeleteFile($)
 	}
 
 	PutTrashinfo({
-			PATH=>$path, 
-			DATE=>$Session{CurrentDate}, 
-			NAME=>$name, 
+			PATH=>$path,
+			DATE=>$Session{CurrentDate},
+			NAME=>$name,
 			TRASH=>$trsh });
 
 	print "Deleted: `$path'\n" if($OptionVerbose > 0);
@@ -591,7 +591,7 @@ sub SizeColor($)
 sub GetTrashSize($)
 {
 	my $trash_path	=	shift;
-	
+
 	my $calculate_trash = 0;
 
 	my $sz = "";
@@ -830,7 +830,7 @@ sub GetTrashinfo($)
 		if($line =~ /^DeletionDate=(.+)$/) {
 			my $date = $1;
 			if(not defined($ret{DATE})) {
-				$ret{DATE} = $date;		
+				$ret{DATE} = $date;
 			}
 		}
 	}
@@ -1046,7 +1046,7 @@ sub InDir($$)
 sub GetDeviceList()
 {
 	my $df = Df();
-	
+
 	foreach my $e (keys %{$df}) {
 		my $mnt = $df->{$e}->{'Mount'};
 		# Do not count mounts which are not writable.
@@ -1089,7 +1089,7 @@ sub SetEnvirnment()
 
 	Getopt::Long::Configure('bundling');
 
-	GetOptions( 
+	GetOptions(
 			'e|empty'	  => \$OptionEmpty,
 			'l|list'	  => \$OptionList,
 			'f|force+'	  => \$OptionForce,
@@ -1182,7 +1182,7 @@ DEBUG
 	foreach my $dev (sort keys %SystemDevices) {
 		my $trsh = GetTrashDir("$dev/TEST");
 		print "\tDEVICE PATH: \"$dev\" TRASH PATH: \"$trsh\"\n";
-		
+
 	}
 	exit;
 }
@@ -1212,7 +1212,7 @@ rm FILES just moves FILES to the trash. By default, directories are not deleted.
 OPTIONS:
 
 -u|--undo [FILES]
-Undo's a delete (Restores FILES or files matching REGEX from trash). 
+Undo's a delete (Restores FILES or files matching REGEX from trash).
 Without arguments, the latest deleted file is restored.
 
 -p|--permanent FILES
@@ -1256,7 +1256,7 @@ Considers all parameters (All uses) as perl regexes. So you can delete, undo or 
 using perl's extensive regex.
 
 -s|--size
-Display the size in bytes of the trash. 
+Display the size in bytes of the trash.
 If used along with -l, the trash listing will also display each file's size.
 
 -h|--human-readable
@@ -1276,7 +1276,7 @@ exit;
 #		    Coloring and Printing Functions                          #
 ##############################################################################
 
-sub PrintColored($$) 
+sub PrintColored($$)
 {
 	my $string	=	shift;
 	my $col		=	shift;
@@ -1773,7 +1773,7 @@ sub Date2Days($)
 		$days += $days_month{$i};
 	}
 	$days += $date->{DATE};
-	
+
 	return $days - 1;
 }
 sub Year2Days($)

@@ -1,10 +1,12 @@
 unalias rm
-unalias pacs
-alias pacu="pkg upgrade"
+unalias diff
+unalias lsblk
 
-if which gnuls > /dev/null
-then
-  alias ls="gnuls --color=auto"
+alias pacu='pkg upgrade'
+if which gnuls > /dev/null; then
+  alias ls='gnuls --color=auto'
+elif which exa > /dev/null; then
+  alias ls=exa
 else
   alias ls='ls -G'
 fi

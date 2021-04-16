@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+############################################################################
+import sys
+import isoparser
+import datetime
+############################################################################
+
+def format_date(node):
+  return datetime.datetime.fromisoformat(node.datetime).strftime("%Y-%m-%d %I:%M:%S%p")
+
+############################################################################
+
+def print_isotree(node, parent=""):
+  current_dir = parent + node.name.decode() + "/"
+
+  for child in node.children:
+    path = current_dir + child.name.decode()
+    if child.is_directory:
+      path += "/"
+      size = "<DIR>"
+    else:
+      size = child.length
+
+    date = format_date(node)
+
+    print("%s %10s %s" % (date, size, path))
+
+    if child.is_directory:
+      print_isotree(child, parent=current_dir)
+
+############################################################################
+
+args = sys.argv[1:]
+
+if (len(args) != 1) or ("--help" in args):
+  print("usage: lsiso <iso file>")
+  sys.exit(1)
+
+arg = args[0]
+iso = isoparser.parse(arg)
+print_isotree(iso.root)

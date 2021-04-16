@@ -1,13 +1,14 @@
 #!/usr/bin/env ruby
 ##############################################################################
 #
-# SuperCat! Print every file format, in beautiful ansi colour!
+# StarCat (aka. *cat) -- print every file format, in beautiful ANSI colour!
 #
 # Optional dependencies:
 #
 #   ruby gems:
 #     redcloth (for markdown)
 #     nokogiri (for wikidumps)
+#     rougify (for source code)
 #
 #   python packages:
 #     pygments
@@ -18,6 +19,15 @@
 #
 #
 # TODOs:
+#   * If 'file' isn't installed, fall back to using the file extension, or the mime_magic gem
+#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
+#     |_ all methods take a Pathname or String or Enumerable
+#     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
+#     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
+#   * Auto-install gems/pips/packages required to view a file
+#   * Live filtering (grep within output chunks, but retain headers; retain some context?)
+#   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
+#   * "--summary" option to only print basic information about each file
 #   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
 #   * Follow symlinks by default
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
@@ -26,9 +36,6 @@
 #   * Add gem/program dependencies to functions (using a DSL)
 #     |_ "install all dependencies" can use it
 #     |_ error/warning when dependency isn't installed, plus a fallback codepath
-#   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
-#     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
-#     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Fix "magic" (use hex viewer when format isn't recognized)
 #   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
 #
@@ -36,16 +43,19 @@
 require 'pathname'
 require 'coderay'
 require 'coderay_bash'
+require 'set'
 ##############################################################################
 
 def pygmentize(lexer=nil, style="native", formatter="terminal256")
+  #depends bins: "pygments"
+
   # Commandline options: https://www.complang.tuwien.ac.at/doc/python-pygments/cmdline.html
   #       Style gallery: https://help.farbox.com/pygments.html
   #                     (good ones: monokai, native, emacs)
   cmd = [
     "pygmentize",
     "-O", "style=#{style}",
-    "-f", formatter,
+   "-f", formatter,
   ]
   cmd += ["-l", lexer] if lexer
 
@@ -53,9 +63,84 @@ def pygmentize(lexer=nil, style="native", formatter="terminal256")
 end
 
 def rougify(lexer=nil)
+  # themes:   molokai  monokai.sublime   base16.solarized.dark   base16.dark   thankful_eyes
+  #depends gem: "rouge"
+  # TODO: fix this `cmd` mess so that the dependency check happens once the filetype has been identified
+
   cmd = ["rougify"]
-  cmd += ["-l", lexer] if lexer
+  cmd += ["-t", "base16.dark"]
+  # cmd += ["-t", "monokai.sublime"]
+  # cmd += ["-t", "molokai"]
+  # cmd += ["-t", "base16.solarized.dark"]
+  cmd += ["-l", lexer.to_s] if lexer
   cmd
+end
+
+
+def render_rouge(input, lexer=nil, theme="base16.dark")
+  depends gem: "rouge"
+  require 'rouge'
+
+  if input.is_a?(Pathname)
+    lexer  = Rouge::Lexer.guess(filename: input.to_s) # options: filename:, source:, mimetype:
+    source = input.read
+  else
+    lexer  = Rouge::Lexer.find(lexer)
+    source = input
+  end
+
+  return source if lexer.nil?
+
+  formatter = Rouge::Formatters::Terminal256.new(theme: Rouge::Theme.find(theme))
+  formatter.format(lexer.lex(source))
+end
+
+def render_pandoc(input, from=nil, to=nil)
+  depends bin: "pandoc"
+
+  source = input.to_source
+  cmd    = ["pandoc", "-f", from, "-t", to]
+
+  IO.popen(cmd, "w+") do |io|
+    io.puts source
+    io.close_write
+    io.read
+  end
+end
+
+def which(cmd)
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exe = File.join(path, cmd)
+    return exe if File.executable? exe
+  end
+  nil
+end
+
+class MissingDependency < Exception; end
+
+def depends(bin: nil, bins: [], gem: nil, gems: [])
+  gems = [gems].flatten
+  bins = [bins].flatten
+  bins << bin if bin
+  gems << gem if gem
+  missing = (
+    bins.map { |bin| [:bin, bin] unless which(bin) } +
+    gems.map do |g|
+      begin
+        gem(g)
+        nil
+      rescue Gem::MissingSpecError => e
+        [:gem, g]
+      end
+    end
+  ).compact
+
+  if missing.any?
+    msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}"
+    raise MissingDependency.new(msg)
+    # $stderr.puts msg
+    # exit 1
+  end
 end
 
 # def bat(lexer=nil)
@@ -64,62 +149,186 @@ end
 #   cmd
 # end
 
-### Converters ###############################################################
-
-# NOTE: Defaults to 'coderay'
+### Special-case Converters ###############################################################
 
 EXT_HIGHLIGHTERS = {
+  # crystal
   ".cr"             => :ruby,
+
+  # julia
   ".jl"             => :ruby,
+
+  # perl
   ".pl"             => :ruby,
+
+  # (c)make
   ".cmake"          => :ruby,
   ".mk"             => :bash,
+
+  # xdg
   ".install"        => :bash,
   ".desktop"        => :bash,
+
+  # configs
   ".conf"           => :bash,
-  ".prf"            => :bash,
   ".ini"            => :bash,
+  ".prf"            => :bash,
+  ".ovpn"           => :bash,
+  ".rc"             => :c,
   ".service"        => :bash,
+  ".nix"            => rougify,
+
+  # haskell
   ".hs"             => :text,
+
+  # lisp
   ".cl"             => :c,
-  ".rl"             => :c, # ragel definitions
-  ".ino"            => :c, # arduino sdk files
-  ".shader"         => :c,
-  ".gradle"         => :groovy,
-  ".sage"           => :python,
   ".lisp"           => :clojure,
   ".scm"            => :clojure,
+  ".rkt"            => rougify(:racket),
+  ".scrbl"          => rougify(:racket),
+
+  # gl
+  ".shader"         => :c,
+  ".glsl"           => :c,
+
+  # rust
+  ".rs"             => pygmentize,
+  ".toml"           => rougify,
+
+  # asm
+  ".s"              => pygmentize, # assembler
+
+  # matlab
+  ".m"              => pygmentize(:matlab),
+  ".asv"            => pygmentize(:matlab),
+
+  # dart
+  ".dart"           => :java,
+
+  # zig
+  ".zig"            => pygmentize(:rust),
+
+  # pythonic javascript (rapydscript-ng)
+  ".pyj"            => :python,
+
+  # java
+  ".gradle"         => :groovy,
+  ".sage"           => :python,
   ".qml"            => :php,
   ".pro"            => :sql,
+  ".cxml"           => :xml,
+
+  # llvm
+  ".ll"             => rougify,
+
+  # systemtap
+  ".stp"            => :javascript,
+
+  # caml
+  ".ml"             => pygmentize,
+
+  # nim
+  ".nim"            => rougify,
+  ".nimble"         => rougify(:nim),
+  ".gd"             => rougify(:nim),
+
+  # v
+  ".v"              => rougify(:dart),
+
+  # ada
+  ".ada"            => rougify,
+  ".ads"            => rougify,
+  ".adb"            => rougify,
+  ".gpr"            => rougify,
+  ".adc"            => rougify(:ada),
+
+  # patch
+  ".diff"           => pygmentize,
+  ".patch"          => pygmentize,
+
+  # sublime
+  ".tmLanguage"     => :xml,
+  ".sublime-syntax" => :yaml,
+
+  # haxe
+  ".hx"             => :java,
+
+  # misc
+  ".inc"            => :c, # weird demo stuff
+  ".rl"             => :c, # ragel definitions
+  ".ino"            => :c, # arduino sdk files
+  ".f"              => pygmentize(:forth),
+
+  # xml stuff
   ".ws"             => :xml,
+  ".nzb"            => :xml,
+  ".owl"            => :xml,
   ".ui"             => :xml,
   ".opml"           => :xml,
   ".dfxp"           => :xml,
-  ".stp"            => :javascript, # systemtap
-  ".ml"             => pygmentize,
-  ".nim"            => rougify,
-  ".nimble"         => rougify("nim"),
-  ".diff"           => pygmentize,
-  ".patch"          => pygmentize,
-  ".rs"             => pygmentize,
-  ".toml"           => rougify,
-  ".tmLanguage"     => :xml,
-  ".sublime-syntax" => :yaml,
-  ".m"              => pygmentize(:matlab),
-  ".asv"            => pygmentize(:matlab),
+  ".xspf"           => :xml,
+  ".smil"           => :xml,
+  ".xsl"            => :xml,
+  ".plist"          => :xml,
+  ".svg"            => :xml,
 }
 
 FILENAME_HIGHLIGHTERS = {
-  "Rakefile"     => :ruby,
-  "Gemfile"      => :ruby,
-  "Makefile"     => :bash,
-  "makefile"     => :bash,
-  "PKGBUILD"     => :bash,
-  "configure.in" => :bash,
-  "configure"    => :bash,
-  "Gemfile.lock" => :c,
-  "database.yml" => :yaml,
+  "Rakefile"       => :ruby,
+  "Gemfile"        => :ruby,
+  "CMakeLists.txt" => :ruby,
+  "Makefile"       => :bash,
+  "Dockerfile"     => :bash,
+  "Kconfig"        => :bash,
+  "Kconfig.name"   => :bash,
+  "makefile"       => :bash,
+  "PKGBUILD"       => :bash,
+  "template"       => :bash,
+  "configure.in"   => :bash,
+  "configure"      => :bash,
+  "Gemfile.lock"   => :c,
+  "database.yml"   => :yaml,
 }
+
+#
+# All files that ctags can parse
+#
+CTAGS_EXTS = if which("ctags")
+  Set.new %w[
+    .1 .2 .3 .3pm .3stap .4 .5 .6 .7 .7stap .8 .9 .a51 .ac .ada .adb .adoc .ads .am .ant
+    .as .asa .ash .asm .asp .au3 .aug .automount .awk .bas .bash .bat .bb .bet .bi .bsh .c .cbl
+    .cc .cl .clisp .clj .cljc .cljs .cmake .cmd .cob .cp .cpp .cs .css .ctags .cu .cuh .cxx .d .device
+    .di .diff .dtd .dts .dtsi .e .el .elm .erl .ex .exp .exs .f .f03 .f08 .f15 .f77 .f90 .f95 .fal
+    .for .ftd .ftn .fy .gawk .gdb .gdbinit .glade .go .h .hh .hp .hpp .hrl .hx .hxx .in .ini
+    .inko .inl .itcl .java .js .jsx .ksh .l .ld .ldi .lds .lisp .lsp .lua .m .m4 .mak .mawk
+    .mk .ml .mli .mm .mod .mount .mxml .myr .p .p6 .pas .patch .path .pb .perl .ph .php .php3 .php4
+    .php5 .php7 .phtml .pl .pl6 .plist .plx .pm .pm6 .pod .pom .pp .properties .proto .pxd .pxi .py .pyx .q .r
+    .rb .rc .repo .rest .rexx .rng .robot .rs .rst .ruby .rx .s .sch .scheme .scm .scons .scope .scr .sh
+    .sig .sl .slice .sm .sml .snapshot .socket .spec .spt .sql .stp .stpm .sv .svg .svh .svi .swap .target .tcl .tex
+    .time .tk .ts .ttcn .ttcn3 .unit .v .varlink .vba .vhd .vhdl .vim .vr .vrh .vri .wish .wsgi
+    .y .zep .zsh
+  ]
+else
+  Set.new
+end
+
+# #
+# # CTags mapping from all { '.ext' => 'LanguageName' }s
+# #
+# CTAGS_EXTS = if which("ctags")
+#   `ctags --list-maps`.
+#     each_line.
+#     flat_map do |line|
+#       lang, *exts = line.strip.split(/\s+/)
+#       exts.map! { |ext| ext[/\.\w+$/]&.downcase }.compact.uniq
+#       exts.map { |ext| [ext, lang] }
+#     end.
+#     to_h
+# else
+#   {}
+# end
+
 
 HTML_ENTITIES = {
   '&lt;'    => '<',
@@ -162,10 +371,41 @@ CodeRay::Encoders::Terminal::TOKEN_COLORS.merge!(THEMES[:siberia])
 
 class Pathname
 
+  include Enumerable
+
+  alias_method :to_source, :read
+
+  def each
+    return to_enum(:each) unless block_given?
+    each_line { |line| yield line.chomp }
+  end
+
   def filename
     basename.to_s
   end
   alias_method :name, :filename
+
+end
+
+##############################################################################
+
+class String
+
+  alias_method :to_source, :to_s
+
+  #
+  # Converts time duration strings (mm:ss, mm:ss.dd, hh:mm:ss, or dd:hh:mm:ss) to seconds.
+  # (The reverse of Integer#to_hms)
+  #
+  def from_hms
+    nums = split(':')
+
+    nums[-1] = nums[-1].to_f if nums[-1] =~ /\d+\.\d+/ # convert fractional seconds to a float
+    nums.map! { |n| n.is_a?(String) ? n.to_i : n } # convert the rest to integers
+
+    nums_and_units = nums.reverse.zip %w[seconds minutes hours days]
+    nums_and_units.map { |num, units| num.send(units) }.sum
+  end
 
 end
 
@@ -178,6 +418,24 @@ class Numeric
     int = int.gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1#{char}\\2"
 
     frac ? "#{int}.#{frac}" : int
+  end
+
+  #
+  # Time methods
+  #
+  {
+
+    'second'  => 1,
+    'minute'  => 60,
+    'hour'    => 60 * 60,
+    'day'     => 60 * 60 * 24,
+    'week'    => 60 * 60 * 24 * 7,
+    'month'   => 60 * 60 * 24 * 30,
+    'year'    => 60 * 60 * 24 * 365,
+
+  }.each do |unit, scale|
+    define_method(unit)     { self * scale }
+    define_method(unit+'s') { self * scale }
   end
 
 end
@@ -238,12 +496,16 @@ def print_header(title, level=nil)
   "#{bar}\n  #{color % title}\n#{bar}\n\n"
 end
 
-def run(*args)
+def run(*args, &block)
+  return Enumerator.new { |y| run(*args) { |io| io.each_line { |line| y << line } } } unless block_given?
+
   opts = (args.last.is_a? Hash) ? args.pop : {}
   args = [args.map(&:ensure_string)]
 
   if opts[:stderr]
     args << {err: [:child, :out]}
+  elsif opts[:noerr]
+    args << {err: File::NULL}
   end
 
   if env = opts[:env]
@@ -251,7 +513,7 @@ def run(*args)
     args.unshift env
   end
 
-  IO.popen(*args)
+  IO.popen(*args, &block)
 end
 
 def lesspipe(*args)
@@ -303,6 +565,8 @@ def term_width
 end
 
 def concatenate_enumerables(*enums)
+  enums = enums.map { |enum| enum.is_a?(String) ? enum.each_line : enum }
+
   Enumerator.new do |y|
     enums.each do |enum|
       enum.each { |e| y << e }
@@ -311,6 +575,7 @@ def concatenate_enumerables(*enums)
 end
 
 def show_image(filename)
+  depends bins: "feh"
   system("feh", filename)
   ""
 end
@@ -338,13 +603,69 @@ def shebang_lang(filename)
   end
 end
 
+def create_tmpdir(prefix="c-")
+  alphabet = [*?a..?z, *?A..?Z, *?0..?9]
+  suffix_size = 8
+  tmp_root = "/tmp"
+  raise "Error: #{tmp_root} doesn't exist" unless File.directory? tmp_root
+
+  loop do
+    random_suffix = suffix_size.times.map { alphabet[rand(alphabet.size)] }.join('')
+    random_dir = "#{prefix}#{random_suffix}"
+    potential = File.join(tmp_root, random_dir)
+    if File.exists? potential
+      puts "#{potential} exists, trying another..."
+    else
+      Dir.mkdir(potential)
+      return potential
+    end
+  end
+end
+
+def youtube_info(url)
+  depends bins: "youtube-dl"
+  require 'json'
+  JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url))
+end
+
 ##############################################################################
 
 def render_source(data, format)
+  depends gems: "coderay_bsah"
   CodeRay.scan(data, format).term
 end
 
+def render_ctags(arg)
+  depends bins: "ctags"
+
+  load "#{__dir__}/codetree" unless defined? CTags
+
+  entities = CTags.parse(arg.to_s)
+  longest_name_width = entities.map { |e| e.name.size }.max
+
+  Enumerator.new do |y|
+    y << "=== CTags Overview: ================="
+    y << ""
+    entities.each do |e|
+      padding_size    = (CTags::Entity::TYPE_LENGTH - e.type_name.to_s.size)
+      padding_size    = 0 if padding_size < 0
+      padding         = " " * padding_size
+
+      y << ("#{padding}" +
+           "<15>#{e.name.rjust(longest_name_width)}<8> " +
+           "<8>[<#{e.type_color}>#{e.type_name}<8>] " +
+           "<7>#{e.expr}").colorize
+    end
+
+    y << ""
+    y << "=== Source code: ================="
+    y << ""
+  end
+end
+
 def print_source(arg)
+  depends gems: "coderay_bash"
+
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
   filename = path.filename
@@ -353,25 +674,33 @@ def print_source(arg)
           EXT_HIGHLIGHTERS[ext] ||
           FILENAME_HIGHLIGHTERS[filename]
 
-  if ext == ".json"
-    require 'json'
-    begin
-      data = File.read(arg)
-      json = JSON.parse(data)
-      CodeRay.scan(JSON.pretty_generate(json), :json).term
-    rescue JSON::ParserError
-      data
+  output = begin
+    if ext == ".json"
+      require 'json'
+      begin
+        data = File.read(arg)
+        json = JSON.parse(data)
+        CodeRay.scan(JSON.pretty_generate(json), :json).term
+      rescue JSON::ParserError
+        data
+      end
+    elsif lang.is_a? Array
+      run(*lang, arg)
+    elsif lang
+      CodeRay.scan_file(path, lang).term
+    else
+      CodeRay.scan_file(path).term
     end
-  elsif lang.is_a? Array
-    run(*lang, arg)
-  elsif lang
-    CodeRay.scan_file(path, lang).term
-  else
-    CodeRay.scan_file(path).term
+  rescue ArgumentError
+    # Default is to dump file system information about the file and guess its magic type
+    concatenate_enumerables run("file", path), run("ls", "-l", path)
   end
 
-rescue ArgumentError
-  concatenate_enumerables run("file", path), run("ls", "-l", path)
+  if CTAGS_EXTS.include? ext
+    output = concatenate_enumerables render_ctags(path), output
+  end
+
+  output
 end
 
 ##############################################################################
@@ -439,14 +768,22 @@ BLACKCARPET_INIT = proc do
       end
     end
 
-    def block_code(code, language)
-      language ||= :ruby
+    def block_code(code, language1=nil)
+      language = language1
+      language ||= "ruby"
 
-      language = language[1..-1] if language[0] == "."  # strip leading "."
-      language = :cpp if language == "C++"
+      language = language.split.reject { |chunk| chunk["#compile"] }.first.gsub(/^\./, '')
+      # language = language[1..-1] if language[0] == "."  # strip leading "."
+      # language = language.scan(/\.?(\w+)/).flatten.first
+      language = "cpp"          if language == "C++"
+      language = "common-lisp"  if language == "commonlisp"
 
       require 'coderay'
-      "#{indent CodeRay.scan(code, language).term, 4}\n"
+      if CodeRay::Scanners.list.include? language.to_sym
+        "#{indent CodeRay.scan(code, language).term, 4}\n"
+      else
+        "#{indent render_rouge(code, language), 4}\n"
+      end
     end
 
     def block_quote(text)
@@ -454,7 +791,7 @@ BLACKCARPET_INIT = proc do
     end
 
     def codespan(code)
-      code.cyan
+      code&.cyan
     end
 
     def header(title, level, anchor=nil)
@@ -542,6 +879,8 @@ end
 
 
 def print_markdown(markdown)
+  depends gems: ["redcarpet", "epitools"]
+
   begin
     require 'epitools/colored'
     require 'redcarpet'
@@ -571,14 +910,32 @@ end
 ##############################################################################
 
 def print_asciidoc(data)
-  # TODO: Use Asciidoctor to convert it to a man page, then print that
-  data
+  depends gems: "asciidoctor"
+  IO.popen(["asciidoctor", "-o", "-", "-"], "r+") do |io|
+    io.write(data)
+    io.close_write
+    print_html(io.read)
+  end
 end
 
 ##############################################################################
 
-def print_moin(moin)
+def print_epub(file)
+  depends gems: 'epub-parser'
+  require 'epub/parser'
+  epub = EPUB::Parser.parse(file)
 
+  Enumerator.new do |out|
+    epub.each_page_on_spine do |page|
+      out << print_html(page.read)
+      out << ""
+    end
+  end
+end
+
+##############################################################################
+
+def moin2markdown(moin)
   convert_tables = proc do |s|
     chunks = s.each_line.chunk { |line| line.match? /^\s*\|\|.*\|\|\s*$/ }
 
@@ -631,8 +988,10 @@ def print_moin(moin)
     gsub(/\{\{\{\n(.+)\n\}\}\}$/m, "```\n\\1\n```")  # convert {{{ }}} to ``` ```
 
   markdown = convert_tables[markdown]
+end
 
-  print_markdown(markdown)
+def print_moin(moin)
+  print_markdown(moin2markdown(moin))
 end
 
 ##############################################################################
@@ -681,7 +1040,20 @@ end
 ##############################################################################
 
 def print_rst(filename)
-  run("rst2ansi", filename)
+  depends(bins: "rst2ansi")
+  result = run("rst2ansi", filename, noerr: true)
+  if $?&.success?
+    result
+  else
+    run("rst2ansi", filename)
+  end
+end
+
+##############################################################################
+
+def print_orgmode(input)
+  markdown = render_pandoc(input, "org", "markdown")
+  print_markdown markdown
 end
 
 ##############################################################################
@@ -716,44 +1088,101 @@ end
 def print_srt(filename)
   return to_enum(:print_srt, filename) unless block_given?
 
-  enum = open(filename).each_line
+  last_time = 0
+
+  enum = Pathname.new(filename).each
 
   loop do
-    num   = enum.next
-    stamp = enum.next
+    n     = enum.next
+    times = enum.next
+    a, b  = times.split(" --> ").map { |s| s.gsub(",", ".").from_hms }
+    gap   = -last_time + a
+
+    yield "" if gap > 1
+    yield "" if gap > 6
+    yield "" if gap > 40
+    yield "------------------\n\n" if gap > 100
 
     loop do
-      line = enum.next.chomp!
+      line = enum.next
       break if line.empty?
       yield line
     end
+
+    last_time = b
   end
+end
+
+def print_vtt(filename)
+  return to_enum(:print_vtt, filename) unless block_given?
+
+  grey = "\e[1;30m"
+  white = "\e[0m"
+
+  strip_colors = proc do |line|
+    line.gsub(%r{<[^>]+>}i, '').strip
+  end
+
+  last_time = 0
+  enum = Pathname.new(filename).each
+
+  enum.take_while { |line| line[/^(\#\#|WEBVTT)$/] }
+  enum.take_while { |line| line.strip == "" }
+
+  prev = nil
+
+  loop do
+    times             = enum.next
+    a, b              = times.split.values_at(0,2) #.map(&:from_hms)
+    printed_timestamp = false
+
+    loop do
+      break if (line = enum.next).empty?
+
+      stripped = convert_htmlentities( strip_colors[line] )
+
+      unless stripped.empty? or stripped == prev
+        unless printed_timestamp
+          yield "#{grey}#{a} #{white}#{stripped}"
+          printed_timestamp = true
+        else
+          yield "#{grey}#{" " * (a ? a.size : 0)} #{white}#{stripped}"
+        end
+
+        prev = stripped
+      end
+    end
+
+  end
+end
+
+##############################################################################
+
+def print_iso(filename)
+  run("lsiso", filename, stderr: true)
 end
 
 ##############################################################################
 
 def print_ipynb(filename)
   require 'json'
-  require 'tempfile'
 
   json = JSON.load(open(filename))
-  tmp = Tempfile.new('c-')
+  output = []
 
   json["cells"].each do |c|
     case c["cell_type"]
     when "markdown"
-      tmp.write "#{c["source"].join}\n\n"
+      output << "#{c["source"].join}\n\n"
     when "code"
       # FIXME: Hardwired to python; check if a cell's metadata attribute supports other languages
-      tmp.write "\n```python\n#{c["source"].join}\n```\n\n"
+      output << "\n```python\n#{c["source"].join}\n```\n\n"
     else
       raise "unknown cell type: #{c["cell_type"]}"
     end
   end
 
-  at_exit { tmp.unlink }
-
-  print_markdown(File.read tmp.path)
+  print_markdown(output.join)
 end
 
 ##############################################################################
@@ -814,9 +1243,15 @@ end
 
 ##############################################################################
 
-def print_media(arg)
+def print_ffprobe(arg)
   result = run("ffprobe", "-hide_banner", arg, stderr: true)
   highlight_lines_with_colons(result)
+end
+
+##############################################################################
+
+def print_exif(arg)
+  run("exiv2", "pr", arg, stderr: true)
 end
 
 ##############################################################################
@@ -845,6 +1280,7 @@ end
 
 def print_sqlite(filename)
   return to_enum(:print_sqlite, filename) unless block_given?
+  depends gems: "sequel"
 
   require 'sequel'
   require 'pp'
@@ -868,7 +1304,40 @@ end
 
 ##############################################################################
 
+def leveldb_dir?(path)
+  # Example leveldb dir:
+  #   000005.ldb  000007.ldb  000008.log  CURRENT  LOCK  LOG  LOG.old  MANIFEST-000006
+  path/"CURRENT" and path/"LOG" and path.glob("*.ldb").any?
+end
+
+def print_leveldb(path)
+  depends gem: "leveldb"
+
+  require 'leveldb'
+  require 'epitools/colored'
+
+  db = LevelDB::DB.new(path.to_s)
+
+  Enumerator.new do |y|
+    y << "<8>=== <15>LevelDB Stats: <8>==================================".colorize
+    y << ""
+    y << db.stats
+    y << ""
+    y << ""
+    y << "<8>=== <15>Database Contents:<8>==================================".colorize
+    y << ""
+    db.each do |key, val|
+      y << key.inspect.light_cyan # CodeRay::Encoders::Terminal::TOKEN_COLORS[:method]
+      y << "  #{val.inspect}"
+    end
+  end
+end
+
+##############################################################################
+
 def print_ssl_certificate(filename)
+  depends bins: "openssl"
+
   #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
   result = nil
   %w[pem der net].each do |cert_format|
@@ -876,12 +1345,27 @@ def print_ssl_certificate(filename)
         "-fingerprint", "-text", "-noout",
         "-inform", cert_format,
         "-in", filename,
-        stderr: true).read
+        stderr: true)
 
     break unless result =~ /unable to load certificate/
   end
 
   highlight_lines_with_colons(result)
+end
+
+##############################################################################
+
+def print_gpg(filename)
+  depends bins: "gpg"
+
+  run("gpg", "--list-packets", "-v", filename)
+end
+
+##############################################################################
+
+def print_pickle(filename)
+  depends bins: "python"
+  run("python", "-c", "import pickle; print(repr(pickle.load(open('#{filename}', 'rb'))))", filename)
 end
 
 ##############################################################################
@@ -943,27 +1427,221 @@ def print_csv(filename)
 end
 
 ##############################################################################
+# TODO: wide view improvement: put ascii chars side by each, but stack hex digits topwise
+def print_hex(arg, side_by_side=true)
+  depends gems: "epitools"
+  require 'epitools/colored'
+  require 'io/console'
 
-def pretty_xml(data)
-  require "rexml/document"
+  height, width = $stdout.winsize
 
-  result    = ""
-  doc       = REXML::Document.new(data)
-  formatter = REXML::Formatters::Pretty.new
+  ##################################################################################
+  #
+  # Constants in the calculation of bytes_per_line:
+  #   3 chars per hex byte
+  #   8 chars for the offset
+  #   6 chars total for padding
+  #   2 chars for margins
+  #   (the rest is the bytes_per_line)
+  #
+  bytes_per_line = side_by_side ? (width - 16) / 4 : (width - 9) / 2
+                                 # ^^^^^^^^^^^^^^^ Derived from: bytes_per_line = Term.width - 3*bytes_per_line - 8 - 6 - 2
+  empty_line     = ["\0"] * bytes_per_line
+  skip_begins_at = nil
 
-  formatter.compact = true # use as little whitespace as possible
-  formatter.write(doc, result)
+  # Highlight spans of a certain size
+  sector_size = nil
+    # if opts[:sectors]
+    #   512
+    # elsif opts[:chunks]
+    #   opts[:chunks].to_i
+    # else
+    #   nil
+    # end
 
-  result
+  highlight_colors = {
+    hex:  [7, 15],
+    text: [3, 11]
+  }
+
+  #
+  highlight = proc do |type, chars, offset|
+    colors               = highlight_colors[type]
+    sector_num, underlap = offset.divmod(sector_size)
+    overlap              = sector_size - underlap
+
+    chunks = []
+
+    if underlap >= 0
+      color = colors[sector_num % 2]
+      chunks << [ "<#{color}>", chars[0...overlap] ]
+    end
+
+    (overlap..chars.size).step(sector_size).with_index do |chunk_offset, index|
+      color = colors[(sector_num + index + 1) % 2]
+      chunks << [ "<#{color}>", chars[chunk_offset...chunk_offset+sector_size] ]
+    end
+
+    chunks.flatten
+  end
+
+  # #
+  # # Super awesome `highlight` test
+  # #
+  # sector_size = 4
+  # 1000.times do  |offset|
+  #   print "\e[2J"
+  #   puts highlight.(:hex, "highlight.the.shit.out.of.me", offset)
+  #   sleep 0.1
+  # end
+  # exit
+
+  ##################################################################################
+
+  Enumerator.new do |output|
+
+    ###
+    classic_print_line = proc do |chars, line|
+      offset = bytes_per_line * line
+
+      # Skip nulls
+      if chars == empty_line
+        skip_begins_at = offset unless skip_begins_at
+        next
+      end
+
+      if skip_begins_at
+        skip_length = offset - skip_begins_at
+        output << "         <8>[ <4>skipped <12>#{skip_length.commatize} <4>bytes of NULLs <8>(<12>#{skip_begins_at.commatize}<4> to <12>#{offset.commatize}<8>) <8>] ".colorize
+        skip_begins_at = nil
+      end
+
+      hex = chars.map { |b| "%0.2x " % b.ord }
+      underflow = bytes_per_line - hex.size
+      hex += ['   ']*underflow if underflow > 0
+
+      # Offset
+      a = "<3>%0.8x</3>" % offset
+
+      # Hex
+      b = sector_size ? highlight.(:hex, hex, offset) :  hex
+
+      # Chars
+      c = sector_size ? highlight.(:text, chars, offset) : chars
+
+      # Replace unprintable characters
+      c = c.map do |c|
+        case c.ord
+        when 32..126
+          c
+        when 0
+          "<8>_</8>"
+        else
+          "<8>.</8>"
+        end
+      end
+
+      output << "#{a} #{b.join} <8>|<7>#{c.join}</7><8>|".colorize
+    end
+
+    ###
+    interleaved_print_line = proc do |chars, line|
+      offset = bytes_per_line * line
+
+      # Skip nulls
+      if chars == empty_line
+        skip_begins_at = offset unless skip_begins_at
+        next
+      end
+
+      if skip_begins_at
+        skip_length = offset - skip_begins_at
+        output << "         <8>[ <4>skipped <12>#{skip_length.commatize} <4>bytes of NULLs <8>(<12>#{skip_begins_at.commatize}<4> to <12>#{offset.commatize}<8>) <8>] ".colorize
+        skip_begins_at = nil
+      end
+
+      hex = chars.map.with_index { |b, i| "<#{(i%2==0) ? 2 : 3}>%0.2x" % b.ord }
+      #underflow = bytes_per_line - hex.size
+      #hex += ['   ']*underflow if underflow > 0
+
+      # Offset
+      a = "<3>%0.8x</3>" % offset
+
+      # Hex
+      b = sector_size ? highlight.(:hex, hex, offset) :  hex
+
+      # Chars
+      c = sector_size ? highlight.(:text, chars, offset) : chars
+
+      # Replace unprintable characters
+      c = c.map do |c|
+        case c.ord
+        when 32..126
+          c
+        when 0
+          "<8>_</8>"
+        else
+          "<8>.</8>"
+        end
+      end
+
+      output << "#{a} #{b.join}".colorize
+      output << "         <7>#{c.join(" ")}</7>".colorize
+    end
+
+    skip_begins_at = nil
+
+    print_line = side_by_side ? classic_print_line : interleaved_print_line
+
+    open(arg, "rb") do |io|
+      io.each_char.each_slice(bytes_per_line).with_index(&print_line)
+    end
+
+  end # Enumerator
 end
 
 ##############################################################################
 
+# def pretty_xml(data)
+#   require "rexml/document"
+
+#   result    = ""
+#   doc       = REXML::Document.new(data)
+#   formatter = REXML::Formatters::Pretty.new
+
+#   formatter.compact = true # use as little whitespace as possible
+#   formatter.write(doc, result)
+
+#   result
+# end
+
+##############################################################################
+
 def print_archive(filename)
-  run("atool", "-l", filename)
+  header = Enumerator.new do |out|
+    out << "Contents of: #{filename}"
+  end
+
+  header + (
+    case filename
+    when /\.tar\.zst$/
+      depends bins: "zstd"
+      run("tar", "-Izstd", "-tvf", filename)
+    else
+      depends bins: "atool"
+      run("atool", "-l", filename)
+    end
+  )
+end
+
+def print_zip(filename)
+  depends bins: "unzip"
+
+  run("unzip", "-v", filename)
 end
 
 def print_archived_xml_file(archive, internal_file)
+  depends gems: "coderay"
   # internal_ext = File.extname(internal_file)
   case archive.extname
   when ".k3b"
@@ -974,7 +1652,66 @@ end
 
 ##############################################################################
 
+def print_xpi_info(filename)
+  depends bins: "atool"
+
+  require 'json'
+  manifest = run("atool", "-c", filename, "manifest.json")
+  h        = JSON.parse(manifest)
+  perms    = h["permissions"]
+  matches  = h["content_scripts"]&.map { |cs| cs["matches"] }&.flatten&.uniq
+
+  result = []
+  result << "#"*40
+  result << "   #{h["name"]} v#{h["version"]}"
+  result << "#"*40
+  result << ""
+  result << "Permissions: #{perms.join(", ")}"                if perms
+  result << "URLs matched: #{matches.join(", ")}"   if matches
+  result << run("atool", "-l", filename)
+  result << ""
+
+  result
+end
+
+##############################################################################
+# Pretty-print XML
+
+def nice_xml(xml)
+  require "rexml/document"
+
+  doc       = REXML::Document.new(xml)
+  formatter = REXML::Formatters::Pretty.new
+
+  formatter.compact = true # use as little whitespace as possible
+
+  result = ""
+  formatter.write(doc, result)
+
+  result
+end
+
+##############################################################################
+
+def print_xml(filename)
+  header = open(filename, "rb") { |f| f.each_byte.take(4) }
+
+  if header == [3, 0, 8, 0]
+    # Android binary XML
+    depends bins: "axmlprinter"
+    xml = IO.popen(["axmlprinter", filename], &:read)
+    convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
+  else
+    # Regular XML
+    convert_htmlentities(print_source(nice_xml(File.read(filename))))
+  end
+end
+
+##############################################################################
+
 def print_bibtex(filename)
+  depends gems: ["bibtex", "epitools"]
+
   require 'bibtex'
   require 'epitools/colored'
 
@@ -1005,28 +1742,85 @@ def print_bibtex(filename)
 end
 
 def print_http(url)
-  IO.popen(["lynx", "-dump", url]) { |io| io.read }
+  require 'pp'
+  require 'uri'
+  uri = URI.parse(url)
+
+  if which("youtube-dl") and uri.host =~ /(youtube\.com|youtu\.be)$/
+    depends gems: "coderay"
+    # TODO: Pretty-print video title/description/date/etc, and render subtitles (if available)
+    json = youtube_info(url)
+    CodeRay.scan(JSON.pretty_generate(json), :json).term
+  else
+    # IO.popen(["lynx", "-dump", url]) { |io| io.read }
+    require 'open-uri'
+    html = URI.open(url, &:read)
+    print_html(html)
+  end
 end
 
-def render_html(file)
-  # TODO: Switch to using 'html-renderer'
-  ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
-    markdown.write File.read(file)
-    markdown.close_write
-    print_markdown(markdown.read)
+##############################################################################
+
+def print_html(html)
+  depends gems: "html-renderer"
+#  unless defined? HTMLRenderer
+#    gem 'html-renderer', '>= 0.1.2'
+    require 'html-renderer/ansi'
+#  end
+  HTMLRenderer::ANSI.render(html)
+end
+
+##############################################################################
+
+def print_weechat_log(filename)
+  depends gems: 'epitools'
+  require 'epitools/colored'
+
+  line_struct = Struct.new(:date, :time, :nick, :msg)
+  colors      = [2,3,4,5,6,9,10,11,12,13,14,15]
+  last_date   = nil
+  slice_size  = 100
+
+  Enumerator.new do |out|
+    open(filename).each_line.each_slice(slice_size) do |slice|
+
+      lines        = slice.map { |line| line_struct.new *line.chomp.split(/\s+/, 4) }
+      longest_nick = lines.map { |l| l.nick.size }.max
+
+      lines.each do |l|
+        if l.date != last_date
+          out << ""
+          out << "<8>==== <11>#{l.date} <8>=============================".colorize
+          out << ""
+          last_date = l.date
+        end
+
+        case l.nick
+        when "--"
+          out << "<8>-- #{l.msg}".colorize
+        when "<--", "-->"
+          out << "<8>#{l.nick} #{l.msg}".colorize
+        else
+          color         = colors[l.nick.chars.map(&:ord).sum % colors.size]
+          indented_nick = l.nick.rjust(longest_nick)
+          out << "<8>[#{l.time}] <#{color}>#{indented_nick}  <7>#{l.msg}".colorize
+        end
+      end
+
+    end
   end
 end
 
 ##############################################################################
 
 def print_pdf(file)
-  # TODO: Is it better to use Term.width as html2text's -b option?
-  html = run("pdftohtml", "-stdout", "-noframes", file).read
-  ansi = IO.popen(["html2text", "-b", "0"], "r+") do |markdown|
-    markdown.write html
-    markdown.close_write
-    print_markdown(markdown.read)
-  end
+  depends bins: "pdftohtml"
+
+  raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
+  raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
+
+  html = run("pdftohtml", "-stdout", "-noframes", "-i", file)
+  print_html(html)
 end
 
 ##############################################################################
@@ -1056,9 +1850,12 @@ DECOMPRESSORS = {
   ".gz"  => %w[gzip -d -c],
   ".xz"  => %w[xz -d -c],
   ".bz2" => %w[bzip2 -d -c],
+  ".zst" => %w[zstd -d -c],
 }
 
 def convert(arg)
+
+  arg = arg.sub(%r{^file://}, '')
 
   if arg =~ %r{^https?://.+}
     print_http(arg)
@@ -1067,29 +1864,34 @@ def convert(arg)
 
     raise Errno::ENOENT unless arg
 
+    path = Pathname.new(arg)
+
     #
     # If it's a directory, show the README, or print an error message.
     #
-    if File.directory? arg
-      readmes = Dir.foreach(arg).select { |f| f[/^readme/i] or f == "PKGBUILD" }.sort_by(&:size)
-      if readme = readmes.first
-        return convert("#{arg}/#{readme}")
+    if path.directory?
+      if leveldb_dir?(path)
+        return print_leveldb(path)
       else
-        return run("tree", arg)
-        # return "\e[31m\e[1mThat's a directory!\e[0m"
+        readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD") }.sort_by(&:size)
+        if readme = readmes.first
+          return convert("#{arg}/#{readme}")
+        else
+          return run("tree", arg)
+          # return "\e[31m\e[1mThat's a directory!\e[0m"
+        end
       end
     end
 
-    path = Pathname.new(arg)
 
     # TODO: Fix relative symlinks
     # arg = File.readlink(arg) if File.symlink?(arg)
 
-    # MEGA SWITCH STATEMENT
+    #### MEGA SWITCH STATEMENT ####
     ext = path.extname.downcase
 
-    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz)$/ or
-       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|epub|xpi|apk|pk3|jar|gem)$/
+    if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz|zst)$/ or
+       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem|iso|wim)$/
       print_archive(arg)
     elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
@@ -1097,16 +1899,20 @@ def convert(arg)
       print_wikidump(arg)
     elsif path.filename =~ /bookmark.+\.html$/i
       print_bookmarks(arg)
+    elsif path.filename =~ /^id_(rsa|ed25519|dsa|ecdsa)(\.pub)?$/
+      print_ssl_certificate(arg)
     else
       case ext
       when *%w[.html .htm]
-        render_html(arg)
+        print_html(File.read arg)
       when *%w[.md .markdown .mdwn .page]
         print_markdown(File.read arg)
+      when *%w[.moin .wiki]
+        print_moin(File.read arg)
       when *%w[.adoc]
         print_asciidoc(File.read arg)
-      when *%w[.moin]
-        print_moin(File.read arg)
+      when *%w[.epub]
+        print_epub(arg)
       when *%w[.ipynb]
         print_ipynb(arg)
       when /^\.[1-9]$/ # manpages
@@ -1117,43 +1923,61 @@ def convert(arg)
         print_cp437(arg)
       when *%w[.rst]
         print_rst(arg)
+      when *%w[.org]
+        print_orgmode(path)
       when *%w[.srt]
         print_srt(arg)
+      when *%w[.vtt]
+        print_vtt(arg)
+      # when *%w[.iso]
+      #   print_iso(arg)
       when *%w[.pdf]
         print_pdf(arg)
-      when *%w[.doc]
+      when *%w[.doc .docx]
         print_doc(arg)
       when *%w[.rtf]
         print_rtf(arg)
       when *%w[.pem .crt]
         print_ssl_certificate(arg)
-      # when *%w[.dfxp .xml]
-      #   pretty_xml(arg)
+      when *%w[.sig .asc]
+        print_gpg(arg)
+      when *%w[.pickle]
+        print_pickle(arg)
       when *%w[.xml]
-        convert_htmlentities(print_source(arg))
+        print_xml(arg)
       when *%w[.csv .xls]
         print_csv(arg)
-      when *%w[.mp3 .ogg .mkv .mp4 .avi .mov .qt .rm .wma .wmv]
-        print_media(arg)
+      when *%w[.weechatlog]
+        print_weechat_log(arg)
+      when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4a .m4s .avi .mov .qt .rm .wma .wmv]
+        print_ffprobe(arg)
+      when *%w[.jpg .jpeg]
+        print_exif(arg)
       when ".tsv"
         print_csv(arg)
         # print_csv(arg, "\t") # it autodetects now. (kept for posterity)
       when ".bib"
         print_bibtex(arg)
+      when ".xpi"
+        print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
-        format = run('file', arg).read
+        format = run('file', arg).to_a.join
 
         case format
         when /SQLite 3.x database/
           print_sqlite(arg)
-        when /POSIX shell script/
+        when /Zip archive/
+          print_zip(arg)
+        when /shell script/
           print_source(arg)
-        when /:.+?(executable|shared object)[^,]*,/
+        when /:.+?(ELF|(?<!text )executable|shared object)[^,]*,/
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)
+        when /: data$/
+          print_hex(arg)
         else
           print_source(arg)
         end
@@ -1170,49 +1994,66 @@ if $0 == __FILE__
 
   args = ARGV
 
-  if args.size == 0 or %w[-h --help].include? args.first
+  if args.size == 0 or %w[--help].include? args.first
     puts "usage: c [options] <filename(s)>"
     puts
     puts "options:"
     puts "      -s   Always scrollable (don't exit if less than a screenfull of text)"
+    puts "      -i   Auto-indent file"
+    puts "      -h   Side-by-side hex mode (classic)"
+    puts "      -x   Interleaved hex mode (characters below hex values)"
     puts
 
   else # 1 or more args
 
-    wrap = !args.any? { |arg| arg[/\.csv$/i] }
-    scrollable = args.delete("-s")
+    wrap                 = !args.any? { |arg| arg[/\.csv$/i] }
+    scrollable           = args.delete("-s")
+    indent               = args.delete("-i")
+    side_by_side_hexmode = args.delete("-h")
+    interleaved_hexmode  = args.delete("-x")
 
     lesspipe(:wrap=>wrap, :clear=>!scrollable) do |less|
 
       args.each do |arg|
-        if args.size > 1
-          less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
-          less.puts
-        end
-
         begin
-          result = convert(arg)
-        rescue Errno::EACCES
-          less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
-          # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
-          next
-        rescue Errno::ENOENT => e
-          # less.puts "\e[31m\e[1mFile not found.\e[0m"
-          less.puts "\e[31m\e[1m#{e}\e[0m"
-          next
-        end
+          if args.size > 1
+            less.puts "\e[30m\e[1m=== \e[0m\e[36m\e[1m#{arg} \e[0m\e[30m\e[1m==============\e[0m"
+            less.puts
+          end
 
-        case result
-        when Enumerable
-          result.each { |line| less.puts line }
-        when String
-          result.each_line { |line| less.puts line }
-        end
+          begin
+            result = if side_by_side_hexmode
+              print_hex(arg)
+            elsif interleaved_hexmode
+              print_hex(arg, false)
+            else
+              convert(arg)
+            end
+          rescue Errno::EACCES
+            less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+            # less.puts "\e[31m\e[1mNo read permission for \e[0m\e[33m\e[1m#{arg}\e[0m"
+            next
+          rescue Errno::ENOENT => e
+            # less.puts "\e[31m\e[1mFile not found.\e[0m"
+            less.puts "\e[31m\e[1m#{e}\e[0m"
+            next
+          end
 
-        less.puts
-        less.puts
+          case result
+          when Enumerable
+            result.each { |line| less.puts line }
+          when String
+            result.each_line { |line| less.puts line }
+          end
+
+          less.puts
+          less.puts
+
+        end # each arg
+      rescue MissingDependency => e
+        less.puts e.to_s
       end
-    end
+    end # lesspipe
 
   end
 

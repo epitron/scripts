@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+
+class String
+  def url?
+    match %r{^https?://.+}
+  end
+end
+
+opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
+
+if opts.include?("-h") or opts.include?("--help")
+  puts "usage:"
+  puts "  ttm [option] <file(s) or url(s), or nothing to read from STDIN>"
+  puts
+  puts "options:"
+  puts "  -s   shorten all urls (must supply only urls)"
+  exit 1
+end
+
+args << "-" if args.empty?
+
+args.each do |arg|
+  if opts.include?("-s")
+    if not arg.url? then raise "error: can't shorten a file." end
+    puts "* Shortening: #{arg}"
+    form = "shorten=#{arg}"
+  else
+    if arg.url?
+      puts "* Mirroring: #{arg}"
+      form = "url=#{arg}"
+    elsif arg == "-"
+      puts "* Uploading from STDIN:"
+      form = "file=@-"
+    else
+      size = (File.size(arg).to_f / 1024).round(2)
+      puts "* Uploading: #{arg} (#{size} kbytes)"
+      form = "file=@#{arg}"
+    end
+  end
+
+  cmd = [
+    "curl",
+    "--compressed",
+    "--progress-bar",
+    "-F#{form}",
+    "https://ttm.sh"
+  ]
+
+  puts IO.popen(cmd, &:read)
+  puts
+end

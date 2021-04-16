@@ -11,9 +11,21 @@
   { "keys": ["ctrl+alt+p"], "command": "git_push" },
   { "keys": ["alt+p"], "command": "git_pull" },
   { "keys": ["alt+w"], "command": "toggle_setting", "args": {"setting": "word_wrap"} },
+  { "keys": ["alt+r"], "command": "reindent"},
 
   {
-    "keys": ["alt+r"],
+      "keys": ["ctrl+shift+pagedown"],
+      "command": "move_tab",
+      "args": { "position": "+1" }
+  },
+  {
+      "keys": ["ctrl+shift+pageup"],
+      "command": "move_tab",
+      "args": { "position": "-1" }
+  },
+
+  {
+    "keys": ["ctrl+alt+r"],
     "command": "show_symbols",
     "context": [
       {

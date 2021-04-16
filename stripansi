@@ -1,5 +1,19 @@
 #!/usr/bin/env ruby
-require 'epitools'
 
-print ARGF.read.strip_ansi
+ANSI_RE = %r{
+  \e
+  [ \[()#;? ]*
 
+  (?:
+    [0-9]{1,4}
+    (?:
+      ;[0-9]{0,4}
+    )*
+  )?
+
+  [0-9A-PRZcf-nqry=><]
+}x
+
+ARGF.each_line do |line|
+  print line.gsub(ANSI_RE, '')
+end

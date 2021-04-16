@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require 'geoip'
+require 'oga'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+CACHE_DIR = Path["~/.cache/geoip"]
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: geoip-ruby [options]"
+
+  on "d", "data-dir", "the data dir (default: '/usr/share/GeoIP')"
+  on "e", "ext",      "the datafile ext", default: ".dat"
+  on "D", "download", "Download the GeoIP data files to ~/.cache/geoip"
+  on "u", "update",   "update geoip databases"
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+########################################################
+
+class GeoIP
+  @@types = Edition.constants.map { |c| [Edition.const_get(c), c] }.to_h
+
+  @@type_methods = {
+    :ASNUM        => :asn,
+    :CITY_REV1_V6 => :city,
+    :CITY_REV1    => :city,
+    :COUNTRY_V6   => :country, 
+    :COUNTRY      => :country, 
+    :ASNUM_V6     => :asn,
+  }
+
+  def type
+    @@types[@database_type]
+  end
+
+  def lookup(host)
+    meth = @@type_methods[type]
+    public_send meth, host
+  end
+end
+
+########################################################
+
+if opts.download? or opts.update?
+  require 'open-uri'
+
+  geoip_uri     = "http://mirrors.rit.edu/archlinux/extra/os/x86_64/"
+  geoip_pattern = /geoip-database.+\.pkg\.tar\.(xz|gz|bz2)$/  # eg: geoip-database-20180403-1-any.pkg.tar.xz
+
+  doc = open(geoip_uri) { |io| Oga.parse_html(io) }
+
+  package_uris = doc.css("a").
+    select { |e| e["href"][geoip_pattern] }.
+       map { |a| "#{geoip_uri}#{a["href"]}" }.
+       map &:to_Path
+
+  CACHE_DIR.mkcd do
+    package_uris.each do |uri| 
+      p updating: uri
+      system("wget", "-c", uri.to_s)
+    end
+  end
+
+  Path["*.tar.xz"].each do |archive|
+    system("tar", "-Ixz", "-xvf", archive)
+  end
+
+  exit
+end
+
+# Search for 'data_dir's in this order: #{opts[data-dir]}, /usr/share/GeoIP, #{CACHE_DIR}/usr/share/GeoIP
+data_dir = (opts[:"data-dir"] || "/usr/share/GeoIP").to_Path
+
+unless data_dir.exists?
+  data_dir = CACHE_DIR/"usr/share/GeoIP"
+  unless data_dir.exists?
+    puts "Error: Couldn't find any GeoIP .dat files."
+    puts "Please specify the path manually, or use '--download' download and extract it to '~/.cache/geoip'"
+  end
+end
+
+datfiles = (data_dir/"**/*#{opts[:ext]}")
+
+dbs = datfiles.map { |datfile| GeoIP.new(datfile) }
+
+results = []
+
+hosts = ARGV
+hosts.each do |host|
+  dbs.each do |db|
+    result = db.lookup(host)
+    results << [result.class, *result.to_h.map {|k,v| "#{k}: #{v}"}]
+  end
+end
+
+# [GeoIP::ASN, "number: AS13335", "asn: Cloudflare Inc"]
+# [GeoIP::City, "request: 1.1.1.1", "ip: 1.1.1.1", "country_code2: AU", "country_code3: AUS", "country_name: Australia", "continent_code: OC", "region_name: 07", "city_name: Research", "postal_code: 3095", "latitude: -37.69999999999999", "longitude: 145.18329999999997", "dma_code: ", "area_code: ", "timezone: Australia/Victoria", "real_region_name: Victoria"]
+# [GeoIP::Country, "request: 1.1.1.1", "ip: 1.1.1.1", "country_code: 16", "country_code2: AU", "country_code3: AUS", "country_name: Australia", "continent_code: OC"]
+results.uniq.each do |klass, *infos|
+  puts "#{klass}\n\t#{infos.join("\n\t")}"
+end

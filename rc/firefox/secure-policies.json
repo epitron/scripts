@@ -1,0 +1,25 @@
+{
+  "policies": {
+    "OfferToSaveLogins": false,
+    "DisableBuiltinPDFViewer": true,
+    "DisablePocket": true,
+    "DisableFormHistory": true,
+    "SanitizeOnShutdown": true,
+    "SearchBar": "separate",
+    "DisableTelemetry": true,
+    "Cookies": {
+      "AcceptThirdParty": "never",
+      "ExpireAtSessionEnd": true
+    },
+    "EnableTrackingProtection": {
+      "Value": true
+    },
+    "PopupBlocking": {
+      "Default": true
+    },
+    "FlashPlugin": {
+      "Default": false
+    },
+    "DisableFirefoxStudies": true
+  }
+}

@@ -3,19 +3,38 @@ gem 'slop', "~> 3.6"
 require 'slop'
 require 'epitools'
 
+def copy(src, dest)
+  open(src, "rb") do |input|
+    open(dest, "wb") do |output|
+      IO.copy_stream(input, output)
+    end
+  end
+end
+
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: qemu [options] <.iso or .qcow2 file(s)>"
 
     on "m=", "memory",   "How much memory to use?", default: "2G"
-    on "s=", "size",     "Disk size", default: "5G"
+    on "s=", "size",     "Disk size", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
     on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
-    on "k",  "kvm",      "Enable KVM"
+    on "b=", "boot",     "Drive to boot (eg: --boot=a)"
+    on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
+    on "B=", "bios",     "Load a BIOS ROM file"
+    on "S=", "samba",    "Mount a host directory via samba (it'll be on 10.x.x.4)"
+    on "9=", "9p",       "Mount a host directory via 9p (guest fstab: \"host0 /wherever 9p trans=virtio,version=9p2000.L 0 0\")"
     on "r",  "restrict", "Restrict the network (firewall)"
-    on "c",  "console",  "Output serial to the console"
-    on "C",  "cursor",   "Show the mouse cursor"
+    on "e",  "efi",      "Boot using OVMF EFI BIOS"
+    on "1",  "pi",       "Raspberry PI mode"
+    on "2",  "pi2",      "Raspberry PI 2 mode"
+    on "d",  "serial",   "Print serial output to STDIO ('debug' mode)"
+    on "c",  "console",  "STDIO-only serial console mode"
+    on "C",  "curses",   "Terminal-based UI (Press Alt-2 to get to qemu command console)"
+    on "n",  "no-daemon","Run in the foreground"
+    on "M",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
+    on "V",  "version",  "Show version information"
     # on "b=", "backing-file",    "Use this as the backing file"
   end
 
@@ -24,12 +43,19 @@ end
 
 opts, args = parse_options
 
-if args.empty?
+if opts.version?
+  %w[qemu-system-x86_64 qemu-system-i386 qemu-system-arm qemu-img].any? do |bin|
+    system(bin, "--version")
+  end
+  exit
+end
+
+if args.empty? and not opts.bios?
   puts opts
   exit 1
 end
 
-isos, disks = args.map(&:to_Path).partition { |arg| arg.ext == "iso" }
+isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" or arg.path[%r{^/dev/s(r|cd)\d}] }
 isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
 exit 1 unless isos.all? &:exist?
 
@@ -83,12 +109,42 @@ end
 ###############################
 memory = opts[:memory]
 
-cmd = ["qemu-system-x86_64"]
-cmd << "-enable-kvm" if opts.kvm?
+if opts.pi?
+  cmd = ["qemu-system-arm", "-cpu", "arm1176", "-M", "versatilepb"]
+elsif opts.pi2?
+  cmd = ["qemu-system-arm", "-cpu", "arm1176", "-M", "raspi2"]
+else
+  cmd = ["qemu-system-x86_64"]
+  if File.exist?("/dev/kvm") or opts.kvm?
+    cmd += ["-enable-kvm", "-cpu", "host"]
+  else
+    cmd += ["-cpu", "max"]
+  end
+end
 
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
+cmd += ["-virtfs", "local,path=#{opts[:"9p"]},mount_tag=host0,security_model=passthrough,id=host0"] if opts[:"9p"]
+
+if opts[:bios]
+  cmd += ["-bios", opts[:bios]]
+elsif opts.efi?
+  bios          = "/usr/share/ovmf/x64/OVMF_CODE.fd"
+  readonly_vars = "/usr/share/ovmf/x64/OVMF_VARS.fd"
+  vars          = "/tmp/ovmf_vars.fd"
+
+  raise "Error: #{bios} not found" unless File.exists?(bios)
+  raise "Error: #{readonly_vars} not found" unless File.exists?(readonly_vars)
+
+  copy(readonly_vars, vars)
+
+  cmd += [
+    "-drive", "if=pflash,format=raw,readonly,file=#{bios}",
+    "-drive", "if=pflash,format=raw,file=#{vars}"
+  ]
+end
+
 
 if opts.console?
   # cmd += %w[-nographic -serial mon:stdio -append 'console=ttyS0']
@@ -101,6 +157,8 @@ else
 end
 
 cmd << "-show-cursor" if opts.cursor?
+cmd << "-curses" if opts.curses?
+cmd += ["-serial", "stdio"] if opts.serial?
 
 disks.each do |disk|
   unless disk.exists?
@@ -128,8 +186,8 @@ isos.each  { |iso| cmd += ["-cdrom", iso] }
 
 # Networking
 netopts = "user,id=usernet"
-
 netopts += ",restrict=on" if opts.restrict?
+netopts += ",smb=#{opts[:samba]}" if opts[:samba]
 
 if port = opts[:port]
   src, dest = port.split(":")
@@ -139,7 +197,10 @@ end
 
 cmd += ["-netdev", netopts]
 cmd += ["-net", "nic,netdev=usernet"]
+cmd += ["-boot", opts[:boot]] if opts[:boot]
 
 p cmd if opts.verbose?
+
+Process.daemon(true) unless opts["no-daemon"] or opts.console? or opts.curses? or opts.serial?
 
 exec *cmd

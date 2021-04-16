@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: docker-usage [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+class Image < Struct.new(:name, :tag, :image_id, :age, :size)
+  def self.from_line(line)
+    image = new(*line.chomp.split(/ {2,}/))
+    image.convert_size!
+    image
+  end
+
+  def convert_size!
+    return unless size.is_a? String
+
+    if size =~ /^([\d\.]+)([A-Z]+)$/i
+      n     = $1.to_f
+      units = $2
+
+      scale = case units.upcase
+      when "KB" then 1.thousand
+      when "MB" then 1.million
+      when "GB" then 1.billion
+      when "TB" then 1.trillion
+      else 1
+      end
+
+      self.size = (n * scale).to_i
+    else
+      raise "Couldn't parse #{size}"
+    end
+  end
+end
+
+images = IO.popen(["docker","image","ls"], &:read).each_line.drop(1).map { |line| Image.from_line(line) }
+images.sort_by(&:size).each do |image|
+  puts "<7>#{image.size.commatize.rjust(20)} <11>#{image.name} <14>#{image.tag} <8>(<7>#{image.age}<8>)".colorize
+end
+puts "-----------------------------------------------------------------------"
+puts "<7>total usage: <9>#{images.sum(&:size).commatize} <7>bytes".colorize

@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+
+require 'shellwords'
+
+# Array of [ [dirname, path], ... ]
+raw_mp3s = Dir["#{ENV["HOME"]}/m/music/*"] +
+           Dir["#{ENV["HOME"]}/m/music/outbox/*"] +
+           Dir["#{ENV["HOME"]}/m/music/inbox/*"] +
+           Dir["#{ENV["HOME"]}/m/music/offline/*"] +
+           Dir["#{ENV["HOME"]}/m/music/mixes/*"]
+
+paths = raw_mp3s.
+          reject { |e| e =~ /\.\w{1,4}$/ unless e =~ /\.(xspf|m3u8?)$/ }.
+          map {|path| [path.split("/").last, path] }.
+          sort_by {|path| path.first.downcase }
+
+
+paths =
+  paths.sample(10) +  # Random albums
+  [["-"*50,nil]] +    # ASCII horizontal line
+  paths
+
+names = paths.to_h
+
+path =
+  IO.popen(%w[rofi -dmenu -i -async-pre-read 0 -p Album:], "r+") do |f|
+    f.puts names.keys.join("\n")
+    f.close_write
+
+    picked = f.gets.strip
+    names[picked]
+  end
+
+EXTS = %w[
+  mp3 m4a flac ogg wma fla flv mp2
+]
+
+AUDIO_RE = /\.#{Regexp.union EXTS}$/
+
+files = Dir["#{Shellwords.escape path}/**/*.{#{EXTS.join(",")}}"]
+exec("audacious", *files)
