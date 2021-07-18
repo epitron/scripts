@@ -117,6 +117,7 @@ routes do
   match host: "peertube.social",          path: %r{^/videos/watch/}, &play_video
   match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
   match host: "media.ccc.de", path: %r{^/v/.+},     &play_video
+  match host: "tiktok.com",   path: %r{/video/},    &play_video
   match host: "ted.com",      path: "/talks/",      &play_video
   match host: "longnow.org",  path: "/seminars/",   &play_video
   match host: "c-span.org",   path: "/video/",      &play_video
