@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: html2mmap [options] <file(s)...>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+args.each do |arg|
+  ps = Path[arg]
+  puts "[!] Error: #{arg.inspect} not found" unless ps.exists?
+
+  doc      = Oga.parse_html ps.open
+  filename = doc.css("script[id='mmap-name']")&.text
+  data     = doc.css("script[id='mmap']")&.text&.from_base64
+
+  if filename and data
+    puts "[+] Writing #{filename.inspect}..."
+    File.write(filename, data)
+    puts " |__ #{data.size.commatize} bytes written"
+  else
+    puts "[!] Error: #{filename.inspect} didn't parse"
+  end
+end
