@@ -10,7 +10,7 @@ source "$SCRIPTDIR/aliases.sh"
 ## Environment Variables
 
 # "cd <somedir>" will try to "cd <somedir>" in the current directory, but if <somedir> doesn't exist, it'll try "cd ~/<somedir>"
-export CDPATH=:~
+# export CDPATH=:~
 
 # Prepend a directory to the path (if it exists)
 function possibly_prepend_path() {
