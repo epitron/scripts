@@ -13,11 +13,12 @@ TYPE_INFO = [
   [:image,   /\.(jpe?g|bmp|png|gif)$/i,                                   :green],
   [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv|vob)$/i,          :light_purple],
   [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
+  [:bin,     /\.(exe)$/i,                                                 :light_green],
   [:config,  /\.(conf|ini)$/i,                                            :cyan],
   [:dotfile, /^\../i,                                                     :grey],
   [:data,    /\.(json|ya?ml|h|sql)$/i,                                    :yellow],
   [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
-  [:archive, /\.(zip|rar|arj|pk3|deb|tar\.(?:gz|xz|bz2|zst)|tgz|pixz|gem)$/i, :light_yellow],
+  [:archive, /\.(zip|rar|arj|pk3|deb|7z|tar\.(?:gz|xz|bz2|zst)|tgz|pixz|gem)$/i, :light_yellow],
   [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk|epub|docx?))$/i, :light_white],
 ]
 
