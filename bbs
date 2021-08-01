@@ -2,6 +2,7 @@
 require 'epitools'
 
 BBSES = %{
+  bbs.blackflag.org
   bbs.electronicchicken.com
   bbs.thebrokenbubble.com
   bbs.pharcyde.org
