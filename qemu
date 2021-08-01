@@ -107,6 +107,24 @@ end
 ###############################
 # Run QEMU
 ###############################
+
+#
+# RPI2 commands:
+#
+# qemu-system-arm -kernel kernel-qemu-3.10.25-wheezy 
+# -initrd installer-rpi2-qemu.cpio 
+# -cpu arm1176 -m 256 -M versatilepb 
+# -no-reboot 
+# -append "root=/dev/sda1 rw vga=normal console=ttyAMA0 console=ttyS0" 
+# -hda raspbian-ua-netinst-v1.0.8.1.img
+#
+# qemu-system-arm.exe -M raspi2
+# -kernel kernel-rpi2_install.img
+# -sd raspbian-ua-netinst-v1.0.8.1-ready.img
+# -append "rw earlyprintk loglevel=8 console=ttyAMA0,115200 console=ttyS0 root=/dev/mmcblk0p2"
+# -monitor stdio
+#
+
 memory = opts[:memory]
 
 if opts.pi?
