@@ -259,7 +259,7 @@ EXT_HIGHLIGHTERS = {
   ".sublime-syntax" => :yaml,
 
   # haxe
-  ".hx"             => :java,
+  ".hx"             => rougify,
 
   # misc
   ".inc"            => :c, # weird demo stuff
@@ -1004,6 +1004,10 @@ def print_moin(moin)
 end
 
 ##############################################################################
+
+def wikidump_dir?(path)
+  ["*-current.xml", "*-titles.txt"].all? { |pat| path.glob(pat).any? }
+end
 
 def print_wikidump(filename)
   require 'nokogiri'
@@ -1881,6 +1885,8 @@ def convert(arg)
     if path.directory?
       if leveldb_dir?(path)
         return print_leveldb(path)
+      elsif wikidump_dir?(path)
+        print_wikidump(path.glob("*-current.xml").first)
       else
         readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$)/i]) }.sort_by(&:size)
         if readme = readmes.first
@@ -2031,6 +2037,7 @@ if $0 == __FILE__
           end
 
           begin
+            # TODO: this breaks if you pass a dir; move this inside `convert(arg)`
             result = if side_by_side_hexmode
               print_hex(arg)
             elsif interleaved_hexmode
