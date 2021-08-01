@@ -15,7 +15,7 @@ def parse_options
     banner "Usage: gc [options] <git-url or github-user/repo> [<destination directory>]"
 
     # on "s",  "shallow",      "Shallow clone (without history)"
-    on "a",  "all",          "Clone all of the historical commits (default is to do a shallow (--depth=1) clone)"
+    on "a",  "all-history",  "Clone all history (default is to do a shallow (--depth=1) clone)"
     on "b",  "bare",         "Create a bare repository (no checkout)"
     on "N",  "no-recursion", "Don't automatically clone submodules"
     on "r",  "remote-submodules", "Submodules track their remote HEADs (instead of being locked to a specific commit)"
@@ -43,7 +43,7 @@ def git_repo_root_dir
   Dir.chdir("..") { git_repo_root_dir }
 end
 
-def clone(repo, dest=nil, branch: nil, shallow: false, recursive: true, remote_submodules: false, bare: false)
+def clone(repo, dest=nil, branch: nil, shallow: true, recursive: true, remote_submodules: false, bare: false)
   print "\e[37m\e[1m#{"Shallow " if shallow}Cloning \e[0m\e[33m\e[1m#{repo}\e[0m"
   print " into \e[0m\e[36m\e[1m#{dest}\e[0m\e[37m\e[0m" if dest
   puts
