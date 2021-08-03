@@ -1,0 +1,58 @@
+# scoop package manager
+#   https://scoop.sh
+
+# scoop enhancements
+scoop-search
+aria2
+
+# unixes
+msys2
+cygwin
+
+# utils
+curl
+fzf
+lftp
+wget
+7zip
+scc
+
+# languages
+ruby
+python
+python27
+git
+ctags
+llvm
+
+# editors
+sublime-text
+vscode
+android-studio
+
+# windows gui apps
+sysinternals (procexp)
+altdrag
+winmtr
+windows-terminal
+autohotkey
+qbittorrent
+rufus
+signal
+obs-studio
+paint.net
+
+# media
+mpv
+mpv.net
+foobar2000-portable
+musicbee
+ffmpeg
+youtube-dl
+
+# browsers
+ungoogled-chromium{,-portable}
+googlechrome{,-portable}
+chromium-dev{,-portable}
+firefox{,-portable}
+
