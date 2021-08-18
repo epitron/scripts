@@ -209,7 +209,7 @@ alias suspend='systemctl suspend -i'
 
 # misc
 alias dict='dictless'
-alias wh="$(which w)"
+alias wh="$(which w 2> /dev/null)"
 alias w='wict'
 alias chrome='google-chrome'
 alias dmenu="dmenu -l 50"
