@@ -1,6 +1,9 @@
 # scoop package manager
 #   https://scoop.sh
 
+# buckets:
+#   scoop bucket add extras games java nerd-fonts
+
 # scoop enhancements
 scoop-search
 aria2
@@ -8,14 +11,20 @@ aria2
 # unixes
 msys2
 cygwin
+busybox
 
 # utils
 curl
+ag
 fzf
 lftp
 wget
 7zip
 scc
+bat
+brename
+scc
+telnet
 
 # languages
 ruby
@@ -24,23 +33,41 @@ python27
 git
 ctags
 llvm
+sqlite
 
 # editors
 sublime-text
 vscode
 android-studio
 
-# windows gui apps
+# dev tools
+meld
+godot
+
+# fonts
+cascadia-code
+
+# windows libs
+vcredist2015
+
+# windows gui utils
 sysinternals (procexp)
 altdrag
 winmtr
-windows-terminal
 autohotkey
-qbittorrent
 rufus
+etcher # write OS images to USB sticks
+
+# windows apps
+qbittorrent
 signal
 obs-studio
 paint.net
+
+# windows terminals
+windows-terminal
+alacritty
+consolez
 
 # media
 mpv
@@ -55,4 +82,5 @@ ungoogled-chromium{,-portable}
 googlechrome{,-portable}
 chromium-dev{,-portable}
 firefox{,-portable}
+beaker
 
