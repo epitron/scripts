@@ -11,15 +11,25 @@ COLORS = %w[
   grey/white
 ]
 
+TYPES = ["", "-simple"]
+
 # <see scripts/promptinfo for more info> 
 
 puts "* Generating color scripts..."
 
-for color in COLORS
+for color, type in COLORS*TYPES
+
   back, fore = color.split('/')
   fore = "light_#{back}" unless fore
 
-  ps1 = "<grey>[<white>\\@<grey>] <#{back}>\\u<grey>@<#{fore}>\\h <grey>:: <light_white>\\w <white>$ "
+  path = Path["#{back}#{type}"]
+
+  case type
+  when "-simple"
+    ps1 = "<grey>[<white>\\@<grey>] <grey>:: <#{fore}>\\w <white>$ "
+  else
+    ps1 = "<grey>[<white>\\@<grey>] <#{back}>\\u<grey>@<#{fore}>\\h <grey>:: <light_white>\\w <white>$ "
+  end
   ps1 = ps1.colorize # colorize!
   ps1 = ps1.gsub(/((?:\e\[\d+m)+)/, "\\\[\\1\\\]") # mark ansi sections as "nonprinting"
   
@@ -30,14 +40,13 @@ for color in COLORS
 export PS1=#{ps1.inspect}
 }
 
-  #puts script; next
-  
-  path = Path[back]
-
   next if path.exists? and prompt("Overwrite #{path}?") == 'n' 
 
   puts "  |_ #{path}"
-  path.truncate; path.write script
+  path.truncate
+  path.write script
+  path.chmod "+x"
+  
 end
 
 
