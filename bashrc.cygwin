@@ -4,4 +4,17 @@ alias apt='apt-cyg'
 alias s='subl'
 alias lsblk='cat /proc/partitions'
 
+alias ss='scoop-search'
+alias si='scoop install'
+alias sl='scoop list'
+alias sr='scoop uninstall'
+
+if net session > /dev/null 2>&1; then
+  . red-simple
+else
+  . cyan-simple
+fi
+
+alias gradlew='TERM=cygwin ./gradlew'
+
 unset FZF_DEFAULT_OPTS
