@@ -222,6 +222,8 @@ EXT_HIGHLIGHTERS = {
   ".qml"            => :php,
   ".pro"            => :sql,
   ".cxml"           => :xml,
+  ".kt"             => rougify,
+  ".kts"            => rougify,
 
   # llvm
   ".ll"             => rougify,
