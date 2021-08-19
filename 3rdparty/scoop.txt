@@ -57,6 +57,7 @@ winmtr
 autohotkey
 rufus
 etcher # write OS images to USB sticks
+geekuninstaller
 
 # windows apps
 qbittorrent
@@ -67,7 +68,7 @@ paint.net
 # windows terminals
 windows-terminal
 alacritty
-consolez
+consolez (themes: https://github.com/joonro/ConsoleZ-Color-Themes)
 
 # media
 mpv
