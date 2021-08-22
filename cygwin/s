@@ -1,0 +1,14 @@
+if [ -f "$@" ]; then
+	thing="$(cygpath -w "$@")"
+else
+	if foundit=`which "$@" 2>/dev/null`; then
+  		thing="$(cygpath -w "$foundit")"
+  		# yay!
+	else
+		echo "couldn't find $@"
+		exit 1
+	fi
+fi
+
+echo opening $thing
+subl $thing

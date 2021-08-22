@@ -152,6 +152,7 @@ case $(uname -o) in
     ;;
   Cygwin)
     . $SCRIPTDIR/bashrc.cygwin
+    export PATH=$SCRIPTDIR/cygwin:$PATH
     ;;
 esac
 
