@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "Make sure to open http://mitm.it/ to install certificates."
+mitmweb --set tls_version_client_min=UNBOUNDED
+
