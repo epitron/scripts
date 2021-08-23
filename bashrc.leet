@@ -146,16 +146,15 @@ case $(uname -s) in
     ;;
 esac
 
-
-case $(uname -o 2&> /dev/null) in
+case $(uname -o) in
   Android)
     . $SCRIPTDIR/bashrc.android
     ;;
   Cygwin)
     . $SCRIPTDIR/bashrc.cygwin
+    export PATH=$SCRIPTDIR/cygwin:$PATH
     ;;
 esac
-
 
 ## Disable TTY flow control (^S and ^Q)
 #stty stop undef

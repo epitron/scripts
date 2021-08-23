@@ -14,3 +14,6 @@ tailscale.com/cmd/tailscale
 tailscale.com/cmd/tailscaled
 https://git.scuttlebot.io/%25C35b%2BMlZ%2Fy5TT1e7SG66eNKEIdX5DRl9PRUxbhvO89k%3D.sha256 dillo-ipfs
 github.com/FiloSottile/age # modern crypto command-line tool
+
+github.com/shenwei356/brename # cross-platform file renamer
+github.com/fyne-io/fyne # Go GUI
