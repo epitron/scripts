@@ -17,3 +17,7 @@ user_pref("accessibility.typeaheadfind.startlinksonly", true);
 user_pref("browser.search.defaultenginename", "DuckDuckGo");
 user_pref("browser.search.countryCode", "CA");
 user_pref("browser.search.region", "CA");
+
+/* Hide the annoying "you just entered fullscreen mode" notification */
+user_pref("full-screen-api.warning.timeout", 0);
+user_pref("full-screen-api.warning.delay", -1);

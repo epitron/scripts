@@ -32,9 +32,9 @@ def unwrap(lines, width, verbose=false)
   last  = lines.size-1
   para  = []
   doc   = []
-  
+
   loop do
-    
+
     line = lines[i]
     para << line
 
@@ -43,7 +43,7 @@ def unwrap(lines, width, verbose=false)
     unless i == last
       next_words = lines[i+1].split(/\s+/)
       word_following_wrap = next_words[0]
-      
+
       unless word_following_wrap and (line.size + word_following_wrap.size) >= width
         # new para!
         # TODO: No space after "conti- nuations"
@@ -51,14 +51,14 @@ def unwrap(lines, width, verbose=false)
         para = []
       end
     end
-    
+
     i += 1
     break if i > last
-    
-  end  
-  
+
+  end
+
   doc << para.join(' ')
-  
+
   return doc
 end
 
@@ -76,9 +76,10 @@ def display_statistics(lines)
   puts "median: #{lengths.sort[n / 2]}"
   puts "   min: #{lengths.reject{|l| l == 0}.min}"
   puts "   max: #{lengths.max}"
-
-  lengths.group_by(&:itself).each do |len, count|
-    puts "#{"%0.5d" % len}: #{count}"
+  puts
+  puts "Histogram (\"<length>: <frequency>\"):"
+  lengths.group_by(&:itself).sort_by(&:first).each do |len, count|
+    puts "#{"%5d" % len}: #{count.size}"
   end
 end
 

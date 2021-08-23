@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+##############################################################################################
+require 'epitools'
+##############################################################################################
+
+NUMBER_MAP = {
+  "1" => %w[1],
+  "2" => %w[a b c],
+  "3" => %w[d e f],
+  "4" => %w[g h i],
+  "5" => %w[j k l],
+  "6" => %w[m n o],
+  "7" => %w[p q r s],
+  "8" => %w[t u v],
+  "9" => %w[w x y z],
+  "0" => %w[0],
+}
+
+def each_letter_sequence_for(numstr, &block)
+  if numstr.empty?
+    yield ""
+  else
+    char = numstr[0]
+
+    if letters = NUMBER_MAP[char]
+      letters.each do |letter|
+        each_letter_sequence_for(numstr[1..-1]) do |str|
+          yield letter + str
+        end
+      end
+    end
+  end
+end
+
+##############################################################################################
+
+if $0 == __FILE__
+  if ARGV.any?
+    numstr = ARGV.join.scan(/\d/).flatten.join
+
+    lesspipe do |less|
+      less.puts "------------------------------------------------------"
+      less.puts "All permutations of #{numstr}"
+      less.puts "------------------------------------------------------"
+      each_letter_sequence_for(numstr) { |seq| less.puts seq }
+    end
+  else
+    puts "Usage: ananumber <phone digits>"
+  end
+end

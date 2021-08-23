@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+##################################################################
+
+class String
+  def url?
+    self =~ %r{^https?://.+}i
+  end
+end
+
+##################################################################
+def clipboard_get_android
+  [`termux-clipboard-get`.chomp]
+end
+
+def clipboard_get_linux
+  # 'primary' == selection, 'clipboard' == manually copied
+  %w[clipboard primary].map do |name|
+    result = `xclip -o -selection #{name}`.chomp
+    result.empty? ? nil : result
+  end.compact
+end
+
+def clipboard_get
+  if `uname -s`["Linux"]
+    if `uname -o`["Android"]
+      clipboard_get_android
+    else
+      clipboard_get_linux
+    end
+  else
+    raise "Unsupported platform: #{`uname -a`}"
+  end.select(&:url?)
+end
+
+##################################################################
+
+urls, args = ARGV.partition(&:url?)
+
+if urls.empty?
+  urls += clipboard_get
+end
+
+urls.each do |url|
+  system("gfv", "-a", url, *args)
+end
