@@ -187,6 +187,7 @@ EXT_HIGHLIGHTERS = {
   ".scm"            => :clojure,
   ".rkt"            => rougify(:racket),
   ".scrbl"          => rougify(:racket),
+  ".ny"             => :clojure,
 
   # gl
   ".shader"         => :c,
