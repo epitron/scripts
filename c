@@ -254,8 +254,8 @@ EXT_HIGHLIGHTERS = {
   '.factor'         => rougify,
 
   # patch
-  ".diff"           => pygmentize,
-  ".patch"          => pygmentize,
+  ".diff"           => rougify,
+  ".patch"          => rougify,
 
   # sublime
   ".tmLanguage"     => :xml,
