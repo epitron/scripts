@@ -129,11 +129,20 @@ rgrep() {
   rcat "$@" | grep -Ei $expression
 }
 
+pager='less -RSFXi'
+if we_have rg
+then
+  rg() {
+    `which rg` --pretty "$@" | $pager
+  }
+  #alias ag="rg"
+fi
+
 if we_have ag
 then
-  alias ag='ag --pager "less -RSFXi"'
+  alias ag="ag --pager '$pager'"
 else
-  alias ag='ack --pager "less -RSFXi"'
+  alias ag="ack --pager '$pager'"
 fi
 
 alias less='less -X -F -i'
