@@ -1,4 +1,6 @@
 https://github.com/bmrf/tron/ # Remove garbage from Windows
 https://ninite.com
 https://cygwin.com
+https://scoop.sh
 https://www.oo-software.com/en/shutup10
+https://www.bluestacks.com/ # fast android emulator
