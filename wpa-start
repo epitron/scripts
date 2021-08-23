@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: wpa-start [options]"
+
+  # on "a",  "along",  "desc"
+  on "s=", "ssid",      "SSID"
+  on "p=", "password",  "WPA-PSK passphrase"
+  on "i=", "interface", "Wireless interface"
+end
+
+args = ARGV
+
+########################################################
+
+unless opts.ssid?
+  system("wifiscan")
+  exit
+end
+
+unless dev = opts[:interface]
+  devs = Path["/proc/net/dev"].each_line.drop(2).map{ |l| l.split(":").first.strip }.grep(/^w/)
+  case devs.size
+  when 0
+    puts "no network devices found!"
+    exit 1
+  when 1
+    dev = devs.first
+    puts "using #{dev} (because you didn't specify a network interface)"
+  else
+    puts "found multiple wireless devices (#{devs}); you gotta pick one"
+    exit 1
+  end
+end
+
+puts "* connecting to #{opts[:ssid]}"
+
+conf_contents = %{
+          # allow frontend (e.g., wpa_cli) to be used by all users in 'wheel' group
+          #ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=wheel
+          #
+          # home network; allow all valid ciphers
+          network={
+               ssid="#{opts[:ssid]}"
+               scan_ssid=1
+               key_mgmt=WPA-PSK
+               psk="#{opts[:password]}"
+          }
+}
+
+conf = Path["/tmp/wpa_supplicant.conf"]
+File.write(conf, conf_contents)
+
+fork do
+  system("wpa_supplicant", "-i#{dev}", "-c#{conf}")
+end
+
+sleep 15
+File.unlink(conf)
+
+system("dhcpcd", "--nobackground", dev)
