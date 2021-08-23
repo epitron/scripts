@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "Make sure to open http://mitm.it/ to install certificates."
+
+# --web-port PORT       Web UI port.
+# --web-host HOST       Web UI host.
+mitmweb --no-web-open-browser --set tls_version_client_min=UNBOUNDED --listen-port 8118
+

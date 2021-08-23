@@ -19,7 +19,7 @@ whois
 iptraf-ng
 socat
 openssh
-
+dog
 
 # File transfers
 rsync

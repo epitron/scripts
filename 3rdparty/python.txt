@@ -20,6 +20,8 @@ hachoir
 
 pafy # leaner youtube-dl (command: ytdl)
 
+youtube-search
+
 https://github.com/WikiTeam/wikiteam
 
 pyfiglet (cool fonts: roman, f15, isometric1, eca_____, drpepper, univers, r2-d2___, rectangles, broadway, fraktur)

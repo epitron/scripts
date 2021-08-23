@@ -32,6 +32,7 @@ cmd = %w[
   youtube-dl
   --no-mtime
   --xattrs
+  --add-metadata
 ]
 
 urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
@@ -54,9 +55,8 @@ end
 
 if opts.delete("-a") or urls.all? { |url| url =~ %r{\.bandcamp\.com/} }
   cmd << "--extract-audio"
-  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless opts.include?("-f") # allow user to override the format options
-  cmd << "--add-metadata"
-elsif opts.delete("-s")
+  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
+elsif args.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
 elsif opts.delete("-3")

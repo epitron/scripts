@@ -1,0 +1,5 @@
+#!/bin/bash
+#if [ "$TERM" == "xterm" -a "$COLORTERM" != "gnome-terminal" ]; then
+#   export PROMPT_COMMAND='echo -ne "\033]30;[`basename "$PWD"`]\007"'
+#fi
+export PS1="\\[\e[30m\e[1m\\][\\[\e[0m\e[37m\\]\\@\\[\e[0m\e[30m\e[1m\\]] \\[\e[0m\e[30m\e[1m\\]:: \\[\e[0m\e[33m\e[1m\\]\\w \\[\e[0m\e[37m\\]$ \\[\e[0m\\]"

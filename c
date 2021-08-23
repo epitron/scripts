@@ -191,6 +191,7 @@ EXT_HIGHLIGHTERS = {
   ".scm"            => :clojure,
   ".rkt"            => rougify(:racket),
   ".scrbl"          => rougify(:racket),
+  ".ny"             => :clojure,
 
   # gl
   ".shader"         => :c,
@@ -222,6 +223,8 @@ EXT_HIGHLIGHTERS = {
   ".qml"            => :php,
   ".pro"            => :sql,
   ".cxml"           => :xml,
+  ".kt"             => rougify,
+  ".kts"            => rougify,
 
   # llvm
   ".ll"             => rougify,
@@ -251,8 +254,8 @@ EXT_HIGHLIGHTERS = {
   '.factor'         => rougify,
 
   # patch
-  ".diff"           => pygmentize,
-  ".patch"          => pygmentize,
+  ".diff"           => rougify,
+  ".patch"          => rougify,
 
   # sublime
   ".tmLanguage"     => :xml,
