@@ -34,43 +34,43 @@ cmd = %w[
   --xattrs
 ]
 
+urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
+
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
 
-unless args.delete("-S")
+unless opts.delete("-S")
   cmd += %w[--sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub]
 end
 
-unless args.include?("-o")
+unless opts.include?("-o")
   cmd << "-o"
-  if args.delete("-n")
+  if opts.delete("-n")
    cmd << "%(playlist_index)s. %(title)s.%(ext)s"
   else
    cmd << "%(title)s.%(ext)s"
   end
 end
 
-if args.delete("-a")
+if opts.delete("-a") or urls.all? { |url| url =~ %r{\.bandcamp\.com/} }
   cmd << "--extract-audio"
-  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
+  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless opts.include?("-f") # allow user to override the format options
   cmd << "--add-metadata"
-elsif args.delete("-s")
+elsif opts.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
-elsif args.delete("-3")
+elsif opts.delete("-3")
   cmd += %w[-f bestvideo[ext=mp4,height<=?360]+bestaudio[ext=m4a]/best]
-elsif args.delete("-4")
+elsif opts.delete("-4")
   cmd += %w[-f bestvideo[ext=mp4,height<=?480]+bestaudio[ext=m4a]/best]
-elsif args.delete("-7")
+elsif opts.delete("-7")
   cmd += %w[-f bestvideo[ext=mp4,height<=?720]+bestaudio[ext=m4a]/best]
-elsif args.delete("-l")
+elsif opts.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]
 end
 
-urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
-
-cmd += args
+cmd += opts
 
 urls.each do |url|
   if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
@@ -78,12 +78,10 @@ urls.each do |url|
   end
 
   if url =~ /(youtu\.be|(you|hook)tube\.com)/
-    unless cmd.include?("--skip-download") or cmd.include?("-f") or args.delete("-h")
+    unless cmd.include?("--skip-download") or cmd.include?("-f") or opts.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end
-  elsif url =~ %r{\.bandcamp\.com/}
-    cmd += %w[-f mp3-v0]
   end
 
   onecmd = cmd.dup
