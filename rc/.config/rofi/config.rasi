@@ -1,0 +1,9 @@
+configuration {
+	show-icons: true;
+	theme: "~/.config/rofi/themes/marvin.rasi";
+	display-window: "";
+	display-run: "";
+	display-ssh: "  ";
+	display-drun: "";
+	display-combi: "";
+}

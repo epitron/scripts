@@ -1,0 +1,161 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: Jam
+file_extensions:
+  - jm
+  - Jamfile
+  - Jamrules
+scope: source.jam
+contexts:
+  main:
+    - include: instruction
+  comment:
+    - match: "#.*$"
+      scope: comment.line.jam
+  break:
+    - match: \b(break)\b
+      scope: keyword.control.flow.jam
+  builtins:
+    - match: \bputs\b
+      scope: support.function.jam
+    - match: \b(true|false|null)\b
+      scope: constant.language.jam
+    - match: \b(String|Int|Real|Bool)\b
+      scope: support.class.jam
+    - match: \bself\b
+      scope: constant.other.jam
+  class:
+    - match: \b(class)\b
+      captures:
+        0: keyword.control.jam
+      push:
+        - meta_scope: meta.class.jam
+        - match: \b(end)\b
+          captures:
+            0: keyword.control.jam
+          pop: true
+        - include: constructor
+        - include: object
+  constructor:
+    - match: \b(new)\b
+      captures:
+        0: keyword.control.jam
+      push:
+        - meta_scope: meta.function.constructor.jam
+        - match: \b(end)\b
+          captures:
+            0: keyword.control.jam
+          pop: true
+        - include: instruction
+  format-string:
+    - match: '"'
+      captures:
+        0: punctuation.definition.string.begin.jam
+      push:
+        - meta_scope: string.quoted.double.jam
+        - match: '"'
+          captures:
+            0: punctuation.definition.string.end.jam
+          pop: true
+        - include: string-interp
+        - include: string-escape
+  identifier:
+    - match: "[_a-zA-Z][_a-zA-Z0-9]*"
+      scope: entity.name.jam
+  if:
+    - match: \b(if)\b
+      captures:
+        0: keyword.control.flow.jam
+      push:
+        - meta_scope: meta
+        - match: \b(end)\b
+          captures:
+            0: keyword.control.flow.jam
+          pop: true
+        - match: \b(elif)\b
+          scope: meta
+          captures:
+            0: keyword.control.flow.jam
+        - match: \b(else)\b
+          scope: meta
+          captures:
+            0: keyword.control.flow.jam
+        - include: instruction
+  import:
+    - match: \b(import)\b
+      captures:
+        0: keyword.other.jam
+  instruction:
+    - include: comment
+    - include: if
+    - include: loops
+    - include: return
+    - include: break
+    - include: import
+    - include: modifiers
+    - include: object
+  loops:
+    - match: \b(while|loop)\b
+      captures:
+        0: keyword.control.flow.jam
+      push:
+        - meta_scope: meta
+        - match: \b(end)\b
+          captures:
+            0: keyword.control.flow.jam
+          pop: true
+        - include: instruction
+  method:
+    - match: \b(def)\b
+      captures:
+        0: keyword.control.jam
+      push:
+        - meta_scope: meta.function.jam
+        - match: \b(end)\b
+          captures:
+            0: keyword.control.jam
+          pop: true
+        - include: instruction
+  modifiers:
+    - match: \b(const|ref|pragma)\b
+      scope: keyword.other.jam
+  module:
+    - match: \b(module)\b
+      captures:
+        0: keyword.control.jam
+      push:
+        - meta_scope: meta.module.jam
+        - match: \b(end)\b
+          captures:
+            0: keyword.control.jam
+          pop: true
+        - include: instruction
+  numbers:
+    - match: '\b([0-9]([0-9_]*[0-9])?)|(([0-9]([0-9_]*[0-9])?)?\.([0-9]([0-9_]*[0-9])?))|(([0-9]([0-9_]*[0-9])?)\.([0-9]([0-9_]*[0-9])?)?)\b'
+      scope: constant.numeric.jam
+  object:
+    - include: module
+    - include: method
+    - include: class
+    - include: builtins
+    - include: identifier
+    - include: numbers
+    - include: format-string
+  return:
+    - match: \b(return)\b
+      scope: keyword.control.flow.jam
+  string-escape:
+    - match: '(\\\\\")|(\\\\#\{)'
+      scope: string
+  string-interp:
+    - match: '(#\{)'
+      captures:
+        0: keyword.operator
+      push:
+        - meta_scope: meta
+        - match: '\}'
+          captures:
+            0: keyword.operator
+          pop: true
+        - include: object
