@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+  opera-legacy --help | less
+  exit
+fi
+
+mitmproxy-opera &
+
+opera-legacy "$@"
+
+kill `jobs -p`
+
+
+
