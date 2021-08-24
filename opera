@@ -1,0 +1,6 @@
+mitmproxy-opera &
+opera-legacy
+kill `jobs -p`
+
+
+
