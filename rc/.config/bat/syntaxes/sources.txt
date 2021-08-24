@@ -3,4 +3,4 @@
 https://github.com/follesoe/sublime-racket
 https://github.com/rkoeninger/sublime-factor
 https://gist.githubusercontent.com/pateketrueke/6818164/raw/913f0d00321a5533ef7e675640781ef42e7105c9/Literate%2520CoffeeScript.tmLanguage
-
+https://github.com/BenjaminSchaaf/jam-sublime-syntax
