@@ -15,6 +15,7 @@ if args.empty? or args.delete("--help")
   puts "  -4     <= 480p"
   puts "  -7     <= 720p"
   puts "  -n     Number the files when downloading playlists"
+  puts "  -p     Parallel downloader with multiple (5) threads (requires axel)"
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
   puts "  -S     No subtitles!"
@@ -31,8 +32,10 @@ end
 cmd = %w[
   youtube-dl
   --no-mtime
-  --xattrs
+  --add-metadata
 ]
+
+#  --xattrs
 
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
@@ -44,9 +47,9 @@ end
 unless args.include?("-o")
   cmd << "-o"
   if args.delete("-n")
-   cmd << "%(playlist_index)s. %(title)s.%(ext)s"
+    cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
   else
-   cmd << "%(title)s.%(ext)s"
+    cmd << "%(title)0.240s.%(ext)s"
   end
 end
 
@@ -68,6 +71,12 @@ elsif args.delete("-l")
   cmd += %w[-f best --youtube-skip-dash-manifest]
 end
 
+# parallel download
+if args.delete("-p")
+  cmd += ["--external-downloader", "axel", "--external-downloader-args", "--num-connections=5"]
+end
+
+
 urls, args = args.partition { |arg| arg[%r{^\w{2,20}://}] }
 
 cmd += args
@@ -77,13 +86,15 @@ urls.each do |url|
     url = "https://youtu.be/#{$1}"
   end
 
+  url = url.gsub(%r{/nitter\.[^/]+/}, "/twitter.com/")
+
   if url =~ /(youtu\.be|(you|hook)tube\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or args.delete("-h")
       cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end
   elsif url =~ %r{\.bandcamp\.com/}
-    cmd += %w[-f mp3-v0]
+    cmd += %w[-f bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio]
   end
 
   onecmd = cmd.dup
