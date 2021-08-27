@@ -6,8 +6,8 @@ shares = {
   "media/ebooks"        => ["ebooks-*"],
   "media/iso"           => ["iso-*"],
   "media/documentaries" => ["documentaries-*"],
-  "media/audiobooks"    => ["audiobooks"],
-  "media/musicvideos"   => ["musicvideos"],
+  "media/audiobooks"    => ["audiobooks-?"],
+  "media/musicvideos"   => ["musicvideos-?"],
   "media/podcasts"      => ["podcasts"],
   "media/talks"         => ["talks-*"],
   "media/talks-old"     => ["talks-old"],
@@ -43,7 +43,7 @@ end
 
 # Expand globs
 shares = shares.map do |dest, srcs|
-  ["#{root}/#{dest}", srcs.map do |src| 
+  ["#{root}/#{dest}", srcs.map do |src|
    Dir[ src[ %r{^/} ] ? src : "#{root}/#{src}" ].sort
   end.flatten]
 end
@@ -67,7 +67,7 @@ if opts.delete("-r")
   unmount.call
 end
 
-mountopts = %w[-o func.create=epff,minfreespace=8G,allow_other,uid=1000,gid=992,umask=0002,xattr=passthrough] # umask=0002
+mountopts = %w[-o func.create=epff,minfreespace=2G,allow_other,uid=1000,gid=992,umask=0002,xattr=passthrough] # umask=0002
 longest   = shares.map(&:last).flatten.map(&:size).max
 
 if args.any?

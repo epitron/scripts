@@ -1,41 +1,166 @@
-#!/bin/bash
-BASE="$HOME/.local/share/wineprefixes"
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
 
-if [ "$1" == "" ]; then
-  echo "Usage: wineprefix <prefix name> [command/.exe]"
-  echo
-  echo "Prefixes are created in '$BASE'"
-  echo "(If only a prefix name is passed, it runs 'winecfg' on that prefix)"
-  exit 1
-fi
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
 
-if [ ! -d "$BASE" ]; then
-  mkdir -p "$BASE"
-fi
+PREFIX_DIR   = Path["~/.local/share/wineprefixes"]
 
-if [ "$1" == "" ]; then
-  find "$BASE" -maxdepth 1
+SETTINGS_DIR = Path["~/.config/wineprefix"]
+SETTINGS_DIR.mkdir_p unless SETTINGS_DIR.exists?
+
+SETTINGS_FILE = SETTINGS_DIR/"defaults.json"
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: wineprefix [options] <command/.exe>"
+
+  on "n=", "name",  "Prefix name"
+  on "l", "list",   "List prefixes"
+  on "3", "32",     "32-bit (default)"
+  on "6", "64",     "64-bit"
+end
+
+args = ARGV
+
+########################################################
+
+def h1(msg, s=nil)
+  s ||= msg.size + 4
+  puts "=" * s
+  puts "  #{msg}"
+  puts "=" * s
+end
+
+def load_settings
+  SETTINGS_FILE.exists? ? SETTINGS_FILE.parse : {}
+end
+
+def save_settings(settings)
+  SETTINGS_FILE.write settings.to_json
+end
+
+########################################################
+
+settings = load_settings
+prefixes = PREFIX_DIR.ls.filter(&:dir?)
+prefix   = opts[:name]
+cmd      = args
+
+# List prefixes
+if opts.list?
+  w = prefixes.map { |f| f.dirs.last.size }.max + 8
+  h1 "Prefixes:", w
+  PREFIX_DIR.cd do
+    system(*["du", "-s", "-h", *prefixes.map { |p| p.dirs.last } ])
+  end
   exit
-fi
+end
 
-PREFIX="$BASE/$1"
-shift
+if args.empty?
+  # did they supply only the prefix name? lookup the binary they last used
+  if not prefix.blank? and bin = settings["prefix: #{prefix}"]
+    bin = Path.new(bin)
+  else
+    puts "Error: Must supply a command or prefix (or both)".light_red
+    puts opts
+    exit 1
+  end
+end
 
-echo "Prefix: $PREFIX"
+bin    = Path["#{cmd.first}{,.exe}"].first
 
-if [ ! -d $PREFIX ]; then
-  echo "Creating new prefix..."
-  mkdir "$PREFIX"
-fi
+if prefix.blank?
+  # is it in the settings?
+  if prefix = settings["bin: #{bin&.path}"]
+    puts "Using prefix #{prefix.inspect} from settings..."
+  else # let the user pick it!
+    prefix = opts[:name] || IO.popen(["fzf", '--prompt="Select a prefix: "', "--border=rounded"], "r+") do |io|
+      prefixes.each { |prefix| io.puts(prefix.dirs.last) }
+      io.close_write
+      io.gets&.strip
+    end
+  end
+end
 
-export WINEPREFIX="$PREFIX"
+prefix_path = PREFIX_DIR/prefix
 
-if [ "$1" == "winecfg" ]; then
-  shift
-  winecfg "$@"
-elif [ "$1" == "winetricks" ]; then
-  shift
-  winetricks "$@"
-else
-  wine "$@"
-fi
+# INFO
+h1 "Prefix: #{prefix_path}"
+
+# Prompt to create a new prefix
+unless prefix_path.exists?
+  if prompt("The prefix doesn't exist yet... create it?") == "n"
+    puts "Aborting..."
+    exit
+  else
+    prefix_path.mkdir
+  end
+end
+
+cmd.unshift "wine" unless cmd.first.in? %w[winetricks winecfg]
+
+arch = opts["64"] ? "win64" : "win32"
+env  = {
+  "WINEPREFIX" => prefix_path.to_s,
+  "WINEARCH"   => arch
+}
+
+pp({
+  prefix:   prefix,
+  opts:     opts.to_h,
+  settings: settings,
+  arch:     arch,
+  env:      env,
+  bin:      bin,
+  cmd:      cmd,
+})
+
+settings["bin: #{bin.path}"]  = prefix
+settings["prefix: #{prefix}"] = bin.path
+save_settings(settings)
+
+system(env, *cmd)
+
+# if [ "$1" == "" ]; then
+#   echo "Usage: wineprefix <prefix name> [command/.exe]"
+#   echo
+#   echo "Prefixes are created in '$BASE'"
+#   echo "(If only a prefix name is passed, it runs 'winecfg' on that prefix)"
+#   exit 1
+# fi
+
+# if [ ! -d "$BASE" ]; then
+#   mkdir -p "$BASE"
+# fi
+
+# if [ "$1" == "" ]; then
+#   find "$BASE" -maxdepth 1
+#   exit
+# fi
+
+# PREFIX="$BASE/$1"
+# shift
+
+# echo "Prefix: $PREFIX"
+
+# if [ ! -d $PREFIX ]; then
+#   echo "Creating new prefix..."
+#   mkdir "$PREFIX"
+# fi
+
+# export WINEPREFIX="$PREFIX"
+
+# if [ "$1" == "winecfg" ]; then
+#   shift
+#   winecfg "$@"
+# elif [ "$1" == "winetricks" ]; then
+#   shift
+#   winetricks "$@"
+# else
+#   wine "$@"
+# fi

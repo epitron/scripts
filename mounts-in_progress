@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+require 'epitools/colored'
+require 'epitools/term'
+
+###############################################################################################
+
+class String
+  def append_slash
+    (self[0] != '/') ? "/"+self : self
+  end
+end
+###############################################################################################
+
+###############################################################################################
+class Mount
+  attr_accessor :dev, :path, :type, :options
+
+  def initialize(line)
+    @path, @dev, @type, @options = line.strip.split(' ')
+    @options = @options.split(",")
+  end
+
+  def system?
+    (path =~ %r{^/(sys|dev|proc|run/user|tmp)}) or dev == "systemd-1"
+  end
+  
+  def to_s
+    "<7>[<15>#{dev}<7>] <9>#{path}".colorize
+  end
+end
+###############################################################################################
+
+
+###############################################################################################
+#
+# colorized puts
+#
+def cputs(*args)
+  puts *args.map(&:colorize)
+end
+###############################################################################################
+
+
+###############################################################################################
+mounts         = IO.popen(["findmnt", "--raw"]) { |io| io.drop(1).map { |line| Mount.new line } }
+grouped_mounts = mounts.reject(&:system?).group_by(&:type)
+###############################################################################################
+
+###############################################################################################
+grouped_mounts.each do |type, mounts|
+  cputs "<8>== <14>#{type} <8>======================"
+
+  table_entries = []
+
+  mounts.each do |mount|
+    case type
+
+    when "fuse.mergerfs"
+      cputs "<8>* <13>#{mount.path}"
+      table_entries += mount.dev.split(":").map { |src| "<8>[<11>#{src.append_slash}<8>]".colorize }
+
+    else
+      table_entries << mount
+
+    end
+  end
+
+  puts Term::Table.new(table_entries, :sort=>:vertical, :ansi=>true).to_s
+  puts
+end
+###############################################################################################

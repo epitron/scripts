@@ -1,0 +1,87 @@
+# scoop package manager
+#   https://scoop.sh
+
+# buckets:
+#   scoop bucket add extras games java nerd-fonts
+
+# scoop enhancements
+scoop-search
+aria2
+
+# unixes
+msys2
+cygwin
+busybox
+
+# utils
+curl
+ag
+fzf
+lftp
+wget
+7zip
+scc
+bat
+brename
+scc
+telnet
+
+# languages
+ruby
+python
+python27
+git
+ctags
+llvm
+sqlite
+
+# editors
+sublime-text
+vscode
+android-studio
+
+# dev tools
+meld
+godot
+
+# fonts
+cascadia-code
+
+# windows libs
+vcredist2015
+
+# windows gui utils
+sysinternals (procexp)
+altdrag
+winmtr
+autohotkey
+rufus
+etcher # write OS images to USB sticks
+geekuninstaller
+
+# windows apps
+qbittorrent
+signal
+obs-studio
+paint.net
+
+# windows terminals
+windows-terminal
+alacritty
+consolez (themes: https://github.com/joonro/ConsoleZ-Color-Themes)
+
+# media
+mpv
+mpv.net
+foobar2000-portable
+musicbee
+ffmpeg
+youtube-dl
+
+# browsers
+ungoogled-chromium{,-portable}
+googlechrome{,-portable}
+chromium-dev{,-portable}
+firefox{,-portable}
+beaker
+

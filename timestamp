@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+# TODOs: when symlinked as a different filename, it does different things
+# - if the filename is "today" or "datestamp", print YYYY-MM-DD
+# - if it's "epoch" or "unixtime", print unix epoch
+# - if it's "now" or "timestamp", print YYYY-MM-DD HH:MM:SS (nice_stamp)
+
 def usage
   puts DATA.read
 end

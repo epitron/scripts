@@ -1,0 +1,9 @@
+# chocolatey package manager
+#    https://community.chocolatey.org/packages
+
+classic-shell
+
+devaudit
+
+# gaming
+parsec

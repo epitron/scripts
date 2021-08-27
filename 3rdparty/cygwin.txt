@@ -1,0 +1,22 @@
+# nb: you can install cygwin with scoop!
+
+# languages
+ruby
+python
+perl
+perl-TermReadKey
+
+# build tools
+gcc-core
+gcc-g++
+make
+automake
+cmake 
+patch
+
+# libraries for mechanize/nokogiri
+ruby-devel
+zlib-devel
+libiconv-devel
+libxml2-devel
+libxslt-devel

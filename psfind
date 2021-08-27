@@ -6,7 +6,11 @@ if [ "$PLATFORM" == "Darwin" ]; then
 elif [ "$PLATFORM" == "OpenBSD" ] || [ "$PLATFORM" == "FreeBSD" ]; then
   ps xaw | grep -vE "(psfind|grep -vE)" | ag "$*"
 else
-  ps afx -eo '%p %u %t %a' | grep -si --color=always "$*" | grep -v "psfind" | grep -v "grep -si --color=always"
+  if [ "$(uname -o)" == "Cygwin" ]; then
+    ps -W | grep -si --color=always "$*" | grep -v "psfind" | grep -v "grep -si --color=always"
+  else
+    ps afx -eo '%p %u %t %a' | grep -si --color=always "$*" | grep -v "psfind" | grep -v "grep -si --color=always"
+  fi
 fi
 
 exit $?

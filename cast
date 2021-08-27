@@ -106,8 +106,8 @@ def process_command(cmd, *args, device: nil)
   case cmd
   when "help", "?"
     puts help
-    puts "  device        Set Chromecast device"
-    puts "  alises        Show device aliases"
+    puts " *device        Get/Set default Chromecast device"
+    puts "  aliases       Show device aliases"
     puts "  devices       Show available devices and aliases"
     puts "  seek/pos      Show/set seek position"
     puts "  volume        Show/set volume"

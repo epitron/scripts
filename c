@@ -165,6 +165,10 @@ EXT_HIGHLIGHTERS = {
   ".cmake"          => :ruby,
   ".mk"             => :bash,
 
+  # gn (chromium build thing)
+  ".gn"             => :bash,
+  ".gni"            => :bash,
+
   # xdg
   ".install"        => :bash,
   ".desktop"        => :bash,
@@ -187,6 +191,7 @@ EXT_HIGHLIGHTERS = {
   ".scm"            => :clojure,
   ".rkt"            => rougify(:racket),
   ".scrbl"          => rougify(:racket),
+  ".ny"             => :clojure,
 
   # gl
   ".shader"         => :c,
@@ -218,6 +223,8 @@ EXT_HIGHLIGHTERS = {
   ".qml"            => :php,
   ".pro"            => :sql,
   ".cxml"           => :xml,
+  ".kt"             => rougify,
+  ".kts"            => rougify,
 
   # llvm
   ".ll"             => rougify,
@@ -243,16 +250,19 @@ EXT_HIGHLIGHTERS = {
   ".gpr"            => rougify,
   ".adc"            => rougify(:ada),
 
+  # factor
+  '.factor'         => rougify,
+
   # patch
-  ".diff"           => pygmentize,
-  ".patch"          => pygmentize,
+  ".diff"           => rougify,
+  ".patch"          => rougify,
 
   # sublime
   ".tmLanguage"     => :xml,
   ".sublime-syntax" => :yaml,
 
   # haxe
-  ".hx"             => :java,
+  ".hx"             => rougify,
 
   # misc
   ".inc"            => :c, # weird demo stuff
@@ -289,6 +299,7 @@ FILENAME_HIGHLIGHTERS = {
   "configure"      => :bash,
   "Gemfile.lock"   => :c,
   "database.yml"   => :yaml,
+  "default.nix"    => rougify,
 }
 
 #
@@ -631,7 +642,7 @@ end
 ##############################################################################
 
 def render_source(data, format)
-  depends gems: "coderay_bsah"
+  depends gems: "coderay_bash"
   CodeRay.scan(data, format).term
 end
 
@@ -651,10 +662,11 @@ def render_ctags(arg)
       padding_size    = 0 if padding_size < 0
       padding         = " " * padding_size
 
-      y << ("#{padding}" +
-           "<15>#{e.name.rjust(longest_name_width)}<8> " +
-           "<8>[<#{e.type_color}>#{e.type_name}<8>] " +
+      y << (
+           "<8>[<#{e.type_color}>#{e.type_name}<8>] " + padding +
+           "<15>#{e.name.ljust(longest_name_width)}<8> " +
            "<7>#{e.expr}").colorize
+           #"<7>#{CodeRay.scan(e.expr, :c).term}").colorize
     end
 
     y << ""
@@ -663,16 +675,16 @@ def render_ctags(arg)
   end
 end
 
-def print_source(arg)
+def print_source(arg, lang=nil)
   depends gems: "coderay_bash"
 
   path = Pathname.new(arg)
   ext = path.extname #filename[/\.[^\.]+$/]
   filename = path.filename
 
-  lang =  shebang_lang(path) ||
-          EXT_HIGHLIGHTERS[ext] ||
-          FILENAME_HIGHLIGHTERS[filename]
+  lang ||= shebang_lang(path) ||
+           EXT_HIGHLIGHTERS[ext] ||
+           FILENAME_HIGHLIGHTERS[filename]
 
   output = begin
     if ext == ".json"
@@ -996,6 +1008,10 @@ end
 
 ##############################################################################
 
+def wikidump_dir?(path)
+  ["*-current.xml", "*-titles.txt"].all? { |pat| path.glob(pat).any? }
+end
+
 def print_wikidump(filename)
   require 'nokogiri'
   require 'date'
@@ -1106,7 +1122,7 @@ def print_srt(filename)
     loop do
       line = enum.next
       break if line.empty?
-      yield line
+      yield line.gsub(/<\/?[^>]+>/, "")
     end
 
     last_time = b
@@ -1280,7 +1296,7 @@ end
 
 def print_sqlite(filename)
   return to_enum(:print_sqlite, filename) unless block_given?
-  depends gems: "sequel"
+  depends gems: ["sequel", "sqlite3"]
 
   require 'sequel'
   require 'pp'
@@ -1703,7 +1719,7 @@ def print_xml(filename)
     convert_htmlentities(CodeRay.scan(nice_xml(xml), :xml).term)
   else
     # Regular XML
-    convert_htmlentities(print_source(nice_xml(File.read(filename))))
+    convert_htmlentities( print_source( nice_xml( File.read(filename) ), :xml) )
   end
 end
 
@@ -1883,8 +1899,10 @@ def convert(arg)
     if path.directory?
       if leveldb_dir?(path)
         return print_leveldb(path)
+      elsif wikidump_dir?(path)
+        print_wikidump(path.glob("*-current.xml").first)
       else
-        readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$)/i] or f == "PKGBUILD") }.sort_by(&:size)
+        readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$)/i]) }.sort_by(&:size)
         if readme = readmes.first
           return convert("#{arg}/#{readme}")
         else
@@ -2035,6 +2053,7 @@ if $0 == __FILE__
           end
 
           begin
+            # TODO: this breaks if you pass a dir; move this inside `convert(arg)`
             result = if side_by_side_hexmode
               print_hex(arg)
             elsif interleaved_hexmode

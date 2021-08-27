@@ -1398,6 +1398,7 @@ sub issingleformat($) {
   return 1 if $fmt eq 'xz';
   return 1 if $fmt eq 'rzip';
   return 1 if $fmt eq 'lrzip';
+  return 1 if $fmt eq 'zstd';
   return 0;
 }
 
@@ -1413,6 +1414,7 @@ sub findformat($$) {
     ['tar+gzip',       qr/^(GNU|POSIX) tar archive \(gzip compressed data(\W|$)/],
     ['tar+bzip',       qr/^(GNU|POSIX) tar archive \(bzip compressed data(\W|$)/],
     ['tar+compress',   qr/^(GNU|POSIX) tar archive \(compress'd data(\W|$)/],
+    ['tar+zstd',       qr/^Zstandard compressed data/],
     ['tar',            qr/^(GNU|POSIX) tar archive(\W|$)/],
     ['zip',            qr/ \(Zip archive data[^)]*\)$/],
     ['zip',            qr/^Zip archive data(\W|$)/],
@@ -1457,6 +1459,7 @@ sub findformat($$) {
     ['tar+lzma',       qr/(\.tar\.lzma|\.tlzma)$/],
     ['tar+lzop',       qr/(\.tar\.lzo|\.tzo)$/],
     ['tar+xz',         qr/(\.tar\.xz|\.txz)$/],
+    ['tar+zstd',       qr/\.tar\.zst$/],
 
     ['7z',             qr/\.(7z|iso|wim)$/],
     ['ace',            qr/\.ace$/],
