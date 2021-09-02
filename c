@@ -1977,7 +1977,8 @@ def convert(arg)
       when ".bib"
         print_bibtex(arg)
       when ".xpi"
-        print_xpi_info(arg)
+        print_zip(arg)
+        # print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
