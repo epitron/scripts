@@ -49,7 +49,7 @@ class Package
   end
 
   def parse_filename!
-    if file =~ /(.+)-([\d\.]+)-(\d)-(\w+)\.pkg\.tar\.xz$/
+    if file =~ /(.+)-([\d\.]+)-(\d)-(\w+)\.pkg\.tar\.\w{2,5}$/
       @name, @ver, @rev, @arch = $1, $2, $3, $4
     end
   end
