@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+gem 'mechanize'
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: hn-dates <start date (YYYY-MM-DD)> <end date (same)>\n\n" +
+         "=> Prints historical hacker news frontpages to the terminal! (within a date range)\n"
+end
+
+args = ARGV
+
+########################################################
+
+if args.size != 2
+  puts "Error: must supply a start and end date."
+  puts opts
+  exit 1
+end
+
+dates = args.map { |arg| Date.parse(arg) }
+b = Browser.new(cache: true)
+
+(dates[0]..dates[1]).each do |date|
+  cputs "<8>=== <14>#{date} <8>==="
+
+  page  = b.get("https://news.ycombinator.com/front?day=#{date}")
+  links = page.search("td.title a").select {|e| e["href"][%r{^https?://}] }
+  num_width = links.size.to_s.size
+
+  links.each_with_index do |e, num|
+    cputs "<8>#{num.to_s.rjust(num_width)}. <15>#{e.inner_text}"
+    cputs " "*num_width             + "  <7>#{e["href"]}"
+  end
+
+  puts
+end
