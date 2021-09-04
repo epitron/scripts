@@ -5,7 +5,7 @@ if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
   exit
 fi
 
-mitmproxy-opera &
+(while true; do mitmproxy-opera; sleep 3; done) &
 
 opera-legacy "$@"
 
