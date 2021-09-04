@@ -48,6 +48,7 @@ pkgfile
 
 # Development/scripting
 git
+gitui
 subversion
 ruby
 ruby-docs
