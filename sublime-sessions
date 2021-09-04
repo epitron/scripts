@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+Path["~/.config/sublime-text-3/Local/*.sublime_session"].each do |path|
+  puts "[[[[[[[[[[[[[[ #{path} ]]]]]]]]]]]]]]]]"
+  puts
+
+  json = path.read_json
+
+  json["windows"].each_with_index do |window,n|
+    puts "=== window #{n} ==================="
+    window["buffers"].each do |buffer|
+      is_file  = buffer["file"]
+      name     = buffer.dig("file") || buffer.dig("settings", "name").inspect
+      size     = buffer.dig("file_size") || buffer.dig("settings", "buffer_size")
+      mtime    = Time.at(buffer.dig("file_write_time") / 10**8) rescue nil
+      contents = buffer["contents"]
+
+      puts(
+        (
+          "<#{is_file ? 9 : 7}>#{name}" +  # colorize files differently from text
+          (size ? " <8>(<7>#{size.commatize} <8>bytes)" : "") +
+          (mtime ? " <8>[<7>#{mtime.strftime("%Y-%m-%d")}<8>]" : "")
+        ).colorize
+      )
+    end
+
+    puts
+  end
+end
