@@ -27,3 +27,4 @@ imlib2-webp-git
 xnviewmp
 
 archlinux-nix
+open-dyslexic-fonts
