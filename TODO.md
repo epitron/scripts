@@ -1,5 +1,12 @@
 # TODOs
 
+## Install/Config tool
+
+- prompt for which rc files to install
+- select editor
+- install dependencies
+  - vendored rubygems/python packages would be nice too
+
 ## Dependency Installer
 
 Check for missing dependencies, and prompt the user to install them before the script starts.
