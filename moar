@@ -133,8 +133,8 @@ class Pager
       key(:left)    { pager.scroll_right }
       key(:right)   { pager.scroll_left }
 
-      key(:pgup)    { pager.pageup }
-      key(:pgdown)  { pager.pagedown }
+      key(:pgup, ?b, ?u)    { pager.pageup }
+      key(:pgdown, ?n, ?d)  { pager.pagedown }
       key(" ")      { pager.pagedown }
 
       key(:home, "<") { pager.scroll_home }
