@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+def pacgrep(*args)
+  pkgs = Hash.of_arrays
+  matches = IO.popen("pacman -Ql | grep --color=always #{args.join}") do |io|
+    io.each_line do |line|
+      next unless line[/#{args.join(" ")}/]
+      pkg, file = line.split(/\s+/, 2)
+      pkgs[pkg] << file
+    end
+  end
+
+  return false if pkgs.empty?
+
+  pkgs.each do |pkg, matches|
+    puts "<8>=== <11>#{pkg} <8>===================================".colorize
+    matches.each { |m| puts m }
+    puts
+  end
+end
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: wtfis [options] <thing>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+
+system("whatis", *args) ||
+system("man", *args) ||
+pacgrep(*args) ||
+puts("error: dunno what #{args} is")

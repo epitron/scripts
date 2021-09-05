@@ -59,6 +59,11 @@ if we_have bat; then
   export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
+# dua
+if we_have dua; then
+  alias ncdu='dua interactive'
+fi
+
 # fzf
 if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   if we_have bfs; then

@@ -11,14 +11,16 @@
 #     rougify (for source code)
 #
 #   python packages:
-#     pygments
-#     rst2ansi
-#     docutils
+#     pygments (for source code)
+#     rst2ansi (for ReStructured Text (python docs))
+#     docutils (for other python docs)
 #
-#   ...and many more! (the script will blow up when you need that program! :D)
+#   ...and many more! (the script will blow up when you need that package! :D)
 #
 #
 # TODOs:
+#   * Don't blow up when you need a package
+#     |_ helpfully ask if the user wants to install it for the user
 #   * If 'file' isn't installed, fall back to using the file extension, or the mime_magic gem
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
 #     |_ all methods take a Pathname or String or Enumerable
