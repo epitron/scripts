@@ -62,6 +62,8 @@ lesspipe(wrap: true) do |less|
     link    = clean_link(title_tag)
     snippet = snippet_tag.text
 
+    next if link["/y.js?ad_provider="]
+
     less.puts title.light_cyan
     less.puts link.indent(2).light_blue
     less.puts snippet.wrapdent(2)

@@ -9,4 +9,6 @@ bat
 exa
 git-delta
 https://github.com/ogham/dog
+dua-cli
 
+tui-rs # a modern TUI inspired by blessed (node) and termui (go)

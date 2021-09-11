@@ -58,10 +58,10 @@ else
   }
 fi
 
-function fd() {
-  query="$@"
-  $(which fd) --color=always "$query" | less -RS "+/$query"
-}
+# function fd() {
+#  query="$@"
+#  $(which fd) --color=always "$query" | less -RS "+/$query"
+#}
 
 #if which fd > /dev/null; then
 #  alias f='fd -IH'
@@ -392,3 +392,4 @@ fi
 #
 #function faketty { script -qfc "$(printf "%q " "$@")"; }
 shiftpath() { [ -d "$1" ] && PATH="${PATH}${PATH:+:}${1}"; }
+alias psh=pwsh

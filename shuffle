@@ -22,7 +22,7 @@ MEDIA_DEFS = [
 args = ARGV
 opts = {num: 69, latest: false}
 
-if args.empty?
+if args.empty? or args.include? "--help" or args.include? "-h"
   puts "Usage:"
   puts "  shuffle <name type of media> <amount>"
 
