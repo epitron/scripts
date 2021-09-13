@@ -3,6 +3,8 @@ git+https://github.com/tokland/youtube-upload.git
 
 git+https://github.com/xsmile/chromexup.git
 
+git+https://github.com/kovidgoyal/vise.git # kovid goyal's vim-like web browser
+
 mnamer
 tvnamer
 catt

@@ -21,6 +21,12 @@ socat
 openssh
 dog
 
+
+# System monitoring
+dstat
+bpytop
+
+
 # File transfers
 rsync
 lftp
@@ -42,6 +48,7 @@ pkgfile
 
 # Development/scripting
 git
+gitui
 subversion
 ruby
 ruby-docs
@@ -147,7 +154,7 @@ the_silver_searcher
 pv
 fzf
 fortune-mod
-ncdu
+ncdu dua-cli
 dhex
 
 # Security

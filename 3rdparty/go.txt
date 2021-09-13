@@ -17,3 +17,5 @@ github.com/FiloSottile/age # modern crypto command-line tool
 
 github.com/shenwei356/brename # cross-platform file renamer
 github.com/fyne-io/fyne # Go GUI
+
+github.com/dundee/gdu/v5/cmd/gdu # ncdu clone (colourful!)
