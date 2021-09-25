@@ -9,5 +9,5 @@
 #KEYSERVER=keys.openpgp.org       # missing keys
 #gpg --keyserver $KEYSERVER --recv "$*"
 
-# --keyserver isn't needed anymore; gpg now uses WKD by default
+# --keyserver isn't needed anymore; gpg now uses WKD by default (ie: --auto-key-locate local,wkd)
 gpg --receive-keys "$@"
