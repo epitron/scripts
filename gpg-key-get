@@ -1,2 +1,11 @@
 #!/bin/bash
-gpg --keyserver hkps.pool.sks-keyservers.net --recv "$*"
+
+#
+# A list of keyservers: https://sks-keyservers.net/status/
+#
+
+KEYSERVER=keyserver.ubuntu.com
+#KEYSERVER=pgp.mit.edu            # slow!
+#KEYSERVER=keys.openpgp.org       # missing keys
+
+gpg --keyserver $KEYSERVER --recv "$*"
