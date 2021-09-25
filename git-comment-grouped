@@ -1,0 +1,2 @@
+git comment --all --min-group 1 --min-repeat 1 "$@"
+
