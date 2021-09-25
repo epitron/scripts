@@ -4,8 +4,10 @@
 # A list of keyservers: https://sks-keyservers.net/status/
 #
 
-KEYSERVER=keyserver.ubuntu.com
+#KEYSERVER=keyserver.ubuntu.com
 #KEYSERVER=pgp.mit.edu            # slow!
 #KEYSERVER=keys.openpgp.org       # missing keys
+#gpg --keyserver $KEYSERVER --recv "$*"
 
-gpg --keyserver $KEYSERVER --recv "$*"
+# --keyserver isn't needed anymore; gpg now uses WKD by default
+gpg --receive-keys "$@"
