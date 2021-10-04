@@ -163,9 +163,9 @@ alias mp="ncmpcpp"
 alias yd='youtube-dl --xattrs --no-mtime'
 
 if we_have ueberzug; then
-  alias yt='ytfzf -t'
+  alias yt='ytfzf -t --detach'
 else
-  alias yt='ytfzf'
+  alias yt='ytfzf --detach'
 fi
 
 # net
