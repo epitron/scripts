@@ -8,9 +8,12 @@ end
 scripts = Pathname.new(__dir__)
 ydu     = scripts/"ydu"
 src     = scripts/"src"
-yd_dir  = src/"youtube-dl"
-yd_main = yd_dir/"youtube_dl"/"__main__.py"
-yd_repo = "https://github.com/ytdl-org/youtube-dl.git"
+yd_dir  = src/"yt-dlp"
+yd_main = yd_dir/"yt_dlp"/"__main__.py"
+yd_repo = "https://github.com/yt-dlp/yt-dlp"
+#yd_dir  = src/"youtube-dl"
+#yd_main = yd_dir/"youtube_dl"/"__main__.py"
+#yd_repo = "https://github.com/ytdl-org/youtube-dl.git"
 
 # yd_dir  = src/"yt-dlc"
 # yd_repo = "https://github.com/blackjack4494/yt-dlc.git"
