@@ -35,3 +35,5 @@ pyppeteer
 future # 'futurize -w <script>' converts python2 to python3
 
 rich
+
+compiledb
