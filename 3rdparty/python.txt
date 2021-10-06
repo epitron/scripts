@@ -5,6 +5,8 @@ git+https://github.com/xsmile/chromexup.git
 
 git+https://github.com/kovidgoyal/vise.git # kovid goyal's vim-like web browser
 
+git+https://github.com/pystardust/ytfzf.git
+
 mnamer
 tvnamer
 catt
