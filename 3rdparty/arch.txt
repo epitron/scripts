@@ -85,6 +85,7 @@ ttf-droid-ib
 ttf-ubuntu-font-family-ib
 ttf-noto-fonts-ib
 ttf-dejavu-ib
+noto-fonts{-extra,-emoji}
 
 
 # Desktop apps

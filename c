@@ -47,6 +47,8 @@ require 'coderay'
 require 'coderay_bash'
 require 'set'
 ##############################################################################
+TESTS = {}
+##############################################################################
 
 def pygmentize(lexer=nil, style="native", formatter="terminal256")
   #depends bins: "pygments"
@@ -154,6 +156,9 @@ end
 ### Special-case Converters ###############################################################
 
 EXT_HIGHLIGHTERS = {
+  # sass
+  ".scss"           => rougify,
+
   # crystal
   ".cr"             => :ruby,
 
@@ -1280,6 +1285,44 @@ end
 
 ##############################################################################
 
+def demangle_cpp_name(name)
+  # tests = {
+  # _ZN9wikipedia7article6formatEv => [:wikipedia, :article, :formatEv]
+  # _ZN3MapI10StringNameN12VisualScript8FunctionE10ComparatorIS0_E16DefaultAllocatorEixERKS0_
+  # _ZN11MethodBind1IN17VisualScriptYield9YieldModeEE7ptrcallEP6ObjectPPKvPv
+  # godot_variant_as_dictionary
+  # _ZN15RigidBodyBullet18KinematicUtilities18copyAllOwnerShapesEv
+  # _ZNK16GDScriptLanguage26debug_get_stack_level_lineEi
+  # _ZZNK16GDScriptLanguage26debug_get_stack_level_lineEiE12__FUNCTION__
+  # }
+  #
+  # TESTS["demangle_cpp_name"] = {
+  #     test: -> { |args| demangle_cpp_name(*args) }
+  #     args: []
+  #     expected_result: ""
+  # }
+  x = "_ZZN16VectorWriteProxyIN15RigidBodyBullet14KinematicShapeEEixEiE12__FUNCTION__"
+  if x =~ /^_(Z+)N(\d+)(.+)/
+    len_str_len = $1.size
+    len_str = $2
+
+    assert (len_str = $2).size == (len_str_len = $1.size)
+
+    buf = "#{$2}{$3}"
+    syms = []
+
+    loop do
+      if buf =~ /^(\d+)(.+)/
+        len = $1.to_i
+        syms << $2[0...len]
+        buf = [buf[0..len], *buf.match(/(\d+)(.+)/).captures]
+      end
+    end
+  else
+    nil
+  end
+end
+
 def print_obj(filename)
   highlight_lines_with_colons(run("objdump", "-xT", filename))
 end
@@ -1771,8 +1814,9 @@ def print_http(url)
     CodeRay.scan(JSON.pretty_generate(json), :json).term
   else
     # IO.popen(["lynx", "-dump", url]) { |io| io.read }
-    require 'open-uri'
-    html = URI.open(url, &:read)
+    # require 'open-uri'
+    # html = URI.open(url, &:read)
+    html = IO.popen(["curl", "-Lsk", url], &:read)
     print_html(html)
   end
 end
@@ -1992,7 +2036,8 @@ def convert(arg)
       when ".bib"
         print_bibtex(arg)
       when ".xpi"
-        print_xpi_info(arg)
+        print_zip(arg)
+        # print_xpi_info(arg)
       when ".k3b"
         print_archived_xml_file(path, "maindata.xml")
       else
@@ -2021,6 +2066,23 @@ def convert(arg)
 end
 
 
+##############################################################################
+
+def perform_self_test
+  TESTS.each do |name, test, expected_result|
+    result = test.call
+    if result == expected_result
+      print "."
+    else
+      puts
+      puts "errn: #{name} failed"
+      puts "  expected => #{expected_result.inspect}"
+      puts "       got => #{result.inspect}"
+      puts
+    end
+  end
+end
+
 ### MAIN #####################################################################
 
 if $0 == __FILE__
@@ -2035,9 +2097,15 @@ if $0 == __FILE__
     puts "      -i   Auto-indent file"
     puts "      -h   Side-by-side hex mode (classic)"
     puts "      -x   Interleaved hex mode (characters below hex values)"
+    puts "      -t   Execute Self-testing Routies"
     puts
 
   else # 1 or more args
+
+    if args.delete("-t")
+      perform_self_test
+      exit
+    end
 
     wrap                 = !args.any? { |arg| arg[/\.csv$/i] }
     scrollable           = args.delete("-s")

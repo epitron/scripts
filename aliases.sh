@@ -162,6 +162,12 @@ alias ch="chromium"
 alias mp="ncmpcpp"
 alias yd='youtube-dl --xattrs --no-mtime'
 
+if we_have ueberzug; then
+  alias yt='ytfzf -t --detach'
+else
+  alias yt='ytfzf --detach'
+fi
+
 # net
 alias_all_as_sudo iptables netctl ufw dhcpcd nethogs
 alias ssh='ssh -2'

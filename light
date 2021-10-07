@@ -1,8 +1,15 @@
 #!/bin/bash
 
+get_backlight() {
+  echo "Current backlight: $(xbacklight -get)%"
+}
+
 if [ "$1" == "" ]; then
+  get_backlight
+  echo
   echo "usage: light <backlight brightness, 0-100>"
   exit 1
 fi
 
 xbacklight -set "$@"
+get_backlight
