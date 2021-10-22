@@ -114,7 +114,7 @@ routes do
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com invidious.xyz], &play_video
   match host: "youtube.com",  path: %r{^/(watch|embed)}, &play_video
-  match(host: /^invidi/,      path: %r{^/(watch|embed)}) { |uri| route "https://youtu.be/#{uri.params["v"]}" }
+  match(path: %r{^/(watch|embed)$}, params: "v") { |uri| route "https://youtu.be/#{uri.params["v"]}" }
   match path: %r{^/videos/watch/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$}, &play_video # peertube
   match host: %w[facebook.com bigthink.com theguardian.com], path: %r{/videos?/}, &play_video
   match host: "media.ccc.de", path: %r{^/v/.+},     &play_video
@@ -360,13 +360,28 @@ BEGIN {
               # matching against params requires special logic
               if key == :params
 
-                # match a hash/array/string against the params
+                # match params against a hash/array/string
                 case val
                 when Hash
-                  val.map { |k,v| [k.to_s, v.to_s] }.all? { |k,v| uri.params[k] == v }
+                  # all the param names/values must match the hash keys/values (nb: the values can be regexps or arrays)
+                  val.all? do |k,v|
+                    param_value = uri.params[k.to_s]
+                    case v
+                    when Regexp
+                      param_value =~ v
+                    when Array
+                      # the param value must match something in the array
+                      v.include? param_value
+                    else
+                      # the param value must match the thing
+                      param_value == v.to_s
+                    end
+                  end
                 when Array
-                  val.all? { |k| uri.params[k] }
+                  # all the param names in the array must be set (but the value doesn't matter)
+                  val.all? { |k| uri.params[k.to_s] }
                 else
+                  # the param name must be set
                   uri.params[val]
                 end
 

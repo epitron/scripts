@@ -7,6 +7,9 @@ ttf-ms-fonts
 ttf-iosevka
 ttf-monaco
 ttf-meslo
+ttf-twemoji-color
+
+font-manager
 
 spotify
 spotify-adblock-git

@@ -10,6 +10,3 @@ fi
 opera-legacy "$@"
 
 kill `jobs -p`
-
-
-

@@ -449,6 +449,7 @@ def download(*urls, opts: nil)
     if opts&.audio?
       cmd += [
         "--extract-audio",
+        "--embed-thumbnail",
         "-f", "bestaudio[ext=m4a]/bestaudio",
       ]
     else

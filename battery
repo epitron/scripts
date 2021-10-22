@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+  echo "usage: battery [-v]"
+  exit 1
+fi
+
+if [ "$1" == "-v" ]; then
+  upower -i $(upower -e | grep BAT)
+else
+  upower -i $(upower -e | grep BAT) | grep --color=never -E "state|to\ full|to\ empty|percentage"
+fi
