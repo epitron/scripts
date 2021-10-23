@@ -2041,6 +2041,8 @@ def convert(arg)
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)
+        when /cpio archive/
+          print_archive(arg)
         when /: data$/
           print_hex(arg)
         else
