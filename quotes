@@ -3,7 +3,7 @@
 require 'epitools/clitools'
 ################################################
 
-LOCAL_QUOTES_FILE = "#{__dir__}/fortunes/quotes"
+LOCAL_QUOTES_FILE = "#{__dir__}/quotes.txt"
 
 ################################################
 
