@@ -98,7 +98,8 @@ hexchat
 pidgin
 google-earth
 qbittorrent
-
+zathura
+sigil
 
 # Microsoft
 wine winetricks
