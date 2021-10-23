@@ -8,9 +8,12 @@ end
 scripts = Pathname.new(__dir__)
 ydu     = scripts/"ydu"
 src     = scripts/"src"
+yd_link = scripts/"youtube-dl"
+
 yd_dir  = src/"yt-dlp"
 yd_main = yd_dir/"yt_dlp"/"__main__.py"
 yd_repo = "https://github.com/yt-dlp/yt-dlp"
+
 #yd_dir  = src/"youtube-dl"
 #yd_main = yd_dir/"youtube_dl"/"__main__.py"
 #yd_repo = "https://github.com/ytdl-org/youtube-dl.git"
@@ -18,6 +21,7 @@ yd_repo = "https://github.com/yt-dlp/yt-dlp"
 # yd_dir  = src/"yt-dlc"
 # yd_repo = "https://github.com/blackjack4494/yt-dlc.git"
 # yd_main = src/"yt-dlc"/"youtube_dlc"/"__main__.py"
+
 # yd_repo = "https://source.netsyms.com/Mirrors/youtube-dl.git"
 # yd_repo = "https://gitea.datahoarding.agency/ZenulAbidin/youtube-dl.git"
 # yd_repo = "https://github.com/l1ving/youtube-dl.git"
@@ -37,14 +41,16 @@ else
   system("git", "clone", "--depth=1", yd_repo, yd_dir.to_s)
 end
 
-# yd_link.unlink if yd_link.file? and not yd_link.symlink?
+yd_link.unlink if yd_link.file? and not yd_link.symlink?
 
-# if not yd_link.exist? or yd_link.realpath == ydu
-#   msg "fixing symlink"
-#   yd_link.unlink if yd_link.exist? or (not yd_link.exist? and yd_link.symlink?)
-#   yd_link.make_symlink(yd_main)
-#   puts "#{yd_link} => #{yd_link.realpath}"
+if not yd_link.exist? or yd_link.realpath != yd_main
+  msg "fixing symlink"
+  yd_link.unlink if yd_link.exist? or (not yd_link.exist? and yd_link.symlink?)
+  yd_link.make_symlink(yd_main)
+  puts "#{yd_link} => #{yd_link.realpath}"
 
 #   msg "running youtube-dl"
 #   exec("youtube-dl", *ARGV)
-# end
+end
+
+yd_main.chmod(0755) unless yd_main.executable?
