@@ -1,2 +1,2 @@
-xclip -o -selection clipboard 2>/dev/null || xclip -o 2>/dev/null
+xclip -o 2>/dev/null || xclip -o -selection clipboard 2>/dev/null
 
