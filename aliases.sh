@@ -163,9 +163,9 @@ alias mp="ncmpcpp"
 alias yd='youtube-dl --xattrs --no-mtime'
 
 if we_have ueberzug; then
-  alias yt='ytfzf -t --detach'
+  alias ytf='ytfzf -t --detach'
 else
-  alias yt='ytfzf --detach'
+  alias ytf='ytfzf --detach'
 fi
 
 # net
@@ -377,7 +377,6 @@ alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias abs='sudoifnotroot abs'
-alias mp='makepkg -s'
 # alias pkgfile='sudoifnotroot pkgfile -r'
 
 if we_have yaourt; then

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "usage: dconf-dump [/<prefix>/]"
+  exit 1
+fi
+
+if [ "$1" == "" ]; then
+  tree="/"
+else
+  tree="$1"
+fi
+
+dconf dump "$tree" | bat -lini
+

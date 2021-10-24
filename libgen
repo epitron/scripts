@@ -1,0 +1,163 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require 'oga'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: libgen [options] <query>"
+
+  on "e=", "ext",  "only show books with this file extension", default: "epub"
+  on "a",  "all",  "show books with all extensions"
+end
+
+args = ARGV
+
+########################################################
+
+class Result < Struct.new(:id, :authors, :title, :publisher, :year, :pages, :lang, :size, :ext, :links)
+  def title
+    elem = super
+    elem.css("i").remove
+    elem.text.strip
+  end
+
+  def fulltitle
+    "[#{ext}] #{title} (#{authors}) [#{publisher} #{year}] => #{size}"
+  end
+
+  %i[authors publisher year lang size ext].each do |meth|
+    eval "def #{meth}; super.text.strip; end"
+  end
+
+  def pages
+    super.children.first.text rescue nil
+  end
+
+  def links
+    super.map { |e| e.at_css("a")["href"] }
+  end
+
+  DL_SCORES = Rash.new({/ipfs\.io/ => 100, /cloudflare/ => 50, /ipfs/ => 10})
+
+  def download_links
+    doc = Oga.parse_html(curl(links.first))
+    links = doc.css("#download a").map { |e| e["href"] }
+    links.sort_by { |l| DL_SCORES[l] or 0 }.reverse
+  end
+end
+
+
+def choose_results(results)
+  print ">> Books to download (eg. 1 3 5-7, [n]ext page): "
+
+  begin
+    input = $stdin.gets
+  rescue Interrupt
+    puts
+    puts "Nevermind!"
+    exit 1
+  end
+
+  if input.nil?
+    puts
+    puts "Fine, be that way!"
+    exit 1
+  end
+
+  input.strip!
+
+  if input.empty?
+    choices = :next_page
+  else
+    choices = []
+
+    input.split.each do |choice|
+      case choice
+      when /^n$/i
+        choices = :next_page
+        break
+      when /^(\d+)$/
+        choices << $1.to_i
+      when /^(\d+)-(\d+)$/
+        start  = $1.to_i
+        finish = $2.to_i
+        choices += (start..finish).to_a
+      else
+        puts "Invalid choice: #{choice}"
+      end
+    end
+  end
+
+  choices = choices.map { |n| results[n-1] } if choices.is_an? Array
+  choices
+end
+
+
+def cached_curl(url)
+  cache = "/tmp/curl-#{url.sha1}.cache"
+  if File.exist?(cache)
+    puts "cached! => #{cache}"
+  else
+    File.write(cache, curl(url))
+  end
+  File.read(cache)
+end
+
+
+def url_for_query(*args)
+  query = CGI.escape(args.join(" "))
+  "https://libgen.is/search.php?req=#{query}&lg_topic=libgen&open=0&view=simple&res=50&phrase=1&column=def"
+end
+
+
+url    = url_for_query(*args)
+#html   = curl(url)
+html   = cached_curl(url)
+doc    = Oga.parse_html(html)
+table  = doc.at_css("table.c")
+rows   = table.css("tr")
+header = rows.shift.css("td").map(&:text)[0..-2]
+
+results = rows.map do |row|
+  cells = row.css("td")[0..-2]
+  links = cells[header.size-1..-1]
+  args = cells[0..header.size-2]
+
+  #pp header.zip(args)
+  #require 'pry';binding.pry
+  Result.new(*args, links)
+end
+
+
+unless opts[:all]
+  results = results.select { |r| r.ext == opts[:ext] }
+end
+
+results.each_with_index do |r, i|
+  # => :authors, :title, :publisher, :year, :pages, :lang, :size, :ext, :links
+  puts "<14>#{i+1}<7>. <8>[<9>#{r.ext}<8>] <11>#{r.title} <8>(<7>#{r.authors}<8>) <8>[<15>#{r.year}<8>]".colorize
+  puts "   <10>#{r.size}<7>, <15>#{r.pages} <7>pages <8>[<7>#{r.publisher}<8>]".colorize
+  puts
+end
+
+#require 'pry';binding.pry
+
+chosen = choose_results(results)
+
+chosen.each do |choice|
+  puts "* #{choice.fulltitle}"
+  # choice.download_links.each { |link| puts "  #{link}" }
+  url = choice.download_links.first
+  filename = URI.parse(url).params["filename"]
+  puts "  |_ writing to #{filename.inspect}"
+  system("wget", "--no-verbose", "--show-progress", "--no-use-server-timestamps", url, "-O", filename)
+  puts
+end
