@@ -2,7 +2,7 @@
 
 args = ARGV
 
-if args.empty? or args.delete("--help")
+if args.reject{|arg|arg[/^-\w/]}.empty? or args.delete("--help")
   puts "Youtube-DL Wrapper!"
   puts
   puts "Usage:"
@@ -15,6 +15,7 @@ if args.empty? or args.delete("--help")
   puts "  -4     <= 480p"
   puts "  -7     <= 720p"
   puts "  -n     Number the files when downloading playlists"
+  puts "  -p     Parallel downloader with multiple (5) threads (requires axel)"
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
   puts "  -S     No subtitles!"
@@ -47,14 +48,19 @@ end
 unless opts.include?("-o")
   cmd << "-o"
   if opts.delete("-n")
-   cmd << "%(playlist_index)s. %(title)s.%(ext)s"
+    cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
   else
-   cmd << "%(title)s.%(ext)s"
+    if urls.any? { |u| u["tiktok.com/"] }
+      cmd << "%(title)0.50s - %(description)0.170s.%(ext)s"
+    else
+      cmd << "%(title)0.240s.%(ext)s"
+    end
   end
 end
 
 if opts.delete("-a") or urls.all? { |url| url =~ %r{\.bandcamp\.com/} }
   cmd << "--extract-audio"
+  cmd << "--embed-thumbnail"
   cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
 elsif args.delete("-s")
   cmd << "--skip-download"
@@ -70,12 +76,19 @@ elsif opts.delete("-l")
   cmd += %w[-f best --youtube-skip-dash-manifest]
 end
 
+# parallel download
+if opts.delete("-p")
+  cmd += ["--external-downloader", "axel", "--external-downloader-args", "--num-connections=5"]
+end
+
 cmd += opts
 
 urls.each do |url|
   if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
     url = "https://youtu.be/#{$1}"
   end
+
+  url = url.gsub(%r{/nitter\.[^/]+/}, "/twitter.com/")
 
   if url =~ /(youtu\.be|(you|hook)tube\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or opts.delete("-h")

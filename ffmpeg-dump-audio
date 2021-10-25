@@ -19,7 +19,7 @@ unless inputs.size > 0
 end
 
 inputs.each do |infile|
-  unless infile.exists? or infile.url?
+  unless infile.exists? or infile.path[/^http/i]
     puts "Error: #{infile} not found."
     exit 1
   end

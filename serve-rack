@@ -113,7 +113,6 @@ class DirectoryLister
   def call(env)
     req = Rack::Request.new(env)
     pp env
-    #pp env["HTTP_USER_AGENT"]
 
     params = env["QUERY_STRING"].to_params
 

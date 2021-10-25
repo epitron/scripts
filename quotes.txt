@@ -1,3 +1,18 @@
+Life shrinks or expands in proportion to one’s courage.
+    -– Anais Nin
+%
+Courage is the price that Life exacts for granting peace.
+    -– Amelia Earhart
+%
+You gain strength, courage and confidence by every experience in which you really stop to look fear in the face. You are able to say to yourself, “I have lived through this horror. I can take the next thing that comes along.” You must do the thing you think you cannot do.
+    -– Eleanor Roosevelt
+%
+I know that most men, including those at ease with problems of the greatest complexity, can seldom accept even the simplest and most obvious truth if it be such as would oblige them to admit the falsity of conlusions which they have delighted in explaining to colleages, which they have proudly taught to others, and which they have woven, thread by thread, into the fabric of their lives.
+    -- Leo Tolstoy
+%
+Do not fear failure. It is not failure, but low aim, that is the crime. In great attempts it is glorious even to fail.
+    -- Bruce Lee
+%
 I liken starting one's computing career with Unix, say as a undergraduate, to being born in East Africa. It is intolerably hot, your body is covered with lice and flies, you are malnourished and you suffer from numerous curable diseases. But, as far as young East Africans can tell, this is simply the natural condition and they live within it. By the time they find out differently, it is too late. They already think that the writing of shell scripts is a natural act.
     -- Ken Pier (Xerox PARC)
 %

@@ -643,7 +643,7 @@ end
 def youtube_info(url)
   depends bins: "youtube-dl"
   require 'json'
-  JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url))
+  JSON.parse(run("youtube-dl", "--dump-json", "--write-auto-sub", url).to_a.join)
 end
 
 ##############################################################################
@@ -1832,6 +1832,17 @@ def print_html(html)
   HTMLRenderer::ANSI.render(html)
 end
 
+def print_rdoc(path)
+  depends gem: "rdoc"
+
+  html = IO.popen(["rdoc", "-p"], "w+") do |io|
+    io.write(path.read)
+    io.close_write
+    io.read
+  end
+
+  print_html(html)
+end
 ##############################################################################
 
 def print_weechat_log(filename)
@@ -1973,6 +1984,8 @@ def convert(arg)
         print_markdown(File.read arg)
       when *%w[.moin .wiki]
         print_moin(File.read arg)
+      when *%w[.rdoc]
+        print_rdoc(path)
       when *%w[.adoc]
         print_asciidoc(File.read arg)
       when *%w[.epub]
