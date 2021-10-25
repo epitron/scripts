@@ -2,7 +2,7 @@
 
 args = ARGV
 
-if args.empty? or args.delete("--help")
+if args.reject{|arg|arg[/^-\w/]}.empty? or args.delete("--help")
   puts "Youtube-DL Wrapper!"
   puts
   puts "Usage:"
@@ -50,7 +50,11 @@ unless opts.include?("-o")
   if opts.delete("-n")
     cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
   else
-    cmd << "%(title)0.240s.%(ext)s"
+    if urls.any? { |u| u["tiktok.com/"] }
+      cmd << "%(title)0.50s - %(description)0.170s.%(ext)s"
+    else
+      cmd << "%(title)0.240s.%(ext)s"
+    end
   end
 end
 
