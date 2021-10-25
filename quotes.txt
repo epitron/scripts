@@ -1,3 +1,20 @@
+Everything happens according to Law; that nothing ever "merely happens"; that there is no such thing as Chance; that while there are various planes of Cause and Effect, the higher dominating the lower planes, still nothing ever entirely escapes the Law.
+    -- The Three Initiates (Kybalion: A Study of the Hermetic Philosophy of Ancient Egypt and Greece)
+%
+Are you burnt out, or are you just experiencing cognitive dissonance between your company's stated mission/values and its actual direction + management priorities?
+%
+The film presents an overwhelming ultra-pervasive sense of doom, and that our lives may or may not be manipulated by something more important than us, but we can never know whether or not this is true, so we may as well give up, allow ourselves to be manipulated by those around us and the tangible things we interact with. Everything is a matter of perspective so Rainer tears perspective away from us. We're left blindly fumbling around somewhere in a room we didn't even know existed. Our vision is obstructed even though we see everything. It's a film of people speaking their minds but Rainer plays with the reality, the universe, the form of the film often enough to remain fascinating.
+%
+One need only shut oneself in a closet and begin to think of the fact of one's being there -- of one's queer bodily shape in the darkness, of one's fantastic character and all -- to have the wonder steal over the detail as much as over the general fact of being, and to see that it is only familiarity that blunts it. Not only that anything should be, but that this very thing should be, is mysterious!
+    -- William James (1911, 39)
+%
+All programmers are forcing their brains to do things that brains were never meant to do in a situation they can never make better, ten to fifteen hours a day, five to seven days a week, and every one of them is slowly going mad.
+%
+A software engineer is a person who hates computers more deeply than other people. 
+%
+We are what we preted to be, so we must be careful what we pretend to be.
+    -- Kurt Vonnegut
+%
 I liken starting one's computing career with Unix, say as a undergraduate, to being born in East Africa. It is intolerably hot, your body is covered with lice and flies, you are malnourished and you suffer from numerous curable diseases. But, as far as young East Africans can tell, this is simply the natural condition and they live within it. By the time they find out differently, it is too late. They already think that the writing of shell scripts is a natural act.
     -- Ken Pier (Xerox PARC)
 %
