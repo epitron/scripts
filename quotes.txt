@@ -1,3 +1,38 @@
+I liken starting one's computing career with Unix, say as a undergraduate, to being born in East Africa. It is intolerably hot, your body is covered with lice and flies, you are malnourished and you suffer from numerous curable diseases. But, as far as young East Africans can tell, this is simply the natural condition and they live within it. By the time they find out differently, it is too late. They already think that the writing of shell scripts is a natural act.
+    -- Ken Pier (Xerox PARC)
+%
+Bill Joy is the kind of person you meet once, then look back years later and realize that one interaction positively changed your life forever.
+    -- Jennifer Goble Poyer
+%
+I burned a hundred helpless nights
+inside these dark deserted spaces,
+striking sparks from fertile places,
+driven by a desperate dream
+to push my visions through this screen
+and light the lives of those I love.
+I felt a hundred hopes ignite,
+and saw each smothered from above.
+
+I couldn't master this machine,
+this riling writhing mesh of people,
+straining tangled stakes and egos,
+screaming down a steel track.
+The one machine I couldn't hack!
+My sparks were sooty specks so small,
+so overdamped and underseen,
+they barely burned at all.
+
+Goodbye Apple, great machine.
+Grind and polish, smooth and shine.
+I couldn't catch your match with mine.
+But I will always say I tried,
+and if a hundred fires died,
+perhaps the embers smolder on,
+to be remembered
+when I'm gone.
+
+    -- Bret Victor (when he left Apple in 2010)
+%
 It is a sign of regression when pleasure begins to be considered as the highest principle.
     -- Julius Evola
 %
