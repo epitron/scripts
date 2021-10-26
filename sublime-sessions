@@ -1,14 +1,34 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-Path["~/.config/sublime-text-3/Local/*.sublime_session"].each do |path|
-  puts "[[[[[[[[[[[[[[ #{path} ]]]]]]]]]]]]]]]]"
+SUBLIME_DIR = "~/.config/sublime-text-3"
+
+def header(msg, char, color, target_width)
+  target_width    ||= Term.width - 4
+  msg               = msg.to_s
+  s_width           = msg.size + 8
+  padding           = char * [target_width - s_width, 0].max
+  s                 = "<8>#{char * 3} <#{color}>#{msg} <8>#{char * 3}"
+
+  puts (s + padding).colorize
+end
+
+def h1(msg, w=nil)
+  header(msg, "=", 14, w)
+end
+
+def h2(msg, w=nil)
+  header(msg, "-", 11, w)
+end
+
+Path["#{SUBLIME_DIR}/Local/*.sublime_session"].each do |path|
+  h1 path
   puts
 
   json = path.read_json
 
   json["windows"].each_with_index do |window,n|
-    puts "=== window #{n} ==================="
+    h2 "window #{n}"
     window["buffers"].each do |buffer|
       is_file  = buffer["file"]
       name     = buffer.dig("file") || buffer.dig("settings", "name").inspect
