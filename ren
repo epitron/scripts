@@ -215,20 +215,15 @@ def edit_filename(prompt, filename)
     end
 
     #
-    # ^x: print xattrs
+    # ^i: print info
     #
-    c.bind "\x18" do |inst|
-      require 'epitools'
-      require 'pp'
-      fha8huv8z9;lh
-      print "up 4"
-      print "enable linefeeds"
-      print "set scroll window bounds: l..r, top..(bottom - 5)"
-
-      pp Path[filename].xattrs
-
-      print "disable linefeeds"
-
+    c.bind "\t" do |inst|
+      #print "up 4"
+      #print "enable linefeeds"
+      #print "set scroll window bounds: l..r, top..(bottom - 5)"
+      #pp Path[filename].xattrs
+      #print "disable linefeeds"
+      system("c", filename)
       inst.menu.string = "(Printing xattrs)"
     end
 

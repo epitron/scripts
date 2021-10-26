@@ -27,6 +27,11 @@ def clean_link(tag)
   link
 end
 
+def skip_link?(link)
+  link = URI.parse link
+  link.host == "duckduckgo.com" and link.path == "/y.js" and link.params["ad_provider"]
+end
+
 ########################################################
 
 lesspipe(wrap: true) do |less|
@@ -62,7 +67,7 @@ lesspipe(wrap: true) do |less|
     link    = clean_link(title_tag)
     snippet = snippet_tag.text
 
-    next if link["/y.js?ad_provider="]
+    next if skip_link?(link)
 
     less.puts title.light_cyan
     less.puts link.indent(2).light_blue

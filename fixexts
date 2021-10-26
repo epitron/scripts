@@ -6,6 +6,12 @@ require 'mimemagic'
 require 'pathname'
 require 'epitools/colored'
 ###################################################
+#
+# TODOs:
+# - If the file exists, put an incrementing counter
+# - Be smarter about what it thinks an extension is (eg: "hello there how are you doing. i am fine!" => ". i am fine!" is not an extension)
+#
+###################################################
 
 def parse_options
   opts = Slop.parse(help: true, strict: true) do
@@ -134,8 +140,12 @@ def fix!(path)
         puts "  <8>|_ <7>fixed container: <10>#{newpath}".colorize
       else
         newpath = path.sub_ext(".#{true_ext}")
-        puts "  <8>|_ <7>renamed: <10>#{newpath}".colorize
-        path.rename(newpath)
+        if newpath.exist?
+          puts "Error: #{newpath} exists!"
+        else
+          puts "  <8>|_ <7>renamed: <10>#{newpath}".colorize
+          path.rename(newpath)
+        end
       end
     end
   end
