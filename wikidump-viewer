@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+############################################################################
+## + shorter window
+## + hide spammy pages (popularity, language)
+## + some way of cleaning up the dump
+##   |_ filter out (or mark and lower priority of) redirects
+##   |_ how the hell do you tell what language a page is?? is it in the page body???? 
+##   |_ namespaces (Talk:, Category:, etc)
+############################################################################
+require 'pp'
+############################################################################
+
+IMPORTANT_ARTICLES = %{
+  Main page
+  Arch Linux
+}.each_line.map(&:strip)
+
+def index; open("index", "rb"); end
+
+#query="$@"
+#choice="$(rg --color=always -i "$query" index | fzf --with-nth=1 -d "\t")" # | cut -f 2)"
+#ruby view.rb "$choice"
+
+def fzf_picker
+  offset, title = nil, nil
+  IO.popen(["fzf", "--history=#{ENV["HOME"]}/.cache/archwiki.history", "--height=90%", "--with-nth=1", "-d", "\t"], "w+") do |io|
+    index.each_line { |l| io.puts l }
+    io.close_write
+    title, offset = io.read.chomp.split("\t")
+  end
+  [title, offset.to_i]
+end
+
+def oxml; open("wikiarchlinuxorg-20200916-current.xml","rb"); end
+
+def sread(n,a=100); oxml.tap { |o| o.seek(n) }.read(a); end
+
+def lread(pos, n=2); oxml.tap { |o| o.seek(pos) }.each_line.take(n); end
+
+def offsets
+    return to_enum(:offsets) unless block_given? 
+    offset = 0 
+    oxml.each_cons(3) do |l, l2, l3|
+        if l[/^\s+<page>/]
+            title = [l,l2,l3].map { |l| l.scan(/<title>(.+)<\/title>/i )}.reject(&:empty?).compact.first
+            # p title  
+            title = title.flatten.first.force_encoding("utf-8")        
+            yield [offset,title]
+        end
+        offset += l.size
+    end
+end
+
+################################################################################
+
+title, offset = fzf_picker
+
+tmpdir = "/tmp/archwiki"
+Dir.mkdir(tmpdir) unless File.exists?(tmpdir)
+tmpfile = "#{tmpdir}/#{title}.wiki"
+
+## write to /tmp/archwiki/#{title}.wiki
+
+unless File.exist?(tmpfile)
+open(tmpfile, "wb") do |o|
+  f = oxml
+  f.seek(offset)
+  
+  state = :headers
+
+  f.each_line do |l|
+    l = l.force_encoding("utf-8")
+    #p debug: l
+    case state
+    when :headers
+      next if l["<page>"]
+      o.puts l.gsub("<", "\\<").gsub(">", "\\>")
+      state = :body if l =~ /<text ?[^>]*>/
+    when :body
+      o.puts l
+      break if l =~ %r{</text>} 
+    end
+  end
+end
+end # check if the file already exists
+################################################################################
+
+## page /tmp/archwiki/#{title}.wiki
+
+c = File.expand_path("~/scripts/c")
+ARGV[0..-1] = [tmpfile]
+$0 = c
+load(c)
+
+
