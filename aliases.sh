@@ -256,7 +256,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch -v --prune"
+alias gf="git fetch --all -v --prune"
 alias fetch="gf"
 alias whose-line-is-it-anyway="git blame"
 
