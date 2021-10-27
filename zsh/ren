@@ -1,0 +1,10 @@
+#!/usr/bin/env zsh
+if [ -f "$@" ]; then
+  old="$@"
+  new="$@"
+  echo "old: $old"
+  vared -p "new: " new
+  echo "mv $old $new"
+else
+  echo "usage: zren <file(s)>"
+fi

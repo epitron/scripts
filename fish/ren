@@ -1,0 +1,3 @@
+#!/usr/bin/env fish
+# file:///usr/share/doc/fish/cmds/read.html
+read -P "new: " -c old new

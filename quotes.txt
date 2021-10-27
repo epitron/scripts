@@ -24,6 +24,7 @@ One need only shut oneself in a closet and begin to think of the fact of one's b
     -- William James (1911, 39)
 %
 All programmers are forcing their brains to do things that brains were never meant to do in a situation they can never make better, ten to fifteen hours a day, five to seven days a week, and every one of them is slowly going mad.
+    -- Peter Welch (Still Drinking)
 %
 A software engineer is a person who hates computers more deeply than other people. 
 %
