@@ -102,6 +102,7 @@ pushpath() {
 alias mv="mv -v"
 alias cp="cp -v"
 alias rm='trsh'
+alias r='ren'
 alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'

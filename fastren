@@ -1,0 +1,15 @@
+if [[ $# < 1 ]]; then
+  echo "usage: ren <filename(s)>"
+  exit 1
+fi
+
+while [[ $# > 0 ]]; do
+  old="$1"
+  shift
+
+  echo "old: $old"
+  read -e -p "new: " -i "$old" new
+  mv -v --backup=numbered "$old" "$new"
+  echo
+done
+
