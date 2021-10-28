@@ -2,7 +2,6 @@
 #####################################################################
 
 require 'epitools'
-require 'open-uri'
 
 #####################################################################
 
@@ -27,7 +26,7 @@ class Package
   def self.versions(name)
     root = pkg_root_url(name)
 
-    data = open(root).read
+    data = curl(root)
 
     pkgs = data.each_line.map do |l|
       ((file, desc, datesize)) = l.chomp.scan(%r{<a href="(.+)">([^<]+)</a>(.+)})
