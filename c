@@ -1980,7 +1980,7 @@ def convert(arg)
       case ext
       when *%w[.html .htm]
         print_html(File.read arg)
-      when *%w[.md .markdown .mdwn .page]
+      when *%w[.md .markdown .mdwn .page .gmi]
         print_markdown(File.read arg)
       when *%w[.moin .wiki]
         print_moin(File.read arg)
