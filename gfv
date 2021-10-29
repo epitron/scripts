@@ -19,6 +19,7 @@ if args.reject{|arg|arg[/^-\w/]}.empty? or args.delete("--help")
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
   puts "  -S     No subtitles!"
+  puts "  -c     Download chatlogs w/ subtitles"
   puts "  -o <filename>"
   puts "         Set output filename."
   puts "         ( For a list of variables that can be inserted into the filename, see:"
@@ -41,8 +42,15 @@ urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
 
+# if opts.delete("-c")
+#   slangs << ",live_chat"
+#   cmd += %w[--write-subs --skip-download --sub-langs live_chat]
+# end
+
 unless opts.delete("-S")
-  cmd += %w[--sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub]
+  slangs = "en.*"
+  slangs << ",live_chat" if opts.delete("-c")
+  cmd += ["--sub-format", "srt/ass/vtt/best", "--sub-langs", slangs, "--write-subs"]
 end
 
 unless opts.include?("-o")
@@ -62,7 +70,7 @@ if opts.delete("-a") or urls.all? { |url| url =~ %r{\.bandcamp\.com/} }
   cmd << "--extract-audio"
   cmd << "--embed-thumbnail"
   cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
-elsif args.delete("-s")
+elsif opts.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
 elsif opts.delete("-3")
@@ -78,7 +86,7 @@ end
 
 # parallel download
 if opts.delete("-p")
-  cmd += ["--external-downloader", "axel", "--external-downloader-args", "--num-connections=5"]
+  cmd += ["--downloader", "axel", "--downloader-args", "--num-connections=3"]
 end
 
 cmd += opts
@@ -97,16 +105,13 @@ urls.each do |url|
     end
   end
 
-  onecmd = cmd.dup
-  onecmd << url
-
   puts "-------------------------------------------------"
   puts "  Downloading #{url}"
   puts "-------------------------------------------------"
   puts
   puts "Commandline:"
-  puts "  #{onecmd.join(" ")}"
+  puts "  #{cmd.join(" ")} #{url}"
   puts
 
-  system *onecmd
+  system *cmd, url
 end

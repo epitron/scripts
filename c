@@ -1179,6 +1179,52 @@ def print_vtt(filename)
   end
 end
 
+def print_youtube_chat_json(filename)
+  # return to_enum(:print_youtube_chat_json, filename) unless block_given?
+  require 'json'
+
+  Enumerator.new do |out|
+    open(filename) do |f|
+      f.each_line do |line|
+        event = JSON.parse line
+
+        message = event.dig("replayChatItemAction", "actions").first.dig("addChatItemAction", "item", "liveChatTextMessageRenderer")
+
+        next unless message
+
+        ms = event.dig("replayChatItemAction", "videoOffsetTimeMsec").to_i
+        h, ms = ms.divmod(60*60*1000)
+        m, ms = ms.divmod(60*1000)
+        s = ms / 1000.0
+
+        time = "%0.2d:%0.2d:%05.2f" % [h,m,s]
+
+        user = message.dig("authorName", "simpleText")
+        body = message.dig("message", "runs").map do |r|
+          if text = r["text"]
+            text
+          elsif emoji = r.dig("emoji", "emojiId")
+            # "emojiId"=>"UCkszU2WH9gy1mb0dV-11UJg/vQF1XpyaG_XG8gTs77bACQ"
+            if emoji.size > 5
+              # "shortcuts"=>[":chillwcat:"]
+              emoji = r.dig("emoji", "shortcuts").first
+            end
+            emoji
+          else
+            raise "wat #{event}"
+          end
+        end.join
+
+        time << "0" if time =~ /\.$/
+        time << "0" if time =~ /\.\d$/
+
+        # out << "<8>[<7>#{time}<8>] <8>{<9>#{user}<8>} <7>#{body}"
+        out << "\e[30m\e[1m[\e[0m\e[37m#{time}\e[0m\e[30m\e[1m] \e[0m\e[30m\e[1m<\e[0m\e[34m\e[1m#{user}\e[0m\e[30m\e[1m> \e[0m\e[37m#{body}\e[0m"
+      end
+    end
+  end
+end
+
 ##############################################################################
 
 def print_iso(filename)
@@ -1976,6 +2022,8 @@ def convert(arg)
       print_bookmarks(arg)
     elsif path.filename =~ /^id_(rsa|ed25519|dsa|ecdsa)(\.pub)?$/
       print_ssl_certificate(arg)
+    elsif path.filename =~ /\.live_chat\.json$/
+      print_youtube_chat_json(arg)
     else
       case ext
       when *%w[.html .htm]
