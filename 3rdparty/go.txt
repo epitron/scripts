@@ -9,7 +9,7 @@ github.com/diamondburned/discordlogin
 github.com/xxxserxxx/gotop/cmd/gotop
 github.com/42wim/matterbridge
 github.com/Bios-Marcel/cordless
-github.com/prologic/gopherproxy/...
+git.mills.io/prologic/gopherproxy/...
 tailscale.com/cmd/tailscale
 tailscale.com/cmd/tailscaled
 https://git.scuttlebot.io/%25C35b%2BMlZ%2Fy5TT1e7SG66eNKEIdX5DRl9PRUxbhvO89k%3D.sha256 dillo-ipfs
