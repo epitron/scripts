@@ -141,7 +141,7 @@ fi
 
 if we_have ag
 then
-  alias ag="ag --pager '$pager'"
+  alias ag="ag --smart-case --pager '$pager'"
 else
   alias ag="ack --pager '$pager'"
 fi
@@ -160,7 +160,7 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-alias mp="ncmpcpp"
+#alias mp="ncmpcpp"
 alias yd='youtube-dl --xattrs --no-mtime'
 
 if we_have ueberzug; then
