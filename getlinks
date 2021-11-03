@@ -69,6 +69,7 @@ TYPES = {
 
 #########################################################################
 
+=begin
 module URI
   #
   # Strip out params with blank values.
@@ -78,7 +79,7 @@ module URI
   def params
     old_params.delete_if { |k,v| v.blank? }
   end
-end
+=end
 
 #########################################################################
 
