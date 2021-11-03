@@ -8,6 +8,7 @@
 ##   |_ namespaces (Talk:, Category:, etc)
 ############################################################################
 require 'pp'
+require 'digest/sha1'
 ############################################################################
 
 IMPORTANT_ARTICLES = %{
@@ -57,7 +58,7 @@ title, offset = fzf_picker
 
 tmpdir = "/tmp/archwiki"
 Dir.mkdir(tmpdir) unless File.exists?(tmpdir)
-tmpfile = "#{tmpdir}/#{title}.wiki"
+tmpfile = "#{tmpdir}/#{Digest::SHA1.hexdigest title}.wiki"
 
 ## write to /tmp/archwiki/#{title}.wiki
 

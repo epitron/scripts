@@ -57,8 +57,10 @@ class Entry < Struct.new(:author, :title, :url, :quote)
   end
 
   def to_s
-    "#{quote}\n" +
-    "    -- #{author} (#{title})"
+    s = "#{quote}\n"
+    s += "    -- #{author}"
+    s += " (#{title})" if title
+    s
   end
 
 end

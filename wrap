@@ -69,7 +69,7 @@ p width
 if args.empty?
   f = $stdin
 else
-  f = open(args.first)
+  f = open(args.first, "r:utf-8")
 end
 
 #####################################################################################

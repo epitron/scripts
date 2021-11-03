@@ -134,7 +134,7 @@ fuseiso
 mpv ffmpeg mplayer
 feh
 ncmpcpp
-pulseaudio pavucontrol volumeicon ponymix
+pulseaudio pavucontrol volumeicon pulsemixer ponymix
 audacious-plugins mpg123 libmtp libmms
 imagemagick
 handbrake

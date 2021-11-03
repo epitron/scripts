@@ -1,11 +1,22 @@
-Life shrinks or expands in proportion to one’s courage.
-    -– Anais Nin
+Everything has two handles; the one soft and manageable, the other such as will not endure to be touched. If then your brother do you an injury, do not take it by the hot hard handle, by representing to yourself all the aggravating circumstances of the fact; but look rather on the soft side, and extenuate it as much as is possible, by considering the nearness of the relation, and the long friendship and familiarity between you- obligations to kindness which a single provocation ought not to dissolve. And thus you will take the accident by the manageable handle.
+%
+What one wants is to be able to talk with a diverse club of smart people, arrange to do short one-off research projects and simulations, publish papers or capture intellectual property quickly and easily, and move on to another conversation. Quickly. Easily. For a living. Can't do that in industry. Can't do that in the Academy. Yet in my experience, scientists and engineers all want it. Maybe even a few mathematicians and social scientists do, too. 
+    -- Bill Tozier (Diverse themes observed at GECCO 2006)
+%
+It is possible to commit no mistakes and still lose.
+That is not a weakness,
+That is life.
+%
+The tallest mountains. The oldest books. The strangest people. There you will find the stone.
+%
+Life shrinks or expands in proportion to one's courage.
+    -- Anais Nin
 %
 Courage is the price that Life exacts for granting peace.
-    -– Amelia Earhart
+    -- Amelia Earhart
 %
-You gain strength, courage and confidence by every experience in which you really stop to look fear in the face. You are able to say to yourself, “I have lived through this horror. I can take the next thing that comes along.” You must do the thing you think you cannot do.
-    -– Eleanor Roosevelt
+You gain strength, courage and confidence by every experience in which you really stop to look fear in the face. You are able to say to yourself, "I have lived through this horror. I can take the next thing that comes along." You must do the thing you think you cannot do.
+    -- Eleanor Roosevelt
 %
 I know that most men, including those at ease with problems of the greatest complexity, can seldom accept even the simplest and most obvious truth if it be such as would oblige them to admit the falsity of conlusions which they have delighted in explaining to colleages, which they have proudly taught to others, and which they have woven, thread by thread, into the fabric of their lives.
     -- Leo Tolstoy
@@ -5029,7 +5040,7 @@ We must not believe the many, who say that free persons only ought to be educate
 Pascal is a language for children wanting to be naughty.
     -- Dr. Kasi Ananthanarayanan
 %
-Moderation is a fatal thing.  Nothing succeeds like excess.
+Moderation is a fatal thing. Nothing succeeds like excess.
     -- Oscar Wilde
 %
 Good news is just life's way of keeping you off balance.
@@ -5049,7 +5060,7 @@ Most people in this society who aren't actively mad are, at best, reformed or po
 Of course, degeneration is programmed into our DNA: Nature seems to want us to reproduce and then fall by the wayside. But your generation wants to hang onto its youth into its 90s, on the theory that if you stay around long enough maybe you can get your life together.
     -- Mr. Blue
 %
-Oh, yes.  The important thing about having lots of things to  remember is that you've got to go somewhere afterwards where you can remember them, you see?  You've got to stop.  You haven't really been anywhere until you've got back home.  I think that's what I mean.
+Oh, yes.  The important thing about having lots of things to remember is that you've got to go somewhere afterwards where you can remember them, you see? You've got to stop. You haven't really been anywhere until you've got back home. I think that's what I mean.
     -- Terry Pratchett, "The Light Fantastic"
 %
 Honesty is for the most part less profitable than dishonesty.

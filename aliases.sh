@@ -141,7 +141,7 @@ fi
 
 if we_have ag
 then
-  alias ag="ag --pager '$pager'"
+  alias ag="ag --smart-case --pager '$pager'"
 else
   alias ag="ack --pager '$pager'"
 fi
@@ -160,7 +160,7 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-alias mp="ncmpcpp"
+#alias mp="ncmpcpp"
 alias yd='youtube-dl --xattrs --no-mtime'
 
 if we_have ueberzug; then
@@ -257,7 +257,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch -v --prune"
+alias gf="git fetch --all -v --prune"
 alias fetch="gf"
 alias whose-line-is-it-anyway="git blame"
 

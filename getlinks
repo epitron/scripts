@@ -5,7 +5,6 @@ gem 'slop', "~> 3.6"
 require 'slop'
 require 'oga'
 require 'epitools'
-require 'http'
 
 #########################################################################
 
@@ -79,6 +78,7 @@ module URI
   def params
     old_params.delete_if { |k,v| v.blank? }
   end
+end
 =end
 
 #########################################################################
