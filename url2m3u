@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+if ARGV.empty?
+  puts "usage: url2m3u <url>"
+  exit 1
+end
+
+url = ARGV.first
+
+url += "/" unless url[%r{/$}]
+
+IO.popen(["lftp", "-c", "open #{url}; find"], &:read).
+	each_line.
+        map(&:chomp).
+	reject {|line| line[/\/$/] }.
+        shuffle.
+        each do |line|
+          line = line.gsub(%r{^\./}, '')
+          puts "#{url}#{line}"
+        end
