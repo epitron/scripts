@@ -4,11 +4,8 @@ github.com/caddyserver/caddy/caddy
 github.com/eliukblau/pixterm
 github.com/allinurl/goaccess
 github.com/rylio/ytdl
-github.com/diamondburned/gtkcord3
-github.com/diamondburned/discordlogin
 github.com/xxxserxxx/gotop/cmd/gotop
 github.com/42wim/matterbridge
-github.com/Bios-Marcel/cordless
 github.com/prologic/gopherproxy/...
 tailscale.com/cmd/tailscale
 tailscale.com/cmd/tailscaled
@@ -20,3 +17,5 @@ github.com/fyne-io/fyne # Go GUI
 
 github.com/dundee/gdu/v5/cmd/gdu # ncdu clone (colourful!)
 github.com/makeworld-the-better-one/gemget
+
+github.com/openrdap/rdap/cmd/rdap # ARIN/RIPE/AFRNIC/LACNIC/APNIC query client
