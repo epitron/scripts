@@ -1,4 +1,4 @@
-cd ~/dl
+#cd ~/dl
 
 if [ "$1" == "" ]; then
   url="$(cb)"
@@ -6,5 +6,5 @@ else
   url="$@"
 fi
 
-wget --no-verbose --show-progress --no-use-server-timestamps "$url"
+wget --xattr --no-verbose --show-progress --no-use-server-timestamps "$url"
 
