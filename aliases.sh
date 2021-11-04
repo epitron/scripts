@@ -160,7 +160,7 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-#alias mp="ncmpcpp"
+alias mixer="pulsemixer"
 alias yd='youtube-dl --xattrs --no-mtime'
 
 if we_have ueberzug; then
