@@ -37,7 +37,7 @@ possibly_prepend_path ~/node_modules/.bin
 possibly_prepend_path ~/.cabal/bin
 possibly_prepend_path ~/.cargo/bin
 possibly_prepend_path ~/go/bin
-for i in ~/.gem/ruby/*/bin; do
+for i in ~/.gem/ruby/*/bin ~/.local/share/gem/ruby/*/bin; do
   possibly_prepend_path $i
 done
 possibly_prepend_path ~/.gem/bin

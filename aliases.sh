@@ -196,10 +196,13 @@ alias screen='screen -U'
 alias e.='e .'
 
 best_of() {
-  basename $( which $@ 2> /dev/null | head -n 1 )
+  best=$( which $* 2> /dev/null | head -n 1 )
+  if [ "$best" != "" ]; then
+    basename $best
+  fi
 }
 
-alias best_dd="$(best_of dd_rescue dcfldd ddrescue)" # find the best dd
+alias best_dd="$(best_of dd_rescue dcfldd ddrescue dd)" # find the best dd
 
 dd() {
   if (( $# == 0 )); then
