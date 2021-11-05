@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Goal: Replace youtube-dl with this, and it'll go faster (by keeping a copy running in the background that it talks to)
 # (not finished)
