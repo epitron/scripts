@@ -41,6 +41,9 @@ for i in ~/.gem/ruby/*/bin; do
   possibly_prepend_path $i
 done
 possibly_prepend_path ~/.gem/bin
+for gempath in /usr/lib/ruby/gems/*/bin; do
+  possibly_prepend_path $gempath
+done
 possibly_prepend_path ~/.local/bin
 possibly_prepend_path $SCRIPTDIR
 possibly_prepend_path ~/bin
