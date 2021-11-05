@@ -100,6 +100,7 @@ pushpath() {
 
 # filesystem
 alias mv="mv -v"
+alias mv-backup='mv --backup=numbered'
 alias cp="cp -v"
 alias rm='trsh'
 alias r='ren'
