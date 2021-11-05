@@ -13,6 +13,8 @@
 
 # alias open='xdg-open "$@" 2>/dev/null'
 
+alias reload="exec bash"
+
 function we_have() {
   which "$@" > /dev/null 2>&1
 }
@@ -193,11 +195,27 @@ alias screen='screen -U'
 
 alias e.='e .'
 
-if we_have dcfldd; then
-  alias dd='dcfldd'
-elif we_have ddrescue; then
-  alias dd='ddrescue'
-fi
+best_of() {
+  basename $( which $@ 2> /dev/null | head -n 1 )
+}
+
+alias best_dd="$(best_of dd_rescue dcfldd ddrescue)" # find the best dd
+
+dd() {
+  if (( $# == 0 )); then
+    best_dd --help |& less
+  else
+    best_dd "$@"
+  fi
+}
+
+# if we_have dd_rescue; then
+#   alias dd='dd_rescue'
+# elif we_have dcfldd; then
+#   alias dd='dcfldd'
+# elif we_have ddrescue; then
+#   alias dd='ddrescue'
+# fi
 
 alias um='unmount'
 
