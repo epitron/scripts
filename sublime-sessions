@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+SUBLIME_DIR = "~/.config/sublime-text-3"
+
+def header(msg, char, color, target_width)
+  target_width    ||= Term.width - 4
+  msg               = msg.to_s
+  s_width           = msg.size + 8
+  padding           = char * [target_width - s_width, 0].max
+  s                 = "<8>#{char * 3} <#{color}>#{msg} <8>#{char * 3}"
+
+  puts (s + padding).colorize
+end
+
+def h1(msg, w=nil)
+  header(msg, "=", 14, w)
+end
+
+def h2(msg, w=nil)
+  header(msg, "-", 11, w)
+end
+
+Path["#{SUBLIME_DIR}/Local/*.sublime_session"].each do |path|
+  h1 path
+  puts
+
+  json = path.read_json
+
+  json["windows"].each_with_index do |window,n|
+    h2 "window #{n}"
+    window["buffers"].each do |buffer|
+      is_file  = buffer["file"]
+      name     = buffer.dig("file") || buffer.dig("settings", "name").inspect
+      size     = buffer.dig("file_size") || buffer.dig("settings", "buffer_size")
+      mtime    = Time.at(buffer.dig("file_write_time") / 10**8) rescue nil
+      contents = buffer["contents"]
+
+      puts(
+        (
+          "<#{is_file ? 9 : 7}>#{name}" +  # colorize files differently from text
+          (size ? " <8>(<7>#{size.commatize} <8>bytes)" : "") +
+          (mtime ? " <8>[<7>#{mtime.strftime("%Y-%m-%d")}<8>]" : "")
+        ).colorize
+      )
+    end
+
+    puts
+  end
+end

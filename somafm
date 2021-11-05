@@ -1,0 +1,204 @@
+#!/bin/bash
+
+# somafm.sh
+# This script is to select a somafm.com station for high or low bitrate playing.
+
+# Copyright 2021 Edward Tefft
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR IMPLIED
+#  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
+#  EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+#  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+#  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+#  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+#  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+#  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+CACHE=1024
+BA="http://somafm.com"
+
+radiomenu()
+{
+   RADIO=$(DIALOGRC=$HOME/.soma/dialogrc dialog --stdout \
+      --cancel-label "Exit" --title "SOMA FM INTERNET RADIO" \
+      --menu "Select a station:" 25 74 14 \
+      "Secret Agent" "For your stylish, mysterious, dangerous life" \
+      "Groove Salad" "Ambient beats and grooves" \
+      "Groove Salad Classic" "Vintage ambient beats and grooves" \
+      "Underground 80s" "UK Synthpop"\
+      "PopTron" "Electropop and indie dance rock with sparkle"\
+      "Illinois Street Lounge" "Vintage bachelor pad music of tomorrow."\
+      "Boot Liquor" "Americana Roots music"\
+      "Digitalis" "Calming analog rock"\
+      "Folk Forward" "Indie/alt/classic folk"\
+      "Indie Pop Rocks!" "Indie pop tracks"\
+      "BAGeL Radio" "Alternative rock radio"\
+      "Heavyweight Reggae" "Reggae, ska, rocksteady"\
+      "Metal Detector" "Heavy metal"\
+      "Covers" "Just covers"\
+      "Christmas Lounge" "Chilled holiday grooves"\
+      "Christmas Rocks!" "Indie/alt Christmas rock"\
+      "Jolly Ol' Soul" "Christmas soul"\
+      "Xmas in Frisko" "Humorous/offensive holiday music"\
+   )
+   case $? in
+      1)
+         exit ;;
+      255)
+         exit ;;
+   esac
+}
+
+qualitymenu()
+{
+   QUALITY=$(DIALOGRC=$HOME/.soma/dialogrc dialog --stdout \
+      --cancel-label "Exit" --title "AUDIO BITRATE" \
+      --menu "Select desired bitrate:" 9 60 2 \
+      H "AAC 128kb" \
+      L "AAC-HE 64kb" \
+      )
+   case $? in
+      1)
+         exit ;;
+      255)
+         exit ;;
+   esac
+}
+
+clearscreen()
+{
+   NUMBER=80
+   for (( LOOPN=0; LOOPN<=$NUMBER; LOOPN++ ))
+   do
+      echo ""
+   done
+}
+
+radiomenu
+qualitymenu
+clearscreen
+if [ "$QUALITY" == 'L' ]; then
+   case $RADIO in
+      "Secret Agent")
+         mplayer -cache $CACHE -playlist $BA/secretagent64.pls
+         ;;
+      "Groove Salad")
+         mplayer -cache $CACHE -playlist $BA/gsclassic64.pls
+         ;;
+      "Groove Salad")
+         mplayer -cache $CACHE -playlist $BA/groovesalad64.pls
+         ;;
+      "Underground 80s")
+         mplayer -cache $CACHE -playlist $BA/u80s64.pls
+         ;;
+      "PopTron")
+         mplayer -cache $CACHE -playlist $BA/poptron64.pls
+         ;;
+      "Illinois Street Lounge")
+         mplayer -cache $CACHE -playlist $BA/illstreet64.pls
+         ;;
+      "Boot Liquor")
+         mplayer -cache $CACHE -playlist $BA/bootliquor64.pls
+         ;;
+      "Digitalis")
+         mplayer -cache $CACHE -playlist $BA/digitalis64.pls
+         ;;
+      "Folk Forward")
+         mplayer -cache $CACHE -playlist $BA/folkfwd64.pls
+         ;;
+      "Indie Pop Rocks!")
+         mplayer -cache $CACHE -playlist $BA/indiepop64.pls
+         ;;
+      "BAGeL Radio")
+         mplayer -cache $CACHE -playlist $BA/bagel64.pls
+         ;;
+      "Heavyweight Reggae")
+         mplayer -cache $CACHE -playlist $BA/reggae80.pls
+         ;;
+      "Metal Detector")
+         mplayer -cache $CACHE -playlist $BA/metal64.pls
+         ;;
+      "Covers")
+         mplayer -cache $CACHE -playlist $BA/covers64.pls
+         ;;
+      "Christmas Lounge")
+         mplayer -cache $CACHE -playlist $BA/christmas64.pls
+         ;;
+      "Christmas Rocks!")
+         mplayer -cache $CACHE -playlist $BA/xmasrocks64.pls
+         ;;
+      "Jolly Ol' Soul")
+         mplayer -cache $CACHE -playlist $BA/jollysoul64.pls
+         ;;
+      "Xmas in Frisko")
+         mplayer -cache $CACHE -playlist $BA/xmasinfrisko64.pls
+         ;;
+   esac
+else
+   case $RADIO in
+      "Secret Agent")
+         mplayer -cache $CACHE -playlist $BA/secretagent130.pls
+         ;;
+      "Groove Salad Classic")
+         mplayer -cache $CACHE -playlist $BA/gsclassic130.pls
+         ;;
+      "Groove Salad")
+         mplayer -cache $CACHE -playlist $BA/groovesalad130.pls
+         ;;
+      "Underground 80s")
+         mplayer -cache $CACHE -playlist $BA/u80s130.pls
+         ;;
+      "PopTron")
+         mplayer -cache $CACHE -playlist $BA/poptron130.pls
+         ;;
+      "Illinois Street Lounge")
+         mplayer -cache $CACHE -playlist $BA/illstreet130.pls
+         ;;
+      "Boot Liquor")
+         mplayer -cache $CACHE -playlist $BA/bootliquor130.pls
+         ;;
+      "Digitalis")
+         mplayer -cache $CACHE -playlist $BA/digitalis130.pls
+         ;;
+      "Folk Forward")
+         mplayer -cache $CACHE -playlist $BA/folkfwd130.pls
+         ;;
+      "Indie Pop Rocks!")
+         mplayer -cache $CACHE -playlist $BA/indiepop130.pls
+         ;;
+      "BAGeL Radio")
+         mplayer -cache $CACHE -playlist $BA/bagel130.pls
+         ;;
+      "Heavyweight Reggae")
+         mplayer -cache $CACHE -playlist $BA/reggae130.pls
+         ;;
+      "Metal Detector")
+         mplayer -cache $CACHE -playlist $BA/metal130.pls
+         ;;
+      "Covers")
+         mplayer -cache $CACHE -playlist $BA/covers130.pls
+         ;;
+      "Christmas Lounge")
+         mplayer -cache $CACHE -playlist $BA/christmas130.pls
+         ;;
+      "Christmas Rocks!")
+         mplayer -cache $CACHE -playlist $BA/xmasrocks130.pls
+         ;;
+      "Jolly Ol' Soul")
+         mplayer -cache $CACHE -playlist $BA/jollysoul130.pls
+         ;;
+      "Xmas in Frisko")
+         mplayer -cache $CACHE -playlist $BA/xmasinfrisko130.pls
+         ;;
+   esac
+fi
+

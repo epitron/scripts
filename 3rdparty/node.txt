@@ -2,3 +2,8 @@ shuji (convert sourcemap back to javascript)
 wscat (websocket cli)
 js-beautify
 
+@medv/blessed # a modern curses-like TUI with a high level API
+@medv/eat # convert everything to json (yaml, toml, xml, ini, cli tables)
+fx # interacive tui json viewer and query language
+
+https://github.com/summerstyle/jsonTreeViewer.git # web-based interactive json viewer

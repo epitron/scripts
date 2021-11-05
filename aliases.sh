@@ -13,6 +13,8 @@
 
 # alias open='xdg-open "$@" 2>/dev/null'
 
+alias reload="exec bash"
+
 function we_have() {
   which "$@" > /dev/null 2>&1
 }
@@ -58,10 +60,10 @@ else
   }
 fi
 
-function fd() {
-  query="$@"
-  $(which fd) --color=always "$query" | less -RS "+/$query"
-}
+# function fd() {
+#  query="$@"
+#  $(which fd) --color=always "$query" | less -RS "+/$query"
+#}
 
 #if which fd > /dev/null; then
 #  alias f='fd -IH'
@@ -100,8 +102,10 @@ pushpath() {
 
 # filesystem
 alias mv="mv -v"
+alias mv-backup='mv --backup=numbered'
 alias cp="cp -v"
 alias rm='trsh'
+alias r='ren'
 alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
@@ -140,7 +144,7 @@ fi
 
 if we_have ag
 then
-  alias ag="ag --pager '$pager'"
+  alias ag="ag --smart-case --pager '$pager'"
 else
   alias ag="ack --pager '$pager'"
 fi
@@ -159,8 +163,14 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-alias mp="ncmpcpp"
+alias mixer="pulsemixer"
 alias yd='youtube-dl --xattrs --no-mtime'
+
+if we_have ueberzug; then
+  alias ytf='ytfzf -t --detach'
+else
+  alias ytf='ytfzf --detach'
+fi
 
 # net
 alias_all_as_sudo iptables netctl ufw dhcpcd nethogs
@@ -185,11 +195,27 @@ alias screen='screen -U'
 
 alias e.='e .'
 
-if we_have dcfldd; then
-  alias dd='dcfldd'
-elif we_have ddrescue; then
-  alias dd='ddrescue'
-fi
+best_of() {
+  basename $( which $@ 2> /dev/null | head -n 1 )
+}
+
+alias best_dd="$(best_of dd_rescue dcfldd ddrescue)" # find the best dd
+
+dd() {
+  if (( $# == 0 )); then
+    best_dd --help |& less
+  else
+    best_dd "$@"
+  fi
+}
+
+# if we_have dd_rescue; then
+#   alias dd='dd_rescue'
+# elif we_have dcfldd; then
+#   alias dd='dcfldd'
+# elif we_have ddrescue; then
+#   alias dd='ddrescue'
+# fi
 
 alias um='unmount'
 
@@ -250,7 +276,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch -v --prune"
+alias gf="git fetch --all -v --prune"
 alias fetch="gf"
 alias whose-line-is-it-anyway="git blame"
 
@@ -371,7 +397,6 @@ alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias abs='sudoifnotroot abs'
-alias mp='makepkg -s'
 # alias pkgfile='sudoifnotroot pkgfile -r'
 
 if we_have yaourt; then
@@ -392,3 +417,4 @@ fi
 #
 #function faketty { script -qfc "$(printf "%q " "$@")"; }
 shiftpath() { [ -d "$1" ] && PATH="${PATH}${PATH:+:}${1}"; }
+alias psh=pwsh

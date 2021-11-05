@@ -7,6 +7,9 @@ ttf-ms-fonts
 ttf-iosevka
 ttf-monaco
 ttf-meslo
+ttf-twemoji-color
+
+font-manager
 
 spotify
 spotify-adblock-git
@@ -27,3 +30,4 @@ imlib2-webp-git
 xnviewmp
 
 archlinux-nix
+open-dyslexic-fonts

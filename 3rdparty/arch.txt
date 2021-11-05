@@ -21,6 +21,12 @@ socat
 openssh
 dog
 
+
+# System monitoring
+dstat
+bpytop
+
+
 # File transfers
 rsync
 lftp
@@ -42,6 +48,7 @@ pkgfile
 
 # Development/scripting
 git
+gitui
 subversion
 ruby
 ruby-docs
@@ -78,6 +85,7 @@ ttf-droid-ib
 ttf-ubuntu-font-family-ib
 ttf-noto-fonts-ib
 ttf-dejavu-ib
+noto-fonts{-extra,-emoji}
 
 
 # Desktop apps
@@ -90,7 +98,8 @@ hexchat
 pidgin
 google-earth
 qbittorrent
-
+zathura
+sigil
 
 # Microsoft
 wine winetricks
@@ -125,7 +134,7 @@ fuseiso
 mpv ffmpeg mplayer
 feh
 ncmpcpp
-pulseaudio pavucontrol volumeicon ponymix
+pulseaudio pavucontrol volumeicon pulsemixer ponymix
 audacious-plugins mpg123 libmtp libmms
 imagemagick
 handbrake
@@ -147,7 +156,7 @@ the_silver_searcher
 pv
 fzf
 fortune-mod
-ncdu
+ncdu dua-cli
 dhex
 
 # Security

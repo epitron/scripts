@@ -23,6 +23,8 @@ opts = Slop.parse(help: true, strict: true) do
   on "l", "list",   "List prefixes"
   on "3", "32",     "32-bit (default)"
   on "6", "64",     "64-bit"
+  on "r=", "rm",    "Delete a prefix"
+  on "w=", "windows-version", "Windows Version (eg: XP, 7, 8, 10)"
 end
 
 args = ARGV
@@ -53,8 +55,8 @@ cmd      = args
 
 # List prefixes
 if opts.list?
-  w = prefixes.map { |f| f.dirs.last.size }.max + 8
-  h1 "Prefixes:", w
+  # w = prefixes.map { |f| f.dirs.last.size }.max + 8
+  h1 "Prefixes (location: #{PREFIX_DIR})"
   PREFIX_DIR.cd do
     system(*["du", "-s", "-h", *prefixes.map { |p| p.dirs.last } ])
   end
@@ -72,7 +74,7 @@ if args.empty?
   end
 end
 
-bin    = Path["#{cmd.first}{,.exe}"].first
+bin = Path[cmd.first]
 
 if prefix.blank?
   # is it in the settings?
@@ -113,7 +115,7 @@ env  = {
 pp({
   prefix:   prefix,
   opts:     opts.to_h,
-  settings: settings,
+  # settings: settings,
   arch:     arch,
   env:      env,
   bin:      bin,

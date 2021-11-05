@@ -1,0 +1,10 @@
+#cd ~/dl
+
+if [ "$1" == "" ]; then
+  url="$(cb)"
+else
+  url="$@"
+fi
+
+wget --xattr --no-verbose --show-progress --no-use-server-timestamps "$url"
+

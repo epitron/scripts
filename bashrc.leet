@@ -62,6 +62,11 @@ if we_have bat; then
   export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
+# dua
+if we_have dua; then
+  alias ncdu='dua interactive'
+fi
+
 # fzf
 if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   if we_have bfs; then
@@ -71,7 +76,7 @@ if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   fi
 
   _fzf_loaded=false
-  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell; do
+  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell /data/data/com.termux/files/usr/share/fzf; do
     if [ "$_fzf_loaded" == "false" ]; then
       if [ -f "$i/completion.bash" ]; then
         . $i/completion.bash

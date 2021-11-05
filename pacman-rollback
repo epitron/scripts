@@ -2,7 +2,6 @@
 #####################################################################
 
 require 'epitools'
-require 'open-uri'
 
 #####################################################################
 
@@ -27,7 +26,7 @@ class Package
   def self.versions(name)
     root = pkg_root_url(name)
 
-    data = open(root).read
+    data = curl(root)
 
     pkgs = data.each_line.map do |l|
       ((file, desc, datesize)) = l.chomp.scan(%r{<a href="(.+)">([^<]+)</a>(.+)})
@@ -49,7 +48,7 @@ class Package
   end
 
   def parse_filename!
-    if file =~ /(.+)-([\d\.]+)-(\d)-(\w+)\.pkg\.tar\.xz$/
+    if file =~ /(.+)-([\d\.]+)-(\d)-(\w+)\.pkg\.tar\.\w{2,5}$/
       @name, @ver, @rev, @arch = $1, $2, $3, $4
     end
   end

@@ -112,6 +112,7 @@ class DirectoryLister
 
   def call(env)
     req = Rack::Request.new(env)
+    pp env
 
     params = env["QUERY_STRING"].to_params
 
@@ -142,13 +143,15 @@ else
   root = Path.pwd
 end
 
+PORT=3000
+
 puts
 puts "* Serving files in: #{root}"
-puts "                on: http://0.0.0.0:8888/"
+puts "                on: http://0.0.0.0:#{PORT}/"
 puts
 
 # server = Rack::Handler.pick ['thin', 'webrick']
 server = Rack::Handler.pick ['webrick']
-server.run DirectoryLister.new(root), Port: 8888
+server.run DirectoryLister.new(root), Port: PORT
 
 

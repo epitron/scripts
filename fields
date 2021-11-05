@@ -2,6 +2,8 @@
 
 #
 # TODO:
+# - Bugfix: "2..-1" doesn't work
+#   - "2-" also doesn't work
 # - Give it group-by functionality, so the 'group-by' script can just use this tool
 # - Switch to 'slop' for parsing args
 # - Multiple delimiters (ie: `fields -d / -d :` will split on both `/` and `:`)

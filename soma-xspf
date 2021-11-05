@@ -23,6 +23,8 @@ puts "  |_ #{json["channels"].size} stations found"
 puts
 puts "* Writing stations to 'somafm.xspf'..."
 
+channels = json["channels"].sort_by { |h| -h["listeners"].to_i }
+
 outfile = open("somafm.xspf", "w")
 
 outfile << %{
@@ -32,7 +34,7 @@ outfile << %{
   <trackList>
 }
 
-json["channels"].map do |ch|
+channels.map do |ch|
   pls   = ch["playlists"].first["url"]
   url   = pls_urls(pls).first
   title = ch["title"]

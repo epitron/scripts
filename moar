@@ -7,6 +7,9 @@
 # -------------------------
 #
 # + Search
+# + Wrapping
+#   - WrapMap
+# + Syntax highlighting (rouge/coderay/bat/c/pygments)
 # + Other possible names: "most", "least", "pager"
 #   - moar is more moar than less is more
 #   - more is more by being less than less is less than more
@@ -133,8 +136,8 @@ class Pager
       key(:left)    { pager.scroll_right }
       key(:right)   { pager.scroll_left }
 
-      key(:pgup)    { pager.pageup }
-      key(:pgdown)  { pager.pagedown }
+      key(:pgup, ?b, ?u)    { pager.pageup }
+      key(:pgdown, ?n, ?d)  { pager.pagedown }
       key(" ")      { pager.pagedown }
 
       key(:home, "<") { pager.scroll_home }
@@ -148,7 +151,7 @@ class Pager
       key("w")      { pager.toggle_wrap }
       key("n")      { pager.toggle_line_numbers }
 
-      key("r", "\C-r", "\r", "\f", "\C-l")  { pager.refresh! }
+      key("r", "\C-r", "\r", "\f", "\C-l")  { pager.clear; pager.refresh! }
       key("?", "h", "\C-/", "\C-?") { pager.toggle_help }
 
       # key( *("1".."9").to_a ) { |c| display.set_wpm c.to_i*100 }
@@ -249,7 +252,7 @@ class Pager
         if @tail_mode
           scroll_end
         else
-          if lines < height
+          if line_count < height
             refresh
           else
             display_status_bar
@@ -345,7 +348,7 @@ class Pager
 
 
   def percent
-    pct = (bottom.to_f / lines) * 100
+    pct = (bottom.to_f / line_count) * 100
     "%0.1f%%" % pct
   end
 
@@ -354,14 +357,14 @@ class Pager
   end
 
   def bottom
-    [lines, @pos+(@height-1)].min
+    [line_count, @pos+(@height-1)].min
   end
 
   def end_pos
-    [lines - height, 0].max
+    [line_count - height, 0].max
   end
 
-  def lines
+  def line_count
     @scrollback.size
   end
 
@@ -370,7 +373,7 @@ class Pager
   def lines_on_screen(padded=true)
     range = top..bottom
 
-    debug(lines_on_screen: range.size, range: range, lines: lines)
+    debug(lines_on_screen: range.size, range: range, lines: line_count)
 
     l = scrollback[range] || []
     l += [""] * (height-l.size) if padded and l.size < height
@@ -383,8 +386,10 @@ class Pager
     width = @width
     left  = @hpos
 
+    line.chomp!
+
     if @line_numbers
-      num_width = lines.to_s.size
+      num_width = line_count.to_s.size
       right     = @hpos + (@width - num_width - 2)
       cropped   = "#{num.to_s.rjust(num_width)}: #{line[left...right]}"
     else
@@ -465,7 +470,7 @@ class Pager
   end
 
   def scroll_end
-    lines_from_end = lines - bottom
+    lines_from_end = line_count - bottom
 
     if lines_from_end < height
       scroll_output_down(lines_from_end)
@@ -493,7 +498,7 @@ class Pager
       @last_refresh = Time.now
       # clear
       move_to_top
-      lines_on_screen.each_with_index { |(line,num), i| display line, row: i+1, num: num }
+      lines_on_screen.each_with_index { |(line,num), i| display(line, row: i+1, num: num) }
       display_status_bar!
     end
   end
@@ -507,7 +512,7 @@ class Pager
     move_to_row(@termheight)
 
     print "\e[37;1m" +
-      "line: #{bottom+1}/#{lines} (#{percent}), " +
+      "line: #{bottom+1}/#{line_count} (#{percent}), " +
       "col: #{@hpos} " +
       "#{"[TAIL] " if @tail_mode}" +
       "#{"[WRAP] " if @wrap}" +
