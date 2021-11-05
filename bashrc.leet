@@ -76,7 +76,7 @@ if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   fi
 
   _fzf_loaded=false
-  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell /data/data/com.termux/files/usr/share/fzf; do
+  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell /data/data/com.termux/files/usr/share/fzf /usr/share/doc/fzf; do
     if [ "$_fzf_loaded" == "false" ]; then
       if [ -f "$i/completion.bash" ]; then
         . $i/completion.bash
