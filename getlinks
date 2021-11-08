@@ -102,29 +102,29 @@ end
 ####################################################################
 
 lesspipe do |less|
-args.each do |url|
-  less.puts "### URL: #{url}"
+  args.each do |url|
+    less.puts "### URL: #{url}"
 
-  html = cached_curl(url)
+    html = cached_curl(url)
 
-  if opts.grep?
-    less.puts
-    print_grepped_urls(less, html)
-  else
-    doc = Oga.parse_html 
+    if opts.grep?
+      less.puts
+      print_grepped_urls(less, html)
+    else
+      doc = Oga.parse_html 
 
-    root_uri = URI.parse url
-    title = doc.at_css("title")&.text&.tighten
+      root_uri = URI.parse url
+      title = doc.at_css("title")&.text&.tighten
 
-    less.puts "### #{title}" if title and not title.empty?
-    less.puts
+      less.puts "### #{title}" if title and not title.empty?
+      less.puts
 
-    print_images(less, root_uri, doc) if opts.images?
-    print_media(less, root_uri, doc)  if opts.media?
+      print_images(less, root_uri, doc) if opts.images?
+      print_media(less, root_uri, doc)  if opts.media?
 
-    if opts.links? or (!opts.links? and !opts.images? and !opts.media?)
-      print_links(less, root_uri, doc, print_blank_title: opts[:"blank-title"])
+      if opts.links? or (!opts.links? and !opts.images? and !opts.media?)
+        print_links(less, root_uri, doc, print_blank_title: opts[:"blank-title"])
+      end
     end
   end
-end
 end
