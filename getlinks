@@ -14,6 +14,7 @@ opts = Slop.parse(help: true, strict: true) do
   on "l", "links",  "Print links (default)"
   on "i", "images", "Print images"
   on "m", "media",  "Print non-image media (video and audio)"
+  on "a", "all",    "Everything!"
   on "b", "blank-title", "Print links with blank titles (default: ignore them)"
   on "g", "grep", "Look for URLs by parsing the page as plain text (ie: for urls in json blobs)"
 end
@@ -24,7 +25,7 @@ args = ARGV
 
 class String
   def tighten
-    gsub(/\s{2,}/, ' ').strip
+    gsub(/\s+/, ' ').strip
   end
 end
 
@@ -44,15 +45,17 @@ def print_links(less, root_uri, doc, print_blank_title: false)
   less.puts
 
   doc.css("a").each do |link|
-    title = link.text.tighten
+    body  = link.text.tighten
+    title = link["title"]&.tighten
     uri   = URI.join(root_uri, link["href"])
 
-    unique_id = [title, uri]
+    unique_id = [body, title, uri]
 
-    next if title.empty? and not print_blank_title
+    next if body&.empty? and title&.empty? and not print_blank_title
     next if already_printed.include? unique_id
 
-    less.puts "# #{title}" unless title.empty?
+    less.puts "# #{body}" unless body.nil? or body.empty?
+    less.puts "# title: #{title}" unless title.nil? or title.empty?
     less.puts "#{uri}"
     less.puts
 
@@ -69,6 +72,8 @@ def print_images(less, root_uri, doc)
   doc.css("img").each do |img|
     title = img["title"]&.tighten
     alt = img["alt"]&.tighten
+    alt = nil if title == alt
+   
     uri = URI.join(root_uri, img["src"])
 
     unique_id = [title, alt, uri]
@@ -90,8 +95,8 @@ def print_media(less, root_uri, doc)
   end
 end
 
-WEIRD_BLANK = " " # 0xA0... I can copy/paste it, but "\xA0" is illegal??? weird.
-URL_RE = %r{https?://[^"' <#{WEIRD_BLANK}]+}
+FAKE_SPACE_CHAR = " " # 0xA0... I can copy/paste this char, but a string with its hex value ("\xA0") is illegal??? weird.
+URL_RE = %r{https?://[^"' <#{FAKE_SPACE_CHAR}]+}
 def print_grepped_urls(less, html)
   html.scan(URL_RE).each do |m|
     less.puts m
@@ -111,7 +116,7 @@ lesspipe do |less|
       less.puts
       print_grepped_urls(less, html)
     else
-      doc = Oga.parse_html 
+      doc = Oga.parse_html html
 
       root_uri = URI.parse url
       title = doc.at_css("title")&.text&.tighten
@@ -119,10 +124,10 @@ lesspipe do |less|
       less.puts "### #{title}" if title and not title.empty?
       less.puts
 
-      print_images(less, root_uri, doc) if opts.images?
-      print_media(less, root_uri, doc)  if opts.media?
+      print_images(less, root_uri, doc) if opts.images? or opts[:all]
+      print_media(less, root_uri, doc)  if opts.media? or opts[:all]
 
-      if opts.links? or (!opts.links? and !opts.images? and !opts.media?)
+      if opts[:xall] or opts.links? or (!opts.links? and !opts.images? and !opts.media?)
         print_links(less, root_uri, doc, print_blank_title: opts[:"blank-title"])
       end
     end
