@@ -20,17 +20,17 @@
 #
 # TODOs:
 #   * Don't blow up when you need a package
-#     |_ helpfully ask if the user wants to install it for the user
+#     |_ helpfully ask if the user wants to install it
 #   * If 'file' isn't installed, fall back to using the file extension, or the mime_magic gem
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
-#     |_ all methods take a Pathname or String or Enumerable
+#     |_ all methods can take a Pathname or String or Enumerable
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
-#   * Auto-install gems/pips/packages required to view a file
 #   * Live filtering (grep within output chunks, but retain headers; retain some context?)
+#     |_ special pager! (moar)
+#     |_ jump between files (ctrl-up/down)
 #   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
-#   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
 #   * Follow symlinks by default
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
