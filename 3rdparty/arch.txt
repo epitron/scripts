@@ -52,6 +52,7 @@ gitui
 subversion
 ruby
 ruby-docs
+tldr
 xclip xse wmctrl xdotool
 python
 perl-term-readkey
