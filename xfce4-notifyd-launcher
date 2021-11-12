@@ -12,6 +12,7 @@ if [ ! -f "$BIN" ]; then
 fi
 
 while true; do
+  "$BIN"
   echo "[$(timestamp)] xfce4 notifyd crashed"
   sleep 5
 done
