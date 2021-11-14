@@ -31,3 +31,5 @@ xnviewmp
 
 archlinux-nix
 open-dyslexic-fonts
+
+fraqtive
