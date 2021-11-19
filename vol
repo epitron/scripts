@@ -1,0 +1,21 @@
+mixer() {
+  ponymix -d 0 "$@" 2>&1
+}
+
+notify() {
+  notify-send -a vol "$@" &
+}
+
+vol_status() {
+  vol="$(mixer get-volume)" 
+  echo "volume: $vol"
+  notify "volume: $vol"
+}
+
+if [ "$1" == "" ]; then
+  vol_status
+else
+  mixer set-volume "$1" > /dev/null
+  vol_status
+fi
+
