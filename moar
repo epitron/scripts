@@ -6,6 +6,8 @@
 #    TODOs:
 # -------------------------
 #
+# + a general purpose way pointing the renderer at arbitrary buffers (for wrapping and filtering)
+# + line numbering updates the terminal width (and re-wraps the input, if necessary)
 # + Wrapping
 #   - wrapline(line) wraps a single line (this should be a core_ext)
 #   - make streaming work (sparse on-demand-generated array + line-length pre-scanning (oof: can't use `scan()` anymore))
