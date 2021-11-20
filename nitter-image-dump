@@ -12,7 +12,7 @@ require 'slop'
 opts = Slop.parse(help: true, strict: true) do
   banner "Usage: nitter-image-dump [options] <url>"
 
-  on "p",  "prefix",  "The name to prepend to each filename (default: twitter username)"
+  on "p=",  "prefix",  "The name to prepend to each filename (default: twitter username)"
   # on "b=", "blong",  "desc", default: ""
 end
 

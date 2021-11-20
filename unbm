@@ -1,0 +1,7 @@
+#!/bin/bash
+BM_FILE=~/docs/bookmarks.txt
+echo "removed: $(tail -n 1 $BM_FILE)"
+head -n -1 $BM_FILE > $BM_FILE.undo
+mv $BM_FILE $BM_FILE.bak
+mv $BM_FILE.undo $BM_FILE
+

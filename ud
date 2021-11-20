@@ -14,8 +14,20 @@ usage:
 def err(*args):
     print(*args, file=sys.stderr)
 
+def print_definition(definition):
+	print(
+	    "%s: %s" % (
+	        definition["word"],
+	        definition["definition"].
+	            replace("\n", " ").
+	            replace("\r", "").
+	            replace("  ", " ")
+	    )
+	)
+	print()
+
 def ud(args):
-    number = 1
+    number = 0
     term = args
     if (args[-1].isdigit()):
         number = int(args[-1])
@@ -30,20 +42,16 @@ def ud(args):
         err(f"* Found {len(results)} results...")
         err()
 
-        if len(page["list"]):
-            if number > 0 and len(page["list"]) > number-1:
-                definition = page["list"][number-1]
-                print(
-                    "%s: %s" % (
-                        definition["word"],
-                        definition["definition"].
-                            replace("\n", " ").
-                            replace("\r", "").
-                            replace("  ", " ")
-                    )
-                )
+        if len(results):
+            if number > 0:
+                if len(results) > number-1:
+                    definition = results[number-1]
+                    print_definition(definition)
+                else:
+                    err("Definition number does not exist")
             else:
-                err("Definition number does not exist")
+                for definition in results:
+                    print_definition(definition)
         else:
             err("No results found")
     else:

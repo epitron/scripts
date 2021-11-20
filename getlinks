@@ -44,19 +44,37 @@ def print_links(less, root_uri, doc, print_blank_title: false)
   less.puts "## links"
   less.puts
 
-  doc.css("a").each do |link|
-    body  = link.text.tighten
-    title = link["title"]&.tighten
-    uri   = URI.join(root_uri, link["href"])
+  doc.css("a, iframe").each do |elem|
 
-    unique_id = [body, title, uri]
+    case elem.name.downcase
+    when "a"
+      body  = elem.text.tighten
+      title = elem["title"]&.tighten
+      uri   = URI.join(root_uri, elem["href"])
 
-    next if body&.empty? and title&.empty? and not print_blank_title
-    next if already_printed.include? unique_id
+      unique_id = [body, title, uri]
 
-    less.puts "# #{body}" unless body.nil? or body.empty?
-    less.puts "# title: #{title}" unless title.nil? or title.empty?
-    less.puts "#{uri}"
+      next if body&.empty? and title&.empty? and not print_blank_title
+      next if already_printed.include? unique_id
+
+      less.puts "# #{body}" unless body.nil? or body.empty?
+      less.puts "# title: #{title}" unless title.nil? or title.empty?
+      less.puts "#{uri}"
+
+    when "iframe"
+      # <iframe loading="lazy" title="Why Alien Life Would be our Doom - The Great Filter" width="1100" height="619" src="https://www.youtube.com/embed/UjtOGPJ0URM?feature=oembed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      body = nil
+      title = elem["title"]&.tighten
+      uri = URI.join(root_uri, elem["src"])
+      
+      unique_id = [title, uri]
+
+      next if already_printed.include? unique_id
+
+      less.puts "# iframe title: #{title}" unless title.nil? or title.empty?
+      less.puts "#{uri}"
+    end
+
     less.puts
 
     already_printed.add unique_id

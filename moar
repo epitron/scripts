@@ -6,9 +6,14 @@
 #    TODOs:
 # -------------------------
 #
-# + Search
+# + a general purpose way pointing the renderer at arbitrary buffers (for wrapping and filtering)
+# + line numbering updates the terminal width (and re-wraps the input, if necessary)
 # + Wrapping
-#   - WrapMap
+#   - wrapline(line) wraps a single line (this should be a core_ext)
+#   - make streaming work (sparse on-demand-generated array + line-length pre-scanning (oof: can't use `scan()` anymore))
+#   - Handle terminal resize events
+#     |_ clears the wrapped line cache (oof)
+# + Search
 # + Syntax highlighting (rouge/coderay/bat/c/pygments)
 # + Other possible names: "most", "least", "pager"
 #   - moar is more moar than less is more
@@ -64,7 +69,7 @@ class Pager
 
   attr_accessor :width, :height,
                 :top, :bottom,
-                :scrollback, :queue,
+                :queue,
                 :read_thread, :display_thread,
                 :tail_mode
 
@@ -125,6 +130,7 @@ class Pager
     @last_refresh            = Time.now - @refresh_throttle
     @last_display_status_bar = Time.now - @refresh_throttle
     @tail_mode               = opts[:tail_mode]
+    @wrapped_scrollback      = nil
 
     @height = @termheight - 1
 
@@ -365,10 +371,19 @@ class Pager
   end
 
   def line_count
-    @scrollback.size
+    scrollback.size
   end
 
-
+  def scrollback
+    if @wrap
+      @wrapped_scrollback ||= @scrollback.map do |line|
+        wrapmargin_r = width - 2
+        line.scan(/.{1,#{wrapmargin_r}}\b/)
+      end.flatten
+    else
+      @scrollback
+    end
+  end
 
   def lines_on_screen(padded=true)
     range = top..bottom
@@ -560,6 +575,7 @@ class Pager
 
   def toggle_wrap
     @wrap = !@wrap
+    @wrapped_scrollback = nil
     refresh!
   end
 
