@@ -118,6 +118,8 @@ unless File.exists? repo
   when %r{^github\.com/.+}
     # user left off https://; fill it in!
     repo = "https://#{repo}"
+  when %r{^https?://sr.ht/~\w+/\w+}
+    repo = repo.gsub("sr.ht", "git.sr.ht")
   # else
     # puts "#{repo} is unhandled"
   end
