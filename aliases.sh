@@ -15,6 +15,11 @@
 
 alias reload="exec bash"
 
+alias aaa='bl 5'
+alias aaaa=aaa
+alias aaaaa=aaa
+alias aa=aaa
+
 function we_have() {
   which "$@" > /dev/null 2>&1
 }
@@ -257,7 +262,7 @@ alias flash='crutziplayer'
 alias rdp='xfreerdp'
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 alias psx='pcsxr'
-alias detach='bg; disown'
+alias detach='bg; disown'; alias det=detach
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
