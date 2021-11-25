@@ -1,2 +1,3 @@
 https://github.com/raj-shekhar26/dotfiles
 https://github.com/shazow/nixfiles/
+https://github.com/davidarrieta/dotfiles
