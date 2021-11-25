@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 ###################################################################
-# require 'oga'
 require 'json'
 require 'date'
 require 'epitools/colored'
@@ -13,7 +12,6 @@ RUBYGEMS_INFO_URL   = "https://rubygems.org/api/v1/versions/%s.json"
 ###################################################################
 
 class String
-  def tighten; gsub(/[\t ]+/,' ').strip; end
   def any?; not empty?; end
 
   def indent(prefix="    ")
@@ -40,33 +38,6 @@ def help!
   puts "    (shows info about a specific gem)"
   puts
   exit 1
-end
-
-###################################################################
-
-def extract_info(root)
-  result = []
-
-  classes = root["class"].split.map do |s|
-    if s =~ /^gems__gem__(.+)/
-      $1.gsub("__", "_")
-    else
-      nil
-    end
-  end.compact
-
-  text = root.inner_text.tighten
-  
-  if classes.any? and text.any? 
-    result << [classes.first, text]
-  end
-
-  root.children.each do |node|
-    next unless node.is_a? Oga::XML::Element
-    result += extract_info(node)
-  end
-
-  result
 end
 
 ###################################################################

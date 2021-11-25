@@ -337,19 +337,23 @@ alias be="bundle exec"
 alias rock='luarocks'
 alias gi='gem install'
 
-alias pip='python -m pip'
-alias pi='pip install --user'
-
-#alias pi2='pip2 install --user'
-#alias pi3='pip3 install --user'
-
-alias piu='pip uninstall'
 alias py=python
+alias py2=python2
+alias py3=python3
+
+alias pip='python -m pip'
+alias pip2='python2 -m pip'
+alias pip3='python3 -m pip'
+alias pi='pip install --user'
+alias pi2='pip2 install --user'
+alias pi3='pip3 install --user'
+alias piu='pip uninstall'
+
 alias ipy=ipython
 alias ipy3=ipython3
 alias ipy2=ipython2
-alias ni='npm install'
 
+alias ni='npm install'
 
 gem-cd() {
   local gem_dir

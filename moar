@@ -6,8 +6,10 @@
 #    TODOs:
 # -------------------------
 #
-# + a general purpose way pointing the renderer at arbitrary buffers (for wrapping and filtering)
-# + line numbering updates the terminal width (and re-wraps the input, if necessary)
+# + String#decoded_size => the true length of the string after it's decoded by the terminal (after interpreting ansi escape sequences, expanding tabs, printing backspaces, printing double-wide unicode chars, etc.)
+#   |_ if we need to cut these strings, it makes sense to turn them into braided ropes (an array of string chunks and terminal codes which can be quickly indexed by decoded-position (using binary search? (tbh, the only operation that matters is slicing them at the screen boundary, so maybe it makes more sense to just have a fast way of decoding and slicing them, then cache those results)))
+# + a general purpose way of pointing the renderer at arbitrary buffers (for wrapping and filtering (and virtual buffers which get generated as they're accessed))
+# + toggling line numbers should update the terminal width (and re-wraps the input, if necessary)
 # + Wrapping
 #   - wrapline(line) wraps a single line (this should be a core_ext)
 #   - make streaming work (sparse on-demand-generated array + line-length pre-scanning (oof: can't use `scan()` anymore))
@@ -19,7 +21,6 @@
 #   - moar is more moar than less is more
 #   - more is more by being less than less is less than more
 # + "Log" mode (tail, *and* deduplicate lines)
-# + ANSI-compatible "wrap" mode (strip ANSI codes before wrapping)
 # + Mouse wheel support
 # + Syntax highlighting (see the "c" script)
 # + Display compressed files (like zless)
@@ -505,7 +506,7 @@ class Pager
 
 
   #
-  # Refresh the display immediately (threadsafe).
+  # Refresh the display IMMEDIATELY! (threadsafe)
   #
   def refresh!
     @display_lock.synchronize do
@@ -523,6 +524,9 @@ class Pager
     clear_eol
   end
 
+  #
+  # Display the status bar IMMEDIATELY!
+  #
   def display_status_bar!
     move_to_row(@termheight)
 
@@ -538,8 +542,8 @@ class Pager
   end
 
   #
-  # Creates throttled version of the `refresh!` and `display_status_bar!` methods
-  # (The ones with the exclamation mark happen instantly, while the ones without are limited to @max_fps updates per second)
+  # Throttled versions of IMMEDIATE `refresh!` and `display_status_bar!`
+  # (Methods with the exclamation mark happen instantly, while ones without are limited to @max_fps updates per second)
   #
 
   %w[refresh display_status_bar].each do |meth|

@@ -13,6 +13,12 @@ I discovered at a very early age that if I talked long enough I could make anyth
 Never forget that you are one of a kind. Never forget that if there weren't any need for you in all your uniqueness to be on this earth, you wouldn't be here in the first place. And never forget, no matter how overwhelming life's challenges and probelems seem to be, that one person can make a difference in the world. In fact, it is always because of one person that all the changes that matter in the world come about. So be that one person.
     -- R. Buckminster Fuller
 %
+During the Vietnam War, every respectable artist in this country was against the war. It was like a laser beam. We were all aimed in the same direction. The power of this weapon turns out to be that of a custard pie dropped from a stepladder six feet high.
+    -- Kurt Vonnegut
+%
+There are solutions to the social problems in the US. Those solutions are embedded in collaboration and using your brains: thinking it through and looking at best practices; they're not in trying to support one side vs the other; that does not work. It's almost never worked, if you read the history books.
+    -- Jamie Dimon
+%
 Cognitive load is like a flashlight of your attentional focus. You can shine it diffusely over an area or zoom it in. It can only point one direction, and you only have so much. Cognitive load increases with heterogeneity. 
 %
 Sadness is caused by intelligence. The more you understand certain things the more you wish you didn't understand them.
@@ -945,7 +951,7 @@ The optimist the doughnut sees --
 The pessimist the hole.
     -- The Optimist's Creed (first published in the New York Sun, 1904)
 %
-'Sturgeon's Law' was wrung out of me after twenty years of wearying defense of science fiction against attacks of people who used the worst examples of the field for ammunition, and whose conclusion was that ninety percent of SF is crud. Using the same standards that categorize 90% of science fiction as trash, crud, or crap, it can be argued that 90% of film, literature, consumer goods, etc. is crap. In other words, the claim (or fact) that 90% of science fiction is crap is ultimately uninformative, because science fiction conforms to the same trends of quality as all other art-forms.
+'Sturgeon's Law' was wrung out of me after twenty years of wearying defense of science fiction against attacks of people who used the worst examples of the field for ammunition, and whose conclusion was that ninety percent of SF is crap. Using the same standards that categorize 90% of science fiction as trash, crud, or crap, it can be argued that 90% of film, literature, consumer goods, etc. is crap. In other words, the claim (or fact) that 90% of science fiction is crap is ultimately uninformative, because science fiction conforms to the same trends of quality as all other art-forms.
     -- Theodore Sturgeon
 %
 Four-fifths of everybody's work must be bad. But the remnant is worth the trouble for its own sake.
@@ -2105,7 +2111,7 @@ As kids we're not taught how to deal with success; we're taught how to deal with
     -- Charlie Sheen
 %
 Sturgeon's Law:
-  90% of everything is crud.
+  90% of everything is crap.
 %
 Being in love is like discovering a concealed ballroom in a house you've long inhabited.
 %
