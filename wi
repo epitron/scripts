@@ -153,8 +153,8 @@ lesspipe do |less|
       arg = $1
     end
 
-    puts "<8>### <14>#{arg} <8>#################".colorize
-    puts
+    less.puts "<8>### <14>#{arg} <8>#################".colorize
+    less.puts
 
     jobs.add { geoip(arg) }
 

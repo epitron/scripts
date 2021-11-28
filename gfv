@@ -35,6 +35,7 @@ cmd = %w[
   --no-mtime
   --xattrs
   --add-metadata
+  --trim-filenames 220
 ]
 
 urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
@@ -92,7 +93,8 @@ end
 cmd += opts
 
 urls.each do |url|
-  if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
+  if url =~ %r{/(?:play/?|watch)\?(?:video_id|v)=([\w\-]+)}
+  #if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
     url = "https://youtu.be/#{$1}"
   end
 

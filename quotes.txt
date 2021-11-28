@@ -5,6 +5,53 @@ What was the Stoic dream of our adolescence - detachment - suddenly materializes
 Towns are never left alone; there are always works going on - digging, demolition, construction. Knocking down, building up again. Perhaps only certain places in California, completely anaesthetized by domestic luxury and suburban comfort, seem to have come to rest in a fixed and lasting ambience, beyond this perpetual deconstruction. Works are always going on in our bodies too. They are constantly being disturbed, tortured, renovated. Never at rest, never serene. Peace of mind - impossible to keep it more than a few hours. Impatience always gets the upper hand. Everyone aspires to peace and quiet, but they do so today in a thoroughly derisory manner, wherein we see the last moments of the contemplative soul. In the countryside there is always a dog howling. And sterility is hereditary.
     -- Jean Baudrillard (Cool Memories)
 %
+During the Vietnam War, every respectable artist in this country was against the war. It was like a laser beam. We were all aimed in the same direction. The power of this weapon turns out to be that of a custard pie dropped from a stepladder six feet high.
+    -- Kurt Vonnegut
+%
+There are solutions to the social problems in the US. Those solutions are embedded in collaboration and using your brains: thinking it through and looking at best practices; they're not in trying to support one side vs the other; that does not work. It's almost never worked, if you read the history books.
+    -- Jamie Dimon
+%
+Cognitive load is like a flashlight of your attentional focus. You can shine it diffusely over an area or zoom it in. It can only point one direction, and you only have so much. Cognitive load increases with heterogeneity. 
+%
+Sadness is caused by intelligence. The more you understand certain things the more you wish you didn't understand them.
+    -- Charles Bukowski
+%
+The void, the concept of nothingness, is terrifying to most people on the planet. And I get anxiety attacks myself. I know the fear of that void. You have to learn to die before you die. You give up, surrender to the void, to nothingness.
+    -- Harry Dean Stanton
+%
+Whatever's inside making me what I am, it's like film. Film only works in the dark. Tear it all open and let in the light and you kill it.
+    -- James Dean
+%
+Going to the cinema is like returning to the womb; you sit there, still and meditative in the darkness, waiting for life to appear on the screen.
+    -- Federico Fellini
+%
+There is immeasurably more left inside than what comes out in words.
+    -- Fyodor Dostoevsky
+%
+What is defeat? Nothing but education; Nothing but the first step to something better.
+    -- Bruce Lee
+%
+You get talent when you discover the ground of your pain.
+    -- H.R. Giger
+%
+I may not have been sure about what really did interest me, but I was absolutely sure about what didn't.
+%
+The two most powerful warriors are patience and time.
+    -- Leo Tolstoy
+%
+I'm not interested in self-analysis. I do know my room was so cold in winter and so hot in summer I couldn't sleep. Your house looked like heaven, high up there. That's how I began to hate you.
+    -- Kidnapper in HIGH AND LOW (Akira Kurosawa, 1963) 
+%
+We're here for such a short period of time. Live like you're already dead, man. Have a good time. Do your best. Let it all come ripping right through you.
+    -- Jeff Bridges
+%
+If you owe the bank a hundred thousand dollars, the bank owns you. If you owe the bank a hundred milli
+on dollars, you own the bank.
+    -- American Proverb
+%
+People who are more vengeful tend to be those who are motivated by power, by authority and by the desire for status. They don't want to lose face. Those personalities tend to be less forgiving, less benevolent, and less focussed on universal-connectedness values.
+    -- Ian McKee (Social Psychologist)
+%
 Does it honestly never occur to people who basically lie about what quantum computing is capable of today that their crying wolf is *actively sabotaging* the efforts of people who are trying to fulfill the genuine promise of the technology in the future? Do they just not care? The more you lie about what is feasible today, the less anyone is going to believe our entire field when we talk about its ultimate potential. Think about that the next time you hit send on a bullshit press release. Also it’s a total cop-out to think that you need to announce BS to keep up with the joneses for clients and funding. The whole point of this field is to make technology so astonishingly good it will sell itself when it’s ready. Smart money and clients will understand that.
     -- @nick_farina (Oct 20, 2021)
 %
@@ -896,7 +943,7 @@ The optimist the doughnut sees --
 The pessimist the hole.
     -- The Optimist's Creed (first published in the New York Sun, 1904)
 %
-'Sturgeon's Law' was wrung out of me after twenty years of wearying defense of science fiction against attacks of people who used the worst examples of the field for ammunition, and whose conclusion was that ninety percent of SF is crud. Using the same standards that categorize 90% of science fiction as trash, crud, or crap, it can be argued that 90% of film, literature, consumer goods, etc. is crap. In other words, the claim (or fact) that 90% of science fiction is crap is ultimately uninformative, because science fiction conforms to the same trends of quality as all other art-forms.
+'Sturgeon's Law' was wrung out of me after twenty years of wearying defense of science fiction against attacks of people who used the worst examples of the field for ammunition, and whose conclusion was that ninety percent of SF is crap. Using the same standards that categorize 90% of science fiction as trash, crud, or crap, it can be argued that 90% of film, literature, consumer goods, etc. is crap. In other words, the claim (or fact) that 90% of science fiction is crap is ultimately uninformative, because science fiction conforms to the same trends of quality as all other art-forms.
     -- Theodore Sturgeon
 %
 Four-fifths of everybody's work must be bad. But the remnant is worth the trouble for its own sake.
@@ -2056,7 +2103,7 @@ As kids we're not taught how to deal with success; we're taught how to deal with
     -- Charlie Sheen
 %
 Sturgeon's Law:
-  90% of everything is crud.
+  90% of everything is crap.
 %
 Being in love is like discovering a concealed ballroom in a house you've long inhabited.
 %

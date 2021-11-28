@@ -7,7 +7,7 @@
 
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'nokogiri'
+
 require 'epitools'
 
 ###########################################################

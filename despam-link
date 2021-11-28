@@ -10,7 +10,7 @@ end
 def despam(link)
   uri = URI.parse(link)
 
-  if uri.host[/youtu(be)?/] and uri.path["attribution_link"] and uri.params["u"]
+  urls = if uri.host[/youtu(be)?/] and uri.path["attribution_link"] and uri.params["u"]
     ["https://youtube.com#{uri.params["u"]}"]
   else
     uri.params.values.map do |val|
@@ -23,6 +23,12 @@ def despam(link)
       end
     end.compact
   end
+
+  rawquery = uri.instance_variable_get(:@query)
+  query = CGI.unescape(rawquery)
+  urls << query if query.url?
+
+  urls
 end
 
 def show_links_for(url)

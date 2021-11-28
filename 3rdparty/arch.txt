@@ -74,6 +74,7 @@ xorg
 xorg-apps
 xorg-fonts
 qt5-imageformats
+qt5ct # theme selector
 kdegraphics-thumbnailers
 
 

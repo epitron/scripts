@@ -1,2 +1,6 @@
 include "/usr/share/nano/*.nanorc"
 include "~/scripts/rc/nano/*.nanorc"
+
+set softwrap
+set atblanks
+
