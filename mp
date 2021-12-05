@@ -23,23 +23,28 @@ fixicon() {
   (sleep 5; seticon MPlayer mpv.png) &
 }
 
-#CMD="mplayer -use-filename-title"
+CMD="mplayer -use-filename-title -fs"
 
 if [ -z "$PLAYER" ]; then
-  PLAYER="mplayer"
+  PLAYER="$CMD"
 fi
 
 if [[ "$param" =~ ^https?:// ]]; then
-  if [[ "$param" =~ /watch\?v=([^&]+) ]]; then
-    param="https://youtu.be/${BASH_REMATCH[1]}"
-  elif [[ "$param" =~ invidious.+/(.+) ]]; then
-    param="https://youtu.be/${BASH_REMATCH[1]}"
+  if [[ "$param" =~ \.(mp4|mkv|avi|ogv|ogm)$ ]]; then
+    url="$(echo "$param" | sed s/8888/8887/)"
+    echo "  |_ url: $url"
+  else
+    if [[ "$param" =~ /watch\?v=([^&]+) ]]; then
+      param="https://youtu.be/${BASH_REMATCH[1]}"
+    elif [[ "$param" =~ invidious.+/(.+) ]]; then
+      param="https://youtu.be/${BASH_REMATCH[1]}"
+    fi
+    echo "  |_ youtube-dling $param"
+
+    url="$(youtube-dl -f best --youtube-skip-dash-manifest -g "$param")"
   fi
-  echo "  |_ youtube-dling $param"
 
-  url="$(youtube-dl -f best --youtube-skip-dash-manifest -g "$param")"
   echo "  |_ starting $PLAYER"
-
   fixicon
   exec $PLAYER "$url"
 else

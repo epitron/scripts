@@ -249,7 +249,16 @@ grouped.each do |dir, paths|
   elsif opts["reverse-size"]
     paths.sort_by!(&:size).reverse!
   else
-    paths.sort_by! { |path| path.path.downcase }
+    case paths
+    when Hash
+      raise "fixme: print recursive paths like bfs (Path#relative_to may be needed)"
+      r = proc { |k,vs| vs.map { |v| ... recurse and concat results here ... } }
+      paths.lazy.map &r
+    when Array
+      paths.sort_by! { |path| path.path.downcase }
+    else
+      raise :ohno
+    end
   end
 
   if opts.dirs_first?
