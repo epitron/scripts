@@ -54,9 +54,12 @@ unless opts.delete("-S")
   cmd += ["--sub-format", "srt/ass/vtt/best", "--sub-langs", slangs, "--write-subs"]
 end
 
+numbering = opts.delete("-n")
+
+# filename formatter
 unless opts.include?("-o")
   cmd << "-o"
-  if opts.delete("-n")
+  if numbering
     cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
   else
     if urls.any? { |u| u["tiktok.com/"] }
@@ -92,9 +95,11 @@ end
 
 cmd += opts
 
-urls.each do |url|
-  if url =~ %r{/(?:play/?|watch)\?(?:video_id|v)=([\w\-]+)}
+urls.each_with_index do |url, i|
+  n = i+1
+
   #if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
+  if url =~ %r{/(?:play/?|watch)\?(?:video_id|v)=([\w\-]+)}
     url = "https://youtu.be/#{$1}"
   end
 
@@ -107,6 +112,18 @@ urls.each do |url|
     end
   end
 
+  # when numbering is chosen and this isn't a playlist, substitute the arg number into the filename (little hacky, sorry me)
+  if numbering and not url =~ /playlist/
+    pos = cmd.index { |arg| arg == "-o" }
+    if pos and cmd[pos+1] =~ /playlist_index/
+      numberstr = "%0.2d" % n
+      cmd = cmd.dup
+      # cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
+      cmd[pos+1] = cmd[pos+1].gsub("%(playlist_index)s", numberstr)
+    end
+  end
+
+  # git it
   puts "-------------------------------------------------"
   puts "  Downloading #{url}"
   puts "-------------------------------------------------"

@@ -1,4 +1,5 @@
 github.com/boyter/scc
+github.com/nesv/uhttpd
 github.com/github/hub
 github.com/caddyserver/caddy/caddy
 github.com/eliukblau/pixterm
@@ -19,3 +20,5 @@ github.com/dundee/gdu/v5/cmd/gdu # ncdu clone (colourful!)
 github.com/makeworld-the-better-one/gemget
 
 github.com/openrdap/rdap/cmd/rdap # ARIN/RIPE/AFRNIC/LACNIC/APNIC query client
+
+https://git.sr.ht/~ols/cramp/ # Gemini => HTTP gateway

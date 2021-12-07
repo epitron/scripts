@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 ###################################################################################################
 # TODOs:
+# * Use --ytdl-format= to ignore vp9 and > 1080p streams
 # * Multi-keyword search (eg: "b 52" should find "B-52s")
 ###################################################################################################
 require 'json'
@@ -626,6 +627,7 @@ def play(url, opts)
     else
       if url.to_s[/(youtu\.be|youtube\.com)/]
         cmd << url.to_s
+        cmd << "--ytdl-format=bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best"
       else
         cmd += [video["url"], "--audio-file=#{audio["url"]}"]
       end
