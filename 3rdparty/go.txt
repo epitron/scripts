@@ -1,3 +1,5 @@
+# NB: `go get` is deprecated; use `go install example.com/cmd@latest` now
+
 github.com/boyter/scc
 github.com/nesv/uhttpd
 github.com/github/hub
