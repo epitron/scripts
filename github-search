@@ -94,6 +94,8 @@ end
 
 puts
 
+puts "No results!" if results.empty?
+
 # print the results
 results.reverse.each do |item|
   # updated_at = item["updated_at"]

@@ -1,0 +1,5 @@
+command  | description
+---------+---------------------------------------------------------------------------------------------------------------------------
+unshare  | run a process in a restricted namespace ("unshare" some resource(s) it would normally be able to access)
+         |
+
