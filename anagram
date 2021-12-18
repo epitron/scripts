@@ -57,10 +57,16 @@ class Anagrammer
 
   attr_accessor :words, :grouped
 
+  # todo: word frequencies so all these awful long tail
+  #       three letter words don't dominate the results
   SHORTWORDS = %w[
     a in be to if in of at it ho no ye yo we
     so um uh us vs ya am he jr me mr ms oz do
-    go hi id is km lb kg ow ox oh oi my ma
+    go hi id is km lb kg ow ox oh oi my ma 
+    wbs bws wbn sbw ues ris sne ens ner ern nid
+    eds nbw udi isu uds iru uis wid uws wus
+    urs usr bre ber rus reb erb ids wud dws wds
+    bur ube bes dur
   ]
 
   LOOKUP_TABLE_FILE = File.expand_path("~/.cache/anagram.lookup.table")
@@ -73,7 +79,7 @@ class Anagrammer
     end
   end
 
-  def load_wikt_file(path=File.expand_path("~/.cache/wict/wikt.idx"))
+  def load_wikt_file(path=File.expand_path("~/.cache/wikt/wikt.idx"))
     return nil unless File.exist? path
     print " from #{path}"
     Enumerator.new do |y|
@@ -114,7 +120,7 @@ class Anagrammer
       time("Saving to #{LOOKUP_TABLE_FILE}...") do
         @grouped.default_proc = nil
         File.write(LOOKUP_TABLE_FILE, Marshal.dump(@grouped))
-      end
+      end if false
     end
   end
 
