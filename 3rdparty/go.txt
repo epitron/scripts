@@ -1,14 +1,14 @@
+# NB: `go get` is deprecated; use `go install example.com/cmd@latest` now
+
 github.com/boyter/scc
+github.com/nesv/uhttpd
 github.com/github/hub
 github.com/caddyserver/caddy/caddy
 github.com/eliukblau/pixterm
 github.com/allinurl/goaccess
 github.com/rylio/ytdl
-github.com/diamondburned/gtkcord3
-github.com/diamondburned/discordlogin
 github.com/xxxserxxx/gotop/cmd/gotop
 github.com/42wim/matterbridge
-github.com/Bios-Marcel/cordless
 github.com/prologic/gopherproxy/...
 tailscale.com/cmd/tailscale
 tailscale.com/cmd/tailscaled
@@ -19,3 +19,8 @@ github.com/shenwei356/brename # cross-platform file renamer
 github.com/fyne-io/fyne # Go GUI
 
 github.com/dundee/gdu/v5/cmd/gdu # ncdu clone (colourful!)
+github.com/makeworld-the-better-one/gemget
+
+github.com/openrdap/rdap/cmd/rdap # ARIN/RIPE/AFRNIC/LACNIC/APNIC query client
+
+https://git.sr.ht/~ols/cramp/ # Gemini => HTTP gateway

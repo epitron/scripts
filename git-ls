@@ -1,2 +1,2 @@
 #!/bin/bash
-git ls-files --with-tree=HEAD
+git ls-files --with-tree=HEAD "$@"

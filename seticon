@@ -1,0 +1,18 @@
+#!/bin/bash
+if (( $# != 2 )); then
+  echo "usage: seticon <window title substring> <icon file>"
+  exit 1
+fi
+
+title="$1"
+icon="$2"
+
+if [ ! -f "$icon" ]; then
+  if [ -f ~/scripts/icons/"$icon" ]; then
+    icon=~/scripts/icons/"$icon"
+  else
+    echo "Error: can't find icon '$icon'"
+  fi
+fi
+
+wmctrl -l | grep "$title" | awk '{print $1}' | xargs -i xseticon -id {} "$icon"

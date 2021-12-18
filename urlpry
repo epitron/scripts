@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+require 'pry'
+require 'oga'
+require 'epitools/gem_ext/oga'
+
+if ARGV.size != 1
+  puts "usage: urlpry <url>"
+  exit 1
+end
+
+url = ARGV.first
+
+doc = Oga.parse_html(IO.popen(["curl", "-L", url], &:read))
+doc.pry

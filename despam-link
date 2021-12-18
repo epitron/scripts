@@ -7,50 +7,81 @@ class String
   end
 end
 
+def help!
+  puts "usage: despam-link [<url>]"
+  puts
+  puts "(if you don't supply <url> as an argument, it'll look in the clipboard)"
+  puts
+end
+
+def popen_with_stderr(*cmd)
+  cmd = cmd.flatten
+  IO.popen(cmd, :err=>[:child, :out], &:read)
+end
+
+def get_clipboard
+  result = popen_with_stderr("xclip", "-o")
+
+  unless $?.success?
+    result = popen_with_stderr("xclip", "-o", "-selection", "clipboard")
+  end
+
+  result
+end
+
 def despam(link)
   uri = URI.parse(link)
+  urls = []
+
+  return urls unless uri.host # sometimes everything in the url is nil. yay. (eg: "terribleurl:oof")
 
   if uri.host[/youtu(be)?/] and uri.path["attribution_link"] and uri.params["u"]
-    ["https://youtube.com#{uri.params["u"]}"]
+    urls << "https://youtube.com#{uri.params["u"]}"
   else
-    uri.params.values.map do |val|
+    uri.params.values.each do |val|
       if val.url?
-        val
+        urls << val
       elsif (decoded = val.from_base64).url?
-        decoded
-      else
-        nil
+        urls << decoded
       end
-    end.compact
+    end
   end
+
+  # for gemini:// links
+  rawquery = uri.instance_variable_get(:@query)
+  query = CGI.unescape(rawquery)
+  urls << query if query.url?
+
+  urls
 end
 
 def show_links_for(url)
-  puts "Extracted links:"
   links = despam(url)
 
   if links.any?
-    links.each { |link| puts "\t#{link}" }
-  else
-    puts "\tnone found"
+    links.each { |link| puts link }
   end
+rescue URI::InvalidURIError
+  $stderr.puts "Error: couldn't parse #{url}"
 end
+
 
 if $0 == __FILE__
 
   args = ARGV
+
+  if args.include?("-h") or args.include?("--help")
+    help!
+    exit
+  end
 
   if args.any?
     args.each do |arg|
       show_links_for arg
     end
   else
-    loop do
-      print "Paste link: "
-      break if (url = gets&.strip).blank?
-      show_links_for url
-      puts
-    end
+    url = get_clipboard
+    show_links_for(url)
   end
 
 end

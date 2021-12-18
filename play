@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 ###################################################################################################
 # TODOs:
+# * Use --ytdl-format= to ignore vp9 and > 1080p streams
 # * Multi-keyword search (eg: "b 52" should find "B-52s")
 ###################################################################################################
 require 'json'
@@ -25,6 +26,7 @@ def parse_options
     on 'f',  'fullscreen',"Detailed info about <n>"
     on 's=', 'subs',      "Use specified file or URL as subtitles (or 'auto' to add .srt to the filename)"
     on 't=', 'seek',      "Seek to timestamp"
+    on 'p=', 'player',    "Which player? (eg: mpv, mplayer, ffplay)", default: "mpv"
     on 'r',  'rofi',      "Rofi Opener"
     on 'c',  'cast',      "Open in Chromecast"
     on 'k',  'kodi',      "Open in Kodi"
@@ -33,7 +35,7 @@ def parse_options
     on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
     on 'y',  'youtube',   "Search youtube"
-    on 'p',  'pry',       "Launch a Pry inspector before playing"
+    on 'P',  'pry',       "Launch a Pry inspector before playing"
     on 'v',  'verbose',   "Show more info"
   end
 
@@ -566,6 +568,17 @@ end
 
 ###################################################################################################
 
+def players
+  # TODO: handle subtitle and youtube/direct urls selection
+  {
+    "mpv"     => proc { |info| ["mpv",     "--force-media-title=#{info["title"]} (#{info["upload_date"]})", "--force-window=immediate"] },
+    "ffplay"  => proc { |info| ["ffplay",  "-window_title",    "#{info["title"]} (#{info["upload_date"]})"] },
+    "mplayer" => proc { |info| ["mplayer", "-title",           "#{info["title"]} (#{info["upload_date"]})"] },
+  }
+end
+
+###################################################################################################
+
 # def play(url, foreground: false, verbose: false, audio_only: false)
 def play(url, opts)
   foreground = opts["no-daemon"] or opts.pry?
@@ -591,11 +604,19 @@ def play(url, opts)
   # Watched-history log
   write_to_log(url, json) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
 
+  # TODO:
+  #   1. gather relevant variables (eg: filename, url, title, date, etc.) into a hash
+  #   2. run hash through a lambda that generates the command line
+
   # Command to execute
   if audio_only
-    cmd = ["ffplay", "-window_title", "#{json["title"]} (#{json["upload_date"]})"]
+    cmd = players[:ffplay].call(json)
   else
-    cmd = ["mpv", "--force-media-title=#{json["title"]} (#{json["upload_date"]})", "--force-window=immediate"]
+    if player = players[opts[:player]]
+      cmd = player.call(json)
+    else
+      cmd = [opts[:player]]
+    end
   end
 
   # Pull audio/video URLs from JSON
@@ -606,6 +627,7 @@ def play(url, opts)
     else
       if url.to_s[/(youtu\.be|youtube\.com)/]
         cmd << url.to_s
+        cmd << "--ytdl-format=bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best"
       else
         cmd += [video["url"], "--audio-file=#{audio["url"]}"]
       end

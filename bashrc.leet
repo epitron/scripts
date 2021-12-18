@@ -37,10 +37,13 @@ possibly_prepend_path ~/node_modules/.bin
 possibly_prepend_path ~/.cabal/bin
 possibly_prepend_path ~/.cargo/bin
 possibly_prepend_path ~/go/bin
-for i in ~/.gem/ruby/*/bin; do
+for i in ~/.gem/ruby/*/bin ~/.local/share/gem/ruby/*/bin; do
   possibly_prepend_path $i
 done
 possibly_prepend_path ~/.gem/bin
+for gempath in /usr/lib/ruby/gems/*/bin; do
+  possibly_prepend_path $gempath
+done
 possibly_prepend_path ~/.local/bin
 possibly_prepend_path $SCRIPTDIR
 possibly_prepend_path ~/bin
@@ -73,7 +76,7 @@ if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
   fi
 
   _fzf_loaded=false
-  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell /data/data/com.termux/files/usr/share/fzf; do
+  for i in ~/.fzf/shell /usr/share/fzf /usr/local/share/examples/fzf/shell /data/data/com.termux/files/usr/share/fzf /usr/share/doc/fzf; do
     if [ "$_fzf_loaded" == "false" ]; then
       if [ -f "$i/completion.bash" ]; then
         . $i/completion.bash

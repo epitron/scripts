@@ -1,6 +1,18 @@
 #!/bin/bash
+
+BIN=/usr/lib/xfce4/notifyd/xfce4-notifyd
+
+timestamp() {
+  date +"%Y-%m-%d %H:%M:%S"
+}
+
+if [ ! -f "$BIN" ]; then
+  echo "Error: xfce4-notifyd isn't installed (at the expected location)!"
+  exit 1
+fi
+
 while true; do
-  /usr/lib/xfce4/notifyd/xfce4-notifyd
-  echo "[`timestamp`] xfce4 notifyd crashed"
-  sleep 1
+  "$BIN"
+  echo "[$(timestamp)] xfce4 notifyd crashed"
+  sleep 5
 done

@@ -1,0 +1,7 @@
+# sending ctrl-alt-f* commands to qemu
+
+`sendkey` can be used to send keys to the virtual system that your host intercepts at low level.
+
+1. Use Ctrl + Alt + 2 to switch to the QEMU console.
+2. Type sendkey ctrl-alt-f2 and press Enter.
+3. Use Ctrl + Alt + 1 to switch back to the virtual system, which should now by at TTY1.

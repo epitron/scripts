@@ -1,0 +1,3 @@
+dillo &
+sleep 2
+seticon ' Dillo:' web.png

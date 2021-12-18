@@ -2,4 +2,5 @@ https://github.com/tavianator/bfs
 https://github.com/zpaq/zpaq
 https://github.com/vlang/v
 https://github.com/zsaleeba/picoc
+https://github.com/lecram/mpb # more progress bar
 

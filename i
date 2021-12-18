@@ -258,7 +258,7 @@ if args.empty? # No args
 elsif args.any? { |arg| ["reload", "daemon-reload"].include? arg }
   manager.reload
 elsif args.first =~ %r{/(.+?)/}
-  manager.search($1)
+  manager.search("*#{$1}*")
 else
   case args.size
   when 2

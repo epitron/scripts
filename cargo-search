@@ -1,0 +1,459 @@
+#!/usr/bin/env ruby
+###################################################################
+require 'json'
+require 'date'
+require 'io/console'
+require 'epitools/colored'
+###################################################################
+
+SEARCH_URL = "https://crates.io/api/v1/crates?q=%s&per_page=%d"
+INFO_URL   = "https://crates.io/api/v1/crates/%s"
+
+###################################################################
+
+class String
+  def tighten; gsub(/[\t ]+/,' ').strip; end
+  def any?; not empty?; end
+
+  def indent(prefix="    ")
+    gsub(/^/m, prefix)
+  end
+
+  def commatize
+    gsub /(\d)(?=\d{3}+(?:\.|$))(\d{3}\..*)?/, "\\1,\\2"
+  end    
+end
+
+class Integer
+  def commatize; to_s.commatize; end
+end
+
+###################################################################
+
+def help!
+  puts "usage:"
+  puts "  $ #{$PROGRAM_NAME} <search query>"
+  puts "    (searches all crates)"
+  puts
+  puts "  $ #{$PROGRAM_NAME} -i <crate name>"
+  puts "    (shows detailed info about a crate)"
+  puts
+  exit 1
+end
+
+###################################################################
+
+def curl(url)
+  html = IO.popen(["curl", "-Ss", url], &:read)
+rescue Errno::ENOENT
+  puts "Error: 'curl' isn't installed. You need this!"
+  exit 1
+end
+
+def curl_json(url)
+  rs = JSON.parse(curl(url))
+
+  if e = rs["errors"]
+    puts "Error:".light_red
+    puts e.inspect.indent(4)
+    exit 1
+  end
+
+  rs
+end
+
+def format_date(date)
+  date.strftime("%b %d, %Y")
+end
+
+def nicedate(date)
+  format_date DateTime.parse(date)
+end
+
+def print_crate_info(name)
+  # {
+  #   "categories": [
+  #     {
+  #       "category": "Command line utilities",
+  #       "crates_cnt": 3666,
+  #       "created_at": "2017-01-17T19:13:05.112025+00:00",
+  #       "description": "Applications to run at the command line.",
+  #       "id": "command-line-utilities",
+  #       "slug": "command-line-utilities"
+  #     }
+  #   ],
+  #   "crate": {
+  #     "badges": [
+  # 
+  #     ],
+  #     "categories": [
+  #       "command-line-utilities"
+  #     ],
+  #     "created_at": "2019-08-25T10:54:06.138012+00:00",
+  #     "description": "clean simple fast process viewer",
+  #     "documentation": null,
+  #     "downloads": 2527,
+  #     "exact_match": false,
+  #     "homepage": "https://nessuent.xyz/bb.html",
+  #     "id": "bb",
+  #     "keywords": [
+  #       "top",
+  #       "processes",
+  #       "ps",
+  #       "process"
+  #     ],
+  #     "links": {
+  #       "owner_team": "/api/v1/crates/bb/owner_team",
+  #       "owner_user": "/api/v1/crates/bb/owner_user",
+  #       "owners": "/api/v1/crates/bb/owners",
+  #       "reverse_dependencies": "/api/v1/crates/bb/reverse_dependencies",
+  #       "version_downloads": "/api/v1/crates/bb/downloads",
+  #       "versions": null
+  #     },
+  #     "max_stable_version": "0.4.3",
+  #     "max_version": "0.4.3",
+  #     "name": "bb",
+  #     "newest_version": "0.4.3",
+  #     "recent_downloads": 123,
+  #     "repository": "https://github.com/epilys/bb.git",
+  #     "updated_at": "2020-11-04T22:18:38.293968+00:00",
+  #     "versions": [
+  #       301988,
+  #       301536,
+  #       290280,
+  #       186864,
+  #       186236,
+  #       185260,
+  #       185172,
+  #       185162,
+  #       171743
+  #     ]
+  #   },
+  #   "keywords": [
+  #     {
+  #       "crates_cnt": 4,
+  #       "created_at": "2018-08-28T19:57:03.101679+00:00",
+  #       "id": "top",
+  #       "keyword": "top"
+  #     },
+  #     {
+  #       "crates_cnt": 5,
+  #       "created_at": "2019-03-25T08:32:36.336873+00:00",
+  #       "id": "processes",
+  #       "keyword": "processes"
+  #     },
+  #     {
+  #       "crates_cnt": 3,
+  #       "created_at": "2019-10-25T22:29:00.463702+00:00",
+  #       "id": "ps",
+  #       "keyword": "ps"
+  #     },
+  #     {
+  #       "crates_cnt": 108,
+  #       "created_at": "2015-08-15T17:16:53.296634+00:00",
+  #       "id": "process",
+  #       "keyword": "process"
+  #     }
+  #   ],
+  #   "versions": [
+  #     {
+  #       "audit_actions": [
+  #         {
+  #           "action": "publish",
+  #           "time": "2020-11-04T22:18:38.293968+00:00",
+  #           "user": {
+  #             "avatar": "https://avatars.githubusercontent.com/u/8278356?v=4",
+  #             "id": 53759,
+  #             "login": "epilys",
+  #             "name": "Manos Pitsidianakis",
+  #             "url": "https://github.com/epilys"
+  #           }
+  #         }
+  #       ],
+  #       "crate": "bb",
+  #       "crate_size": 144736,
+  #       "created_at": "2020-11-04T22:18:38.293968+00:00",
+  #       "dl_path": "/api/v1/crates/bb/0.4.3/download",
+  #       "downloads": 418,
+  #       "features": {
+  #       },
+  #       "id": 301988,
+  #       "license": "GPL-3.0-or-later",
+  #       "links": {
+  #         "authors": "/api/v1/crates/bb/0.4.3/authors",
+  #         "dependencies": "/api/v1/crates/bb/0.4.3/dependencies",
+  #         "version_downloads": "/api/v1/crates/bb/0.4.3/downloads"
+  #       },
+  #       "num": "0.4.3",
+  #       "published_by": {
+  #         "avatar": "https://avatars.githubusercontent.com/u/8278356?v=4",
+  #         "id": 53759,
+  #         "login": "epilys",
+  #         "name": "Manos Pitsidianakis",
+  #         "url": "https://github.com/epilys"
+  #       },
+  #       "readme_path": "/api/v1/crates/bb/0.4.3/readme",
+  #       "updated_at": "2020-11-04T22:18:38.293968+00:00",
+  #       "yanked": false
+  #     },
+  #     ...
+  #   ]
+  # }
+
+  response = curl_json(INFO_URL % name)
+
+  versions = response["versions"].map do |v|
+    fullname = v.dig("published_by", "name")
+    user = v.dig("published_by", "login")
+    {
+      version: v["num"],
+      date: nicedate(v["created_at"]), 
+      downloads: v["downloads"].commatize, 
+      size: v["crate_size"]&.commatize,
+      user: (user && "#{user} (#{fullname})")
+    }
+  end
+  
+  r = response["crate"]
+  name = r["name"]
+
+  puts "<8>=== <11>#{name} <2>v<10>#{r["newest_version"]} <8>(<7>#{nicedate(r["updated_at"])}) <8>=====".colorize
+  puts "    https://crates.io/crates/#{name}".cyan
+  puts
+
+  height, width = STDOUT.winsize
+
+  print_pair = proc do |field, value|
+    next unless value
+    print "<7>#{field}: ".colorize
+    if value.size < -(field.size + 2) + width
+      puts value.light_white
+    else
+      puts
+      puts value.indent.light_white
+    end
+  end
+
+  print_pair["description", r["description"]]
+  print_pair["keywords", r["keywords"].join(", ")]
+  print_pair["categories", r["categories"].join(", ")]
+  print_pair["homepage", r["homepage"]]
+  print_pair["repository", r["repository"]]
+
+  puts
+  puts "----------------------".grey
+  puts "  Previous releases:"
+  puts "----------------------".grey
+  versions.each do |v|
+    o = "<2>v<10>#{v[:version]}<8>: <9>#{v[:date]} <8>("
+    o << "<12>#{v[:size]} <4>bytes, " if v[:size]
+    o << "<11>#{v[:downloads]}<3> downloads<8>)"
+    o << " => <7>by <15>#{v[:user]}" if v[:user]
+    puts o.colorize
+  end
+end
+
+
+def print_search_results(query, max_results=25)
+  # {
+  #   "crates": [
+  #     {
+  #       "badges": [
+  # 
+  #       ],
+  #       "categories": null,
+  #       "created_at": "2019-08-25T10:54:06.138012+00:00",
+  #       "description": "clean simple fast process viewer",
+  #       "documentation": null,
+  #       "downloads": 2527,
+  #       "exact_match": true,
+  #       "homepage": "https://nessuent.xyz/bb.html",
+  #       "id": "bb",
+  #       "keywords": null,
+  #       "links": {
+  #         "owner_team": "/api/v1/crates/bb/owner_team",
+  #         "owner_user": "/api/v1/crates/bb/owner_user",
+  #         "owners": "/api/v1/crates/bb/owners",
+  #         "reverse_dependencies": "/api/v1/crates/bb/reverse_dependencies",
+  #         "version_downloads": "/api/v1/crates/bb/downloads",
+  #         "versions": "/api/v1/crates/bb/versions"
+  #       },
+  #       "max_stable_version": "0.4.3",
+  #       "max_version": "0.4.3",
+  #       "name": "bb",
+  #       "newest_version": "0.4.3",
+  #       "recent_downloads": 123,
+  #       "repository": "https://github.com/epilys/bb.git",
+  #       "updated_at": "2020-11-04T22:18:38.293968+00:00",
+  #       "versions": null
+  #     },
+  #     {
+  #       "badges": [
+  # 
+  #       ],
+  #       "categories": null,
+  #       "created_at": "2018-05-03T19:37:04.793624+00:00",
+  #       "description": "Tool for aligning data in columns",
+  #       "documentation": null,
+  #       "downloads": 1241,
+  #       "exact_match": false,
+  #       "homepage": null,
+  #       "id": "tabulate",
+  #       "keywords": null,
+  #       "links": {
+  #         "owner_team": "/api/v1/crates/tabulate/owner_team",
+  #         "owner_user": "/api/v1/crates/tabulate/owner_user",
+  #         "owners": "/api/v1/crates/tabulate/owners",
+  #         "reverse_dependencies": "/api/v1/crates/tabulate/reverse_dependencies",
+  #         "version_downloads": "/api/v1/crates/tabulate/downloads",
+  #         "versions": "/api/v1/crates/tabulate/versions"
+  #       },
+  #       "max_stable_version": "1.1.1",
+  #       "max_version": "1.1.1",
+  #       "name": "tabulate",
+  #       "newest_version": "1.1.1",
+  #       "recent_downloads": 43,
+  #       "repository": "https://github.com/mbudde/tabulate",
+  #       "updated_at": "2020-02-19T09:48:59.628823+00:00",
+  #       "versions": null
+  #     },
+  #     {
+  #       "badges": [
+  # 
+  #       ],
+  #       "categories": null,
+  #       "created_at": "2018-12-10T06:32:30.336108+00:00",
+  #       "description": "Zero copy bytes chain based on crate `bytes`",
+  #       "documentation": "https://docs.rs/bytes_chain/",
+  #       "downloads": 545,
+  #       "exact_match": false,
+  #       "homepage": "https://github.com/ywzjackal/bytes_chain",
+  #       "id": "bytes_chain",
+  #       "keywords": null,
+  #       "links": {
+  #         "owner_team": "/api/v1/crates/bytes_chain/owner_team",
+  #         "owner_user": "/api/v1/crates/bytes_chain/owner_user",
+  #         "owners": "/api/v1/crates/bytes_chain/owners",
+  #         "reverse_dependencies": "/api/v1/crates/bytes_chain/reverse_dependencies",
+  #         "version_downloads": "/api/v1/crates/bytes_chain/downloads",
+  #         "versions": "/api/v1/crates/bytes_chain/versions"
+  #       },
+  #       "max_stable_version": "1.1.8",
+  #       "max_version": "1.1.8",
+  #       "name": "bytes_chain",
+  #       "newest_version": "1.1.8",
+  #       "recent_downloads": 15,
+  #       "repository": "https://github.com/ywzjackal/bytes_chain",
+  #       "updated_at": "2018-12-10T07:25:50.838227+00:00",
+  #       "versions": null
+  #     },
+  #     {
+  #       "badges": [
+  # 
+  #       ],
+  #       "categories": null,
+  #       "created_at": "2020-11-18T18:05:31.301935+00:00",
+  #       "description": "A converter from images to nonogram clues",
+  #       "documentation": null,
+  #       "downloads": 188,
+  #       "exact_match": false,
+  #       "homepage": null,
+  #       "id": "convert-nonogram",
+  #       "keywords": null,
+  #       "links": {
+  #         "owner_team": "/api/v1/crates/convert-nonogram/owner_team",
+  #         "owner_user": "/api/v1/crates/convert-nonogram/owner_user",
+  #         "owners": "/api/v1/crates/convert-nonogram/owners",
+  #         "reverse_dependencies": "/api/v1/crates/convert-nonogram/reverse_dependencies",
+  #         "version_downloads": "/api/v1/crates/convert-nonogram/downloads",
+  #         "versions": "/api/v1/crates/convert-nonogram/versions"
+  #       },
+  #       "max_stable_version": "0.1.2",
+  #       "max_version": "0.1.2",
+  #       "name": "convert-nonogram",
+  #       "newest_version": "0.1.2",
+  #       "recent_downloads": 27,
+  #       "repository": "https://github.com/paulstansifer/convert-nonogram",
+  #       "updated_at": "2020-11-24T13:49:37.791793+00:00",
+  #       "versions": null
+  #     },
+  #     {
+  #       "badges": [
+  # 
+  #       ],
+  #       "categories": null,
+  #       "created_at": "2015-05-25T16:20:12.691362+00:00",
+  #       "description": "Zip 3, 4, 5 or more Rust iterators",
+  #       "documentation": null,
+  #       "downloads": 2636,
+  #       "exact_match": false,
+  #       "homepage": "https://github.com/mdup/multizip",
+  #       "id": "multizip",
+  #       "keywords": null,
+  #       "links": {
+  #         "owner_team": "/api/v1/crates/multizip/owner_team",
+  #         "owner_user": "/api/v1/crates/multizip/owner_user",
+  #         "owners": "/api/v1/crates/multizip/owners",
+  #         "reverse_dependencies": "/api/v1/crates/multizip/reverse_dependencies",
+  #         "version_downloads": "/api/v1/crates/multizip/downloads",
+  #         "versions": "/api/v1/crates/multizip/versions"
+  #       },
+  #       "max_stable_version": "0.1.0",
+  #       "max_version": "0.1.0",
+  #       "name": "multizip",
+  #       "newest_version": "0.1.0",
+  #       "recent_downloads": 41,
+  #       "repository": "https://github.com/mdup/multizip",
+  #       "updated_at": "2015-12-11T23:54:29.779751+00:00",
+  #       "versions": null
+  #     }
+  #   ],
+  #   "meta": {
+  #     "next_page": "?q=bb&per_page=5&page=2",
+  #     "prev_page": null,
+  #     "total": 106
+  #   }
+  # }
+
+  rs = curl_json(SEARCH_URL % [query, max_results])
+  #rs = JSON.parse(File.read("/home/pip/cargos.json"))
+
+  rs = rs["crates"].sort_by { |r| r["downloads"] }
+
+  rs.each do |r|
+    # id description downloads recent_downloads homepage repository newest_version updated_at
+    updated_at = nicedate(r["updated_at"])
+    extra_urls = [r["homepage"], r["repository"]].compact.uniq
+  
+    puts ("<8>=== " + 
+          "<11>#{r["id"]} " + 
+          "<3>v#{r["newest_version"]}<8> (<7>#{updated_at}</7>), " + 
+          "<13>#{r["downloads"].commatize} <5>downloads <8>(#{r["recent_downloads"].commatize} recent)<7> " +
+          "<8>====").colorize
+
+    puts "    <7>https://crates.io/crates/#{r["id"]}".colorize
+    puts      r["description"].indent.bright_white
+
+    extra_urls.each { |url| puts "    <3>#{url}".colorize }
+    puts
+  end
+end
+
+
+###################################################################
+# Handle ARGV
+
+opts, args = ARGV.partition { |arg| arg[/^-\w/] }
+
+if (args.empty? and opts.empty?) or opts.include?("--help")
+  help!
+  exit 1
+end
+
+if opts.include? "-i"
+  args.each { |arg| print_crate_info(arg) }
+else
+  query = args.join("+")
+  puts "<8>* <7>Searching crates.io for <14>#{query.inspect}<7>...".colorize
+  print_search_results(query)
+end

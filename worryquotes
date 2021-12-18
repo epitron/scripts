@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: worryquotes [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+=begin
+#william-thurston-on-proof-and-progress-in-mathematics.entry{"data-author" => "Willia
+m Thurston"}                                                                         
+  .source                                                                            
+    %a.permalink{:href => "#william-thurston-on-proof-and-progress-in-mathematics"} #
+    %a.author{:href => "?author=William%20Thurston"} William Thurston                
+    %a.title{:href => "http://arxiv.org/pdf/math/9404236v1"} :   On proof and progres
+s in mathematics                                                                     
+  .quote                                                                             
+    %a{:href => "http://arxiv.org/pdf/math/9404236v1"}                               
+      %p When a significant theorem is proved, it often (but not always) happens that
+ the solution can be communicated in a matter of minutes from one person to another w
+ithin the subfield. The same proof would be communicated and generally understood in 
+an hour talk to members of the subfield. It would be the subject of a 15- or 20-page 
+paper, which could be read and understood in a few hours or perhaps days by members o
+f the subfield.                                                                      
+      %p Why is there such a big expansion from the informal discussion to the talk t
+o the paper? One-on-one, people use wide channels of communication that go far beyond
+ formal mathematical language. They use gestures, they draw pictures and diagrams, th
+ey make sound effects and use body language. Communication is more likely to be two-w
+ay, so that people can concentrate on what 
+=end
+
+class Entry < Struct.new(:author, :title, :url, :quote)
+  def self.from_node(node)
+    author = node.at_css(".author").text
+    a      = node.at_css(".title")
+      title  = a.text.gsub(/^\s*:/, '').strip rescue nil
+      url    = a["href"] rescue nil
+    quote  = node.at_css(".quote").css("p").map(&:text).join("\n\n") rescue nil
+
+    new(author, title, url, quote)
+  end
+
+  def to_s
+    s = "#{quote}\n"
+    s += "    -- #{author}"
+    s += " (#{title})" if title
+    s
+  end
+
+end
+
+
+doc = Oga.parse_html(cached_curl("http://worrydream.com/quotes/"))
+doc.css(".entry").each do |node|
+  entry = Entry.from_node(node)
+  puts entry
+  puts "%"
+end

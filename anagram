@@ -153,6 +153,7 @@ class Anagrammer
   # Given a string, prints out all anagrams.
   #
   def solve!(phrase)
+  IO.popen(["fzf"], "w") do |fzf|
     found  = Set.new
 
     # $stderr.puts "# Searching for anagrams of #{phrase.inspect}..."
@@ -162,12 +163,12 @@ class Anagrammer
       words = solution.split.sort
       unless found.include? words
         found.add(words)
-        puts solution
+        fzf.puts solution
       end
     end
 
-    puts
-
+    fzf.puts
+  end
   rescue Errno::EPIPE
     # STDOUT was closed before execution completed
     exit 74 # EX_IOERR

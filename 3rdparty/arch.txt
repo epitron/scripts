@@ -52,6 +52,7 @@ gitui
 subversion
 ruby
 ruby-docs
+tldr
 xclip xse wmctrl xdotool
 python
 perl-term-readkey
@@ -73,6 +74,7 @@ xorg
 xorg-apps
 xorg-fonts
 qt5-imageformats
+qt5ct # theme selector
 kdegraphics-thumbnailers
 
 
@@ -98,7 +100,8 @@ hexchat
 pidgin
 google-earth
 qbittorrent
-
+zathura
+sigil
 
 # Microsoft
 wine winetricks
@@ -133,7 +136,7 @@ fuseiso
 mpv ffmpeg mplayer
 feh
 ncmpcpp
-pulseaudio pavucontrol volumeicon ponymix
+pulseaudio pavucontrol volumeicon pulsemixer ponymix
 audacious-plugins mpg123 libmtp libmms
 imagemagick
 handbrake

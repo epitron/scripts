@@ -1,201 +1,153 @@
 #!/usr/bin/env ruby
-#########################################################################
+####################################################################
+require 'epitools'
+require 'oga'
 
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'oga'
-require 'epitools'
-require 'http'
+####################################################################
+# Parse options
 
-#########################################################################
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: getlinks [options] <url(s)>"
 
-def parse_options
-  opts = Slop.parse(help: true, strict: true) do
-    # banner "Usage: <<scriptname>> [options]"
-    banner %{Usage:
-  getlinks <url1|file1> [<url2|file2>, ...]
-
-Purpose:
-  Returns all the HREFs from the <a href=\"\"> tags in the specificed
-  url(s). The links are output to STDOUT, while the status information
-  is output to STDERR, so you can pipe the links to 'grep' and/or
-  'xargs wget'.
-
-Example:
-  getlinks http://something.com/stuff.html | egrep '\.zip$' | xargs wget
-}
-
-    # on "a",  "along",  "desc"
-    on "m=", "match",  "Match link content (regexp)"
-    on "t=", "tags",   "Which tags to extract?"
-    on "i",  "images", "Only select images"
-    on "l",  "links",  "Only select links"
-    on "m",  "media",  "Only select media"
-    on "e",  "enclosures", "Only select enclosures"
-  end
-
-  [opts, ARGV]
+  on "l", "links",  "Print links (default)"
+  on "i", "images", "Print images"
+  on "m", "media",  "Print non-image media (video and audio)"
+  on "a", "all",    "Everything!"
+  on "b", "blank-title", "Print links with blank titles (default: ignore them)"
+  on "g", "grep", "Look for URLs by parsing the page as plain text (ie: for urls in json blobs)"
 end
 
-#
-# Try all the libraries!
-#
-def wget(url)
-  begin
-    require 'http'
-    HTTP.follow.get(url).body.to_s
-  rescue LoadError
-    if bin = which("curl")
-      IO.popen([bin, "--silent", "--location", url], &:read)
-    elsif bin = which("wget")
-      IO.popen([bin, "--quiet", "--output-document=-", url], &:read)
-    else
-      require 'open-uri'
-      open(url, &:read)
+args = ARGV
+
+####################################################################
+
+class String
+  def tighten
+    gsub(/\s+/, ' ').strip
+  end
+end
+
+class URI::Generic
+  alias_method :old_to_s, :to_s
+  def to_s
+    old_to_s.chomp("?")
+  end
+end
+
+####################################################################
+
+def print_links(less, root_uri, doc, print_blank_title: false)
+  already_printed = Set.new
+
+  less.puts "## links"
+  less.puts
+
+  doc.css("a, iframe").each do |elem|
+
+    case elem.name.downcase
+    when "a"
+      body  = elem.text.tighten
+      title = elem["title"]&.tighten
+      uri   = URI.join(root_uri, elem["href"])
+
+      unique_id = [body, title, uri]
+
+      next if body&.empty? and title&.empty? and not print_blank_title
+      next if already_printed.include? unique_id
+
+      less.puts "# #{body}" unless body.nil? or body.empty?
+      less.puts "# title: #{title}" unless title.nil? or title.empty?
+      less.puts "#{uri}"
+
+    when "iframe"
+      # <iframe loading="lazy" title="Why Alien Life Would be our Doom - The Great Filter" width="1100" height="619" src="https://www.youtube.com/embed/UjtOGPJ0URM?feature=oembed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      body = nil
+      title = elem["title"]&.tighten
+      uri = URI.join(root_uri, elem["src"])
+      
+      unique_id = [title, uri]
+
+      next if already_printed.include? unique_id
+
+      less.puts "# iframe title: #{title}" unless title.nil? or title.empty?
+      less.puts "#{uri}"
     end
+
+    less.puts
+
+    already_printed.add unique_id
   end
 end
 
-#########################################################################
+def print_images(less, root_uri, doc)
+  already_printed = Set.new
 
-TYPES = {
-  :links      => ["a",         proc { |e| e["href"] } ],
-  :embeds     => ["embed",     proc { |e| e["src"] }  ],
-  :videos     => ["video",     proc { |e| e.search("source").map{|s| s["src"]} }], # <video><source src="..." type="video/ogg"></..>
-  :audios     => ["audio",     proc { |e| e.search("source").map{|s| s["src"]} }], # <audio><source src="..." type="audio/mpeg"></..>
-  :images     => ["img",       proc { |e| e["src"] || e["data-src"] }  ],
-  :enclosures => ["enclosure", proc { |e| e["url"] }  ],
-}
+  less.puts "## images"
+  less.puts
 
-#########################################################################
+  doc.css("img").each do |img|
+    title = img["title"]&.tighten
+    alt = img["alt"]&.tighten
+    alt = nil if title == alt
+   
+    uri = URI.join(root_uri, img["src"])
 
-module URI
-  #
-  # Strip out params with blank values.
-  #
-  alias_method :old_params, :params
+    unique_id = [title, alt, uri]
 
-  def params
-    old_params.delete_if { |k,v| v.blank? }
+    next if already_printed.include? unique_id
+
+    less.puts "# title: #{title}" if title and not title.empty?
+    less.puts "# alt: #{alt}" if alt and not alt.empty?
+    less.puts "#{uri}"
+    less.puts
+
+    already_printed.add unique_id
   end
 end
 
-#########################################################################
-
-def strip_trackers(url)
-  uri = URI.parse(url)
-  if uri.host =~ /google.\w{2,3}$/ and uri.path == "/url"
-    uri.params["url"] || uri.params["q"]
-  elsif uri.host =~ /facebook\.com$/ and uri.path == "/l.php"
-    uri.params["u"]
-  elsif uri.host =~ /evernote\.com$/ and uri.path == "/OutboundRedirect.action"
-    uri.params["dest"]
-  else
-    uri
-  end.to_s
-end
-
-def absolute_uri(root, url)
-  begin
-    URI.join(root, url)
-  rescue URI::InvalidURIError
-    # Unicode nonsense
-    a, b = url.split("#")
-    url = URI.encode(a)
-    url << "#" + URI.encode(b) if b
-    URI.join(root, url)
-  end.to_s
-end
-
-def relative_url?(url)
-  URI.join(url, url)
-  false
-rescue URI::BadURIError
-  true
-end
-
-
-#########################################################################
-
-def get_links(url, types=TYPES, regexp=nil)
-  if url =~ %r{^https?://.+}
-    data             = wget(url)
-    root_is_relative = relative_url?(url)
-  elsif File.exists? url
-    data = File.read url
-    root_is_relative = false
-  else
-    $stderr.puts "Error: #{url} isn't an URL or a(n existing) file"
-    exit 1
+def print_media(less, root_uri, doc)
+  doc.css("video, audio").each do |v|
+    less.puts v.to_s
   end
+end
 
-  page = Oga.parse_html(data)
+FAKE_SPACE_CHAR = " " # 0xA0... I can copy/paste this char, but a string with its hex value ("\xA0") is illegal??? weird.
+URL_RE = %r{https?://[^"' <#{FAKE_SPACE_CHAR}]+}
+def print_grepped_urls(less, html)
+  html.scan(URL_RE).each do |m|
+    less.puts m
+    less.puts
+  end
+end
 
-  types = types.uniq
+####################################################################
 
-  result =
-    types.map do |type|
-      tag, callback = TYPES[type]
+lesspipe do |less|
+  args.each do |url|
+    less.puts "### URL: #{url}"
 
-      links = page.css(tag).map(&callback).to_a.compact
+    html = cached_curl(url)
 
-      unless root_is_relative
-        links.map! { |link| absolute_uri(url, link) }
+    if opts.grep?
+      less.puts
+      print_grepped_urls(less, html)
+    else
+      doc = Oga.parse_html html
+
+      root_uri = URI.parse url
+      title = doc.at_css("title")&.text&.tighten
+
+      less.puts "### #{title}" if title and not title.empty?
+      less.puts
+
+      print_images(less, root_uri, doc) if opts.images? or opts[:all]
+      print_media(less, root_uri, doc)  if opts.media? or opts[:all]
+
+      if opts[:xall] or opts.links? or (!opts.links? and !opts.images? and !opts.media?)
+        print_links(less, root_uri, doc, print_blank_title: opts[:"blank-title"])
       end
-
-      links.map! { |link| strip_trackers link }
-      links.select! { |link| link =~ regexp } if regexp
-
-      [type, links]
-    end.to_h
-
-  # pp result
-
-  if (emails = result[:links]&.select{|v| v["mailto:"]}) and emails.any?
-    result[:emails] = emails
-    result[:links] -= result[:emails]
-  end
-
-  result
-
-end
-
-#########################################################################
-
-opts, args = parse_options
-
-if args.empty?
-  puts opts
-  exit 1
-end
-
-
-types = []
-types += [:audios, :videos]  if opts.media?
-types += [:images]           if opts.images?
-types += [:links]            if opts.links?
-types += [:enclosures]       if opts.enclosures?
-
-# Filter tag types
-if tags = opts[:tags]
-  types += tags.split(",").map(&:strip).map(&:to_sym)
-elsif types.empty?
-  types += TYPES.keys
-end
-
-# Filter links by regexp
-if expr = opts[:match]
-  filter = Regexp.new(expr)
-else
-  filter = nil
-end
-
-args.each do |arg|
-  $stdout.puts "### #{arg}"
-  for category, links in get_links(arg, types, filter)
-    next if links.empty?
-    $stdout.puts "# #{category}"
-    links.each { |link| puts link }
-    puts
+    end
   end
 end

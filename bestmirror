@@ -1,0 +1,42 @@
+#!/bin/bash
+get_hostname_url() {
+  local n=${1#*://}
+  echo ${n%%/*}
+}
+
+time_cmd() {
+  local proc=$(cut -d ' ' -f1 /proc/uptime)
+  local start="$(echo $proc | cut -d . -f1)$(echo $proc | cut -d . -f2)"
+  $@ >/dev/null 2>&1 || return
+  proc=$(cut -d ' ' -f1 /proc/uptime)
+  local end="$(echo $proc | cut -d . -f1)$(echo $proc | cut -d . -f2)" 
+  echo $(( $end - $start  ))
+}
+
+if [ "$1" == "" ]; then
+  echo "usage: bestmirror <file full of http urls>"
+  exit 1
+fi
+
+#MIRRORS=$(wget -qO- "http://rsync.alpinelinux.org/alpine/MIRRORS.txt")
+MIRRORS=$(cat "$@")
+DATA=""
+
+#find best
+for URL in $MIRRORS; do
+        TIME=$(time_cmd wget -T 1 -q ${URL%/} -O /dev/null)
+        if [ -n "$TIME" ]; then 
+                echo "$(get_hostname_url $URL) was $TIME"
+                DATA="$DATA$TIME $URL\n"
+        fi
+done
+
+#DST="bestmirrors.txt"
+#echo -e $DATA | sort -n | tail -n +2 > $DST
+#[ $? = 0 ] && echo file $DST created
+#BEST=$(head -n1 $DST | cut -d ' ' -f2)
+#echo "Best mirror is: $BEST"
+
+echo -e $DATA | sort -n | tail -n +2 | less
+
+

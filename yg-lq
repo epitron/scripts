@@ -1,0 +1,2 @@
+#!/bin/bash
+youtube-dl -f best --youtube-skip-dash-manifest -g "$@"

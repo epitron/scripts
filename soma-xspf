@@ -23,21 +23,23 @@ puts "  |_ #{json["channels"].size} stations found"
 puts
 puts "* Writing stations to 'somafm.xspf'..."
 
+channels = json["channels"].sort_by { |ch| -ch["listeners"].to_i }
+
 outfile = open("somafm.xspf", "w")
 
-outfile << %{
-<?xml version="1.0" encoding="UTF-8"?>
+outfile << %{<?xml version="1.0" encoding="UTF-8"?>
 <playlist version="1" xmlns="http://xspf.org/ns/0/">
   <title>SomaFM</title>
   <trackList>
 }
 
-json["channels"].map do |ch|
+channels.map do |ch|
   pls   = ch["playlists"].first["url"]
   url   = pls_urls(pls).first
   title = ch["title"]
+  listeners = ch["listeners"]
 
-  puts "  |_ #{title} (#{url})"
+  puts "  |_ #{title} (#{url}) => #{listeners} listeners"
 
   outfile << %{
     <track>

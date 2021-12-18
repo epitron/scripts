@@ -2,7 +2,7 @@
 
 args = ARGV
 
-if args.empty? or args.delete("--help")
+if args.reject{|arg|arg[/^-\w/]}.empty? or args.delete("--help")
   puts "Youtube-DL Wrapper!"
   puts
   puts "Usage:"
@@ -19,6 +19,7 @@ if args.empty? or args.delete("--help")
   puts "  -a     Download audio only"
   puts "  -s     Download subtitles only"
   puts "  -S     No subtitles!"
+  puts "  -c     Download chatlogs w/ subtitles"
   puts "  -o <filename>"
   puts "         Set output filename."
   puts "         ( For a list of variables that can be inserted into the filename, see:"
@@ -34,6 +35,7 @@ cmd = %w[
   --no-mtime
   --xattrs
   --add-metadata
+  --trim-filenames 220
 ]
 
 urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
@@ -41,16 +43,30 @@ urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
 # --sub-lang=en --write-sub
 # --convert-subtitles=srt --sub-lang=en --embed-subs
 
+# if opts.delete("-c")
+#   slangs << ",live_chat"
+#   cmd += %w[--write-subs --skip-download --sub-langs live_chat]
+# end
+
 unless opts.delete("-S")
-  cmd += %w[--sub-format=srt/ass/vtt/best --sub-lang=en,en-CA --write-sub]
+  slangs = "en.*"
+  slangs << ",live_chat" if opts.delete("-c")
+  cmd += ["--sub-format", "srt/ass/vtt/best", "--sub-langs", slangs, "--write-subs"]
 end
 
+numbering = opts.delete("-n")
+
+# filename formatter
 unless opts.include?("-o")
   cmd << "-o"
-  if opts.delete("-n")
+  if numbering
     cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
   else
-    cmd << "%(title)0.240s.%(ext)s"
+    if urls.any? { |u| u["tiktok.com/"] }
+      cmd << "%(uploader)s - %(title)0.50s - %(description)0.150s.%(ext)s"
+    else
+      cmd << "%(title)0.240s.%(ext)s"
+    end
   end
 end
 
@@ -58,7 +74,7 @@ if opts.delete("-a") or urls.all? { |url| url =~ %r{\.bandcamp\.com/} }
   cmd << "--extract-audio"
   cmd << "--embed-thumbnail"
   cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
-elsif args.delete("-s")
+elsif opts.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
 elsif opts.delete("-3")
@@ -74,13 +90,16 @@ end
 
 # parallel download
 if opts.delete("-p")
-  cmd += ["--external-downloader", "axel", "--external-downloader-args", "--num-connections=5"]
+  cmd += ["--downloader", "axel", "--downloader-args", "--num-connections=3"]
 end
 
 cmd += opts
 
-urls.each do |url|
-  if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
+urls.each_with_index do |url, i|
+  n = i+1
+
+  #if url =~ %r{^plugin://plugin\.video\.youtube/play/\?video_id=(.+)$}
+  if url =~ %r{/(?:play/?|watch)\?(?:video_id|v)=([\w\-]+)}
     url = "https://youtu.be/#{$1}"
   end
 
@@ -93,16 +112,25 @@ urls.each do |url|
     end
   end
 
-  onecmd = cmd.dup
-  onecmd << url
+  # when numbering is chosen and this isn't a playlist, substitute the arg number into the filename (little hacky, sorry me)
+  if numbering and not url =~ /playlist/
+    pos = cmd.index { |arg| arg == "-o" }
+    if pos and cmd[pos+1] =~ /playlist_index/
+      numberstr = "%0.2d" % n
+      cmd = cmd.dup
+      # cmd << "%(playlist_index)s. %(title)0.235s.%(ext)s"
+      cmd[pos+1] = cmd[pos+1].gsub("%(playlist_index)s", numberstr)
+    end
+  end
 
+  # git it
   puts "-------------------------------------------------"
   puts "  Downloading #{url}"
   puts "-------------------------------------------------"
   puts
   puts "Commandline:"
-  puts "  #{onecmd.join(" ")}"
+  puts "  #{cmd.join(" ")} #{url}"
   puts
 
-  system *onecmd
+  system *cmd, url
 end

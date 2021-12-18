@@ -13,6 +13,13 @@
 
 # alias open='xdg-open "$@" 2>/dev/null'
 
+alias reload="exec bash"
+
+alias aaa='bl 5'
+alias aaaa=aaa
+alias aaaaa=aaa
+alias aa=aaa
+
 function we_have() {
   which "$@" > /dev/null 2>&1
 }
@@ -100,8 +107,10 @@ pushpath() {
 
 # filesystem
 alias mv="mv -v"
+alias mv-backup='mv --backup=numbered'
 alias cp="cp -v"
 alias rm='trsh'
+alias r='ren'
 alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
@@ -140,7 +149,7 @@ fi
 
 if we_have ag
 then
-  alias ag="ag --pager '$pager'"
+  alias ag="ag --smart-case --pager '$pager'"
 else
   alias ag="ack --pager '$pager'"
 fi
@@ -159,13 +168,13 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
-alias mp="ncmpcpp"
+alias mixer="pulsemixer"
 alias yd='youtube-dl --xattrs --no-mtime'
 
 if we_have ueberzug; then
-  alias yt='ytfzf -t --detach'
+  alias ytf='ytfzf -t --detach'
 else
-  alias yt='ytfzf --detach'
+  alias ytf='ytfzf --detach'
 fi
 
 # net
@@ -191,11 +200,30 @@ alias screen='screen -U'
 
 alias e.='e .'
 
-if we_have dcfldd; then
-  alias dd='dcfldd'
-elif we_have ddrescue; then
-  alias dd='ddrescue'
-fi
+best_of() {
+  best=$( which $* 2> /dev/null | head -n 1 )
+  if [ "$best" != "" ]; then
+    basename $best
+  fi
+}
+
+alias best_dd="$(best_of dd_rescue dcfldd ddrescue dd)" # find the best dd
+
+dd() {
+  if (( $# == 0 )); then
+    best_dd --help |& less
+  else
+    best_dd "$@"
+  fi
+}
+
+# if we_have dd_rescue; then
+#   alias dd='dd_rescue'
+# elif we_have dcfldd; then
+#   alias dd='dcfldd'
+# elif we_have ddrescue; then
+#   alias dd='ddrescue'
+# fi
 
 alias um='unmount'
 
@@ -234,7 +262,7 @@ alias flash='crutziplayer'
 alias rdp='xfreerdp'
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 alias psx='pcsxr'
-alias detach='bg; disown'
+alias detach='bg; disown'; alias det=detach
 alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
@@ -256,7 +284,7 @@ alias gch="git checkout"
 # alias g[]="git stash list; git stash show"
 alias g+="git add"
 alias gr="git remote -v"
-alias gf="git fetch -v --prune"
+alias gf="git fetch --all -v --prune"
 alias fetch="gf"
 alias whose-line-is-it-anyway="git blame"
 
@@ -309,19 +337,23 @@ alias be="bundle exec"
 alias rock='luarocks'
 alias gi='gem install'
 
-alias pip='python -m pip'
-alias pi='pip install --user'
-
-#alias pi2='pip2 install --user'
-#alias pi3='pip3 install --user'
-
-alias piu='pip uninstall'
 alias py=python
+alias py2=python2
+alias py3=python3
+
+alias pip='python -m pip'
+alias pip2='python2 -m pip'
+alias pip3='python3 -m pip'
+alias pi='pip install --user'
+alias pi2='pip2 install --user'
+alias pi3='pip3 install --user'
+alias piu='pip uninstall'
+
 alias ipy=ipython
 alias ipy3=ipython3
 alias ipy2=ipython2
-alias ni='npm install'
 
+alias ni='npm install'
 
 gem-cd() {
   local gem_dir
@@ -377,7 +409,6 @@ alias pacrf='pacman -Rc'  # remove package (and force removal of dependencies)
 alias pacpurge='pacman -Rns' # purge a package and all config files
 alias pacuproot='pacman -Rsc' # remove package, dependencies, and dependants
 alias abs='sudoifnotroot abs'
-alias mp='makepkg -s'
 # alias pkgfile='sudoifnotroot pkgfile -r'
 
 if we_have yaourt; then

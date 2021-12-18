@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: nitter-image-dump [options] <url>"
+
+  on "p=",  "prefix",  "The name to prepend to each filename (default: twitter username)"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+if args.size != 1
+  puts opts
+  exit 1
+end
+
+########################################################
+uri = URI.parse(args.first)
+puts "* Loading #{uri}..."
+doc = Oga.parse_html curl(uri.to_s)
+
+pics = doc.css("a").select{|a| a['href'] =~ /media.+orig/ };
+urls = pics.map { |a| URI.join(uri, a["href"]).to_s.chomp("?") }
+user = doc.at_css("a.username")["title"]
+prefix = opts[:prefix] || user
+
+puts "  |_ found #{urls.size} images"
+
+urls.each.with_index do |url,i|
+  cmd = ["wget", url, "-O", "#{prefix}_%0.2d.jpg" % (i+1)]
+  #p cmd
+  system *cmd
+end

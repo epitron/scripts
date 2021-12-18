@@ -10,8 +10,10 @@ require 'slop'
 opts = Slop.parse(help: true, strict: true) do
   banner "Usage: rm-before [options] <file>"
 
-  # on "r",  "recursive",  "Remove directories too"
+  on "r",  "recursive",  "Remove directories too"
   on "i",  "inclusive",  "Include the cutoff file (default: no)"
+  on "b",  "before",     "Delete everything before this file"
+  on "a",  "after",      "Delete everything after this file"
 end
 
 args = ARGV
@@ -29,28 +31,43 @@ if args.size > 1
   exit 1
 end
 
-cutfile     = Path[args.first]
-files       = cutfile.parent.ls_files.sort_by(&:mtime)
+if opts.before? and opts.after?
+  puts "Aborting because you probably didn't mean to delete both before *and* after."
+  exit 1
+end
+
+cutfile = Path[args.first]
+files = cutfile.parent.ls.sort_by(&:mtime)
 
 cutpoint    = files.index(cutfile)
-to_delete   = files[opts.inclusive? ? 0..cutpoint : 0...cutpoint]
-to_keep     = files - to_delete
 
-delete_size = to_delete.sum(&:size)
-keep_size   = to_keep.sum(&:size)
+if opts.after?
+  direction = "after"
+  to_delete = files[opts.inclusive? ? cutpoint..-1 : cutpoint+1..-1]
+else
+  direction = "before"
+  to_delete = files[opts.inclusive? ? 0..cutpoint : 0...cutpoint]
+end
 
-deleter     = which("trsh", "rm")
+to_delete.reject!(&:dir?) unless opts.recursive?
+to_keep = files - to_delete
 
-puts "Files before #{cutfile}:"
+deleter = which("trsh", "rm")
+
+puts "Files #{direction} #{cutfile}:"
 to_delete.each { |path| puts path }
 puts
-puts "Deleting: #{to_delete.size} files, #{delete_size.commatize} bytes"
-puts " Keeping: #{to_keep.size} files, #{keep_size.commatize} bytes"
+puts "Deleting: #{to_delete.size} files"
+puts " Keeping: #{to_keep.size} files"
 puts
 
 if prompt("is ok?", "Ny") == "y"
-  system(deleter, *to_delete)
+  cmd = [deleter]
+  cmd << "-r" if opts.recursive?
+  cmd += to_delete
+  #p cmd
+  system(*cmd)
   puts "it is done"
 else
-  puts "sorry"
+  puts "ok, sorry"
 end

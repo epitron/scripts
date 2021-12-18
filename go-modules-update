@@ -1,0 +1,2 @@
+# https://golangbyexample.com/go-mod-sum-module/
+go list -m -u all

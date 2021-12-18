@@ -20,17 +20,17 @@
 #
 # TODOs:
 #   * Don't blow up when you need a package
-#     |_ helpfully ask if the user wants to install it for the user
+#     |_ helpfully ask if the user wants to install it
 #   * If 'file' isn't installed, fall back to using the file extension, or the mime_magic gem
 #   * Refactor into "filters" (eg: gunzip) and "renderers" (eg: pygmentize) and "identifiers" (eg: ext, shebang, magic)
-#     |_ all methods take a Pathname or String or Enumerable
+#     |_ all methods can take a Pathname or String or Enumerable
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
-#   * Auto-install gems/pips/packages required to view a file
 #   * Live filtering (grep within output chunks, but retain headers; retain some context?)
+#     |_ special pager! (moar)
+#     |_ jump between files (ctrl-up/down)
 #   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
-#   * Change `print_*` methods to receive a string (raw data) or a Pathname/File object
 #   * Follow symlinks by default
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
@@ -1179,6 +1179,141 @@ def print_vtt(filename)
   end
 end
 
+# {
+#   "replayChatItemAction": {
+#     "actions": [
+#       {
+#         "addChatItemAction": {
+#           "item": {
+#             "liveChatPaidMessageRenderer": {
+#               "id": "ChwKGkNKN3ZpOGVLOXZNQ0ZhZ0oxZ0FkcFc4SFhR",
+#               "timestampUsec": "1635732565095710",
+#               "authorName": {
+#                 "simpleText": "Veronica A"
+#               },
+#               "authorPhoto": {
+#                 "thumbnails": [
+#                   {
+#                     "url": "https://yt4.ggpht.com/ytc/AKedOLTBEpF1BF5NWK1yIUvWrYe66MnTlOah79cDxgE=s32-c-k-c0x00ffffff-no-rj",
+#                     "width": 32,
+#                     "height": 32
+#                   },
+#                   {
+#                     "url": "https://yt4.ggpht.com/ytc/AKedOLTBEpF1BF5NWK1yIUvWrYe66MnTlOah79cDxgE=s64-c-k-c0x00ffffff-no-rj",
+#                     "width": 64,
+#                     "height": 64
+#                   }
+#                 ]
+#               },
+#               "purchaseAmountText": {
+#                 "simpleText": "$5.00"
+#               },
+#               "message": {
+#                 "runs": [
+#                   {
+#                     "text": "Reduce some harm"
+#                   }
+#                 ]
+#               },
+#               "headerBackgroundColor": 4278239141,
+#               "headerTextColor": 4278190080,
+#               "bodyBackgroundColor": 4280150454,
+#               "bodyTextColor": 4278190080,
+#               "authorExternalChannelId": "UCQeU_a1_bf2p5pKBDJzt7bA",
+#               "authorNameTextColor": 2315255808,
+#               "contextMenuEndpoint": {
+#                 "commandMetadata": {
+#                   "webCommandMetadata": {
+#                     "ignoreNavigation": true
+#                   }
+#                 },
+#                 "liveChatItemContextMenuEndpoint": {
+#                   "params": "Q2g0S0hBb2FRMG8zZG1rNFpVczVkazFEUm1GblNqRm5RV1J3VnpoSVdGRWFLU29uQ2hoVlEwZG9ORXRUVWpoVVdscHNlWEV6Y1ZGRVFuTkNURUVTQzJWcFNGOXJaRWxyVG1FMElBRW9BVElhQ2hoVlExRmxWVjloTVY5aVpqSndOWEJMUWtSS2VuUTNZa0UlM0Q="
+#                 }
+#               },
+#               "timestampColor": 2147483648,
+#               "contextMenuAccessibility": {
+#                 "accessibilityData": {
+#                   "label": "Comment actions"
+#                 }
+#               },
+#               "timestampText": {
+#                 "simpleText": "8:54"
+#               }
+#             }
+#           }
+#         }
+#       }
+#     ],
+#     "videoOffsetTimeMsec": "534012"
+#   }
+# }
+
+def print_youtube_chat_json(filename)
+  # return to_enum(:print_youtube_chat_json, filename) unless block_given?
+  require 'json'
+  require 'pp'
+
+  Enumerator.new do |out|
+    open(filename) do |f|
+      f.each_line do |line|
+        begin
+          event = JSON.parse line
+
+          ms = event.dig("replayChatItemAction", "videoOffsetTimeMsec").to_i
+          h, ms = ms.divmod(60*60*1000)
+          m, ms = ms.divmod(60*1000)
+          s = ms / 1000.0
+
+          time = "%0.2d:%0.2d:%05.2f" % [h,m,s]
+          time << "0" if time =~ /\.$/
+          time << "0" if time =~ /\.\d$/
+
+          event.dig("replayChatItemAction", "actions").each do |action|
+            item = action.dig("addChatItemAction", "item")
+            next unless item
+
+            message = item["liveChatTextMessageRenderer"] || item["liveChatPaidMessageRenderer"]
+            next unless message
+
+            user = message.dig("authorName", "simpleText")
+            body = message.dig("message", "runs")&.map do |r|
+              if text = r["text"]
+                text
+              elsif emoji = r.dig("emoji", "emojiId")
+                # "emojiId"=>"UCkszU2WH9gy1mb0dV-11UJg/vQF1XpyaG_XG8gTs77bACQ"
+                if emoji.size > 5
+                  # "shortcuts"=>[":chillwcat:"]
+                  emoji = r.dig("emoji", "shortcuts").first
+                end
+                emoji
+              else
+                raise "wat #{event}"
+              end
+            end&.join
+
+            donation = message.dig("purchaseAmountText", "simpleText")
+
+            result = ""
+            # result << "<8>[<7>#{time}<8>] "
+            # result << "<4>[<14>#{donation}<4>] " if donation
+            # result << "<8>{<9>#{user}<8>} <7>#{body}"
+            result << "\e[30m\e[1m[\e[0m\e[37m#{time}\e[0m\e[30m\e[1m]\e[0m "
+            result << "\e[31m[\e[0m\e[33m\e[1m#{donation}\e[0m\e[31m] \e[0m" if donation
+            result << "\e[0m\e[30m\e[1m<\e[0m\e[34m\e[1m#{user}\e[0m\e[30m\e[1m> \e[0m\e[37m#{body}\e[0m"
+
+            out << result
+          end
+        rescue => e
+          out << "oops, #{e}"
+          out << e.backtrace.pretty_inspect
+          out << events.pretty_inspect
+        end
+      end
+    end
+  end
+end
+
 ##############################################################################
 
 def print_iso(filename)
@@ -1976,11 +2111,13 @@ def convert(arg)
       print_bookmarks(arg)
     elsif path.filename =~ /^id_(rsa|ed25519|dsa|ecdsa)(\.pub)?$/
       print_ssl_certificate(arg)
+    elsif path.filename =~ /\.live_chat\.json$/
+      print_youtube_chat_json(arg)
     else
       case ext
       when *%w[.html .htm]
         print_html(File.read arg)
-      when *%w[.md .markdown .mdwn .page]
+      when *%w[.md .markdown .mdwn .page .gmi]
         print_markdown(File.read arg)
       when *%w[.moin .wiki]
         print_moin(File.read arg)
@@ -2054,6 +2191,8 @@ def convert(arg)
           print_obj(arg)
         when /(image,|image data)/
           show_image(arg)
+        when /cpio archive/
+          print_archive(arg)
         when /: data$/
           print_hex(arg)
         else

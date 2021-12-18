@@ -111,16 +111,15 @@ class DirectoryLister
   end
 
   def call(env)
-#binding.pry
     req = Rack::Request.new(env)
 
     pp env
-    #pp env["HTTP_USER_AGENT"]
 
     params = env["QUERY_STRING"].to_params
 
     relative_path = req.path_info
     requested = root/relative_path
+
     if requested.dir?
       if (index = requested/"index.html").exists?
         # serve index.html

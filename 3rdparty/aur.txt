@@ -2,6 +2,7 @@ chromexup
 ungoogled-chromium
 stapler
 mergerfs
+mergerfs-tools
 
 ttf-ms-fonts
 ttf-iosevka
@@ -31,3 +32,16 @@ xnviewmp
 
 archlinux-nix
 open-dyslexic-fonts
+
+fraqtive
+
+angrysearch
+bandwidth
+bfs
+darling-dmg-git
+eaglemode
+fsearch-git
+google-earth
+gtkdialog-svn
+k2pdfopt
+multibootusb

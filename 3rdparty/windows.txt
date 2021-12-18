@@ -4,3 +4,4 @@ https://cygwin.com
 https://scoop.sh
 https://www.oo-software.com/en/shutup10
 https://www.bluestacks.com/ # fast android emulator
+https://winaero.com/winaero-tweaker/ # remove cortana and telemetry

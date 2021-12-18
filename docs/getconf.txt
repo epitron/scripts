@@ -1,0 +1,2 @@
+`getconf -a` lists all the sizes/limits of things in your current platform
+(eg: the maximum filename length is `getconf -a | grep MAX_LEN`)

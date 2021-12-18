@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require 'oga'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: emoji [category name (to list categories)] "
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+def cached_curl(url)
+  cache = "/tmp/curl-#{url.sha1}.cache"
+  if File.exist?(cache)
+    $stderr.puts "cached! => #{cache}"
+  else
+    File.write(cache, curl(url))
+  end
+  File.read(cache)
+end
+
+def load_page(url)
+  Oga.parse_html(cached_curl(url))
+end
+
+########################################################
+
+if args.empty?
+
+  doc = load_page("https://emojipedia.org/")
+
+  puts "=== Categories ====="
+  puts
+
+  cat_container = doc.css("h2").find { |h| h.text == "Categories" }.parent
+  cats = cat_container.css("li a").map { |e| [e.at_css(".emoji").text, e["href"].gsub("/", "")] }
+
+  cats.each do |e,name|
+    puts "#{e} #{name}"
+  end
+
+else
+
+  args.each do |arg|
+    puts "=== #{arg} ======"
+    puts
+
+    doc = load_page("https://emojipedia.org/#{arg}/")
+    emoji = doc.css(".emoji-list li a").map { |e| [e.at_css(".emoji").text, e["href"].gsub("/","")] }
+
+    emoji.each do |e,name|
+      puts "#{e} :#{name}:"
+    end
+
+    puts
+  end
+
+end

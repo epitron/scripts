@@ -171,7 +171,7 @@ fi
 dep_ck () {
 	for Dep; do
 		if ! command -v "$Dep" 1>/dev/null; then
-			printf "%s not found. Please install it.\n" "$Dep" >&2
+			printf "oh no! %s isn't installed. could you install that? i'm not smart enough to do it myself uwu\n" "$Dep" >&2
 			exit 2
 		fi
 	done
