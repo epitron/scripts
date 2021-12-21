@@ -1,2 +1,6 @@
-xclip -o 2>/dev/null || xclip -o -selection clipboard 2>/dev/null
+if [ $(uname -o) == Android ]; then
+  termux-clipboard-get
+else
+  xclip -o 2>/dev/null || xclip -o -selection clipboard 2>/dev/null
+fi
 
