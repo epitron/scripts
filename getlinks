@@ -15,8 +15,9 @@ opts = Slop.parse(help: true, strict: true) do
   on "i", "images", "Print images"
   on "m", "media",  "Print non-image media (video and audio)"
   on "a", "all",    "Everything!"
-  on "b", "blank-title", "Print links with blank titles (default: ignore them)"
   on "g", "grep", "Look for URLs by parsing the page as plain text (ie: for urls in json blobs)"
+  on "b", "blank-title", "Print links with blank titles (default: ignore them)"
+  on "r", "recursive",   "Use lftp's 'find' command to print all the links recursively"
 end
 
 args = ARGV
@@ -125,7 +126,25 @@ end
 ####################################################################
 
 lesspipe do |less|
-  args.each do |url|
+  if opts.recursive?
+    args.each do |url|
+      IO.popen(["lftp", url, "-e", "find; quit"]) do |io|
+        io.each_line.map do |line|
+          fn = line.chomp
+
+          next if fn[%r{/$}] # skip folders (we're being recursive, so this is pointless)
+
+          fn = fn.scan(%r{[^/]+}).map { |thing| CGI.escape(thing).gsub("+", "%20") }.join("/")
+          fn = fn.gsub(%r{^\./}, '') # remove leading './' from filename
+ 
+          url = url.gsub(%r{/$}, '') # remove trailing '/' from url (if present)
+          #uri = URI.parse "#{url}/#{fn}"
+
+          less.puts "#{url}/#{fn}"
+        end
+      end
+    end
+  else; args.each do |url|
     less.puts "### URL: #{url}"
 
     html = cached_curl(url)
@@ -149,5 +168,5 @@ lesspipe do |less|
         print_links(less, root_uri, doc, print_blank_title: opts[:"blank-title"])
       end
     end
-  end
+  end; end
 end

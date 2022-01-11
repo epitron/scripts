@@ -1,0 +1,107 @@
+#!/usr/bin/env python
+# coding: UTF-8
+
+import random
+import sys
+import re
+
+
+i = {
+    '111111': [0, u'Force (乾 qián) The Creative'],
+    '000000': [1, u'Field (坤 kūn) The Receptive'],
+    '100010': [2, u'Sprouting (屯 chún) Difficulty at the Beginning'],
+    '010001': [3, u'Enveloping (蒙 méng) Youthful Folly'],
+    '111010': [4, u'Attending (需 xū) Waiting'],
+    '010111': [5, u'Arguing (訟 sòng) Conflict'],
+    '010000': [6, u'Leading (師 shī) The Army'],
+    '000010': [7, u'Grouping (比 bǐ) Holding Together'],
+    '111011': [8, u'Small Accumulating (小畜 xiǎo chù) Small Taming'],
+    '110111': [9, u'Treading (履 lǚ) Treading (Conduct)'],
+    '111000': [10, u'Prevading (泰 tài) Peace'],
+    '000111': [11, u'Obstruction (否 pǐ) Standstill'],
+    '101111': [12, u'Concording People (同人 tóng rén) Fellowship'],
+    '111101': [13, u'Great Possessing (大有 dà yǒu) Great Possession'],
+    '001000': [14, u'Humbling (謙 qiān) Modesty'],
+    '000100': [15, u'Providing-For (豫 yù) Enthusiasm'],
+    '100110': [16, u'Following (隨 suí) Following'],
+    '011001': [17, u'Corrupting (蠱 gǔ) Work on the Decayed'],
+    '110000': [18, u'Nearing (臨 lín) Approach'],
+    '000011': [19, u'Viewing (觀 guān) Contemplation'],
+    '100101': [20, u'Gnawing Bite (噬嗑 shì kè) Biting Through'],
+    '101001': [21, u'Adorning (賁 bì) Grace'],
+    '000001': [22, u'Stripping (剝 bō) Splitting Apart'],
+    '100000': [23, u'Returning (復 fù) Return'],
+    '100111': [24, u'Without Embroiling (無妄 wú wàng) Innocence'],
+    '111001': [25, u'Great Accumulating (大畜 dà chù) Great Taming'],
+    '100001': [26, u'Swallowing (頤 yí) Mouth Corners'],
+    '011110': [27, u'Great Exceeding (大過 dà guò) Great Preponderance'],
+    '010010': [28, u'Gorge (坎 kǎn) The Abysmal Water'],
+    '101101': [29, u'Radiance (離 lí) The Clinging'],
+    '001110': [30, u'Conjoining (咸 xián) Influence'],
+    '011100': [31, u'Persevering (恆 héng) Duration'],
+    '001111': [32, u'Retiring (遯 dùn) Retreat'],
+    '111100': [33, u'Great Invigorating (大壯 dà zhuàng) Great Power'],
+    '000101': [34, u'Prospering (晉 jìn) Progress'],
+    '101000': [35, u'Brightness Hiding (明夷 míng yí) Darkening of the Light'],
+    '101011': [36, u'Dwelling People (家人 jiā rén) The Family'],
+    '110101': [37, u'Polarising (睽 kuí) Opposition'],
+    '001010': [38, u'Limping (蹇 jiǎn) Obstruction'],
+    '010100': [39, u'Taking-Apart (解 xiè) Deliverance'],
+    '110001': [40, u'Diminishing (損 sǔn) Decrease'],
+    '100011': [41, u'Augmenting (益 yì) Increase'],
+    '111110': [42, u'Parting (夬 guài) Breakthrough'],
+    '011111': [43, u'Coupling (姤 gòu) Coming to Meet'],
+    '000110': [44, u'Clustering (萃 cuì) Gathering Together'],
+    '011000': [45, u'Ascending (升 shēng) Pushing Upward'],
+    '010110': [46, u'Confining (困 kùn) Oppression'],
+    '011010': [47, u'Welling (井 jǐng) The Well'],
+    '011101': [48, u'Skinning (革 gé) Revolution'],
+    '101110': [49, u'Holding (鼎 dǐng) The Cauldron'],
+    '100100': [50, u'Shake (震 zhèn) Arousing'],
+    '001001': [51, u'Bound (艮 gèn) The Keeping Still'],
+    '001011': [52, u'Infiltrating (漸 jiàn) Development'],
+    '110100': [53, u'Converting The Maiden (歸妹 guī mèi) The Marrying Maiden'],
+    '101100': [54, u'Abounding (豐 fēng) Abundance'],
+    '001101': [55, u'Sojourning (旅 lǚ) The Wanderer'],
+    '011011': [56, u'Ground (巽 xùn) The Gentle'],
+    '110110': [57, u'Open (兌 duì) The Joyous'],
+    '010011': [58, u'Dispersing (渙 huàn) Dispersion'],
+    '110010': [59, u'Articulating (節 jié) Limitation'],
+    '110011': [60, u'Centre Confirming (中孚 zhōng fú) Inner Truth'],
+    '001100': [61, u'Small Exceeding (小過 xiǎo guò) Small Preponderance'],
+    '101010': [62, u'Already Fording (既濟 jì jì) After Completion'],
+    '010101': [63, u'Not-Yet Fording (未濟 wèi jì) Before Completion']}
+
+def num2hexagram(num):
+    hexagram_str = u"""
+	01 ䷀	02 ䷁	03 ䷂	04 ䷃	05 ䷄	06 ䷅	07 ䷆	08 ䷇	09 ䷈	10 ䷉	11 ䷊	12 ䷋	13 ䷌	14 ䷍	15 ䷎	16 ䷏
+	17 ䷐	18 ䷑	19 ䷒	20 ䷓	21 ䷔	22 ䷕	23 ䷖	24 ䷗	25 ䷘	26 ䷙	27 ䷚	28 ䷛	29 ䷜	30 ䷝	31 ䷞	32 ䷟
+	33 ䷠	34 ䷡	35 ䷢	36 ䷣	37 ䷤	38 ䷥	39 ䷦	40 ䷧	41 ䷨	42 ䷩	43 ䷪	44 ䷫	45 ䷬	46 ䷭	47 ䷮	48 ䷯
+	49 ䷰	50 ䷱	51 ䷲	52 ䷳	53 ䷴	54 ䷵	55 ䷶	56 ䷷	57 ䷸	58 ䷹	59 ䷺	60 ䷻	61 ䷼	62 ䷽	63 ䷾	64 ䷿
+    """
+    hexagrams = re.split(r"\s(?=\d)", hexagram_str.strip())
+
+    return hexagrams[num]
+
+
+def ching():
+    def i():
+        return str(sum([random.randrange(2, 4) for i in range(3)]) % 2)
+    return ''.join([i() for j in range(6)])
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1 and int(sys.argv[1]) in range(1, 65):
+        n = int(sys.argv[1]) - 1
+        num, desc = i[num]
+    else:
+        bin = ching()
+        num, desc = i[bin]
+
+    hexagram = num2hexagram(num)
+
+    print(hexagram)
+    print("\t" + desc)
+    print()
+    print('https://web.archive.org/web/20170726215911/http://deoxy.org/iching/%d' % num)
+    print('https://en.wikipedia.org/wiki/List_of_hexagrams_of_the_I_Ching#Hexagram_%d' % num)
