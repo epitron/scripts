@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: insert [options] <infile> <outfile>"
+
+  on "p=",  "position",  "Byte offset to write the data", default: 0
+  # on "b=", "blong",  "desc", default: ""
+end
+
+inp, outp = ARGV
+
+########################################################
+
+unless inp and outp
+  puts "Error: infile and outfile must be specified"
+  puts opts
+  exit 1
+end
+
+[inp, outp].each do |f|
+  unless File.exist? f
+    puts "Error: #{f.inspect} does not exist"
+    exit 1
+   end
+end
+
+open(inp, "rb") do |i|
+  open(outp, File::RDWR) do |o|
+    pos = opts[:position].to_i
+    puts "* Reading #{inp}..."
+    data = i.read
+
+    puts "* Seeking to #{pos} in #{outp}..."
+    o.seek(pos)
+  
+    puts "* Writing #{data.size} bytes from input to output..."
+    o.write data
+  end
+end
