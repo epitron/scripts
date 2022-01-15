@@ -1,0 +1,5 @@
+# modifying a file without truncating it
+
+`open("file", "w")` is equivalent to calling `open("file", File::CREAT|File::TRUNC|File::RDWR, 0644)`.
+
+to modify the contents of the file, you need to drop CREAT and TRUNC: `open("file", File::RDRW)`
