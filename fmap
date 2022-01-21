@@ -1,0 +1,90 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: fmap [options]"
+
+  on "r=",  "range",   "IP Range (eg: x.x.x.x-y.y.y.y)" # TODO: support CIDR ranges
+  on "p=",  "ports",   "Port range (eg: xxxx-yyyy)", default: 80
+  on "t=",  "timeout", "Timeout", default: 3
+
+  on "v",   "verbose", "Be noisy"
+end
+
+args = ARGV
+
+########################################################
+
+unless opts[:range] and opts[:ports]
+  puts "Error: Must specify IP and port ranges"
+  puts
+  puts opts
+  exit 1
+end
+
+a, b = opts[:range].split("-").map { |ip| IPAddr.new(ip) }
+
+if a and b
+  ips = (a..b).to_a.map(&:to_s)
+else
+  ips = [a]
+end
+
+a, b = opts[:ports].split("-").map(&:to_i)
+
+if a and b
+  ports = (a..b).to_a
+else
+  ports = [a]
+end
+
+timeout = opts[:timeout].to_i
+
+puts "Scanning #{opts[:range]}:#{opts[:ports]} (timeout: #{timeout.inspect})"
+
+JobRunner.new do |jr|
+  ips.each do |ip|
+    ports.each do |port|
+      jr.add do
+
+        begin
+          Timeout::timeout(timeout) do
+            socket = TCPSocket.new(ip, port)
+            socket.close
+            [ip, port, :success]
+          end
+        rescue Timeout::Error
+          [ip, port, :timeout]
+        rescue Errno::ECONNREFUSED
+          [ip, port, :refused]
+        rescue Errno::EHOSTUNREACH
+          [ip, port, :unreachable]
+        end
+
+      end
+    end
+  end
+
+
+  jr.each_result do |ip, port, result|
+
+    case result
+    when :success
+      puts "#{ip}:#{port} CONNECTED".green
+    when :timeout, :unreachable
+      puts "#{ip}:#{port} #{result}".grey if opts.verbose?
+    when :refused
+      puts "#{ip}:#{port} refused".red
+    else
+      puts "#{ip}:#{port} #{result}"
+    end
+
+  end
+end
