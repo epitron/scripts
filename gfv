@@ -107,7 +107,7 @@ urls.each_with_index do |url, i|
 
   if url =~ /(youtu\.be|(you|hook)tube\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or opts.delete("-h")
-      cmd += %w[-f bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
+      cmd += %w[-f bestvideo[width<=?1920][height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
     end
   end

@@ -1,0 +1,25 @@
+# set exFAT UUID to aabb-ccdd
+$ dd if=/dev/sda1 of=fshead bs=512 count=24
+# best keep a backup if something goes wrong
+$ cp fshead fshead.bak
+# set UUID in main boot sector (in reversed order (little endian))
+$ echo "000064: ddccbbaa" | xxd -r - fshead
+# set UUID in backup boot sector
+$ echo "001864: ddccbbaa" | xxd -r - fshead
+# run fsck to get the checksum
+$ fsck.exfat fshead
+exfatfsck 1.2.5
+ERROR: invalid VBR checksum 0x276e3c6f (expected 0x2771966f).
+# fix the checksum (again in reversed order (little endian))
+$ python -c "print('1600: '+'6f967127 '*64)" | xxd -r -c 256 - fshead
+$ python -c "print('1700: '+'6f967127 '*64)" | xxd -r -c 256 - fshead
+$ python -c "print('2e00: '+'6f967127 '*64)" | xxd -r -c 256 - fshead
+$ python -c "print('2f00: '+'6f967127 '*64)" | xxd -r -c 256 - fshead
+# check checksum (then cancel with CTRL-C)
+$ fsck.exfat fshead
+exfatfsck 1.2.5
+WARN: file system is larger than underlying device: 256087425024 > 12288.
+^C
+# checksum is ok, so lets flash it back
+dd if=fshead of=/dev/sda1 bs=512 count=24
+

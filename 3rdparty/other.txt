@@ -6,3 +6,4 @@ https://github.com/boomlinde/gemini.filter.dpi
 
 https://github.com/manbearwiz/youtube-dl-server
 
+https://github.com/taviso/nntpit # reddit to nntp gateway

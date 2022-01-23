@@ -65,13 +65,13 @@ lesspipe(wrap: true) do |less|
 
     title   = title_tag.text.strip
     link    = clean_link(title_tag)
-    snippet = snippet_tag.text
+    snippet = snippet_tag&.text
 
     next if skip_link?(link)
 
     less.puts title.light_cyan
     less.puts link.indent(2).light_blue
-    less.puts snippet.wrapdent(2)
+    less.puts snippet.wrapdent(2) if snippet
     less.puts
   end
 end
