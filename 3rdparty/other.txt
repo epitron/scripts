@@ -7,3 +7,5 @@ https://github.com/boomlinde/gemini.filter.dpi
 https://github.com/manbearwiz/youtube-dl-server
 
 https://github.com/taviso/nntpit # reddit to nntp gateway
+
+https://github.com/firstlookmedia/dangerzone # rewrite pdf/image files, stripping any unsafe information or data chunks

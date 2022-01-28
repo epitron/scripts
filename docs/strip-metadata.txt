@@ -1,0 +1,10 @@
+exiftool works on all types of files, not just images!
+
+For example, to remove all top-level metadata from a pdf, you can use exiftool and qpdf:
+
+```
+exiftool -all:all= <path.pdf> -o <output1.pdf>
+qpdf --linearize <output1.pdf> <output2.pdf>
+```
+
+To remove *all* metadata, you can use dangerzone or mat2
