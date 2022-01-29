@@ -52,11 +52,11 @@ alias da='d -a'
 
 if we_have exa
 then
-  alias l='exa -ag --long --header'
   alias ls='exa'
+  alias  l='exa -ag --long --header'
 
   function t() {
-    exa --long --header --tree --color=always "$@" | less -SRXFi
+    exa --long --header --tree --color=always --ignore-glob=__pycache__ "$@" | less -SRXFi
   }
 else
   alias l='ls -al'
