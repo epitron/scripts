@@ -2080,16 +2080,24 @@ def convert(arg)
     if path.directory?
       if leveldb_dir?(path)
         return print_leveldb(path)
+
       elsif wikidump_dir?(path)
         print_wikidump(path.glob("*-current.xml").first)
+
       else
-        readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$)/i]) }.sort_by(&:size)
-        if readme = readmes.first
+        readmes = Dir.foreach(arg).
+                      select do |file| 
+                        File.file?(file) \
+                        and file[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$|^template$)/i]
+                      end
+
+        if readme = readmes.sort_by(&:size).first
           return convert("#{arg}/#{readme}")
         else
           return run("tree", arg)
           # return "\e[31m\e[1mThat's a directory!\e[0m"
         end
+
       end
     end
 
