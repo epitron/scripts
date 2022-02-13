@@ -13,8 +13,9 @@
 # + Wrapping
 #   - wrapline(line) wraps a single line (this should be a core_ext)
 #   - make streaming work (sparse on-demand-generated array + line-length pre-scanning (oof: can't use `scan()` anymore))
-#   - Handle terminal resize events
+#   - handle terminal resize events
 #     |_ clears the wrapped line cache (oof)
+#   - fails if your file is one line with a million 'a's repeated (also, the line count says "2/1" when you load the file)
 # + Search
 # + Syntax highlighting (rouge/coderay/bat/c/pygments)
 # + Other possible names: "most", "least", "pager"
