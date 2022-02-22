@@ -11,6 +11,7 @@ class Package
   include Comparable
 
   ARM_ROOT="https://archive.archlinux.org/packages/"
+  # Alternate source: https://archive.org/download/archlinux_pkg_#{name}
 
   attr_reader :name, :ver, :rev, :arch, :sig
 
@@ -48,7 +49,7 @@ class Package
   end
 
   def parse_filename!
-    if file =~ /(.+)-([\d\.]+)-(\d)-(\w+)\.pkg\.tar\.\w{2,5}$/
+    if file =~ /(.+)-([a-z\d\.]+)-(\d)-(\w+)\.pkg\.tar\.\w{2,5}$/i
       @name, @ver, @rev, @arch = $1, $2, $3, $4
     end
   end
