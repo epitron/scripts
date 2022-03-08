@@ -1533,17 +1533,15 @@ end
 
 def print_ssl_certificate(filename)
   depends bins: "openssl"
+  fail = /unable to load (certificate|private key)/i
 
-  #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
-  result = nil
-  %w[pem der net].each do |cert_format|
-    result = run("openssl", "x509",
-        "-fingerprint", "-text", "-noout",
-        "-inform", cert_format,
-        "-in", filename,
-        stderr: true)
+  result = run("openssl", "rsa", "-noout", "-text", "-in", filename, stderr: true) 
 
-    break unless result =~ /unable to load certificate/
+  if result.any? { |line| line =~ fail }
+    %w[pem der net].each do |cert_format|
+      result = run("openssl", "x509", "-fingerprint", "-text", "-noout", "-inform", cert_format, "-in", filename, stderr: true)
+      break unless result.any? { |line| line =~ fail }
+    end
   end
 
   highlight_lines_with_colons(result)
@@ -2159,7 +2157,7 @@ def convert(arg)
         print_doc(arg)
       when *%w[.rtf]
         print_rtf(arg)
-      when *%w[.pem .crt]
+      when *%w[.pem .crt .key]
         print_ssl_certificate(arg)
       when *%w[.sig .asc]
         print_gpg(arg)
