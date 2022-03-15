@@ -101,8 +101,8 @@ def choose_results(results)
 end
 
 
-def cached_curl(url)
-  cache = "/tmp/curl-#{url.sha1}.cache"
+def cached_curl(url, tmpdir=ENV["TMPDIR"] || "/tmp")
+  cache = "#{tmpdir}/curl-#{url.sha1}.cache"
   if File.exist?(cache)
     puts "cached! => #{cache}"
   else
@@ -154,7 +154,7 @@ chosen = choose_results(results)
 
 chosen.each do |choice|
   puts "* #{choice.fulltitle}"
-  # choice.download_links.each { |link| puts "  #{link}" }
+  choice.download_links.each { |link| puts "  #{link}" }
   url = choice.download_links.first
   filename = URI.parse(url).params["filename"]
   puts "  |_ writing to #{filename.inspect}"
