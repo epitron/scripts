@@ -16,6 +16,7 @@ opts = Slop.parse(help: true, strict: true) do
 
   on "e=", "ext",  "only show books with this file extension", default: "epub"
   on "a",  "all",  "show books with all extensions"
+  on "r",  "reload", "reload the results page (don't use the cached version)"
 end
 
 args = ARGV
@@ -101,9 +102,9 @@ def choose_results(results)
 end
 
 
-def cached_curl(url, tmpdir=ENV["TMPDIR"] || "/tmp")
+def cached_curl(url, tmpdir: (ENV["TMPDIR"] || "/tmp"), reload: false)
   cache = "#{tmpdir}/curl-#{url.sha1}.cache"
-  if File.exist?(cache)
+  if File.exist?(cache) and not reload
     puts "cached! => #{cache}"
   else
     File.write(cache, curl(url))
@@ -119,9 +120,14 @@ end
 
 
 url    = url_for_query(*args)
-#html   = curl(url)
-html   = cached_curl(url)
+html   = cached_curl(url, reload: opts.reload?)
 doc    = Oga.parse_html(html)
+
+if html["<h1>Error</h1>"]
+  pp doc.each_node.map(&:text).uniq
+  exit 1
+end
+
 table  = doc.at_css("table.c")
 rows   = table.css("tr")
 header = rows.shift.css("td").map(&:text)[0..-2]

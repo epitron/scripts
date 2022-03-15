@@ -1,9 +1,14 @@
 # NB: `go get` is deprecated; use `go install example.com/cmd@latest` now
 
 github.com/boyter/scc
-github.com/nesv/uhttpd
+
 github.com/github/hub
+
+github.com/nesv/uhttpd
 github.com/caddyserver/caddy/caddy
+
+github.com/cockroachdb/cockroach
+
 github.com/eliukblau/pixterm
 github.com/allinurl/goaccess
 github.com/rylio/ytdl
@@ -23,4 +28,5 @@ github.com/makeworld-the-better-one/gemget
 
 github.com/openrdap/rdap/cmd/rdap # ARIN/RIPE/AFRNIC/LACNIC/APNIC query client
 
-https://git.sr.ht/~ols/cramp/ # Gemini => HTTP gateway
+git.sr.ht/~ols/cramp # Gemini => HTTP gateway
+github.com/mightyguava/hq
