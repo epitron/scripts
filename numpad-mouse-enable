@@ -1,0 +1,26 @@
+#!/bin/bash
+
+###############################
+## settings
+
+pre_accel_time=60
+ms_between_movements=10
+movements_before_acceleration_peaks=30
+final_pixels_per_movement=30
+
+# between like -600 and 600ish
+acceleration_curve=100 
+
+###############################
+
+runcmd() {
+  echo "$@"
+  "$@"
+}
+
+runcmd setxkbmap -option keypad:pointerkeys
+runcmd xkbset mousekeysaccel $pre_accel_time $ms_between_movements $movements_before_acceleration_peaks $final_pixels_per_movement $acceleration_curve
+
+echo 
+echo "Enabled! Press 'LeftShift+NumLock' to toggle it"
+
