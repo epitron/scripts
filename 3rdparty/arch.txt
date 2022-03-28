@@ -38,7 +38,7 @@ axel
 # CLI clients
 lynx
 links
-
+chafa # converts images to truecolor/utf8 ansi (supports animation)
 
 # Package tools
 yaourt

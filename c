@@ -1533,17 +1533,15 @@ end
 
 def print_ssl_certificate(filename)
   depends bins: "openssl"
+  fail = /unable to load (certificate|private key)/i
 
-  #IO.popen(["openssl", "x509", "-in", filename, "-noout", "-text"], "r")
-  result = nil
-  %w[pem der net].each do |cert_format|
-    result = run("openssl", "x509",
-        "-fingerprint", "-text", "-noout",
-        "-inform", cert_format,
-        "-in", filename,
-        stderr: true)
+  result = run("openssl", "rsa", "-noout", "-text", "-in", filename, stderr: true) 
 
-    break unless result =~ /unable to load certificate/
+  if result.any? { |line| line =~ fail }
+    %w[pem der net].each do |cert_format|
+      result = run("openssl", "x509", "-fingerprint", "-text", "-noout", "-inform", cert_format, "-in", filename, stderr: true)
+      break unless result.any? { |line| line =~ fail }
+    end
   end
 
   highlight_lines_with_colons(result)
@@ -2080,16 +2078,24 @@ def convert(arg)
     if path.directory?
       if leveldb_dir?(path)
         return print_leveldb(path)
+
       elsif wikidump_dir?(path)
         print_wikidump(path.glob("*-current.xml").first)
+
       else
-        readmes = Dir.foreach(arg).select { |f| File.file?(f) and (f[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$)/i]) }.sort_by(&:size)
-        if readme = readmes.first
+        readmes = Dir.foreach(arg).
+                      select do |file| 
+                        File.file?(file) \
+                        and file[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$|^template$)/i]
+                      end
+
+        if readme = readmes.sort_by(&:size).first
           return convert("#{arg}/#{readme}")
         else
           return run("tree", arg)
           # return "\e[31m\e[1mThat's a directory!\e[0m"
         end
+
       end
     end
 
@@ -2151,7 +2157,7 @@ def convert(arg)
         print_doc(arg)
       when *%w[.rtf]
         print_rtf(arg)
-      when *%w[.pem .crt]
+      when *%w[.pem .crt .key]
         print_ssl_certificate(arg)
       when *%w[.sig .asc]
         print_gpg(arg)

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ]; then
+  echo "usage: output-settings"
+  exit 1
+fi
+
+xfce4-display-settings -m

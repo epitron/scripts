@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Make sure to open http://mitm.it/ to install certificates."
+echo "Make sure to open http://mitm.it/ (through the proxy server) to install certificates."
 
 # --web-port PORT       Web UI port.
 # --web-host HOST       Web UI host.
@@ -8,5 +8,5 @@ echo "Make sure to open http://mitm.it/ to install certificates."
 
 #mitmproxy --set tls_version_client_min=UNBOUNDED --listen-port 8118
 
-mitmdump --set tls_version_client_min=UNBOUNDED --listen-port 8118
+mitmdump --ssl-insecure --set tls_version_client_min=UNBOUNDED --listen-port 8118
 
