@@ -155,6 +155,7 @@ chosen = choose_results(results)
 chosen.each do |choice|
   puts "* #{choice.fulltitle}"
   # choice.download_links.each { |link| puts "  #{link}" }
+  pp choice.download_links
   url = choice.download_links.first
   filename = URI.parse(url).params["filename"]
   puts "  |_ writing to #{filename.inspect}"
