@@ -17,6 +17,13 @@ require 'epitools'
 ## Settings
 MAX_LINE_LENGTH  = 1000
 IGNORE_PATHS     = Set.new([".svn", ".git", "CVS"])
+
+configfile = Path["~/.grc.json"]
+config = configfile.parse
+config["download_path"] ||= "~/Downloads"
+  DOWNLOAD_PATH    = Path[config["download_path"]]
+configfile.write(config.to_json)
+
 #################################################################
 
 

@@ -27,7 +27,7 @@
 #     |_ keep filtering the file until a renderer can be used on it (some files need to be identified by their data, not their extension)
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Live filtering (grep within output chunks, but retain headers; retain some context?)
-#     |_ special pager! (moar)
+#     |_ special pager(s)! (moar)
 #     |_ jump between files (ctrl-up/down)
 #   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
