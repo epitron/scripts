@@ -1,0 +1,140 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+# TODOs:
+# - the server-side search is very slow, so it should have an extra proxy in front which notifies the client that the search is happening, how many people are in the search queue, and the estimated time it'll take to finish (optionally: stream results as they come in)
+########################################################
+
+class Result < Struct.new(:json)
+  def self.from_line(line)
+    new JSON.parse(line)
+  end
+
+  MAX_DESC_SIZE = 150
+  TYPES = %w[]
+
+  def description
+    json["description"]
+  end
+
+  def short_description
+    return nil unless description
+    (description.size > MAX_DESC_SIZE) ? description[0..MAX_DESC_SIZE] + "..." : description
+  end
+
+  def title
+    json["title"]
+  end
+
+  def tags
+    [ json["subject"] ].flatten
+  end
+
+  def collections
+    [ json["collection"] ].flatten
+  end
+
+  def url
+    "https://archive.org/details/#{json["identifier"]}"
+  end
+
+  def type
+    json["mediatype"]
+  end
+
+  def creator
+    json["creator"]
+  end
+
+  def date
+    json["date"]&.split("T")&.first
+  end
+
+  def time
+    json["date"]&.split("T")&.last
+  end
+
+
+
+  def creator_email
+    json["uploader"]
+  end
+
+  def print(io=STDOUT)
+    io.puts "<8>[<7>#{date}<8>] <11>#{title} <8>(<14>#{type}<8>)".colorize
+    io.puts "  <3>creator: <9>#{creator} <8>(<7>#{creator_email}<8>)".colorize
+    io.puts "  tags: #{tags.join("<8>,</8> ")} <8>/</8> #{collections.join("<8>,</8> ")}".colorize
+    io.puts "  desc: #{short_description}" if description.colorize
+    io.puts "  <15>#{url}".colorize
+    io.puts
+  end
+
+end
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: ia-search <query>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+fields = %w[title description collection subject creator mediatype date publicdate addeddate]
+
+query = args.join " "
+cmd = ["ia", "search", "-f", fields.join(','), query]
+
+p cmd
+
+cached = Path["/tmp/ia-search.test"]
+
+if cached.exist?
+  results = cached.read
+else
+  results = IO.popen(cmd, &:read)
+  cached.write results
+end
+
+ #  "metadata": {
+ #    "identifier": "yepg9jc2hhwpl0uscuc2luhwkcgyppjb4kcfiff3",
+ #    "creator": "Loving Liberty Radio Network",
+ #    "date": "2020-11-21",
+ #    "description": "<p>Hour 1</p><p>* Guest: Former Sheriff Richard Mack - CSPOA.org.</p><p>* The Church
+ # of Jesus Christ of Latter-day Saints President Russell  M. Nelson Shares a Message of Hope and Healing! ... ",
+ #    "scanner": "Internet Archive Python library 1.9.6",
+ #    "subject": "Podcast",
+ #    "title": "11-21-2020 Liberty RoundTable with Sam Bushman",
+ #    "uploadsoftware": "LifePod-Beta",
+ #    "collection": "podcasts",
+ #    "mediatype": "audio",
+ #    "uploader": "bobarchives123@gmail.com",
+ #    "publicdate": "2020-12-09 06:08:06",
+ #    "addeddate": "2020-12-09 06:08:06",
+ #    "curation": "[curator]validator@archive.org[/curator][date]20201209061425[/date][comment]checked for malware[/comment]"
+ #  },
+
+
+# result = %{{"date": "2020-12-27T00:00:00Z", "identifier": "12streams2020-2", "creator": "ISOC LIVE", "subject": ["open standards", "web development", "ipv6", "http/2", "dnssec", "TLS", "HSTS", "websites"], "collection": ["isoc-live", "computersandtechvideos"], "title": "12 Streams 2020 #2 - Hacking Web Servers to Make Them More Secure and Faster Using Open Standards - Dan York @ HOPE 2020", "mediatype": "movies"}
+# {"date": "2020-11-30T00:00:00Z", "identifier": "9782490057801-ARCHIVE", "creator": "Mirjam Hauck and Andreas M\u00fcller-Hartmann", "subject": ["telecollaboration", "virtual exchange", "teacher education", "digital technology", "intercultural communication"], "collection": ["opensource", "community"], "title": "Virtual exchange and 21st century teacher education: short papers from the 2019 EVALUATE conference", "mediatype": "texts"}
+# {"date": "2020-12-14T00:00:00Z", "identifier": "9782490057818-ARCHIVE", "creator": "Karen-Margrete Frederiksen, Sanne Larsen, Linda Bradley, and Sylvie Thou\u00ebsny", "subject": ["eurocall2020", "computer-assisted language learning", "CALL", "technology", "language learning", "language acquisition", "language teaching"], "collection": ["opensource", "community"], "title": "CALL for widening participation: short papers from EUROCALL 2020", "mediatype": "texts"}
+# {"date": "2020-11-11T00:00:00Z", "identifier": "9uakptg4ejmzisxn6a0q17rtill8si7u21jkv7uj", "creator": "Longform", "subject": "Podcast", "collection": ["podcasts"], "title": "Episode 417: Olivia Nuzzi", "mediatype": "audio"}
+# }
+
+lesspipe do |less|
+  results.each_line do |line|
+    r = Result.from_line(line)
+    r.print(less)
+  end
+end
