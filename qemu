@@ -21,6 +21,7 @@ def parse_options
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
+    on "P=", "cpus",     "Number of CPUs (default: 1)"
     on "B=", "bios",     "Load a BIOS ROM file"
     on "S=", "samba",    "Mount a host directory via samba (it'll be on 10.x.x.4)"
     on "9=", "9p",       "Mount a host directory via 9p (guest fstab: \"host0 /wherever 9p trans=virtio,version=9p2000.L 0 0\")"
@@ -138,6 +139,10 @@ else
   else
     cmd += ["-cpu", "max"]
   end
+end
+
+if opts[:cpus]
+  cmd += ["-smp", opts[:cpus]]
 end
 
 cmd += ["-rtc", "base=localtime"]
