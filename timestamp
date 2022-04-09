@@ -1,16 +1,13 @@
 #!/usr/bin/env ruby
 
-# TODOs: when symlinked as a different filename, it does different things
-# - if the filename is "today" or "datestamp", print YYYY-MM-DD
-# - if it's "epoch" or "unixtime", print unix epoch
-# - if it's "now" or "timestamp", print YYYY-MM-DD HH:MM:SS (nice_stamp)
-
 def usage
   puts DATA.read
 end
 
-def nice_stamp
-  Time.now.strftime("%Y-%m-%d %H:%M:%S")
+def nice_stamp(usec=false)
+  # %L = usec, %N = nsec
+  fmt = usec ? "%Y-%m-%d %H:%M:%S:%L" : "%Y-%m-%d %H:%M:%S"
+  Time.now.strftime(fmt)
 end
 
 args = ARGV
@@ -25,8 +22,9 @@ if STDIN.tty?
     puts Time.now.to_i
   end
 else
+  usec = args.include?("-u")
   STDIN.each_line do |line|
-    STDOUT.puts "[#{nice_stamp}] #{line}"
+    STDOUT.puts "[#{nice_stamp(usec)}] #{line}"
     STDOUT.flush
   end
 end
@@ -38,3 +36,5 @@ usage:
     => print the number of seconds since Jan 1 1970
   $ some command | timestamp
     => print each line of the input, prefixed with "[YYYY-MM-DD HH:MM:SS] "
+  $ some command | timestamp -u
+    => same as previous, but with usec resolution
