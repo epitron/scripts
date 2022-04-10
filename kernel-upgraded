@@ -8,8 +8,14 @@ if running =~ /(.+)-([a-z]+)$/
   package += "-#{$2}"
 end
 
-
-installed = `pacman -Qi #{package}`.each_line.grep(/Version/).first.strip.split(/\s+:\s+/).last
+if which("xbps-query")
+elsif which("pacman")
+  installed = `pacman -Qi #{package}`.each_line.grep(/Version/).first.strip.split(/\s+:\s+/).last
+elsif which("dpkg")
+  raise "doesn't work with debian... yet"
+else
+  raise "dunno which distro this is. please fix me!"
+end
 
 puts
 puts "   Kernel: #{package}"
