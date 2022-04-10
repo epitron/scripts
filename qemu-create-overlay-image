@@ -17,4 +17,4 @@ if [ ! -f "$BASE" ]; then
   exit 3
 fi
 
-qemu-img create -f qcow2 -b "$BASE" "$OVERLAY"
+qemu-img create -f qcow2 -F qcow2 -b "$BASE" "$OVERLAY"

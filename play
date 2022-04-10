@@ -340,7 +340,7 @@ def show_history(query: nil, amount: 10, reverse: true, paged: false, rofi: fals
   output.puts
 
   entries = log_entries
-  entries = entries.select { |entry| entry.title =~ regexp || entry.url =~ regexp } if query
+  entries = entries.select { |entry| entry.title =~ regexp || entry.url =~ regexp || entry.uploader =~ regexp } if query
   entries = entries.take(amount) unless amount == 0
 
   if reverse
@@ -364,7 +364,8 @@ def show_history(query: nil, amount: 10, reverse: true, paged: false, rofi: fals
 
     headline = "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}"
     if result.respond_to?(:uploader) and result.uploader
-      headline << " <8>(<1>#{result.uploader}<8>)"
+      #headline << " <8>(<1>#{result.uploader}<8>)"
+      headline << " <8>(<1>#{regexp ? result.uploader.gsub(regexp, &:light_yellow_on_blue) : result.uploader}<8>)"
     end
 
     output.puts headline.colorize
@@ -625,9 +626,9 @@ def play(url, opts)
     if audio_only
       cmd << audio["url"]
     else
-      if url.to_s[/(youtu\.be|youtube\.com)/]
+      if url.to_s[/(youtu\.be|youtube\.com|archive\.org)/]
         cmd << url.to_s
-        cmd << "--ytdl-format=bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best"
+        cmd << "--ytdl-format=bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=?1080]/best"
       else
         cmd += [video["url"], "--audio-file=#{audio["url"]}"]
       end

@@ -108,7 +108,7 @@ results.reverse.each do |item|
 
   puts "<8>=== <11>#{name} <7>(#{"<9>#{language}<8>, " if language}<10>#{stars.commatize} <2>stars<8>, <13>#{size.commatize}<5>KB<7>) <8>==============".colorize
   # puts "    <9>#{updated_at.nice_date}".colorize if updated_at
-  puts "    <15>#{desc}".colorize if desc
+  puts "    <15>#{desc[0..255]}".colorize if desc
   puts "    <3>#{url}".colorize
   puts
 end
