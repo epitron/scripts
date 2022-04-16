@@ -7,6 +7,7 @@ tldr
 bgpview-cli
 bat
 exa
+viu
 git-delta
 https://github.com/ogham/dog
 dua-cli
