@@ -51,7 +51,7 @@ urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
 unless opts.delete("-S")
   slangs = "en.*"
   slangs << ",live_chat" if opts.delete("-c")
-  cmd += ["--sub-format", "srt/ass/vtt/best", "--sub-langs", slangs, "--write-subs"]
+  cmd += ["--sub-format", "srt/ass/vtt/best", "--sub-langs", slangs, "--write-sub"]
 end
 
 numbering = opts.delete("-n")
@@ -113,7 +113,7 @@ urls.each_with_index do |url, i|
   end
 
   # when numbering is chosen and this isn't a playlist, substitute the arg number into the filename (little hacky, sorry me)
-  if numbering and not url =~ /playlist/
+  if numbering and not url =~ /(playlist|album)/
     pos = cmd.index { |arg| arg == "-o" }
     if pos and cmd[pos+1] =~ /playlist_index/
       numberstr = "%0.2d" % n
