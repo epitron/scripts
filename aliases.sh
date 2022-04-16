@@ -157,6 +157,10 @@ fi
 alias less='less -X -F -i'
 alias diff='diff -u --color'
 
+alias vimless='vim -u ~/.vimrc.less -'
+alias vless=vimless
+
+
 if we_have scc; then
   alias cloc='scc'
 fi
@@ -336,6 +340,7 @@ alias gcs="gc --depth=1"
 alias be="bundle exec"
 alias rock='luarocks'
 alias gi='gem install'
+alias rb='ruby'
 
 alias py=python
 alias py2=python2
