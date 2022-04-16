@@ -37,6 +37,10 @@ class URI::Generic
   end
 end
 
+def join(root, url)
+  url && URI.join(root, url)
+end
+
 ####################################################################
 
 def print_links(less, root_uri, doc, print_blank_title: false)
@@ -51,7 +55,8 @@ def print_links(less, root_uri, doc, print_blank_title: false)
     when "a"
       body  = elem.text.tighten
       title = elem["title"]&.tighten
-      uri   = URI.join(root_uri, elem["href"])
+
+      next unless uri = join(root_uri, elem["href"])
 
       unique_id = [body, title, uri]
 
@@ -66,7 +71,8 @@ def print_links(less, root_uri, doc, print_blank_title: false)
       # <iframe loading="lazy" title="Why Alien Life Would be our Doom - The Great Filter" width="1100" height="619" src="https://www.youtube.com/embed/UjtOGPJ0URM?feature=oembed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       body = nil
       title = elem["title"]&.tighten
-      uri = URI.join(root_uri, elem["src"])
+
+      next unless uri = join(root_uri, elem["src"])
       
       unique_id = [title, uri]
 
@@ -93,7 +99,7 @@ def print_images(less, root_uri, doc)
     alt = img["alt"]&.tighten
     alt = nil if title == alt
    
-    uri = URI.join(root_uri, img["src"])
+    next unless uri = join(root_uri, img["src"])
 
     unique_id = [title, alt, uri]
 
