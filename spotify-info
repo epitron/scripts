@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 ########################################################
 require 'epitools'
-require 'open-uri'
 
 gem 'slop', "~> 3.6"
 require 'slop'
@@ -40,23 +39,61 @@ def parse_json(json)
   end
 end
 
-b = Browser.new(cache: true)
-
 args.each do |arg|
 
-  page = b.get(arg)
-  js   = page.search("script").find { |e| e.text["Spotify.Entity"] }.text
+  html = cached_curl(arg)
+  page = Oga.parse_html(html)
+  #js   = page.css("script").find { |e| e.text["Spotify.Entity"] }.text
+  json = page.at_css("script[type='application/ld+json']").inner_text.from_json
 
-  if js =~ /Spotify\.Entity = ({.+});\s+\Z/
-    json = JSON.parse($1)
-  else
-    raise "Error: Couldn't find JSON"
-  end
+=begin
+{"@context"=>"http://schema.googleapis.com/",
+ "@type"=>"MusicRecording",
+ "@id"=>"https://open.spotify.com/track/1qIi47n0nsdGRfrTe0y57y",
+ "url"=>"https://open.spotify.com/track/1qIi47n0nsdGRfrTe0y57y",
+ "name"=>"My Agenda (feat. Village People & Pussy Riot) [Anamanaguchi Remix]",
+ "description"=>
+  "Listen to My Agenda (feat. Village People & Pussy Riot) [Anamanaguchi Remix] on Spotify. Dorian Electra · Song · 2021.",
+ "datePublished"=>"2021-11-05",
+=end
 
-  info = parse_json(json)
+  json.delete("potentialAction")
+  json.delete("@id")
+  json.delete("@context")
 
-  pp [arg, info]
+  pp json
 
+  json = page.css("script[type='application/json']").map{|s| s.inner_text.from_json }.find { |e| e.is_a?(Hash) and e["entities"] }
+
+=begin
+{"spotify:track:1qIi47n0nsdGRfrTe0y57y"=>
+  {"id"=>"1qIi47n0nsdGRfrTe0y57y",
+   "name"=>"My Agenda (feat. Village People &amp; Pussy Riot) [Anamanaguchi Remix]",
+   "uri"=>"spotify:track:1qIi47n0nsdGRfrTe0y57y",
+   "__typename"=>"Track",
+   "album"=>
+    {"name"=>"My Agenda (Deluxe)",
+     "coverArt"=>
+      {"sources"=>
+        [{"url"=>"https://i.scdn.co/image/ab67616d0000b27307adcf3680f1962bde42dc3b", "width"=>640, "height"=>640},
+         {"url"=>"https://i.scdn.co/image/ab67616d00001e0207adcf3680f1962bde42dc3b", "width"=>300, "height"=>300},
+         {"url"=>"https://i.scdn.co/image/ab67616d0000485107adcf3680f1962bde42dc3b", "width"=>64, "height"=>64}]},
+     "copyright"=>{"items"=>[{"type"=>"C", "text"=>"2021 Dorian Electra"}, {"type"=>"P", "text"=>"2021 Dorian Electra"}]},
+     "date"=>{"year"=>2021},
+     "uri"=>"spotify:album:1G5F0OJpuuVZ8g3zw3BMEQ"},
+   "artists"=>
+    {"items"=>
+      [{"id"=>"202HZzqKvPsMHcbwnDZx7u",
+        "uri"=>"spotify:artist:202HZzqKvPsMHcbwnDZx7u",
+        "profile"=>{"name"=>"Dorian Electra"},
+        "visuals"=>
+         {"avatarImage"=>
+           {"sources"=>
+             [{"url"=>"https://i.scdn.co/image/ab6761610000e5eb60857c01dc846983c3aa7d18", "width"=>640, "height"=>640},
+              {"url"=>"https://i.scdn.co/image/ab6761610000f17860857c01dc846983c3aa7d18", "width"=>160, "height"=>160}]}},
+=end
+  items = json.dig("entities", "items")
+  items.each { |k,v| pp v }
 end
 
 # require 'pry'; binding.pry

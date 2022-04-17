@@ -5,3 +5,7 @@ https://github.com/bigH/git-fuzzy
 https://github.com/boomlinde/gemini.filter.dpi
 
 https://github.com/taviso/nntpit # reddit to nntp gateway
+
+https://gn.googlesource.com/gn/ # google makefile generator tool
+https://chromium.googlesource.com/chromium/src/courgette/
+
