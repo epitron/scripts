@@ -1,0 +1,140 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+gem 'slop', "~> 3.6"; require 'slop'
+########################################################
+
+COMPRESSORS = {
+  "bz2"  => ["bunzip2               -c", "bzip2              -c"],
+
+  "zst"  => ["zstd               -d -c", "zstd               -c"],
+
+ #"xz"   => ["xz                 -d -c", "xz                 -c"], # uses too much ram!
+  "xz"   => ["zstd --format=xz   -d -c", "zstd --format=xz   -c"],
+
+ #"gz"   => ["gunzip                -c", "gzip               -c"],
+  "gz"   => ["zstd --format=gzip -d -c", "zstd --format=gzip -c"],
+
+ #"lzma" => ["lzma               -d -c", "lzma               -c"],
+  "lzma" => ["zstd --format=lzma -d -c", "zstd --format=lzma -c"],
+
+  "lz4"  => ["zstd --format=lz4  -d -c", "zstd --format=lz4  -c"],
+}
+
+#
+# zstd can do gz, xz, lzma, and lz4 (it uses *way* less ram than xz):
+#
+#   --format=FORMAT: compress and decompress in other formats. If
+#           compiled with support, zstd can compress to or decompress from
+#           other compression algorithm formats. Possibly available options are
+#           zstd, gzip, xz, lzma, and lz4. If no such format is provided, zstd
+#           is the default.
+#
+
+########################################################
+
+class String
+  HUMAN_SIZES = {''=>0, "K"=>1, "M"=>2, "G"=>3, "T"=>4, "P"=>5, "E"=>6, "Z"=>7, "Y"=>8}
+
+  def from_human
+    if self =~ /^(\d+(?:\.\d+)?)(\w?)/ # match 
+      num_str     = $1
+      size_letter = $2.upcase
+
+      if pow = HUMAN_SIZES[size_letter]
+        num = num_str["."] ? num_str.to_f : num_str.to_i
+        return num * (1024 ** pow)
+      end
+    end
+    nil
+  end
+end
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: chunked-compress [options] <file(s)>"
+
+  on "f=",  "format",  "Which compressor? (available: #{COMPRESSORS.keys.join(', ')})}", default: "gz"
+  on "s=", "size", "Chunk size (can use suffixes like GB, MB, M, k, etc.)", default: "15M"
+  on "o=", "output", "Chunked file"
+  on "i=", "index", "Create an index TSV where each row contains: <uncompressed chunk start position>\\t<compressed chunk start position>\\t<compressed chunk size>"
+  on "b", "byte-aligned", "Aligns input reads to the exact chunk size (normally shrinks the chunk so it ends on a newline)"
+end
+
+args = ARGV
+
+unless output_filename = opts[:output]
+  puts "Error: Must supply an output file."
+  puts
+  puts opts
+  exit 1
+end
+
+unless chunk_size = opts[:size].from_human
+  puts "Error: Unrecognized size format: #{opts[:size]}"
+  puts
+  puts opts
+  exit 1
+end
+
+if (missing = args.select { |arg| not File.exist? arg }).any?
+  puts "Error: the following files couldn't be found:"
+  missing.each { |file| puts file }
+  exit 1
+end
+
+index      = (index_filename = opts[:index]) ? open(index_filename, "w") : nil
+format     = opts[:format]
+
+unless (decompress_command, compress_command = COMPRESSORS[format])
+  puts "Error: I don't know how to compress #{format} files"
+  puts
+  exit 1
+end
+
+byte_aligned = opts[:"byte-aligned"]
+
+puts "* Creating a (so-called) multistream archive..."
+puts "  |_ output: #{output_filename}"
+puts "  |_ index:  #{index_filename}" if index
+puts "  |_ chunk size: #{chunk_size.commatize}"
+puts "  |_ compressor: #{compress_command}"
+
+open(output_filename, "wb") do |outp|
+  args.each do |arg|
+    puts "  |_ processing input file: #{arg}"
+    open(arg, "rb") do |inp|
+      count = 0
+      while not inp.eof?
+        outp_start = outp.pos
+        inp_start  = inp.pos
+
+        if (inp.size - inp_start) < chunk_size # less than 1 chunk of the file left...
+          inp_read_size = nil # ...so read the whole thing
+        else
+          inp.seek(inp_start + chunk_size)    # go to the end of the chunk
+          inp.seek_backwards_to("\n") if not byte_aligned
+          inp_end = inp.pos                   # remember where the chunk ends (this will come in handy later)
+          inp_read_size = inp_end - inp_start # the (potentially adjusted, new) chunk size
+          inp.seek(inp_start)
+        end
+
+        reader, writer = IO.pipe
+        pid = spawn(compress_command, in: reader, out: outp)
+        IO.copy_stream(inp, writer, inp_read_size)
+        writer.close; reader.close
+        Process.wait pid, Process::WNOHANG
+
+        compressed_size = outp.pos - outp_start
+
+        puts "     |_ [chunk##{count}] in pos: #{inp_start.commatize}, out pos: #{outp_start.commatize} (#{compressed_size.commatize} compressed)"
+        index.puts "#{inp_start}\t#{outp_start}\t#{compressed_size}" if index
+
+        count += 1
+      end
+    end 
+  end
+end
+
