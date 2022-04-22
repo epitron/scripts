@@ -7,8 +7,11 @@ tldr
 bgpview-cli
 bat
 exa
+trash # https://github.com/ArturKovacs/trash
 git-delta
 https://github.com/ogham/dog
 dua-cli
 
 tui-rs # a modern TUI inspired by blessed (node) and termui (go)
+
+

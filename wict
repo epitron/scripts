@@ -72,6 +72,56 @@ def latest_tsv_url(lang="en")
   "https://archive.org/download/wikt-tsv#{latest}"
 end
 
+###################################################################
+
+def update_lowmem(lang="en")
+  puts "* Updating Wictionary..."
+  print "  |_ latest dump: "
+  url = latest_tsv_url(lang)
+  puts url.inspect
+
+  FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
+  backup(INDEX_FILE)
+  backup(TSV_FILE)
+
+  unsorted_index_file = INDEX_FILE + "-unsorted"
+  unsorted_index = open(unsorted_index_file, "wb")
+
+  count      = 0
+  last_word  = nil
+
+  open(TSV_FILE, "w") do |out|
+    IO.popen("curl -s -L #{url} | gunzip -c", "rb") do |tsv|
+      tsv.each_line_with_offset do |line, offset|
+        out.write(line)
+        lang, word, type, definition = line.strip.split("\t")
+
+        next if last_word == word
+
+        unsorted_index.write "#{word}\t#{offset}\n"
+
+        last_word = word
+        count    += 1
+
+        print "\e[1G  |_ words retrieved: #{count.commatize}\e[J" if count % 473 == 0
+      end
+
+      puts "\e[1G  |_ words retrieved: #{count.commatize}\e[J"
+    end
+  end
+
+  unsorted_index.close
+
+  print "  |_ sorting index..."
+  system("sort", "-f", unsorted_index_file, "-o", INDEX_FILE)
+  File.unlink(unsorted_index_file)
+
+  puts
+  puts "* Done!"
+end
+
+###################################################################
+
 def update(lang="en")
   puts "* Updating Wictionary..."
   print "  |_ latest dump: "
@@ -285,6 +335,7 @@ def load_definitions(matches)
       loop do
         lang, tsv_word, type, definition = tsv.gets.split("\t")
         break if word != tsv_word
+        definition.sub!(/^# /, "# <8>[#{lang}] <7>") if lang != "English"
         defs << definition.chomp
       end
       [word, defs]
@@ -345,7 +396,8 @@ if $0 == __FILE__
   if opts[:update] or opts[:all]
 
     lang = opts[:all] ? "all" : "en"
-    update(lang)
+    #update(lang)
+    update_lowmem(lang)
 
   elsif opts[:clean]
 

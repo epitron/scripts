@@ -9,3 +9,6 @@ https://github.com/manbearwiz/youtube-dl-server
 https://github.com/taviso/nntpit # reddit to nntp gateway
 
 https://github.com/firstlookmedia/dangerzone # rewrite pdf/image files, stripping any unsafe information or data chunks
+
+https://gn.googlesource.com/gn/ # google makefile generator tool
+https://chromium.googlesource.com/chromium/src/courgette/

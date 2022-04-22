@@ -28,6 +28,10 @@ class String
   def tighten
     gsub(/\s+/, ' ').strip
   end
+
+  def url?
+    match? %r{^\w+://.+}
+  end
 end
 
 class URI::Generic
@@ -51,7 +55,7 @@ def print_links(less, root_uri, doc, print_blank_title: false)
     when "a"
       body  = elem.text.tighten
       title = elem["title"]&.tighten
-      uri   = URI.join(root_uri, elem["href"] || "")
+      uri   = root_uri ? URI.join(root_uri, elem["href"]) : elem["href"]
 
       unique_id = [body, title, uri]
 
@@ -145,9 +149,17 @@ lesspipe do |less|
       end
     end
   else; args.each do |url|
-    less.puts "### URL: #{url}"
 
-    html = cached_curl(url)
+    if url.url?
+      less.puts "### URL: #{url}"
+      html = cached_curl(url)
+    elsif File.exists?(url)
+      less.puts "### File: #{url}"
+      html = File.read(url)
+    else
+      $stderr.puts "Error: Unrecognized argument: #{url.inspect}"
+      exit 1
+    end
 
     if opts.grep?
       less.puts
@@ -155,7 +167,7 @@ lesspipe do |less|
     else
       doc = Oga.parse_html html
 
-      root_uri = URI.parse url
+      root_uri = url.url? ? URI.parse(url) : nil
       title = doc.at_css("title")&.text&.tighten
 
       less.puts "### #{title}" if title and not title.empty?
