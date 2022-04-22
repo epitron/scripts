@@ -115,6 +115,7 @@ alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
 alias cls='clear'
+alias wh='which'
 
 # text
 if ! we_have nano && we_have pico; then
