@@ -105,7 +105,7 @@ urls.each_with_index do |url, i|
 
   url = url.gsub(%r{/nitter\.[^/]+/}, "/twitter.com/")
 
-  if url =~ /(youtu\.be|(you|hook)tube\.com)/
+  if url =~ /(youtu\.be|(you|hook)tube\.com|vimeo\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or opts.delete("-h")
       cmd += %w[-f bestvideo[width<=?1920][height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]
