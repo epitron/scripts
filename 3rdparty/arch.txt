@@ -57,7 +57,7 @@ xclip xse wmctrl xdotool
 python
 perl-term-readkey
 sublime-text-dev
-meld
+meld kompare
 nano
 vim
 tmux
