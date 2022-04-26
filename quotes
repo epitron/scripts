@@ -14,32 +14,106 @@ def quotes(files=nil)
 end
 
 ################################################
-opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
-if opts.delete("-e")
-  cmd = [which("s") ? "s" : ENV["EDITOR"], LOCAL_QUOTES_FILE, *args]
-  system *cmd
+args  = ARGV
+
+if (args & %w[-h --help]).any?
+  puts "usage: q [options] <search string>"
+  puts 
+  puts "options:"
+  puts "  -f <quote file>   Throw a quote file on the pile"
+  puts "                    (can be given multiple times)"
+  puts
+  puts "  -s                Add system fortunes to the pot"
+  puts "                    (everything in `/usr/share/fortune(s)/`)"
+  puts
+  puts "  -l                Add the local quotes file (#{LOCAL_QUOTES_FILE})"
+  puts "                    (it's included by default, but if you supply -s or -f, it stops being"
+  puts "                    included, so you have to pass -l to add it back into the mix)"
+  puts
+  puts "  -e                Edit local quotes file (#{LOCAL_QUOTES_FILE.inspect}) with $EDITOR"
+  puts
+  puts "  -c --count --stats --stat"
+  puts "                    Quote statistics!"
+  puts
   exit
 end
 
-if opts.delete("-f")
-  files = Dir["/usr/share/fortune/**/*"].select { |fn| File.file?(fn) and not fn[/\.dat$/] }
-else
-  files = [LOCAL_QUOTES_FILE]
+files = [] # quote files!
+
+#
+# parse the "-f <file>" pairs from the `args` (and put them in `files`)
+#
+i = 0
+loop do
+  break if i >= args.size-1 # this is the final element, so there can't be 2 args
+
+  if args[i] == "-f"
+    files << args[i+1]
+    args[i..i+1] = []   # remove "-f <file>" from the args
+  else
+    i += 1
+  end
 end
 
-if args.any? { |arg| %w[-c --count -s --stats --stat].include? arg }
+opts, args = args.partition { |arg| arg[/^--?\w/] }
 
+#
+# add fortune files to the pot
+#
+if opts.delete("-s")
+  files += Dir["/usr/share/fortune{,s}/**/*"].map do |fn| 
+    next if fn[/\.dat$/]
+    fn = File.readlink(fn) if File.symlink?(fn)
+    fn = File.expand_path(fn)
+    next if not File.file?(fn)
+    fn
+  end.compact
+end
+
+files << LOCAL_QUOTES_FILE if files.empty? or opts.include?("-l")
+
+files.uniq!
+
+if (missing = files.select { |f| not File.exists?(f) }).any?
+  puts "Missing files:"
+  missing.each { |m| puts "  #{m.inspect}" }
+  exit 1
+end
+
+if (opts & %w[-c --count --stats --stat]).any?
   # Show statistics
-  puts "#{quotes(files).count} quotes"
+  puts "Quote files:"
+  files.each { |f| puts "  #{f}" }
+  puts
+  puts "Total quotes: #{quotes(files).count}"
+  exit
+end
 
-elsif args.any?
+#
+# Edit the files!
+#
+if opts.delete("-e")
+  cmd = []
 
-  # Search quotes
-  require 'epitools'
+  if not ENV["EDITOR"].empty?
+    cmd << ENV["EDITOR"]
+  elsif which("s")
+    cmd << "s"
+  else
+    cmd << "vi"
+  end
 
+  system *cmd, *files
+
+  exit $?.exitstatus
+end
+
+if args.any? # whatever's left must be the search query
+  require 'epitools/colored'
+
+  # search quotes
   matchers = args.map { |arg| /#{Regexp.escape(arg)}/i }
-
   quotes(files).select do |quote|
     if matchers.all? { |m| m =~ quote }
       h = quote.dup
@@ -49,8 +123,7 @@ elsif args.any?
       puts h.colorize
     end
   end
-
 else
-  # Show random quote
+  # random quote from all the files
   puts quotes(files).sample
 end
