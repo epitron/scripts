@@ -4,10 +4,79 @@ require 'json'
 require 'coderay'
 require 'pp'
 ########################################################
+#
+# TODOs:
+# - bug: 'title' is blank when adding URLs to the playlist
+#   - https://kodi.wiki/view/JSON-RPC_API/v12#Files.Media
+#     - 5.11.1 Playlist.Add
+#     - 6.19.2 Playlist.Item
+#     - 6.13.3 List.Fields.Files (maybe can be used to set the blank 'title' property for urls?)
+#     - 6.13.31 List.Item.Base (Extends: Video.Details.File (also has a 'title'))
+# - fix for when youtube player breaks: set the audio/video urls manually using:
+#   - 6.18.10 Player.Property.Value
+#     Type: object 
+#     Properties: 
+#       [array audiostreams]
+#       [Player.Audio.Stream currentaudiostream]
+#       [Player.Subtitle currentsubtitle]
+#       [Player.Video.Stream currentvideostream]
+#       [Player.Type type = video]
+#       [array videostreams]
+
+=begin
+Playlist.Add
+    {
+      "additionalProperties": false,
+      "properties": {
+        "directory": {
+          "required": true,
+          "type": "string"
+        },
+        "media": {
+          "$ref": "Files.Media",
+          "default": "files"
+        },
+        "recursive": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+
+
+6.24.6 Video.Details.Media
+Extends: 
+Video.Details.Base
+
+Properties: 
+[string title]
+
+
+JSON Schema Description {
+  "extends": "Video.Details.Base",
+  "id": "Video.Details.Media",
+  "properties": {
+    "title": {
+      "default": "",
+      "type": "string"
+    }
+  }
+}
+
+6.24.23 Video.Streams
+Type: object 
+Properties: 
+[array audio]
+[array subtitle]
+[array video]
+
+=end
+########################################################
 
 KODIRC     = File.expand_path("~/.kodirc")
 CONFIG     = %i[host port user pass].zip(File.read(KODIRC).each_line.map(&:strip)).to_h
-MEDIA_DIRS = ["#{Dir.home}/media/", "#{Dir.home}/g/", "/w/epi/"]
+MEDIA_DIRS = ["#{Dir.home}/media/"]
 
 THEMES = {
   siberia:   {:class=>"\e[34;1m", :class_variable=>"\e[34;1m", :comment=>"\e[33m", :constant=>"\e[34;1m", :error=>"\e[37;44m", :float=>"\e[33;1m", :global_variable=>"\e[33;1m", :inline_delimiter=>"\e[32m", :instance_variable=>"\e[34;1m", :integer=>"\e[33;1m", :keyword=>"\e[36m", :method=>"\e[36;1m", :predefined_constant=>"\e[36;1m", :symbol=>"\e[36m", :regexp=>{:modifier=>"\e[36m", :self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[34m", :escape=>"\e[36m"}, :shell=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}, :string=>{:self=>"\e[34;1m", :char=>"\e[36;1m", :content=>"\e[34;1m", :delimiter=>"\e[36m", :escape=>"\e[36m"}},
