@@ -1,1 +1,2 @@
-bfs -color -printf "%7kK %TY-%Tm-%Td %p\n" | less -SR
+#!/bin/bash
+bfs -color -printf "%7kK %TY-%Tm-%Td %p\n" |& less -SR
