@@ -8,6 +8,6 @@ SERVER=ntp.torix.ca
 echo Synching clock ...
 sudoifnotroot ntpdate $SERVER
 echo Setting hardware clock...
-sudoifnotroot hwclock --systohc --localtime
+sudoifnotroot hwclock --systohc --utc
 #/etc/rc0.d/K25hwclock.sh reload
 
