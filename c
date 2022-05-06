@@ -154,7 +154,7 @@ def depends(bin: nil, bins: [], gem: nil, gems: [], pip: nil, eggs: [], install:
   ].compact
 
   if missing.any?
-    msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}#{" (to install, run #{install}" if install}"
+    msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}#{" (to install, run #{install.inspect})" if install}"
     raise MissingDependency.new(msg)
     # $stderr.puts msg
     # exit 1
