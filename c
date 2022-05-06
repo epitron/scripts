@@ -2129,7 +2129,7 @@ def convert(arg)
         print_moin(File.read arg)
       when *%w[.rdoc]
         print_rdoc(path)
-      when *%w[.adoc]
+      when *%w[.adoc .asciidoc]
         print_asciidoc(File.read arg)
       when *%w[.epub]
         print_epub(arg)
