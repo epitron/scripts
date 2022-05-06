@@ -33,6 +33,8 @@ if (args & %w[-h --help]).any?
   puts
   puts "  -e                Edit local quotes file (#{LOCAL_QUOTES_FILE.inspect}) with $EDITOR"
   puts
+  puts "  -n <num>          How many quotes to show?"
+  puts
   puts "  -c --count --stats --stat"
   puts "                    Quote statistics!"
   puts
@@ -44,13 +46,21 @@ files = [] # quote files!
 #
 # parse the "-f <file>" pairs from the `args` (and put them in `files`)
 #
+how_many = 1
 i = 0
 loop do
-  break if i >= args.size-1 # this is the final element, so there can't be 2 args
+  break if i >= args.size-1 # stop if we're on the last element
 
   if args[i] == "-f"
     files << args[i+1]
     args[i..i+1] = []   # remove "-f <file>" from the args
+  elsif args[i] == "-n"
+    how_many = args[i+1].to_i
+    if how_many < 1
+      $stderr.puts "#{how_many} quotes? ok, no quotes for you!"
+      exit 1
+    end
+    args[i..i+1] = []   # remove "-n <num>" from the args
   else
     i += 1
   end
@@ -125,5 +135,8 @@ if args.any? # whatever's left must be the search query
   end
 else
   # random quote from all the files
-  puts quotes(files).sample
+  quotes(files).sample(how_many).each do |quote|
+    puts quote
+    puts "\e[30m\e[1m----\e[0m" if how_many > 1
+  end
 end
