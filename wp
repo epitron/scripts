@@ -1,0 +1,145 @@
+#!/usr/bin/env ruby
+require 'epitools/colored'
+require 'epitools/clitools'
+
+CACHE_DIR = "/tmp/gemget"
+VALID_TYPES = [:text, :raw, :full]
+
+def error(msg, exitcode=1)
+  $stderr.puts "<12>Error: <7>#{msg}".colorize
+  exit exitcode
+end
+
+def cached_filename(url)
+  require 'digest/sha1'
+  "#{Digest::SHA1.hexdigest(url)}.cache"
+end
+
+def gemget(url, verbose=false)
+  Dir.mkdir("/tmp/gemget") unless File.directory?(CACHE_DIR)
+  cached_file = "#{CACHE_DIR}/#{cached_filename(url)}"
+
+  if File.exist? cached_file
+    $stderr.puts "    <8>|_ <7>cached: #{cached_file}".colorize
+    File.read cached_file
+  else
+    cmd = ["gemget", "-q", "-o", "-", url]
+    p cmd if verbose
+    result = IO.popen(cmd, &:read)
+    File.write(cached_file, result)
+    result
+  end
+end
+
+def get(article, type=:text)
+  unless VALID_TYPES.include? type
+    error("Type '#{type}' is not valid (must be: #{VALID_TYPES.join(", ")})")
+  end
+
+  puts "<8>[<14>*<8>] <7>Retrieving: <15>#{article.inspect}".colorize
+
+  url = "gemini://vault.transjovian.org/#{type}/en/#{article}"
+  result = gemget(url)
+
+  result.each_line.take(5).each do |line|
+    if line =~ /^#REDIRECT (.+)/
+      redirect = $1.strip
+      #puts "[!] Redirect: #{redirect}..."
+      return get(redirect)
+    end
+  end
+
+  result
+end
+
+EMPHASIS_COLORS = {
+  "*" => :cyan,
+  "**" => :light_blue,
+  "***" => :light_cyan,
+  :unknown => :light_red,
+}
+
+HEADER_COLORS = {
+  "#" => :light_yellow,
+  "##" => :yellow,
+  "###" => :light_red,
+  :unknown => :light_green,
+}
+
+def lazy_highlight(text)
+  text = text.gsub(/(\*+)([^\*]+?)(\*+)/m) do |m|
+    if $1.size == $3.size
+      stars = $1
+      str = $2
+      color = EMPHASIS_COLORS[stars] || EMPHASIS_COLORS[:unknown]
+      str.send(color)
+    else
+      m
+    end
+  end
+
+  text = text.gsub(/^(#+) (.+)$/) do |m|
+    header_level = $1
+    title = $2
+    color = HEADER_COLORS[header_level] || HEADER_COLORS[:unknown]
+    "#{header_level} #{title.send(color)}"
+  end
+
+  text
+end
+
+###########################################################################
+
+unless which("gemget")
+  error("Please install the 'gemget' binary") # or the 'ruby-net-text' gem")
+end
+
+args = ARGV
+if args.empty?
+  puts "usage: wp <wikipedia article title>"
+else
+  result = get(args.join(" "))
+  puts lazy_highlight(result)
+end
+
+
+=begin
+def try_to_require(gem)
+  require(gem); true
+rescue LoadError
+  false
+end
+
+if try_to_require("net/gemini")
+  p using: :nettext
+  def gemini_get(url, verbose=false)
+    p url if verbose
+    Net::Gemini.get(URI(url))
+  end
+else
+  if which("gemget")
+    p using: :gemget
+    def gemini_get(url, verbose=false)
+      cmd = ["gemget", "-q", "-o", "-", url]
+      p cmd if verbose
+      IO.popen(cmd, &:read) 
+    end
+  else
+    error("Please install the 'gemget' binary or the 'ruby-net-text' gem")
+  end
+end
+
+
+def render_gmi(text)
+  begin
+    require 'html-renderer/ansi'
+    require 'gmi2html'
+    html = Gmi2html::Document.new(text).to_html
+    puts HTMLRenderer::ANSI.render(html)
+  rescue LoadError
+    puts raw
+  end
+end
+
+=end
+

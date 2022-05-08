@@ -26,16 +26,19 @@ tmp = Path.tmpdir
 paths.each do |inp|
   out = tmp/"tagged.#{inp.ext}"
 
-  artist, title = inp.basename.split(/(?<=\S) {1,3}[\-~] {1,3}(?=\S)/, 2)
-  # artist, title = inp.basename.split(/\b {1,3}- {1,3}\b/, 2)
-  artist = artist.gsub(/^\d{1,2}\. /, '')
+  artist, title = inp.basename.split(/\b {1,3}- {1,3}\b/, 2)
+  if artist =~ /^(\d{1,2})(?:\.| -) (.+)/ # starts with "00. " or "00 - "
+    track = $1.to_i
+    artist = $2
+  end
   title, artist = artist, title if title.nil?
 
   # refrence: http://jonhall.info/create_id3_tags_using_ffmpeg/
-  tags = {
-    artist: artist,
-    title: title,
-  }
+  tags = {}
+
+  tags[:artist] = artist
+  tags[:title] = title
+  tags[:track] = track if track
 
   cmd = ["ffmpeg", "-hide_banner", "-v", "error", "-i", inp, "-c", "copy"]
   cmd += tags.flat_map { |k,v| ["-metadata", "#{k}=#{v}"] }
