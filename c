@@ -80,6 +80,11 @@ def rougify(lexer=nil)
   cmd
 end
 
+def bat(lexer=nil)
+  cmd = ["bat", "--plain", "--theme", "DarkNeon", "--color", "always"]
+  cmd << "-l#{lexer}" if lexer
+  cmd
+end
 
 def render_rouge(input, lexer=nil, theme="base16.dark")
   depends gem: "rouge"
@@ -185,6 +190,7 @@ EXT_HIGHLIGHTERS = {
   # (c)make
   ".cmake"          => :ruby,
   ".mk"             => :bash,
+  ".Kbuild"         => bat(:make),
 
   # gn (chromium build thing)
   ".gn"             => :bash,
