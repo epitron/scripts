@@ -1,0 +1,34 @@
+# A bashrc that has lighter-weight 'c', 'ren', and 'lt' commands
+
+SCRIPTS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $SCRIPTS/bashrc.leet
+
+if we_have exa; then
+  alias lt='exa -Bl --no-user -snew --no-permissions'
+else
+  alias lt='\ls -ltr'
+fi
+
+alias ren=fastren
+alias r=ren
+alias ren2=$SCRIPTS/ren
+alias r2=ren2
+alias c2=$SCRIPTS/c
+
+c() {
+  file="$@"
+  if [[ "$file" =~ ^https?://.+ || "$file" =~ \.(epub|md|mdwn|html|pdf|mp4|m4a|mp3|webm|vtt|ipynb|iso)$ || "$file" == "." ]]; then
+    c2 "$file"
+    return
+  elif [ ! -f "$file" ]; then
+    if which "$file" &> /dev/null; then
+      file="$(which "$file")"
+    else
+      echo "error: can't find '$file'"
+      return 1
+    fi
+  fi
+  bat --style plain "$file" || c2 -s "$file"
+}
+
