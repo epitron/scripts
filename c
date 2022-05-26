@@ -122,25 +122,39 @@ end
 
 class MissingDependency < Exception; end
 
-def depends(bin: nil, bins: [], gem: nil, gems: [])
+def depends(bin: nil, bins: [], gem: nil, gems: [], pip: nil, eggs: [], install: nil)
+  # TODO: install stuff automatically!
+
   gems = [gems].flatten
   bins = [bins].flatten
   bins << bin if bin
   gems << gem if gem
-  missing = (
-    bins.map { |bin| [:bin, bin] unless which(bin) } +
-    gems.map do |g|
+
+  pip = [pip].flatten.compact
+  pip += eggs.flatten
+
+  installed_eggs = nil
+
+  if pip.any?
+    installed_eggs = `python -mpip list --format freeze`.each_line.map { |l| l.split("==").first }
+    puts "WARNING: depends(egg: ...) and depends(pip: ...) slow down load time!"
+  end
+
+  missing = [
+    *bins.map { |bin| [:bin, bin] unless which(bin) },
+    *gems.map do |g|
       begin
         gem(g)
         nil
       rescue Gem::MissingSpecError => e
         [:gem, g]
       end
-    end
-  ).compact
+    end,
+    *pip.map { |egg| [:egg, egg] if not installed_eggs.include? egg }
+  ].compact
 
   if missing.any?
-    msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}"
+    msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}#{" (to install, run #{install.inspect})" if install}"
     raise MissingDependency.new(msg)
     # $stderr.puts msg
     # exit 1
@@ -1064,7 +1078,8 @@ end
 ##############################################################################
 
 def print_rst(filename)
-  depends(bins: "rst2ansi")
+  depends(bin: "rst2ansi", install: "pip install rst2ansi")
+
   result = run("rst2ansi", filename, noerr: true)
   if $?&.success?
     result
@@ -2092,7 +2107,15 @@ def convert(arg)
                         and file[/(^readme|^home\.md$|\.gemspec$|^cargo.toml$|^pkgbuild$|^default.nix$|^template$)/i]
                       end
 
-        if readme = readmes.sort_by(&:size).first
+        scores = [ [/^readme\./i, 10], [/^readme/i, 5] ]
+
+        readmes.sort_by do |readme|
+          matcher, score = (scores.find { |matcher, score| matcher.match(readme) } || [nil, 0])
+          # p [readme, score]
+          [score, File.size(readme)]
+        end
+
+        if readme = readmes.first
           return convert("#{arg}/#{readme}")
         else
           return run("tree", arg)
@@ -2132,7 +2155,7 @@ def convert(arg)
         print_moin(File.read arg)
       when *%w[.rdoc]
         print_rdoc(path)
-      when *%w[.adoc]
+      when *%w[.adoc .asciidoc]
         print_asciidoc(File.read arg)
       when *%w[.epub]
         print_epub(arg)
