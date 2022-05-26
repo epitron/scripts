@@ -1000,7 +1000,6 @@ def moin2markdown(moin)
     gsub(/^#acl .+$/, '').                        # remove ACLs
     gsub(/^<<TableOfContents.+$/, '').            # remove TOCs
     gsub(/^## page was renamed from .+$/, '').    # remove 'page was renamed'
-    # TODO: use `html-renderer` to convert it to ANSI
     gsub(/^\{\{\{\n^#!raw\n(.+)\}\}\}$/m, "\\1"). # remove {{{#!raw}}}s
     # TODO: convert {{{\n#!highlight lang}}}s (2-phase: match {{{ }}}'s, then match first line inside)
     gsub(/\{\{\{\n?#!(?:highlight )?(\w+)\n(.+)\n\}\}\}$/m, "```\\1\n\\2\n```"). # convert {{{#!highlight lang }}} to ```lang ```
@@ -1020,6 +1019,7 @@ def wikidump_dir?(path)
 end
 
 def print_wikidump(filename)
+  depends gem: "nokogiri"
   require 'nokogiri'
   require 'date'
 
@@ -1047,6 +1047,7 @@ end
 ##############################################################################
 
 def print_bookmarks(filename)
+  depends gem: "nokogiri"
   require 'nokogiri'
 
   doc = Nokogiri::HTML(open(filename))
@@ -1255,7 +1256,9 @@ def print_youtube_chat_json(filename)
   require 'pp'
 
   Enumerator.new do |out|
-    open(filename) do |f|
+    f = filename[/\.gz$/] ? zopen(filename) : open(filename)
+    # open(filename) do |f|
+    begin
       f.each_line do |line|
         begin
           event = JSON.parse line
@@ -2117,7 +2120,7 @@ def convert(arg)
       print_bookmarks(arg)
     elsif path.filename =~ /^id_(rsa|ed25519|dsa|ecdsa)(\.pub)?$/
       print_ssl_certificate(arg)
-    elsif path.filename =~ /\.live_chat\.json$/
+    elsif path.filename =~ /\.live_chat\.json(\.gz)?$/
       print_youtube_chat_json(arg)
     else
       case ext
