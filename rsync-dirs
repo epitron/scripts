@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+#######################################################################################
 
 def which(bin)
   ENV["PATH"].split(":").each do |dir|
@@ -7,6 +8,8 @@ def which(bin)
   end
   nil
 end
+
+#######################################################################################
 
 opts, args = ARGV.partition { |arg| arg =~ /^-\w/ }
 
@@ -19,48 +22,56 @@ opts = opts.map do |opt|
   end
 end.flatten.uniq
 
-SSH_ARG_REGEXP = /^([^@]+@)?([^:]+):(.+)$/
+#######################################################################################
+
+SSH_REGEXP         = /^([^@]+@)?([^:]+):(.+)$/
+RSYNC_REGEXP       = %r{^(rsync://.|[^:]+::.+)}
+REMOTE_PATH_REGEXP = /(#{SSH_REGEXP}|#{RSYNC_REGEXP})/
 
 if args.any?
+
+  params = []
 
   unless which("rsync")
     $stderr.puts "rsync not installed. please fix!"
     exit 1
   end
 
-  letters  = %w[r l t]
-  letters += %w[o g p] if opts.delete("-o") # ownership
-  letters += %w[zz]    if args.any? { |arg| arg =~ SSH_ARG_REGEXP } # enable compression over ssh
-
-  params = ["--xattrs"] # Always sync xattrs
-
-  unless opts.delete "-q"
-    params  << "--progress"
-    letters << "v"
-  end
-
-  params << "--bwlimit=40"      if opts.delete "-l"  # limit bandwidth
-  params << "--copy-links"      if opts.delete "-L"  # dereference symlinks
-  params << "--append-verify"   if opts.delete "-a"  # append to smaller destination files if they match
-  params << "--partial"         if opts.delete "-p"  # partials
-  params << "--delete-after"    if opts.delete "-d"  # delete destination files
-  params << "--dry-run"         if opts.delete "-n"  # simulated sync (no changes are made)
-  # params << "--xattrs"          if opts.delete "-x"  # sync extended attributes
-  params << "--remove-source-files"   if opts.delete "-m" # move files (delete source files)
-  params += ["-e", "ssh -c blowfish"] if opts.delete "-f" # fast cipher
-  params += %w[--specials --devices]  if opts.delete "-s" # sync special files (sockets, fifos) and devices
-
-
-  if opts.delete "-c" # checksum mode
-    params << "--checksum"
+  if opts.delete "-l"
+    params << "--list-only"
   else
-    params << "--size-only"
+    letters  = %w[r l t]
+    letters += %w[o g p] if opts.delete("-o") # ownership
+    letters += %w[zz]    if args.any? { |arg| arg =~ REMOTE_PATH_REGEXP } # enable compression over the network
+
+    unless opts.delete "-q"
+      params  << "--progress"
+      letters << "v"
+    end
+
+    params << "--bwlimit=40"      if opts.delete "-b"  # limit bandwidth
+    params << "--copy-links"      if opts.delete "-L"  # dereference symlinks
+    params << "--append-verify"   if opts.delete "-a"  # append to smaller destination files if they match
+    params << "--partial"         if opts.delete "-p"  # partials
+    params << "--delete-after"    if opts.delete "-d"  # delete destination files
+    params << "--dry-run"         if opts.delete "-n"  # simulated sync (no changes are made)
+    params << "--xattrs"          unless opts.delete "-X"   # don't sync extended attributes
+    params << "--remove-source-files"   if opts.delete "-m" # move files (delete source files)
+    params += ["-e", "ssh -c blowfish"] if opts.delete "-f" # fast cipher
+    params += %w[--specials --devices]  if opts.delete "-s" # sync special files (sockets, fifos) and devices
+
+
+    if opts.delete "-c" # checksum mode
+      params << "--checksum"
+    else
+      params << "--size-only"
+    end
+
+    params = ["-#{letters.join ''}"] + params
+    params += opts # pass through remaining options to rsync
   end
 
-  params += opts # pass through remaining arguments to rsync
-  params += args # ...and the source/destination
-
-  cmd = ["rsync", "-#{letters.join ''}"] + params
+  cmd = ["rsync"] + params + args
 
   puts "Executing:"
   puts "\t#{cmd.join ' '}"
@@ -74,6 +85,7 @@ else
   puts
   puts "Special options:"
   puts "    -q    Quiet mode"
+  puts "    -l    List files only! (ignores all other options)"
   puts "    -c    Checksum files (instead of using file size)"
   puts "    -L    Dereference symlinks"
   puts "    -o    Preserve ownership (user/group/permissions)"
@@ -84,7 +96,7 @@ else
   puts "    -m    Move files"
   puts "    -p    Keep partially-transferred files"
   puts "    -n    Dry run (simulated, don't make any changes)"
-  puts "    -l    Limit bandwidth to 40k/sec"
+  puts "    -b    Bandwidth limit (40k/sec)"
   puts "    -f    Fast crypto cipher (arcfour)"
   puts
 
