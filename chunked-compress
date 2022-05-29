@@ -3,7 +3,7 @@
 require 'epitools'
 gem 'slop', "~> 3.6"; require 'slop'
 ########################################################
-
+=begin
 COMPRESSORS = {
   "bz2"  => ["bunzip2               -c", "bzip2              -c"],
 
@@ -20,6 +20,7 @@ COMPRESSORS = {
 
   "lz4"  => ["zstd --format=lz4  -d -c", "zstd --format=lz4  -c"],
 }
+=end
 
 #
 # zstd can do gz, xz, lzma, and lz4 (it uses *way* less ram than xz):
@@ -56,7 +57,7 @@ end
 opts = Slop.parse(help: true, strict: true) do
   banner "Usage: chunked-compress [options] <file(s)>"
 
-  on "f=",  "format",  "Which compressor? (available: #{COMPRESSORS.keys.join(', ')})}", default: "gz"
+  #on "f=",  "format",  "Which compressor? (available: #{COMPRESSORS.keys.join(', ')})}", default: "gz"
   on "s=", "size", "Chunk size (can use suffixes like GB, MB, M, k, etc.)", default: "15M"
   on "o=", "output", "Chunked file"
   on "i=", "index", "Create an index TSV where each row contains: <uncompressed chunk start position>\\t<compressed chunk start position>\\t<compressed chunk size>"
@@ -85,7 +86,15 @@ if (missing = args.select { |arg| not File.exist? arg }).any?
   exit 1
 end
 
+unless opts[:index]
+  puts "Error: --index not specified"
+  puts
+  exit 1
+end
+
 index      = (index_filename = opts[:index]) ? open(index_filename, "w") : nil
+
+=begin
 format     = opts[:format]
 
 unless (decompress_command, compress_command = COMPRESSORS[format])
@@ -93,6 +102,7 @@ unless (decompress_command, compress_command = COMPRESSORS[format])
   puts
   exit 1
 end
+=end
 
 byte_aligned = opts[:"byte-aligned"]
 
@@ -100,7 +110,7 @@ puts "* Creating a (so-called) multistream archive..."
 puts "  |_ output: #{output_filename}"
 puts "  |_ index:  #{index_filename}" if index
 puts "  |_ chunk size: #{chunk_size.commatize}"
-puts "  |_ compressor: #{compress_command}"
+#puts "  |_ compressor: #{compress_command}"
 
 open(output_filename, "wb") do |outp|
   args.each do |arg|
@@ -121,13 +131,16 @@ open(output_filename, "wb") do |outp|
           inp.seek(inp_start)
         end
 
+=begin
         reader, writer = IO.pipe
         pid = spawn(compress_command, in: reader, out: outp)
         IO.copy_stream(inp, writer, inp_read_size)
         writer.close; reader.close
         Process.wait pid, Process::WNOHANG
-
-        compressed_size = outp.pos - outp_start
+=end
+        compressed = Zlib.gzip(inp.read(inp_read_size), level: 9)
+        compressed_size = compressed.size #outp.pos - outp_start
+        outp.write(compressed)
 
         puts "     |_ [chunk##{count}] in pos: #{inp_start.commatize}, out pos: #{outp_start.commatize} (#{compressed_size.commatize} compressed)"
         index.puts "#{inp_start}\t#{outp_start}\t#{compressed_size}" if index

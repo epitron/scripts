@@ -6,12 +6,12 @@ hexyl
 tldr
 bgpview-cli
 bat
+https://github.com/ogham/dog # like dig
 exa
+viu
 trash # https://github.com/ArturKovacs/trash
-git-delta
-https://github.com/ogham/dog
-dua-cli
-
+dua-cli # interactive disk usage explorer (like ncdu)
 tui-rs # a modern TUI inspired by blessed (node) and termui (go)
+git-delta
 
 least # less replacement
