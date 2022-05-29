@@ -1,6 +1,11 @@
 #!/bin/bash
-IN="$@"
-OUT="$@.enc"
+IN="$1"
 
-echo "Encrypting '$IN' to '$OUT'..."
-openssl enc -aes-256-cbc -salt -in "$IN" -out "$OUT"
+if [ "$2" == "" ]; then
+  OUT="$IN.enc"
+else
+  OUT="$2"
+fi
+
+>&2 echo "Encrypting '$IN' to '$OUT'..."
+openssl enc -aes-256-cbc -pbkdf2 -salt -in "$IN" -out "$OUT"
