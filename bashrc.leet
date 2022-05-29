@@ -152,6 +152,7 @@ esac
 case $(uname -o) in
   Android)
     . $SCRIPTDIR/bashrc.android
+    export PATH=$SCRIPTDIR/android:$PATH
     ;;
   Cygwin)
     . $SCRIPTDIR/bashrc.cygwin

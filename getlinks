@@ -125,7 +125,7 @@ def print_media(less, root_uri, doc)
 end
 
 FAKE_SPACE_CHAR = " " # 0xA0... I can copy/paste this char, but a string with its hex value ("\xA0") is illegal??? weird.
-URL_RE = %r{https?://[^"' <#{FAKE_SPACE_CHAR}]+}
+URL_RE = %r{(?:https?:)?//[^"' <#{FAKE_SPACE_CHAR}]+}
 def print_grepped_urls(less, html)
   html.scan(URL_RE).each do |m|
     less.puts m

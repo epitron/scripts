@@ -102,8 +102,8 @@ def choose_results(results)
 end
 
 
-def cached_curl(url, reload: false)
-  cache = "/tmp/curl-#{url.sha1}.cache"
+def cached_curl(url, tmpdir: (ENV["TMPDIR"] || "/tmp"), reload: false)
+  cache = "#{tmpdir}/curl-#{url.sha1}.cache"
   if File.exist?(cache) and not reload
     puts "cached! => #{cache}"
   else
