@@ -24,6 +24,8 @@ opts = Slop.parse(help: true, strict: true) do
   # on "b=", "blong",  "desc", default: ""
 end
 
+args = ARGV
+
 ########################################################
 
 class GeoIP
@@ -50,13 +52,16 @@ end
 
 ########################################################
 
-if opts.download? or opts.update?
+def update!
+  $stderr.puts "[*] Downloading latest GeoIP .dat files..."
+
   require 'open-uri'
 
-  geoip_uri     = "http://mirrors.rit.edu/archlinux/extra/os/x86_64/"
-  geoip_pattern = /geoip-database.+\.pkg\.tar\.(xz|gz|bz2)$/  # eg: geoip-database-20180403-1-any.pkg.tar.xz
+  #geoip_uri     = "http://mirrors.rit.edu/archlinux/extra/os/x86_64/"
+  geoip_uri     = "https://mirrors.edge.kernel.org/archlinux/extra/os/x86_64/"
+  geoip_pattern = /geoip-database.+\.pkg\.tar\.(xz|gz|bz2|zst)$/  # eg: geoip-database-20180403-1-any.pkg.tar.xz
 
-  doc = open(geoip_uri) { |io| Oga.parse_html(io) }
+  doc = URI.open(geoip_uri) { |io| Oga.parse_html(io) }
 
   package_uris = doc.css("a").
     select { |e| e["href"][geoip_pattern] }.
@@ -68,14 +73,32 @@ if opts.download? or opts.update?
       p updating: uri
       system("wget", "-c", uri.to_s)
     end
-  end
 
-  Path["*.tar.xz"].each do |archive|
-    system("tar", "-Ixz", "-xvf", archive)
+    Path["*.pkg.tar.*"].each do |archive|
+      case archive.ext
+      when "zst"
+        dec = "-Izstd"
+      when "xz"
+        dec = "-Ixz"
+      when "gz"
+        dec = "-Igzip"
+      when "bz2"
+        dec = "-Ibzip2"
+      else
+        raise "unknown format: #{archive.ext}"
+      end
+      system("tar", dec, "-xvf", archive)
+    end
   end
 
   exit
 end
+
+###############################################
+
+update! if opts.download? or opts.update?
+
+###############################################
 
 # Search for 'data_dir's in this order: #{opts[data-dir]}, /usr/share/GeoIP, #{CACHE_DIR}/usr/share/GeoIP
 data_dir = (opts[:"data-dir"] || "/usr/share/GeoIP").to_Path
@@ -83,21 +106,26 @@ data_dir = (opts[:"data-dir"] || "/usr/share/GeoIP").to_Path
 unless data_dir.exists?
   data_dir = CACHE_DIR/"usr/share/GeoIP"
   unless data_dir.exists?
-    puts "Error: Couldn't find any GeoIP .dat files."
-    puts "Please specify the path manually, or use '--download' download and extract it to '~/.cache/geoip'"
+    update!
+    #puts "Error: Couldn't find any GeoIP .dat files."
+    #puts "Please specify the path manually, or use '--download' download and extract it to '~/.cache/geoip'"
   end
 end
 
 datfiles = (data_dir/"**/*#{opts[:ext]}")
+dbs      = datfiles.map { |datfile| GeoIP.new(datfile) }
+results  = []
 
-dbs = datfiles.map { |datfile| GeoIP.new(datfile) }
+if args.empty?
+  puts "Error: must pass at least one hostname"
+  puts
+  puts opts
+  exit 1
+end
 
-results = []
-
-hosts = ARGV
-hosts.each do |host|
+args.each do |arg|
   dbs.each do |db|
-    result = db.lookup(host)
+    result = db.lookup(arg)
     results << [result.class, *result.to_h.map {|k,v| "#{k}: #{v}"}]
   end
 end
@@ -108,3 +136,4 @@ end
 results.uniq.each do |klass, *infos|
   puts "#{klass}\n\t#{infos.join("\n\t")}"
 end
+
