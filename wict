@@ -1,6 +1,14 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 ###################################################################
+# TODOs:
+# - redirect on "alternative form"s
+# - parse/display the data properly
+# - compress dict
+# - default to multilingual dict
+# - make --lang work
+# - search in tags w/ grep (eg: "|fantasy|")
+###################################################################
 require 'epitools'
 ###################################################################
 
@@ -21,6 +29,7 @@ def parse_options
     on 'a',  'all',     'Download the wikipedia dictionary for all languages'
     on 'c',  'clean',   'Remove current database in .cache dir'
     on 's',  'stats',   'Dictionary statistics'
+    on 'l=', 'lang',    'Language (2-letter code, or substring; defaults to all)'
   end
 
   [opts, ARGV]

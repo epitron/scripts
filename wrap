@@ -16,7 +16,7 @@ def help
   puts "  -w<n>    => set maximum line width to <n>"
   puts "  -a       => auto-set line width (using terminal size)"
   puts
-  puts "(NB: this is basically the same as the unix 'fmt' command)
+  puts "(NB: this is basically the same as the unix 'fmt' command)"
   puts
 end
 

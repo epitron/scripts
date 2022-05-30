@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: words [options]"
+  on "i",  "ignore-case",  "Downcase all the words (which isn't technically ignoring, but I think it makes more sense, ok?)"
+end
+
+args = ARGV
+
+########################################################
+
+def each_word
+  wordlist = Path["/usr/share/dict/words"]
+  wiktidx  = Path["~/.cache/wikt/wikt.idx"]
+  if wordlist.exists?
+    wordlist.each_line { |l| yield l.chomp }
+  else 
+    3.times do
+      unless wiktidx.exists? 
+        system("wict", "-u")
+      else
+        wiktidx.each_line { |l| yield l.split("\t").first }
+        return
+      end
+    end
+  end
+end
+
+begin
+  if opts[:i]; each_word { |w| puts w.downcase }
+         else; each_word { |w| puts w } end 
+rescue Interrupt; end

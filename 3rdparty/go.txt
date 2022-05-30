@@ -2,7 +2,7 @@
 
 github.com/boyter/scc
 
-github.com/github/hub
+github.com/cli/cli
 
 github.com/nesv/uhttpd
 github.com/caddyserver/caddy/caddy
