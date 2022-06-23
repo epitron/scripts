@@ -1,9 +1,19 @@
 #!/usr/bin/env ruby
+#####################################################
+# TODOs:
+# - use https://m.mediawiki.org/wiki/API:REST_API
+#####################################################
+
 require 'epitools/colored'
 require 'epitools/clitools'
 
-CACHE_DIR = "/tmp/gemget"
+#####################################################
+
+TMP_DIR = ENV["TMPDIR"] || "/tmp"
+CACHE_DIR = "#{TMP_DIR}/gemget"
 VALID_TYPES = [:text, :raw, :full]
+
+#####################################################
 
 def error(msg, exitcode=1)
   $stderr.puts "<12>Error: <7>#{msg}".colorize
@@ -16,7 +26,7 @@ def cached_filename(url)
 end
 
 def gemget(url, verbose=false)
-  Dir.mkdir("/tmp/gemget") unless File.directory?(CACHE_DIR)
+  Dir.mkdir(CACHE_DIR) unless File.directory?(CACHE_DIR)
   cached_file = "#{CACHE_DIR}/#{cached_filename(url)}"
 
   if File.exist? cached_file
@@ -51,6 +61,8 @@ def get(article, type=:text)
 
   result
 end
+
+#####################################################
 
 EMPHASIS_COLORS = {
   "*" => :cyan,
@@ -88,7 +100,7 @@ def lazy_highlight(text)
   text
 end
 
-###########################################################################
+#####################################################
 
 unless which("gemget")
   error("Please install the 'gemget' binary") # or the 'ruby-net-text' gem")

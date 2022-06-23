@@ -1,0 +1,1541 @@
+#!/usr/bin/env python2
+# Copyright 2017 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Lives at:
+#     https://gist.github.com/jart/082b1078a065b79949508bbe1b7d8ef0/raw/ffe47764a5f2117c96a7bcf42813b775956e128c/blakefiler.py
+"""Tool for turning Bazel BUILD files into a Makefile."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import argparse
+import collections
+import functools
+import itertools
+import os
+import pprint
+import re
+import subprocess
+import sys
+import types
+import weakref
+import xml.etree.ElementTree
+
+LABEL_DELIMITERS = re.compile(r'[@/:]')
+VARIABLE_PATTERN = re.compile(r'\$(?:([\$@<])|\(([^\)]*)\))')
+SH_SPECIAL_CHARACTERS_PATTERN = re.compile(r'[!"#$&\'();<>\\|~]')
+
+DEFAULT_CONFIG_VALUES = (
+    ('ARCH', 'android_cpu', 'armeabi'),
+    ('ARCH', 'cpu', 'k8'),
+    ('ARCH', 'ios_cpu', 'x86_64'),
+    ('LABEL', 'android_crosstool_top', None),
+    ('LABEL', 'crosstool_top', None),
+)
+
+BAZEL_VARIABLES = frozenset([
+    'ABI',
+    'ANDROID_CPU',
+    'AR',
+    'COMPILATION_MODE',
+    'CPP',
+    'DWP',
+    'GCC',
+    'GCOV',
+    'GCOVTOOL',
+    'GLIBC_VERSION',
+    'JAVA',
+    'JAVABASE',
+    'JAVAC',
+    'LD',
+    'LLVM_PROFDATA',
+    'NM',
+    'OBJCOPY',
+    'OBJDUMP',
+    'STACK_FRAME_UNLIMITED',
+    'STRIP',
+    'TARGET_CPU',
+])
+
+REMAPPED_VARIABLES = {
+    'CC': '$(CXX)',
+    'CC_FLAGS': '$(CXXFLAGS.security) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH)',
+    'JAVABASE': '$(JAVA_HOME)',
+}
+
+FORBIDDEN_VARIABLES = (frozenset(m.group(1)
+                                 for v in REMAPPED_VARIABLES.values()
+                                 for m in VARIABLE_PATTERN.finditer(v)) -
+                       BAZEL_VARIABLES)
+
+PASSTHROUGH_VARIABLES = BAZEL_VARIABLES | FORBIDDEN_VARIABLES
+
+DONT_COPY_SOURCES_FROM_THESE_REPOS = frozenset(['local_jdk', 'bazel_tools'])
+
+HEADER = '''\
+              .--.                              .--.
+            .'(`                               /  ..\\
+         __.>\ '.  _.---,._,'             ____.'  _o/
+       /.--.  : |/' _.--.<                '--.     |.__
+    _..-'    `\     /'     `'             _.-'     /--'
+     >_.-``-. `Y  /' _.---._____     _.--'        /
+    '` .-''. \|:  \.'   ___, .-'`   ~'--....___.-'
+     .'--._ `-:  \/   /'    \\
+         /.'`\ :;    /'       `-.      blakefile
+        -`    |     |                 version o.1
+              :.; : |
+              |:    |             The sun does arise,
+              |     :          And make happy the skies.
+              :. :  |            The merry bells ring
+              |   ; :           To welcome the Spring.
+              :;   .|          The sky-lark and thrush,
+              |     |           The birds of the bush,
+              :. :  |             Sing louder around,
+              |  .  |        To the bells' cheerful sound
+              :.   .|        While our sports shall be seen
+              |   ; |            On the Echoing Green.
+            .jgs    ;
+            /:::.    `\\\
+'''
+
+# TODO(jart): Get this from the the CROSSTOOL protos.
+DEFINITIONS = '''\
+AR = ar
+ARFLAGS = rcsD
+AS = as
+CC = cc
+CPP = $(CC) -E
+CXX = c++
+DWP = dwp
+FPIC = -fPIC
+FPIE = -fPIE
+GCC = gcc
+GCOV = gcov
+GCOVTOOL = gcov-tool
+JAVA = java
+JAVAC = javac
+LD = ld
+LLVM_PROFDATA = llvm-profdata
+NM = nm
+NOWA = -Wl,--no-whole-archive
+OBJCOPY = objcopy
+OBJDUMP = objdump
+PIE = -pie
+STRIP = strip
+WA = -Wl,--whole-archive
+
+STACK_FRAME = -Wframe-larger-than=32768
+STACK_FRAME_UNLIMITED = -Wframe-larger-than=100000000 -Wno-vla
+
+CFLAGS.security = -fstack-protector $(STACK_FRAME)
+CPPFLAGS.security = -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1
+CXXFLAGS.security = $(CFLAGS.security)
+LDFLAGS.security = -Wl,-z,relro,-z,now
+
+CPPFLAGS.determinism =\
+ -Wno-builtin-macro-redefined\
+ '-D__DATE__="redacted"'\
+ '-D__TIMESTAMP__="redacted"'\
+ '-D__TIME__="redacted"'
+
+CFLAGS.fastbuild = -g0 -O0
+CPPFLAGS.fastbuild =
+CXXFLAGS.fastbuild = $(CFLAGS.fastbuild)
+LDFLAGS.fastbuild = -Wl,-S
+
+CFLAGS.dbg = -g
+CPPFLAGS.dbg =
+CXXFLAGS.dbg = $(CFLAGS.dbg)
+LDFLAGS.dbg =
+
+CFLAGS.opt = -g0 -O2 -ffunction-sections -fdata-sections
+CPPFLAGS.opt = -DNDEBUG
+CXXFLAGS.opt = $(CFLAGS.opt)
+LDFLAGS.opt = -Wl,--gc-sections
+
+CFLAGS.global =
+CPPFLAGS.global = $(CPPFLAGS.determinism)
+CXXFLAGS.global = -std=c++11
+LDFLAGS.global =
+
+ifeq ($(COMPILATION_MODE),fastbuild)
+  CFLAGS.default = $(CFLAGS.global) $(CFLAGS.fastbuild)
+  CPPFLAGS.default = $(CPPFLAGS.global) $(CPPFLAGS.fastbuild)
+  CXXFLAGS.default = $(CXXFLAGS.global) $(CXXFLAGS.fastbuild)
+  LDFLAGS.default = $(LDFLAGS.global) $(LDFLAGS.fastbuild)
+endif
+
+ifeq ($(COMPILATION_MODE),dbg)
+  CFLAGS.default = $(CFLAGS.global) $(CFLAGS.dbg)
+  CPPFLAGS.default = $(CPPFLAGS.global) $(CPPFLAGS.dbg)
+  CXXFLAGS.default = $(CXXFLAGS.global) $(CXXFLAGS.dbg)
+  LDFLAGS.default = $(LDFLAGS.global) $(LDFLAGS.dbg)
+endif
+
+ifeq ($(COMPILATION_MODE),opt)
+  CFLAGS.default = $(CFLAGS.global) $(CFLAGS.opt)
+  CPPFLAGS.default = $(CPPFLAGS.global) $(CPPFLAGS.opt)
+  CXXFLAGS.default = $(CXXFLAGS.global) $(CXXFLAGS.opt)
+  LDFLAGS.default = $(LDFLAGS.global) $(LDFLAGS.opt)
+endif
+
+CFLAGS = $(CFLAGS.default)
+CPPFLAGS = $(CPPFLAGS.default)
+CXXFLAGS = $(CXXFLAGS.default)
+LDFLAGS = $(LDFLAGS.default)
+'''
+
+GENRULE_SETUP = '''\
+#!/bin/bash
+set -euo pipefail
+'''
+
+A_EXTS = ('.a',)
+CC_EXTS = ('.cc', '.cpp', '.cxx', '.c++')
+C_EXTS = ('.c', '.C')
+EXE_EXTS = ('', '.exe')
+H_EXTS = ('.h', '.hh', '.hpp', '.hxx', '.inc')
+O_EXTS = ('.o',)
+O_PIC_EXTS = ('.pic.o',)
+SO_EXTS = ('.so',)
+S_CPP_EXTS = ('.S',)
+S_EXTS = ('.s',)
+
+LDLIBS_PREFIXES = ('-l',)
+
+ARCHIVE = '$(AR) $(ARFLAGS) $@ $^'
+COMPILE_C = ('$(CC) $(CFLAGS.security) %(copts)s $(CFLAGS) '
+             '$(CPPFLAGS.security) %(cppflags)s $(FPIE) $(CPPFLAGS) '
+             '%(iquotes)s $(TARGET_ARCH) -c -o $@ $<')
+COMPILE_C_PIC = ('$(CC) $(CFLAGS.security) %(copts)s $(CFLAGS) '
+                 '$(CPPFLAGS.security) %(cppflags)s $(CPPFLAGS) %(iquotes)s '
+                 '$(FPIC) $(TARGET_ARCH) -c -o $@ $<')
+COMPILE_CC = ('$(CXX) $(CXXFLAGS.security) %(copts)s $(CXXFLAGS) '
+              '$(CPPFLAGS.security) %(cppflags)s $(FPIE) $(CPPFLAGS) '
+              '%(iquotes)s $(TARGET_ARCH) -c -o $@ $<')
+COMPILE_CC_PIC = ('$(CXX) $(CXXFLAGS.security) %(copts)s $(CXXFLAGS) '
+                  '$(CPPFLAGS.security) %(cppflags)s $(CPPFLAGS) %(iquotes)s '
+                  '$(FPIC) $(TARGET_ARCH) -c -o $@ $<')
+COMPILE_S = '$(AS) $(ASFLAGS) $(TARGET_MACH) -o $@ $<'
+LINK_C = ('$(CC) $(CFLAGS.security) %(copts)s $(CFLAGS) $(LDFLAGS.security) '
+          '%(ldflags)s $(PIE) $(LDFLAGS) $(TARGET_ARCH) %(links)s $(LOADLIBES) '
+          '%(ldlibs)s $(LDLIBS) -o $@')
+LINK_CC = ('$(CXX) $(CFLAGS.security) %(copts)s $(CXXFLAGS) '
+           '$(LDFLAGS.security) %(ldflags)s $(PIE) $(LDFLAGS) $(TARGET_ARCH) '
+           '%(links)s $(LOADLIBES) %(ldlibs)s $(LDLIBS) -o $@')
+LINK_SO_C = ('$(CC) -shared $(LDFLAGS.security) %(ldflags)s $(LDFLAGS) -o $@ '
+             '%(links)s %(ldlibs)s')
+LINK_SO_CC = ('$(CXX) -shared $(LDFLAGS.security) %(ldflags)s $(LDFLAGS) -o $@ '
+             '%(links)s %(ldlibs)s')
+PREPROCESS = '$(CPP) $(CPPFLAGS.security) $(CPPFLAGS) -o $@ $<'
+
+BINDIR = 'blake-bin'
+GENDIR = ''
+LOCATION_PREFIX = 'location '
+GENRULE_ECHO_LINE_LIMIT = 5
+
+_INTERNED = weakref.WeakValueDictionary()
+
+
+def crawl(depset):
+  """Iterates depth-first left-to-right without dupes or nulls."""
+  seen = set()
+
+  def dive(item):
+    if hasattr(item, '__iter__'):
+      for i in item:
+        for d in dive(i):
+          yield d
+    elif item not in seen:
+      seen.add(item)
+      yield item
+
+  for d in dive(depset):
+    if d is not None:
+      yield d
+
+
+def roll(package, labels, rules):
+  """Applies label expansion."""
+  labels = (package.resolve(l) for l in labels)
+  return (rules[l].get_files(rules) if l in rules else l for l in labels)
+
+
+def join(depset, fmt='%s'):
+  """Coerces depset to a single string."""
+  return ' '.join(fmt % d for d in crawl(depset))
+
+
+def linkorder(depset):
+  return reversed(tuple(crawl(depset)))
+
+
+def memoize(method):
+  """Memoizes method result once per instance, ignoring arguments."""
+
+  @functools.wraps(method)
+  def _memoize(self, *args, **kwargs):
+    key = '_memoize_' + method.__name__
+    if not hasattr(self, key):
+      res = method(self, *args, **kwargs)
+      setattr(self, key, res)
+    else:
+      res = getattr(self, key)
+    return res
+
+  return _memoize
+
+
+def immutable_interned_value(cls):
+  """Decorator for interned immutable non-iterable values."""
+  cls.__hash__ = lambda self: self._hash
+  cls.__eq__ = lambda self, o: id(self._key) == id(o._key)
+  cls.__ne__ = lambda self, o: id(self._key) != id(o._key)
+  cls.__lt__ = lambda self, o: self._key < o._key
+  return functools.total_ordering(cls)
+
+
+def new_immutable_interned_value(cls, key):
+  """Called from the __new__ method of an immutable interned value."""
+  result = _INTERNED.get(key)
+  if result is None:
+    result = object.__new__(cls, key)
+    result._key = key
+    result._hash = hash(key)
+    _INTERNED[key] = result
+  return result
+
+
+def make_source_tree(directory, sources, rules, callback):
+  """Creates a distributable source tree with a Makefile."""
+  if not os.path.exists(directory):
+    os.makedirs(directory)
+  oldwd = os.getcwd()
+  try:
+    os.chdir(directory)
+    directory = os.getcwd()
+    os.symlink('.', 'external')
+
+    sources = {k: v for k, v in sources.items()
+               if k.repo.path not in DONT_COPY_SOURCES_FROM_THESE_REPOS}
+
+    for path in _get_makedirs(l.path for l in sources):
+      if not os.path.exists(path):
+        os.makedirs(path)
+
+    for label, path in sorted(sources.items()):
+      folder = os.path.dirname(label.path)
+      if not os.path.exists(label.path):
+        if not os.path.isabs(path):
+          path = os.path.relpath(os.path.join(oldwd, path),
+                                 os.path.dirname(label.path))
+        os.symlink(path, label.path)
+
+    for label in crawl(r.get_files(rules)
+                       for r in reversed(rules.values())):
+      pointer = label.inside('')
+      if pointer not in rules:
+        rules[pointer] = label
+
+    with open('Makefile', 'wb') as fp:
+      writer = Writer(fp)
+      callback(writer)
+
+      for rule in reversed(rules.values()):
+        try:
+          rule.write(writer, rules)
+        except:
+          sys.stderr.write('%s\n' % rule)
+          sys.stderr.flush()
+          raise
+
+      writer.section('Extra Stuff')
+      writer.rule('.PHONY', 'clean', [])
+      writer.rule('clean', (), ['rm -rf blake-bin'])
+
+  finally:
+    os.chdir(oldwd)
+
+
+@immutable_interned_value
+class Text(object):
+  """String that isn't iterable."""
+
+  def __new__(cls, text):
+    return new_immutable_interned_value(cls, (cls.__name__, intern(text)))
+
+  def __init__(self, text):
+    self.text = text
+
+  def __str__(self):
+    return self.text
+
+  def __repr__(self):
+    return 'Text(%r)' % self.text
+
+
+@immutable_interned_value
+class Arg(Text):
+  """String that isn't iterable and gets shell escaped."""
+
+  def __str__(self):
+    return _quote_sh(self.text)
+
+  def __repr__(self):
+    return 'Arg(%r)' % self.text
+
+
+@immutable_interned_value
+class Variable(Text):
+  """Make variable reference."""
+
+  def __str__(self):
+    return '$(%s)' % self.text
+
+  def __repr__(self):
+    return 'Variable(%r)' % self.text
+
+
+@immutable_interned_value
+class Label(object):
+  """Location of a thing within Bazel."""
+
+  def __new__(cls, text, root=''):
+    return new_immutable_interned_value(
+        cls, (cls.__name__, intern(text), intern(root)))
+
+  def __init__(self, text, root=''):
+    self.text = text
+    self.root = root
+
+  @property
+  def repo(self):
+    if self.text.startswith('@'):
+      return Label(self.text[:self.text.index('//')], self.root)
+    else:
+      return Label('', self.root)
+
+  @property
+  def package(self):
+    p = self.text.find(':')
+    if p == -1:
+      return self
+    return Label(self.text[:p], self.root)
+
+  @property
+  def name(self):
+    p = self.text.find(':')
+    if p == -1:
+      return self
+    return Label(self.text[p + 1:])
+
+  @property
+  def ext(self):
+    name = self.name.text
+    p = name.find('.', max(name.rfind('/'), 0))
+    result = '' if p == -1 else name[p:]
+    if result.startswith('.pb_text'):  # omg!
+      return result[8:]
+    if result.startswith('.pb'):  # omg!
+      return result[3:]
+    return result
+
+  @property
+  def extless(self):
+    ext = self.ext
+    if ext:
+      return Label(self.text[:-len(ext)], self.root)
+    return self
+
+  @property
+  @memoize
+  def path(self):
+    return os.path.join(self.root, *LABEL_DELIMITERS.split(self.text)) or '.'
+
+  def var(self, suffix=None):
+    name = self.path.replace('/', '_')
+    if suffix is not None:
+      name = '%s_%s' % (name, suffix)
+    return Variable(name)
+
+  def is_absolute(self):
+    return self.text.startswith(('@', '//'))
+
+  def resolve(self, other):
+    if not isinstance(other, Label):
+      other = Label(other)
+    if other.is_absolute():
+      return other
+    return Label('%s:%s' % (self.package.text, other.name.text), self.root)
+
+  def inside(self, root):
+    if root == self.root:
+      return self
+    return Label(self.text, root)
+
+  def get_files(self, unused_rules):
+    return self
+
+  def write(self, unused_writer, unused_rules):
+    pass
+
+  def __str__(self):
+    return _quote_sh(self.path)
+
+  def __repr__(self):
+    if self.root:
+      return 'Label(%r, %r)' % (self.text, self.root)
+    return 'Label(%r)' % self.text
+
+
+@immutable_interned_value
+class PatternRule(object):
+  """Make pattern rule definition."""
+
+  def __new__(cls, obj, src, recipe):
+    return new_immutable_interned_value(
+        cls, (cls.__name__, obj, src, recipe))
+
+  def __init__(self, obj, src, recipe):
+    self.obj = obj
+    self.src = src
+    self.recipe = recipe
+
+
+class Build(object):
+  """Bazel query to object mapper."""
+
+  def __init__(self, selector):
+    self.rules = collections.OrderedDict()
+    self.sources = {}
+    self._seen = set()
+    self._locations = {}
+    self._code = {}
+    self._selector = selector
+
+  def load(self, q):
+    assert not self.rules, 'no tarjan'
+    # We need --output=build because --output=xml doesn't encode
+    # select() functions. But we still need --output=xml because
+    # --output=build doesn't encode the fully-qualified Label for a
+    # given rule, or locations for source files.
+    self._code.update(dict(_read_build(_query('build', q))))
+    deferred = []
+    for event, node in xml.etree.ElementTree.iterparse(_query('xml', q)):
+      if node.tag == 'source-file':
+        label = Label(node.attrib['name'])
+        self.sources[label] = os.path.join(
+            os.path.dirname(node.attrib['location']), label.name.path)
+      elif node.tag == 'rule':
+        label = Label(node.attrib['name'], '')
+        location = node.attrib['location']
+        kind = node.attrib['class']
+        if kind == 'config_setting':
+          config = self._eval(label, self._code[(location, str(label.name))])
+          self._selector.configs[label] = config
+        else:
+          deferred.append((label, location))
+    for label, location in deferred:
+      if label in self._seen:
+        continue
+      self._seen.add(label)
+      rule = self._eval(label, self._code[(location, str(label.name))])
+      self.rules[rule.label] = rule
+
+  def _eval(self, label, code):
+    try:
+      rule = eval(code, globals(), {'select': self._selector})
+    except:
+      sys.stderr.write(code)
+      sys.stderr.write('\n')
+      sys.stderr.flush()
+      raise
+    rule.label = label.resolve(rule.label)
+    return rule
+
+
+class Selector(object):
+  """Macro-time implementation of Bazel's select() function."""
+
+  def __init__(self, values, define_values):
+    self.values = values
+    self.define_values = define_values
+    self.configs = {Label('//conditions:default'): config_setting()}
+
+  def __call__(self, cond):
+    matches = []
+    for key, value in cond.items():
+      config = self.configs[Label(key)]
+      if config.matches(self):
+        matches.append((config, value))
+    if not matches:
+      raise ValueError('nothing matched: %r' % cond)
+    if len(matches) > 1:
+      matches.sort(key=lambda m: len(m[0].values) + len(m[0].define_values))
+      if not all(a[0].matches(b[0]) for a, b in zip(matches, matches[1:])):
+        raise ValueError('multiple non-specialized matches: %r' % cond)
+    return matches[-1][1]
+
+
+class Writer(object):
+  """Readable Makefile writer."""
+
+  def __init__(self, out):
+    self._out = out
+    self._in_group = None
+
+  def write(self, text):
+    """Writes raw text."""
+    self._out.write(str(text))
+
+  def stick(self):
+    """Hints that we don't want a blank line before the next statement."""
+    self._in_group = True
+
+  def unstick(self):
+    """Hints that a blank line would be desirable."""
+    self._in_group = False
+
+  def comment(self, text, **arg):
+    """Writes a comment."""
+    if arg:
+      text = text % arg
+    self._group(text.count('\n') == 0)
+    self.write('# ')
+    self.write('\n# '.join(text.split('\n')))
+    self.write('\n')
+
+  def section(self, text):
+    """Writes a comment that signifies a new section in the file."""
+    self._group(False)
+    self.write('#' * 80 + '\n')
+    self.stick()
+    self.comment(text)
+    self.unstick()
+
+  def variable(self, var, value):
+    """Writes a make variable definition."""
+    if var is None:
+      return
+    value = [str(l) for l in crawl(value)]
+    self._write_rvalue(var.text + ' =', value, ' \\\n\t')
+
+  def rule(self, targets, prerequisites, recipes, **args):
+    """Writes a make rule."""
+    first = True
+    targets = [str(l) for l in crawl(targets)]
+    if not targets:
+      return
+    prerequisites = [str(l) for l in crawl(prerequisites)]
+    if recipes:
+      self.unstick()
+    self._write_rvalue(' \\\n'.join(targets) + ':', prerequisites, ' \\\n\t\t')
+    if recipes:
+      self.write('\t')
+      if args:
+        recipes = [r % args for r in recipes]
+      self.write('\n\t'.join([' \\\n\t'.join(c.split('\n')) for c in recipes]))
+      self.write('\n')
+      self.unstick()
+
+  def daisy(self, label, targets, prerequisites, recipes, **args):
+    """Writes a make rule, using a hack so multiple targets just works."""
+    targets = [str(l) for l in crawl(targets)]
+    if len(targets) == 1:
+      self.rule(targets, prerequisites, recipes, **args)
+      return
+    self.unstick()
+    stamp = label.resolve(label.name.path + '.stamp').inside(BINDIR)
+    deps = label.var('PREREQUISITES')
+    self.variable(deps, prerequisites)
+    mkstamp = ('@mkdir -p %s' % os.path.dirname(stamp.path),
+               '@touch %s' % stamp)
+    self.rule(stamp, deps, recipes + mkstamp, **args)
+    self._group(False)
+    for target in targets:
+      self.write('%s: %s;\n' % (target, stamp))
+    self.unstick()
+
+  def _write_rvalue(self, before, items, delim):
+    cols = len(before) + sum(len(s) for s in items) + len(items)
+    one_liner = cols <= 80 and before.count('\n') == 0
+    self._group(one_liner)
+    self.write(before)
+    if one_liner:
+      self.write(' ')
+      self.write(' '.join(items))
+    else:
+      self.write(delim)
+      self.write(delim.join(items))
+    self.write('\n')
+
+  def _group(self, is_one_liner):
+    if self._in_group is None:
+      self._in_group = is_one_liner
+    elif self._in_group:
+      if is_one_liner:
+        return
+      self.write('\n')
+      self._in_group = False
+    else:
+      if is_one_liner:
+        self.write('\n')
+        self._in_group = True
+      else:
+        self.write('\n')
+
+
+class Rule(object):
+  """Base class for Bazel rules."""
+
+  def __init__(self,
+               name='',
+               data=(),
+               deps=(),
+               deprecation='',
+               **kwargs):
+    self.label = Label(name)
+    self.data = [Label(s) for s in data]
+    self.deps = [Label(s) for s in deps]
+    self.deprecation = deprecation
+
+  def get_files(self, rules):
+    return ()
+
+  def write(self, writer, rules):
+    pass
+
+  def __str__(self):
+    stuff = vars(self)
+    stuff['kind'] = type(self).__name__
+    return pprint.pformat(
+        {k: v for k, v in stuff.items() if v and not k.startswith('_')},
+        indent=2)
+
+
+# No support for these rules is offered, but we need to list them anyway
+# so we don't get errors when running eval() on --output=build.
+class cc_toolchain(Rule): pass
+class cc_toolchain_suite(Rule): pass
+class java_runtime(Rule): pass
+class java_runtime_suite(Rule): pass
+
+
+class config_setting(Rule):
+  def __init__(self, values=None, define_values=None, **kwargs):
+    super(config_setting, self).__init__(**kwargs)
+    self.values = values or {}
+    self.define_values = define_values or {}
+    if 'define' in self.values:
+      k, v = self.values['define'].split('=', 1)
+      self.define_values[k] = v
+      del self.values['define']
+
+  def matches(self, other):
+    return (all(other.values.get(k) == v
+                for k, v in self.values.items()) and
+            all(other.define_values.get(k) == v
+                for k, v in self.define_values.items()))
+
+
+class _transitive_hdrs(Rule):
+  @memoize
+  def get_files(self, rules):
+    return tuple(crawl(rules[dep].transitive_headers(rules)
+                       for dep in self.deps))
+
+
+class filegroup(Rule):
+  def __init__(self, srcs=[], **kwargs):
+    super(filegroup, self).__init__(**kwargs)
+    self.srcs = [Label(s) for s in srcs]
+
+  @memoize
+  def get_files(self, rules):
+    return tuple(crawl(roll(self.label, self.srcs, rules)))
+
+
+class alias(filegroup):
+  def __init__(self, actual, **kwargs):
+    super(alias, self).__init__(srcs=[actual], **kwargs)
+    self.actual = Label(actual)
+
+  @memoize
+  def get_files(self, rules):
+    return tuple(crawl(roll(self.label, [self.actual], rules)))
+
+
+class bind(alias):
+  def __init__(self, **kwargs):
+    super(bind, self).__init__(**kwargs)
+    self.label = Label('//external').resolve(self.label)
+
+
+class genrule(Rule):
+  def __init__(self,
+               srcs=(),
+               outs=(),
+               cmd='',
+               tools=(),
+               output_to_bindir=False,
+               **kwargs):
+    super(genrule, self).__init__(**kwargs)
+    self.srcs = [Label(s) for s in srcs]
+    self.outs = [Label(s) for s in outs]
+    self.cmd = cmd
+    self.tools = [Label(s) for s in tools]
+    self.output_to_bindir = bool(output_to_bindir)
+
+  @memoize
+  def get_files(self, rules):
+    return tuple(crawl((self.get_outs(), self._make_script(rules)[0])))
+
+  def get_cmd(self, rules):
+    return self.cmd
+
+  def get_root(self):
+    return BINDIR if self.output_to_bindir else GENDIR
+
+  def get_outs(self):
+    root = self.get_root()
+    return (l.inside(root) for l in self.outs)
+
+  def write(self, writer, rules):
+    writer.section(self.label.text)
+    writer.daisy(self.label,
+                 self.get_outs(),
+                 (roll(self.label, self.srcs, rules),
+                  roll(self.label, self.tools, rules)),
+                 self.get_recipes(rules))
+
+  def get_recipes(self, rules):
+    return self._make_script(rules)[1]
+
+  @memoize
+  def _make_script(self, rules):
+    cmd = self.get_cmd(rules)
+    if not cmd or not self.outs:
+      return None, ()
+    exports = set()
+    s = cmd
+    s = VARIABLE_PATTERN.sub(self._sub1, s)
+    s = VARIABLE_PATTERN.sub(functools.partial(self._sub2, exports, rules), s)
+    lines = s.count('\n') + 1
+    recipes = ['@mkdir -p %s' % p for p in _get_makedirs(self.get_outs())]
+    if lines == 1:
+      recipes.append(s)
+      return None, tuple(recipes)
+    script = self.label.resolve(self.label.name.path + '.sh')
+    with open(script.path, 'wb') as fout:
+      fout.write(GENRULE_SETUP)
+      fout.write(s)
+    os.chmod(script.path, 0755)
+    recipes.extend('export ' + e for e in sorted(exports))
+    if lines <= GENRULE_ECHO_LINE_LIMIT:
+      recipes.append('@printf "%%s\\n" %s' % _quote_sh(s.replace('$', '$$')))
+      recipes.append('@' + _quote_prog(script.path))
+    else:
+      recipes.append(_quote_prog(script.path))
+    return script, tuple(recipes)
+
+  def _sub1(self, m):
+    var = m.group(1) or m.group(2)
+    if var in FORBIDDEN_VARIABLES:
+      raise self._complain_about_variable(var)
+    remap = REMAPPED_VARIABLES.get(var)
+    if remap is not None:
+      return remap
+    return m.group(0)
+
+  def _sub2(self, exports, rules, m):
+    var = m.group(1) or m.group(2)
+    if var in PASSTHROUGH_VARIABLES:
+      exports.add(var)
+      return '${%s}' % var
+    remap = REMAPPED_VARIABLES.get(var)
+    if remap is not None:
+      return remap
+    if var.startswith(LOCATION_PREFIX):
+      label = Label(var[len(LOCATION_PREFIX):])
+      return join(roll(self.label, [label], rules))
+    if var == '$':
+      return '$'
+    if var == '@':
+      return str(self.get_outs().next())
+    if var == '<':
+      return str(crawl(roll(self.label, self.srcs, rules)).next())
+    if var == '@D':
+      root = self.get_root()
+      if len(self.outs) == 1:
+        return os.path.dirname(outs[0].inside(root).path)
+      else:
+        return self.label.inside(root).package.path
+    if var == 'SRCS':
+      return join(roll(self.label, self.srcs, rules))
+    if var == 'OUTS':
+      return join(self.get_outs())
+    if var == 'SRCDIR':
+      return self.label.repo.inside('').path
+    if var == 'GENDIR':
+      return self.label.repo.inside(GENDIR).path
+    if var == 'BINDIR':
+      return self.label.repo.inside(BINDIR).path
+    raise self._complain_about_variable(var)
+
+
+class template_rule(Rule):
+  def __init__(self, src, out, substitutions, **kwargs):
+    super(template_rule, self).__init__(**kwargs)
+    self.src = Label(src)
+    self.out = Label(out)
+    self.substitutions = substitutions
+
+  @memoize
+  def get_files(self, rules):
+    return tuple(roll(self.label, [self.out], rules))
+
+  def write(self, writer, rules):
+    with open(self.src.path, 'rb') as fin, open(self.out.path, 'wb') as fout:
+      if self.substitutions:
+        regex = re.compile(
+            '(?:%s)' % '|'.join(re.escape(k) for k in self.substitutions))
+        fout.write(regex.sub(lambda m: self.substitutions[m.group(0)], fin.read()))
+      else:
+        fout.write(fin.read())
+
+
+class CcArtifact(collections.namedtuple('CcArtifact', ('obj', 'src'))):
+  __slots__ = ()  # enforces use of only tuple fields
+
+  @property
+  def is_src(self):
+    return self.src is not None and self.obj is not None
+
+  @property
+  def is_hdr(self):
+    return self.obj is None and self.src is not None
+
+  @property
+  def is_c(self):
+    if self.src is not None:
+      return self.src.ext in C_EXTS
+    return False
+
+  @property
+  def is_cc(self):
+    if self.src is not None:
+      return self.src.ext in CC_EXTS
+    return False
+
+  @property
+  def is_object(self):
+    if self.obj is not None:
+      return self.obj.ext in O_EXTS or self.obj.ext in O_PIC_EXTS
+    return False
+
+  @property
+  def is_pic(self):
+    if self.obj is not None:
+      return self.obj.ext in O_PIC_EXTS
+    return False
+
+  @property
+  def is_static(self):
+    if self.obj is not None:
+      return self.obj.ext in O_EXTS or self.obj.ext in A_EXTS
+    return False
+
+  @property
+  def is_shared(self):
+    if self.obj is not None:
+      return self.obj.ext in SO_EXTS
+    return False
+
+  @property
+  def is_s(self):
+    if self.obj is not None:
+      return self.obj.ext in S_EXTS
+    return False
+
+  @property
+  def is_s_cpp(self):
+    if self.obj is not None:
+      return self.obj.ext in S_CPP_EXTS
+    return False
+
+  def get_recipe(self, cc, rules):
+    if self.src is not None:
+      if self.src.ext in CC_EXTS:
+        return COMPILE_CC_PIC if self.obj.ext in O_PIC_EXTS else COMPILE_CC
+      if self.src.ext in C_EXTS:
+        return COMPILE_C_PIC if self.obj.ext in O_PIC_EXTS else COMPILE_C
+      if self.src.ext in S_CPP_EXTS:
+        return PREPROCESS
+      if self.src.ext in S_EXTS:
+        return COMPILE_S
+    elif self.obj is not None:
+      if self.obj.ext in SO_EXTS:
+        return LINK_SO_C if cc.is_pure_c(rules) else LINK_SO_CC
+      if self.obj.ext in A_EXTS:
+        return ARCHIVE
+      if self.obj.ext in EXE_EXTS:
+        return LINK_C if cc.is_pure_c(rules) else LINK_CC
+    return None
+
+
+class CcRule(Rule):
+  def __init__(self,
+               srcs=(),
+               hdrs=(),
+               textual_hdrs=(),
+               copts=(),
+               linkopts=(),
+               defines=(),
+               includes=(),
+               alwayslink=False,
+               linkstatic=False,
+               **kwargs):
+    super(CcRule, self).__init__(**kwargs)
+    self.srcs = [Label(s) for s in srcs]
+    self.hdrs = [Label(s) for s in hdrs]
+    self.textual_hdrs = [Label(s) for s in textual_hdrs]
+    self.copts = copts
+    self.linkopts = linkopts
+    self.defines = defines
+    self.includes = [Label(s) for s in includes]
+    self.alwayslink = bool(alwayslink)
+    self.linkstatic = bool(linkstatic)
+
+  def get_copts(self):
+    if self.copts:
+      if self.is_pure_c:
+        return self.label.var('CFLAGS')
+      else:
+        return self.label.var('CXXFLAGS')
+    return None
+
+  def get_ldflags(self):
+    if any(not _is_ldlib(s) for s in self.linkopts):
+      return self.label.var('LDFLAGS')
+    return None
+
+  def get_ldlibs(self):
+    if any(_is_ldlib(s) for s in self.linkopts):
+      return self.label.var('LDLIBS')
+    return None
+
+  @memoize
+  def transitive_headers(self, rules):
+    return (roll(self.label, self.hdrs, rules),
+            (rules[dep].transitive_headers(rules) for dep in self.deps))
+
+  @memoize
+  def get_headers(self, rules):
+    return (self.label.var('HEADERS') if self.hdrs else None,
+            tuple(rules[dep].get_headers(rules) for dep in self.deps))
+
+  @memoize
+  def get_cppflags(self, rules):
+    return ((self.label.var('CPPFLAGS')
+             if self.defines or self.includes else None),
+            tuple(rules[dep].get_cppflags(rules) for dep in self.deps))
+
+  @memoize
+  def get_artifacts(self, rules):
+    info = _CcInfo()
+    info.load(self, rules)
+    return info.artifacts
+
+  @memoize
+  def _get_objs(self, rules):
+    return tuple(_pick_binaries(self.get_artifacts(rules), want_pic=False))
+
+  @memoize
+  def _get_pics(self, rules):
+    return tuple(_pick_binaries(self.get_artifacts(rules), want_pic=True))
+
+  @memoize
+  def is_pure_c(self, rules):
+    return not (any(a.is_cc for a in self.get_artifacts(rules)) or
+                any(not rules[dep].is_pure_c(rules) for dep in self.deps))
+
+  @memoize
+  def get_repos(self, rules):
+    return (self.label.repo,
+            tuple(rules[dep].get_repos(rules) for dep in self.deps))
+
+  @memoize
+  def get_includes(self, rules):
+    return (self.includes,
+            tuple(rules[dep].get_includes(rules) for dep in self.deps))
+
+  @memoize
+  def sblinkt(self, rules):
+    return (tuple(rules[dep].sblinkt(rules) for dep in self.deps),
+            (self.label.var('SBLINKT' if self.alwayslink else 'SBLINK')
+             if self._get_objs(rules) else None))
+
+  @memoize
+  def sblinkf(self, rules):
+    return (tuple(rules[dep].sblinkf(rules) for dep in self.deps),
+            (self.label.var('SBLINKF' if self.alwayslink else 'SBLINK')
+             if self._get_objs(rules) else None))
+
+  @memoize
+  def splinkt(self, rules):
+    return (tuple(rules[dep].splinkt(rules) for dep in self.deps),
+            (self.label.var('SPLINKT' if self.alwayslink else 'SPLINK')
+             if self._get_pics(rules) else None))
+
+  @memoize
+  def splinkf(self, rules):
+    return (tuple(rules[dep].splinkf(rules) for dep in self.deps),
+            (self.label.var('SPLINKF' if self.alwayslink else 'SPLINK')
+             if self._get_pics(rules) else None))
+
+  def _write_variables(self, writer, rules):
+    writer.section(self.label.text)
+    writer.variable(self.get_copts(), (Arg(s) for s in self.copts))
+    writer.variable(self.get_ldflags(),
+                    (Arg(s) for s in self.linkopts if not _is_ldlib(s)))
+    writer.variable(self.get_cppflags(rules)[0],
+                    ((Arg('-D' + d) for d in self.defines),
+                     (Arg('-isystem ' +
+                           os.path.normpath(self.label.resolve(i).path))
+                      for i in self.includes)))
+    writer.variable(self.get_ldlibs(),
+                    (Arg(s) for s in self.linkopts if _is_ldlib(s)))
+    writer.variable(self.get_headers(rules)[0],
+                    roll(self.label, self.hdrs, rules))
+
+  def _write_objects(self, writer, rules, want_pic=True):
+    prules = tuple(crawl(
+        PatternRule(os.path.join(a.obj.package.path, '%' + a.obj.ext),
+                    os.path.join(a.src.package.path, '%' + a.src.ext),
+                    a.get_recipe(self, rules))
+        for a in self.get_artifacts(rules)
+        if a.is_src and (want_pic or not a.is_pic)))
+    if not prules:
+      return
+    copts = join(self.get_copts())
+    iquotes = join(_make_throwaway_variable(
+        writer, self.label.var('COMPILE_IQUOTES'),
+        (Arg('-iquote %s' % r) for r in crawl(self.get_repos(rules)))))
+    cppflags = join(_make_throwaway_variable(
+        writer, self.label.var('COMPILE_CPPFLAGS'),
+        self.get_cppflags(rules)))
+    headers = join(_make_throwaway_variable(
+        writer, self.label.var('COMPILE_HEADERS'),
+        ((a.src for a in self.get_artifacts(rules) if a.is_hdr),
+         self.textual_hdrs,
+         self.get_headers(rules))))
+    for pr in prules:
+      writer.rule(Text(pr.obj),
+                  (Text(pr.src), headers),
+                  ('@mkdir -p $(dir $@)', pr.recipe),
+                  copts=copts,
+                  cppflags=cppflags,
+                  iquotes=iquotes)
+
+  def _write_archive(self, writer, rules):
+    if not self._get_objs(rules):
+      return
+    arc = _get_binary(self.label, 'lib%s.a')
+    writer.rule(arc, self._get_objs(rules), [ARCHIVE])
+    writer.variable(self.sblinkt(rules)[-1], arc)
+    if self.alwayslink:
+      writer.variable(self.sblinkf(rules)[-1], _always(self.sblinkt(rules)[-1]))
+
+  def _write_pic_archive(self, writer, rules):
+    if not self._get_pics(rules):
+      return
+    arc = _get_binary(self.label, 'lib%s.pic.a')
+    writer.rule(arc, self._get_pics(rules), [ARCHIVE])
+    writer.variable(self.splinkt(rules)[-1], arc)
+    if self.alwayslink:
+      writer.variable(self.splinkf(rules)[-1], _always(self.splinkt(rules)[-1]))
+
+
+class _CcInfo(object):
+  def __init__(self):
+    self.artifacts = []
+
+  def load(self, cc, rules):
+    for inc in crawl(roll(cc.label, cc.textual_hdrs, rules)):
+      self.artifacts.append(CcArtifact(None, inc))
+    for src in crawl(roll(cc.label, cc.srcs, rules)):
+      handler = _CcInfo._HANDLERS.get(src.ext)
+      if handler is None:
+        raise ValueError('no cc support for %r' % src)
+      handler(self, src, cc)
+
+  def _on_header(self, src, cc):
+    self.artifacts.append(CcArtifact(None, src))
+
+  def _on_source(self, src, cc):
+    obj_pic = _get_object(cc.label, src, '.pic.o')
+    obj = _get_object(cc.label, src, '.o')
+    self.artifacts.append(CcArtifact(obj_pic, src))
+    self.artifacts.append(CcArtifact(obj, src))
+
+  def _on_object(self, src, cc):
+    self.artifacts.append(CcArtifact(src, None))
+
+  def _on_s_cpp(self, src, cc):
+    pps = _get_object(cc.label, src, '.s')
+    obj = _get_object(cc.label, src, '.o')
+    self.artifacts.append(CcArtifact(pps, src))
+    self.artifacts.append(CcArtifact(obj, pps))
+
+  _TYPES = ((A_EXTS, _on_object),
+            (CC_EXTS, _on_source),
+            (C_EXTS, _on_source),
+            (H_EXTS, _on_header),
+            (O_EXTS, _on_object),
+            (O_PIC_EXTS, _on_object),
+            (SO_EXTS, _on_object),
+            (S_CPP_EXTS, _on_s_cpp),
+            (S_EXTS, _on_source))
+
+  _HANDLERS = {x: f for exts, f in _TYPES for x in exts}
+
+
+class cc_library(CcRule):
+  @memoize
+  def get_files(self, rules):
+    if self.linkstatic:
+      return (_get_binary(self.label, 'lib%s.a'),
+              _get_binary(self.label, 'lib%s.pic.a'))
+    else:
+      return (_get_binary(self.label, 'lib%s.a'),
+              _get_binary(self.label, 'lib%s.pic.a'),
+              _get_binary(self.label, 'lib%s.so'))
+
+  @memoize
+  def linkt(self, rules):
+    return (self.label.var('LINKT' if self.linkstatic else 'LINK')
+            if self.is_linkable(rules) else
+            (rules[dep].linkt(rules) for dep in self.deps))
+
+  @memoize
+  def linkf(self, rules):
+    return (self.label.var('LINKF' if self.linkstatic else 'LINK')
+            if self.is_linkable(rules) else
+            (rules[dep].linkf(rules) for dep in self.deps))
+
+  def is_linkable(self, rules):
+    return self._get_objs(rules)
+
+  def is_linkable(self, rules):
+    return bool(self._get_objs(rules) or self._get_pics(rules))
+
+  def write(self, writer, rules):
+    so = _get_binary(self.label, 'lib%s.so')
+    self._write_variables(writer, rules)
+    if not self.is_linkable(rules):
+      return
+    if self.linkstatic:
+      writer.variable(self.linkt(rules),
+                      linkorder(((rules[dep].linkt(rules) for dep in self.deps),
+                                 self.splinkt(rules)[-1])))
+      writer.variable(self.linkf(rules),
+                      linkorder(((rules[dep].linkf(rules) for dep in self.deps),
+                                 self.splinkf(rules)[-1])))
+    else:
+      writer.variable(self.label.var('LINK'), so)
+    self._write_objects(writer, rules)
+    self._write_archive(writer, rules)
+    self._write_pic_archive(writer, rules)
+    if not self.linkstatic:
+      writer.rule(
+          so,
+          linkorder(((rules[dep].linkt(rules) for dep in self.deps),
+                     self.splinkt(rules)[-1])),
+          [LINK_SO_C if self.is_pure_c(rules) else LINK_SO_CC],
+          copts=join(self.get_copts()),
+          ldflags=join(self.get_ldflags()),
+          ldlibs=join(self.get_ldlibs()),
+          links=join(linkorder(((rules[dep].linkf(rules) for dep in self.deps),
+                                _always(self.splinkt(rules)[-1])))))
+
+
+class cc_binary(CcRule):
+  def __init__(self,
+               linkshared=False,
+               alwayslink=True,
+               linkstatic=True,
+               **kwargs):
+    super(cc_binary, self).__init__(alwayslink=alwayslink,
+                                    linkstatic=linkstatic,
+                                    **kwargs)
+    self.linkshared = bool(linkshared)
+
+  def get_files(self, rules):
+    return (_get_binary(self.label, '%s'),)
+
+  def linkt(self, rules):
+    return self.label.var('LINK') if self.linkshared else None
+
+  def linkf(self, rules):
+    return self.label.var('LINK') if self.linkshared else None
+
+  def write(self, writer, rules):
+    out = _get_binary(self.label, '%s')
+    self._write_variables(writer, rules)
+    if self.linkshared:
+      writer.variable(self.label.var('LINK'), out)
+      self._write_objects(writer, rules, want_pic=True)
+      self._write_pic_archive(writer, rules)
+      writer.rule(
+          out,
+          linkorder(self.splinkt(rules)),
+          [LINK_SO_C if self.is_pure_c(rules) else LINK_SO_CC],
+          copts=join(self.get_copts()),
+          ldflags=join(self.get_ldflags()),
+          ldlibs=join(self.get_ldlibs()),
+          links=join(linkorder(self.splinkf(rules))))
+    else:
+      self._write_objects(writer, rules, want_pic=False)
+      self._write_archive(writer, rules)
+      writer.rule(
+          out,
+          linkorder(self.sblinkt(rules)),
+          [LINK_C if self.is_pure_c(rules) else LINK_CC],
+          copts=join(self.get_copts()),
+          ldflags=join(self.get_ldflags()),
+          ldlibs=join(self.get_ldlibs()),
+          links=join(linkorder(self.sblinkf(rules))))
+
+
+class sh_binary(Rule):
+  def __init__(self, srcs=(), **kwargs):
+    super(sh_binary, self).__init__(**kwargs)
+    self.srcs = [Label(s) for s in srcs]
+
+  def get_files(self, rules):
+    return tuple(crawl(roll(self.label, self.srcs, rules)))
+
+
+class proto_gen(genrule):
+  def __init__(self,
+               includes=(),
+               protoc=None,
+               plugin_language='',
+               gen_cc=False,
+               gen_py=False,
+               **kwargs):
+    super(proto_gen, self).__init__(tools=[protoc], **kwargs)
+    self.includes = includes
+    self.protoc = Label(protoc)
+    self.plugin_language = plugin_language
+    self.gen_cc = bool(gen_cc)
+    self.gen_py = bool(gen_py)
+
+  def get_cmd(self, rules):
+    cmd = ['$(location %s)' % self.protoc.text, '-I.']
+    # TODO: Fix this hack
+    cmd.append('-Iprotobuf_archive/src')
+    for inc in self.includes:
+      cmd.append('-I$(@D)/%s' % inc)
+    if self.gen_cc:
+      cmd.append('--cpp_out=$(SRCDIR)')
+    if self.gen_py:
+      cmd.append('--python_out=$(SRCDIR)')
+    cmd.append('$(SRCS)')
+    return ' '.join(cmd)
+
+
+def _is_ldlib(linkopt):
+  return linkopt.startswith(LDLIBS_PREFIXES)
+
+
+def _query(output, expression):
+  return subprocess.Popen(
+      ['bazel', 'query', '--output=' + output, expression],
+      stdout=subprocess.PIPE).stdout
+
+
+def _read_build(fp):
+  s = fp.read()
+  p = 0
+  while p < len(s):
+    eol = s.index('\n', p)
+    location = s[p + 2:eol]
+    eor = s.find('\n# ', p)
+    if eor == -1:
+      eor = len(s)
+    rule = s[p:eor]
+    m = re.search(r'name = "([^"]+)', rule)
+    yield (location, m.group(1)), rule
+    p = eor + 1
+
+
+def _quote_prog(s):
+  if '/' not in s:
+    s = './' + s
+  return _quote_sh(s)
+
+
+def _quote_sh(s):
+  if SH_SPECIAL_CHARACTERS_PATTERN.search(s) is None:
+    return s
+  else:
+    return "'%s'" % s.replace("'", "'\"'\"'")
+
+
+def _always(s):
+  return None if s is None else Text('$(WA) %s $(NOWA)' % s)
+
+
+def _complain_about_variable(var):
+  raise ValueError('Bazel does not support $(%s); try using vardef()' % var)
+
+
+def _quote_genrule(s):
+  return s.replace('$', '$$')
+
+
+def _get_binary(label, fmt):
+  return label.resolve(fmt % label.name.path).inside(BINDIR)
+
+
+def _get_objects_package(label):
+  package = os.path.join(label.package.path, '_objs', label.name.path)
+  return Label('//' + package, BINDIR)
+
+
+def _get_object(label, src, ext):
+  return _get_objects_package(label).resolve(src.name.extless.path + ext)
+
+
+def _pick_binaries(artifacts, want_pic):
+  # We can't have .pic.o files for gas objects since the author is
+  # responsible for writing position independent assembly if he needs
+  # it. The same applies to to objects haphazardly tossed in srcs.
+  artifacts = [a for a in artifacts if a.obj is not None]
+  result = collections.OrderedDict()
+  for artifact in artifacts:
+    if artifact.is_pic != want_pic:
+      result[artifact.obj.extless] = artifact
+  for artifact in artifacts:
+    if artifact.is_pic == want_pic:
+      result[artifact.obj.extless] = artifact
+  return (a.obj for a in result.values())
+
+
+def _make_throwaway_variable(writer, var, values):
+  values = tuple(crawl(values))
+  if not values:
+    return None
+  if len(values) == 1:
+    return values[0]
+  writer.variable(var, values)
+  return var
+
+
+def _componentize(path):
+  return tuple(c for c in str(path).split('/') if c not in ('', '.'))
+
+
+def _trace(items):
+  return (items[:i] for i in range(len(items), -1, -1))
+
+
+def _get_leaves(componentized_paths):
+  exists = set()
+  for path in sorted(componentized_paths, reverse=True):
+    if path in exists:
+      continue
+    yield path
+    exists.update(_trace(path))
+
+
+def _get_makedirs(paths, known=None):
+  known = known or set([()])
+  leaves = set(_get_leaves(_componentize(p)[:-1] for p in paths))
+  return sorted(os.path.join(*c) for c in leaves - known)
+
+
+def main(args):
+  parser = argparse.ArgumentParser(prog='blakefiler',
+                                   description=__doc__)
+
+  parser.add_argument(
+      'tips',
+      metavar='LABEL',
+      type=str,
+      nargs='+',
+      help='Tree tips of build graph to view the forest.')
+
+  parser.add_argument(
+      '-o',
+      '--output',
+      dest='output',
+      metavar='PATH',
+      type=str,
+      default='blake',
+      help='Output directory for project; default: %(default)s')
+
+  parser.add_argument(
+      '-c',
+      '--compilation_mode',
+      metavar='fastbuild|dbg|opt',
+      type=str,
+      default='fastbuild',
+      help='Default setting for C/C++ compilation; default: %(default)s')
+
+  parser.add_argument(
+      '-D',
+      '--define',
+      dest='defines',
+      metavar='KEY=VALUE',
+      action='append',
+      default=(),
+      help=('Adds key=value predicate for config_setting(define_values); '
+            'default: %(default)s'))
+
+  for metavar, flag, default in DEFAULT_CONFIG_VALUES:
+    parser.add_argument(
+        '--' + flag,
+        metavar=metavar,
+        type=str,
+        default=default,
+        help=('Predicate for config_setting(values[%s]); default: %s' %
+              (flag, default)))
+
+  flags = parser.parse_args(args)
+  selector = Selector(vars(flags), dict(s.split('=', 1) for s in flags.defines))
+  build = Build(selector)
+
+  build.load(' union '.join('deps(%s)' % t for t in flags.tips))
+
+  def callback(writer):
+    writer.comment(HEADER)
+    writer.stick()
+    writer.comment('blakefiler ' + ' '.join(args))
+    writer.unstick()
+    writer.variable(Variable('COMPILATION_MODE'), Text(flags.compilation_mode))
+    writer.variable(Variable('TARGET_CPU'), Text(flags.cpu))
+    writer.variable(Variable('ANDROID_CPU'), Text(flags.android_cpu))
+    writer.write('\n')
+    writer.write(DEFINITIONS)
+    writer.unstick()
+
+  make_source_tree(flags.output, build.sources, build.rules, callback)
+
+
+if __name__ == '__main__':
+  main(sys.argv[1:])

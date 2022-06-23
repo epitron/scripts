@@ -115,6 +115,7 @@ alias rehash='hash -r'
 alias cx='chmod +x'
 alias c-x='chmod -x'
 alias cls='clear'
+alias wh='which'
 
 # text
 if ! we_have nano && we_have pico; then
@@ -172,6 +173,7 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
+alias qute="qutebrowser"
 alias mixer="pulsemixer"
 alias yd='youtube-dl --xattrs --no-mtime'
 

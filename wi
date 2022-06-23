@@ -68,6 +68,8 @@ def whois(thing, whois_server: nil, strip_junk: true)
   cmd << thing
   chunks = run_chunks(cmd, strip_junk: strip_junk)
 
+  return out if chunks.nil?
+
   ## simple merged output (one table per chunk, but combine fields)
   chunks.each do |lines|
     attrs = Hash.of_arrays

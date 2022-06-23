@@ -73,7 +73,13 @@ end
 if opts.delete("-a") or urls.all? { |url| url =~ %r{\.bandcamp\.com/} }
   cmd << "--extract-audio"
   cmd << "--embed-thumbnail"
-  cmd += ["-f", "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio"] unless args.include?("-f") # allow user to override the format options
+  unless args.include?("-f")
+    if urls.first =~ %r{\.bandcamp\.com/}
+      cmd += ["-f", "(mp3-v0/ba[ext=mp3]/ba[ext=m4a]/ba)[acodec!~='([af]lac|wav|aiff)']"]
+    else
+      cmd += ["-f", "ba[ext=m4a]/ba[ext=mp3]/ba"] 
+    end
+  end
 elsif opts.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
@@ -105,7 +111,7 @@ urls.each_with_index do |url, i|
 
   url = url.gsub(%r{/nitter\.[^/]+/}, "/twitter.com/")
 
-  if url =~ /(youtu\.be|(you|hook)tube\.com)/
+  if url =~ /(youtu\.be|(you|hook)tube\.com|vimeo\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or opts.delete("-h")
       cmd += %w[-f bestvideo[width<=?1920][height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best]
       # cmd += %w[-f bestvideo[ext=mp4]+bestaudio[ext=m4a]]

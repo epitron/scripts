@@ -1,0 +1,10 @@
+apt install android-am
+
+open urls:
+- termux-open-url http:/google.com
+- am start -a android.intent.action.VIEW -d http://google.com
+- am start --user 0 -a android.intent.action.VIEW -d http://google.com
+
+open videos:
+- am start -a android.intent.action.VIEW -d "file:///storage/emulated/0/YouTube/blahblah.mp4" -t "video/*"
+

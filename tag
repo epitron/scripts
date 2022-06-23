@@ -50,7 +50,7 @@ paths.each do |inp|
   puts "  |_ outsize: #{out.size.commatize}"
   puts
 
-  if out.size < 1024 or (inp.size - out.size).abs > 128000
+  if out.size < 1024 # or (out.size - inp.size) > -128000
     out.rm
     raise "Error: resulting file is too small."
   else

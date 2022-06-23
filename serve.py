@@ -2,6 +2,7 @@
 
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 import os
+from pprint import pprint
 
 PORT_NUMBER = 8080
 MIMETYPES = {
@@ -39,12 +40,19 @@ class myHandler(BaseHTTPRequestHandler):
 				self.send_error(404, 'File Not Found: %s' % self.path)
 				return
 
+		#import IPython;IPython.embed()
+		ch, cp = self.client_address
+		print
+		print "======= %s:%d => %s" % (ch, cp, self.requestline)
+		pprint(self.headers.dict)
+		print
+
 		self.send_response(200)
 
 		self.send_header('Content-type', mimetype)
 		self.end_headers()
 
-		print body		
+		print len(body), "bytes sent"
 		self.wfile.write(body)
 
 try:
@@ -54,4 +62,4 @@ try:
 except KeyboardInterrupt:
 	print '^C received, shutting down the web server'
 	server.socket.close()
-	
+

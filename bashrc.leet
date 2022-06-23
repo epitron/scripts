@@ -49,13 +49,13 @@ possibly_prepend_path $SCRIPTDIR
 possibly_prepend_path ~/bin
 
 # Lovely less/man colors
-export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
-export LESS_TERMCAP_md="`echo -e '\e[01;37m'`"
-export LESS_TERMCAP_me="`echo -e '\e[0m'`"
-export LESS_TERMCAP_se="`echo -e '\e[0m'`"
-export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
-export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
-export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
+#export LESS_TERMCAP_mb="`echo -e '\e[01;31m'`"
+#export LESS_TERMCAP_md="`echo -e '\e[01;37m'`"
+#export LESS_TERMCAP_me="`echo -e '\e[0m'`"
+#export LESS_TERMCAP_se="`echo -e '\e[0m'`"
+#export LESS_TERMCAP_so="`echo -e '\e[30;44m'`"
+#export LESS_TERMCAP_ue="`echo -e '\e[0m'`"
+#export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
 # bat-man
 if we_have bat; then
@@ -152,6 +152,7 @@ esac
 case $(uname -o) in
   Android)
     . $SCRIPTDIR/bashrc.android
+    export PATH=$SCRIPTDIR/android:$PATH
     ;;
   Cygwin)
     . $SCRIPTDIR/bashrc.cygwin

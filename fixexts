@@ -2,9 +2,9 @@
 ###################################################
 gem 'slop', "~> 3.6"
 require 'slop'
-require 'mimemagic'
+#require 'mimemagic'
 require 'pathname'
-require 'epitools/colored'
+require 'epitools'
 ###################################################
 #
 # TODOs:

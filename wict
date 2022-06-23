@@ -1,6 +1,14 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 ###################################################################
+# TODOs:
+# - redirect on "alternative form"s
+# - parse/display the data properly
+# - compress dict
+# - default to multilingual dict
+# - make --lang work
+# - search in tags w/ grep (eg: "|fantasy|")
+###################################################################
 require 'epitools'
 ###################################################################
 
@@ -19,7 +27,9 @@ def parse_options
 
     on 'u',  'update',  'Download the English wikipedia dictionary'
     on 'a',  'all',     'Download the wikipedia dictionary for all languages'
+    on 'c',  'clean',   'Remove current database in .cache dir'
     on 's',  'stats',   'Dictionary statistics'
+    on 'l=', 'lang',    'Language (2-letter code, or substring; defaults to all)'
   end
 
   [opts, ARGV]
@@ -177,6 +187,17 @@ def update(lang="en")
   puts "* Done!"
 end
 
+###################################################################
+
+def clean
+  cache_root = File.expand_path("~/.cache")
+  puts "* Clearing #{CACHE_DIR}"
+  system("df", "-h", cache_root)
+  if system("rm", "-r", CACHE_DIR)
+    system("df", "-h", cache_root)
+  end
+end
+  
 ###################################################################
 # Lookup words
 
@@ -386,6 +407,10 @@ if $0 == __FILE__
     lang = opts[:all] ? "all" : "en"
     #update(lang)
     update_lowmem(lang)
+
+  elsif opts[:clean]
+
+    clean
 
   else
 
