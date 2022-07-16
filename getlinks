@@ -119,8 +119,16 @@ def print_images(less, root_uri, doc)
 end
 
 def print_media(less, root_uri, doc)
+  less.puts "## Embedded media"
   doc.css("video, audio").each do |v|
-    less.puts v.to_s
+    less.puts join(root_uri, v.to_s)
+  end
+
+  less.puts "## Linked media"
+  doc.css("a").each do |a|
+    if a["href"] =~ %r{\.(mp3|mp4|m4a|ogg|aac)$}
+      less.puts join(root_uri, a["href"])
+    end
   end
 end
 
