@@ -16,7 +16,7 @@ alias ren2=$SCRIPTS/ren
 alias r2=ren2
 alias c2=$SCRIPTS/c
 
-c() {
+oldc() {
   file="$@"
   if [[ "$file" =~ ^https?://.+ || "$file" =~ \.(epub|md|mdwn|html|pdf|mp4|m4a|mp3|webm|vtt|ipynb|iso)$ || "$file" == "." ]]; then
     c2 "$file"
@@ -30,5 +30,33 @@ c() {
     fi
   fi
   bat --style plain "$file" || c2 -s "$file"
+  
+  shift
+}
+
+c() {
+  args=( "$@" )
+  argc="${#args[@]}"
+
+  for arg in "${args[@]}"; do
+    if [[ "$arg" =~ ^https?://.+ || "$arg" =~ \.(epub|md|mdwn|html|pdf|mp4|m4a|mp3|webm|vtt|ipynb|iso)$ || "$arg" == "." ]]; then
+      c2 "${args[@]}"
+      return
+    fi
+  done
+
+  for (( i=0; i < $argc; i++ )); do
+    file="${args[$i]}"
+    if [ ! -f "$file" ]; then
+      if which "$file" &> /dev/null; then
+        args[$i]="$(which "$file")"
+      else
+        echo "error: can't find '$file'"
+        return 1
+      fi
+    fi
+  done
+
+  bat --style header,grid "${args[@]}"
 }
 
