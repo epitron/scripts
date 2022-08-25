@@ -98,7 +98,8 @@ cmd = ["ia", "search", "-f", fields.join(','), query]
 
 p cmd
 
-cached = Path["/tmp/ia-search.test"]
+cached = Path["/tmp/ia-search.#{query.sha256}"]
+p cache: cached.path
 
 if cached.exist?
   results = cached.read

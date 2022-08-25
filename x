@@ -26,9 +26,9 @@ end
 # OPTION PARSER
 
 def parse_options
-  gem 'slop', '~> 3.6'
-  require 'slop' # lazy loaded
-  @opts = Slop.parse(help: true, strict: true) do
+  gem 'pry'; require 'pry/slop'
+
+  @opts = Pry::Slop.parse(help: true, strict: true) do
     banner "xattr editor\n\nUsage: x [options] <files...>"
 
     on 's=', 'set',       'Set an attr (eg: "x -s dublincore.title=Something something.mp4")'
@@ -42,7 +42,6 @@ def parse_options
     on 'r=', 'referrer',  'Set referrer URL (user.xdg.referrer.url)'
     on 'R',  'recursive', 'Recurse into subdirectories'
     on 't',  'time',      'Sort by file timestamp'
-
   end
 end
 
@@ -203,6 +202,7 @@ if $0 == __FILE__
 
   if ARGV.empty? or ARGV.any? { |opt| opt[/^-/] }
     opts = parse_options
+    exit if opts.help?
   else
     opts = FakeOptions.new
   end

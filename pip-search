@@ -54,8 +54,9 @@ def search(query)
   doc.css("li a.package-snippet").map do |pkg|
     result = {}
     result[:url] = File.join("https://pypi.org/", pkg["href"])
-    %i[name version released description].each do |field|
-      result[field] = pkg.at_css(".package-snippet__#{field}").text.tighten
+    %i[name version released created description].each do |field|
+      val = pkg.at_css(".package-snippet__#{field}")&.text&.tighten
+      result[field] = val if val
     end
     result
   end
@@ -72,6 +73,7 @@ def print_search_results(query)
           "<7>(<3>v#{info[:version]}<7>)" +
           "<8>==============").colorize
     puts info[:released].indent.white unless info[:released].blank?
+    puts info[:created].indent.white unless info[:created].blank?
     puts info[:description].indent.bright_white unless info[:description].blank?
     puts "    <3>#{info[:url]}".colorize
     puts

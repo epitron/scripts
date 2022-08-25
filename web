@@ -90,7 +90,7 @@
 
 # A list of browsers, which will be tried in order.
 PLAY           = "#{__dir__}/play"
-BROWSERS       = %w[qupzilla chromium chrome firefox opera vivaldi-bin netsurf dillo otter-browser xombrero midori jumanji]
+BROWSERS       = %w[qutebrowser qupzilla chromium chrome firefox opera vivaldi-bin netsurf dillo otter-browser xombrero midori jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
 
 load_rc_file
@@ -537,7 +537,7 @@ BEGIN {
     name, browser = best_browser_for(uri, browsers)
 
     unless browser
-      notify :error, "No browser!", "No suitable browser found on any desktop."
+      notify :error, "No browser!", "Couldn't open #{uri}\nNo suitable browser found on any desktop."
       exit 1
     end
 

@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
+# TODOS:
+# - stash
+# - tree-multiselect for which windows/tabs to <do something> with (eg: stash, close, annotate, sync, move)
+# -
+
 SUBLIME_DIR = "~/.config/sublime-text-3"
 
 def header(msg, char, color, target_width)

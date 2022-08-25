@@ -3,19 +3,21 @@
 require 'epitools'
 require 'oga'
 
-gem 'slop', "~> 3.6"
-require 'slop'
+# gem 'slop', "~> 3.6"
+require 'pry/slop'
 ########################################################
 
 ########################################################
 # Parse options
 
-opts = Slop.parse(help: true, strict: true) do
+opts = Pry::Slop.parse(help: true, strict: true) do
   banner "Usage: emoji [category name (to list categories)] "
 
   # on "a",  "along",  "desc"
   # on "b=", "blong",  "desc", default: ""
 end
+
+exit if opts.help?
 
 args = ARGV
 
