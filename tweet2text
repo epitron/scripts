@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require "oga"
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+# TODO:
+# - untruncate urls (use href instead of text node)
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: tweet2txt [options] <url>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+testurl = "https://nitter.42l.fr/G_S_Bhogal/status/1545510413982474253"
+#testurl = "https://twiiit.com/G_S_Bhogal/status/1545510413982474253"
+url = args.first || testurl
+if (uri = URI.parse(url)).host =~ /\.?twitter\.com$/
+  uri.host = "twiiit.com"
+  url = uri.to_s
+end
+
+
+def field(t, *names)
+  names.each do |name|
+    v = t.at_css(".#{name}")
+    return v.text unless v.nil?
+  end
+  nil
+end
+
+puts url
+puts
+d = Oga.parse_html curl(url)
+d.css(".tweet-body").each do |t|
+  user = field(t, "username")
+  text = field(t, "tweet-content")
+  time = DateTime.parse field(t, "tweet-published", "tweet-date")
+
+  ftime = time.strftime("%Y-%m-%d %H:%M")
+  ftime.gsub!(/ 00:00$/, '')
+
+  puts "[#{ftime}] <#{user}>\n\n#{text}"
+  puts
+end
+
