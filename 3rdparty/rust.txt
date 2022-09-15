@@ -9,6 +9,7 @@ bat
 https://github.com/ogham/dog # like dig
 exa
 viu
+jless
 trash # https://github.com/ArturKovacs/trash
 dua-cli # interactive disk usage explorer (like ncdu)
 tui-rs # a modern TUI inspired by blessed (node) and termui (go)
