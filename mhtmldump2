@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+# Encoding: UTF-8
+
+######################################################################################################
+"""mhtifier.py
+Un/packs an MHT "archive" into/from separate files, writing/reading them in directories to match their Content-Location.
+
+Uses part's Content-Location to name paths, or index.html for the root HTML.
+Content types will be assigned according to registry of MIME types mapping to file name extensions.
+
+History:
+* 2013-01-11: renamed mhtifier.
+* 2013-01-10: created mht2fs.py, and... done.
+"""
+######################################################################################################
+
+import base64
+import email, email.message
+import mimetypes
+import os
+import quopri
+import sys
+import argparse
+
+######################################################################################################
+
+def error(msg, exite=None):
+  print(msg, file=sys.stderr)
+  if exit is not None:
+    sys.exit(exit)
+
+def info(msg):
+  print(msg)
+
+def parse_mhtml(file):
+  parse = None
+  with open(file, "rb") as mht:
+    a = email.message_from_bytes(mht.read())
+    parts = a.get_payload()
+
+    if not type(parts) is list: parts = [a] # dunno
+
+  return parts
+
+def create_mhtml(dir, file):
+  with open(args.mht, "wb") as mht:
+    pass
+
+def extract_mhtml(file, dir):
+  os.mkdir(dir)
+  pass
+
+def list_mhtml(file):
+  print(f"=== Listing {repr(file)} ===")
+  print()
+
+  for p in parse_mhtml(file):
+    #??? cs = p.get_charset() # Expecting "utf-8" for root HTML, None for all other parts.
+    ct = p.get_content_type() # String coerced to lower case of the form maintype/subtype, else get_default_type().
+    fp = p.get("content-location") or "index.html" # File path. Expecting root HTML is only part with no location.
+
+    print(f"{ct} | {len(p.get_payload())} | {fp}")
+
+# Just do it.
+def main():
+  """Convert MHT file given as command line argument (or stdin?) to files and directories in the current directory.
+
+  Usage:
+    cd foo-unpacked/
+    mht2fs.py ../foo.mht
+  """
+  parser = argparse.ArgumentParser(description="Extract MHT archive into new directory.")
+  parser.add_argument("mht", metavar="MHT", help="MHTML file")
+  parser.add_argument("-d", "--directory", action="store_const", const=".", metavar="DIR", help="Create this directory to store parts in")
+  parser.add_argument("-c", "--create", action="store_true", help="Create an MHTML file from a directory")
+  parser.add_argument("-x", "--extract", action="store_true", help="Extract an MHTML's contents to a directory")
+  parser.add_argument("-l", "--list", action="store_true", help="List an MHTML file's contents")
+  parser.add_argument("-v", "--verbose", action="store_true")
+  parser.add_argument("-q", "--quiet", action="store_true")
+  args = parser.parse_args() # --help is built-in.
+
+  # only allow one of create/extract/list to be passed
+  mut_excl = [args.create, args.extract, args.list]
+  if len([x for x in mut_excl if x is True]) != 1:
+    error("You must pick *one* of --list, --create, or --extract", exit=1)
+
+  # list the archive
+  if args.list:
+    list_mhtml(args.mht)
+    sys.exit(0)
+
+  if args.create and os.path.exists(args.mht): error("MHT file exists, won't overwrite.", exit=2)
+
+  if args.extract: os.mkdir(args.d)
+
+  os.chdir(args.d)
+
+  # Un/pack?
+  if args.extract:
+    # Read entire MHT archive -- it's a multipart(/related) message.
+    a = email.message_from_bytes(mht.read()) # Parser is "conducive to incremental parsing of email messages, such as would be necessary when reading the text of an email message from a source that can block", so I guess it's more efficient to have it read stdin directly, rather than buffering
+
+    parts = a.get_payload() # Multiple parts, usually?
+    if not type(parts) is list:
+      parts = [a] # Single 'str' part, so convert to list.
+
+    # Save all parts to files.
+    for p in parts: # walk() for a tree, but I'm guessing MHT is never nested?
+      #??? cs = p.get_charset() # Expecting "utf-8" for root HTML, None for all other parts.
+      ct = p.get_content_type() # String coerced to lower case of the form maintype/subtype, else get_default_type().
+      fp = p.get("content-location") or "index.html" # File path. Expecting root HTML is only part with no location.
+
+      if args.verbose:
+        sys.stderr.write("Writing %s to %s, %d bytes...\n" % (ct, fp, len(p.get_payload())))
+
+      # Create directories as necessary.
+      if os.path.dirname(fp):
+        os.makedirs(os.path.dirname(fp), exist_ok=True)
+
+      # Save part's body to a file.
+      open(fp, "wb").write(p.get_payload(decode=True))
+
+    if not args.quiet:
+      sys.stderr.write("Done.\nUnpacked %d files.\n" % (len(parts)))
+
+  else:
+    if not args.quiet:
+      sys.stderr.write("Packing...\n")
+
+    # Create archive as multipart message.
+    a = email.message.Message()
+    a["MIME-Version"] = "1.0"
+    a.add_header("Content-Type", "multipart/related", type="text/html")
+
+    # Walk current directory.
+    for (root, _, files) in os.walk("."):
+      # Create message part from each file and attach them to archive.
+      for f in files:
+        p = os.path.join(root, f).lstrip("./")
+        m = email.message.Message()
+        # Encode and set type of part.
+        t = mimetypes.guess_type(f)[0]
+        if t:
+          m["Content-Type"] = t
+
+        if args.verbose:
+          sys.stderr.write("Reading %s as %s...\n" % (p, t))
+
+        if t and t.startswith("text/"):
+          m["Content-Transfer-Encoding"] = "quoted-printable"
+          m.set_payload(quopri.encodestring(open(p, "rt").read().encode("utf-8")).decode("ascii")) #??? WTF?
+        else:
+          m["Content-Transfer-Encoding"] = "base64"
+          m.set_payload(base64.b64encode(open(p, "rb").read()).decode("ascii"))
+          #??? My editor, Geany, suffocates, I think, when needs to wrap these long lines?
+
+        # Only set charset for index.html to UTF-8, and no location.
+        if f == "index.html":
+          m.add_header("Content-Type", "text/html", charset="utf-8")
+          #??? m.set_charset("utf-8")
+        else:
+          m["Content-Location"] = p
+        a.attach(m)
+
+    # Write MHT file.
+    #??? verify index.html is present!?
+    mht.write(bytes(a.as_string(unixfrom=False), "utf-8")) # Not an mbox file, so we don't need to mangle "From " lines, I guess?
+
+    if not args.quiet:
+      sys.stderr.write("Done.\nPacked %d files.\n" % (len(a.get_payload())))
+
+if __name__ == "__main__":
+  main() # Kindda useless if we're not using doctest or anything?
