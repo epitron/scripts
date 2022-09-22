@@ -199,8 +199,8 @@ else
 end
 
 cmd << "-show-cursor" if opts.cursor?
-cmd << "-curses" if opts.curses?
-cmd += ["-serial", "stdio"] if opts.serial?
+cmd += ["-display", "curses"] if opts.curses?
+cmd += ["-serial",  "stdio"]  if opts.serial?
 
 disks.each do |disk|
   unless disk.exists?
