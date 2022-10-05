@@ -45,3 +45,5 @@ google-earth
 gtkdialog-svn
 k2pdfopt
 multibootusb
+
+schismtracker

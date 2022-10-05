@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+require 'epitools/colored'
+require 'epitools/term'
+
+COLORS = {
+  "??" => 7,
+  " M" => 2,
+  " D" => 4,
+}
+
+results = IO.popen(["git", "status", "--porcelain=1"]) do |io|
+  io.each_line.map do |line|
+    ((status, file)) = line.chomp.scan(/^(..) (.+)/)
+    color = (COLORS[status] || 7)
+    "<#{color}>#{status} #{file}".colorize
+    # binding.pry
+  end
+end
+
+puts Term::Table.new(results).by_columns

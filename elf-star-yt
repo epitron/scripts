@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+# TODO: show each result as it comes in
+jsons = Path["~/elf-stars-grog.json"].each_line.map { |l| l.from_json }.map &:to_ostruct
+
+jsons.each do |e|
+  title = e.name.split("somafm.com - ").last
+  puts title
+  rs = run("yt", "-j", "-n", "3", title).each_line.map(&:from_json)
+  rs.each { |r| puts "\thttps://youtu.be/#{r["id"]} #{r["title"]} || #{r["channel"]} (#{r["views"]})" }
+end

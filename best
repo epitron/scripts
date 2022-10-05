@@ -1,0 +1,12 @@
+function we_have() {
+  which "$@" > /dev/null 2>&1
+}
+
+for i in "$@"; do
+  if we_have "$i"; then
+    echo "$i"
+    exit
+  fi
+done
+
+exit 1
