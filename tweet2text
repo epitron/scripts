@@ -40,8 +40,13 @@ end
 
 puts url
 puts
+
 d = Oga.parse_html curl(url)
-d.css(".tweet-body").each do |t|
+
+tweets = d.css(".tweet-body")
+toots  = d.css(".status__content").map(&:parent)
+
+tweets.each do |t|
   user = field(t, "username")
   text = field(t, "tweet-content")
   time = DateTime.parse field(t, "tweet-published", "tweet-date")
@@ -53,3 +58,18 @@ d.css(".tweet-body").each do |t|
   puts
 end
 
+toots.each do |t|
+  user = field(t, "display-name__account")&.strip
+
+  c = t.at_css(".status__content")
+  c.css("p").each { |e| e.replace(e.text + "\n\n")}
+  text = c.text.strip
+
+  time = DateTime.parse t.at_css("data.dt-published")["value"]
+
+  ftime = time.strftime("%Y-%m-%d %H:%M")
+  ftime.gsub!(/ 00:00$/, '')
+
+  puts "[#{ftime}] <#{user}>\n\n#{text}"
+  puts
+end
