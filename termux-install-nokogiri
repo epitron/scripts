@@ -1,0 +1,3 @@
+apt update && apt upgrade
+apt install ruby clang make binutils pkg-config libxslt
+gem install nokogiri --platform=ruby -- --use-system-libraries
