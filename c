@@ -1370,6 +1370,7 @@ end
 ##############################################################################
 
 def print_torrent(filename)
+  depends gem: 'bencode'
   require 'bencode'
   require 'digest/sha1'
 
