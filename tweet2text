@@ -9,6 +9,10 @@ require 'slop'
 # TODO:
 # - untruncate urls (use href instead of text node)
 ########################################################
+
+TESTURL = "https://twitter.com/G_S_Bhogal/status/1545510413982474253"
+
+########################################################
 # Parse options
 
 opts = Slop.parse(help: true, strict: true) do
@@ -21,14 +25,6 @@ end
 args = ARGV
 
 ########################################################
-testurl = "https://nitter.42l.fr/G_S_Bhogal/status/1545510413982474253"
-#testurl = "https://twiiit.com/G_S_Bhogal/status/1545510413982474253"
-url = args.first || testurl
-if (uri = URI.parse(url)).host =~ /\.?twitter\.com$/
-  uri.host = "twiiit.com"
-  url = uri.to_s
-end
-
 
 def field(t, *names)
   names.each do |name|
@@ -38,8 +34,24 @@ def field(t, *names)
   nil
 end
 
+def ftime(time)
+  time.
+    strftime("%Y-%m-%d %H:%M").
+    gsub(/ 00:00$/, '')
+end
+
+########################################################
+
+url = args.first || IO.popen(["cb"], &:read).strip
+
+if (uri = URI.parse(url)).host =~ /\.?twitter\.com$/
+  uri.host = "nitter.ca"
+  url = uri.to_s
+end
+
 puts url
 puts
+
 
 d = Oga.parse_html curl(url)
 
@@ -51,25 +63,26 @@ tweets.each do |t|
   text = field(t, "tweet-content")
   time = DateTime.parse field(t, "tweet-published", "tweet-date")
 
-  ftime = time.strftime("%Y-%m-%d %H:%M")
-  ftime.gsub!(/ 00:00$/, '')
-
-  puts "[#{ftime}] <#{user}>\n\n#{text}"
+  puts "[#{ftime(time)}] <#{user}>\n\n#{text}"
   puts
 end
 
 toots.each do |t|
+  #binding.pry
   user = field(t, "display-name__account")&.strip
 
   c = t.at_css(".status__content")
-  c.css("p").each { |e| e.replace(e.text + "\n\n")}
+  # <p><span class="p-summary">Spoilers for Stray? </span><button class="status__content__spoiler-link">Show more</button></p><div class="e-content" lang="en">
+  c.at_css("button.status__content__spoiler-link")&.remove
+  s = c.at_css("span.p-summary")
+  s&.replace("{ #{s.text.strip} }")
+  c.css("br").each { |e| e.replace("\n")}
+  c.css("p").each  { |e| e.replace(e.text + "\n\n")}
   text = c.text.strip
 
   time = DateTime.parse t.at_css("data.dt-published")["value"]
-
-  ftime = time.strftime("%Y-%m-%d %H:%M")
-  ftime.gsub!(/ 00:00$/, '')
-
-  puts "[#{ftime}] <#{user}>\n\n#{text}"
+  puts "[#{ftime(time)}] <#{user}>\n\n#{text}"
   puts
+  
+  #binding.pry
 end
