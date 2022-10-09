@@ -3,6 +3,8 @@ BM_FILE=~/docs/bookmarks.txt
 
 if [ "$1" == "" ]; then
   LINE="$(cb)"
+elif [ "$1" == "-e" ]; then
+  nano -S +$(wc -l $BM_FILE | cut -f 1 -d \ ) $BM_FILE
 else
   if [[ "$1" =~ ^/([^/]+)/$ ]]; then
     query="${BASH_REMATCH[1]}"
