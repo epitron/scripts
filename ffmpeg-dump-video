@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+def audio_format(path)
+  output = run_with_stderr("ffprobe", path).each_line do |line|
+    p line
+    if line =~ /Stream \S+: Audio: (\w+)/
+      return $1
+    end
+  end
+  nil
+end
+
+inputs = ARGV.map { |arg| Path.new(arg) }
+
+unless inputs.size > 0
+  puts "usage: ffmpeg-dump-video <video-filename(s)>"
+  exit
+end
+
+inputs.each do |infile|
+  unless infile.exists? or infile.path[/^http/i]
+    puts "Error: #{infile} not found."
+    exit 1
+  end
+
+  outfile = infile.with(filename: "#{infile.basename}-video.mp4")
+
+  puts "--------------------------------------------------------------------------"
+  puts "Extracting video:"
+  puts "    in: #{infile}"
+  puts "   out: #{outfile}"
+  puts "--------------------------------------------------------------------------"
+  puts
+
+  system("ffmpeg", "-hide_banner", "-i", infile, "-an", "-vcodec", "copy", outfile)
+end
