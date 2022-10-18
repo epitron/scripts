@@ -14,7 +14,7 @@ end
 inputs = ARGV.map { |arg| Path.new(arg) }
 
 unless inputs.size > 0
-  puts "usage: ffmpeg-dump-audio <video-filename(s)>"
+  puts "usage: ffmpeg-dump-video <video-filename(s)>"
   exit
 end
 
@@ -24,36 +24,14 @@ inputs.each do |infile|
     exit 1
   end
 
-  format = audio_format(infile)
+  outfile = infile.with(filename: "#{infile.basename}-video.mp4")
 
-  case format
-  when "aac"
-    ext = "m4a"
-  when "mp3"
-    ext = "mp3"
-  when "vorbis"
-    ext = "ogg"
-  when "ac3"
-    ext = "ac3"
-  when "flac"
-    ext = "flac"
-  else
-    puts "Unknown input audio format: #{format}"
-    exit 2
-  end
-
-  outfile = if infile.url?
-    Path.new(CGI.unescape(infile.filename)).with(ext: ext)
-  else
-    infile.with(ext: ext)
-  end
-  
   puts "--------------------------------------------------------------------------"
-  puts "Extracting audio:"
+  puts "Extracting video:"
   puts "    in: #{infile}"
   puts "   out: #{outfile}"
   puts "--------------------------------------------------------------------------"
   puts
 
-  system("ffmpeg", "-hide_banner", "-i", infile, "-vn", "-acodec", "copy", outfile)
+  system("ffmpeg", "-hide_banner", "-i", infile, "-an", "-vcodec", "copy", outfile)
 end

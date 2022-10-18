@@ -1,2 +1,444 @@
-#!/bin/bash
-curl --silent http://wttr.in?format=v2 | less -RS
+#!/bin/sh
+
+#
+# AnsiWeather 1.18.0
+# Copyright (c) 2013-2021, Frederic Cambus
+# https://github.com/fcambus/ansiweather
+#
+# Created: 2013-08-29
+# Last Updated: 2021-09-14
+#
+# AnsiWeather is released under the BSD 2-Clause license
+# See LICENSE file for details
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+
+###[ Configuration options ]###################################################
+
+LC_ALL=C; export LC_ALL
+
+if [ -n "$ANSIWEATHERRC" ] ; then
+	config_file="$ANSIWEATHERRC"
+elif [ -s "$XDG_CONFIG_HOME"/ansiweather/config ] ; then
+	config_file="$XDG_CONFIG_HOME"/ansiweather/config
+elif [ -s "$HOME"/.config/ansiweather/config ] ; then
+	config_file="$HOME"/.config/ansiweather/config
+else
+	config_file=~/.ansiweatherrc
+fi
+
+get_config() {
+	ret=""
+	if [ -f "$config_file" ]
+	then
+		ret=$(grep "^$1:" "$config_file" | cut -d: -f2-)
+	fi
+
+	if [ "X$ret" = "X" ]
+	then
+		return 1
+	else
+		echo "$ret"
+	fi
+}
+
+fetch_cmd=$(get_config "fetch_cmd" || echo "curl -sf")
+
+
+
+###[ Parse the command line ]##################################################
+
+# Get config options from command line flags
+while getopts l:u:f:FH:a:s:k:i:w:h:p:d:v option
+do
+	case "${option}"
+	in
+		l) location=${OPTARG};;
+		u) units=${OPTARG};;
+		f) forecast=${OPTARG};;
+		F) forecast="5";;
+		H) show_feels_like=${OPTARG};;
+		a) ansi=${OPTARG};;
+		s) symbols=${OPTARG};;
+		k) api_key=${OPTARG};;
+		i) show_uvi=${OPTARG};;
+		w) show_wind=${OPTARG};;
+		h) show_humidity=${OPTARG};;
+		p) show_pressure=${OPTARG};;
+		d) show_daylight=${OPTARG};;
+		v) echo "AnsiWeather 1.18.0" && exit 0;;
+		\?) exit 64;; # EX_USAGE
+	esac
+done
+
+
+
+###[ Check if bc and jq are installed ]########################################
+
+jqpath=$(command -v jq)
+if [ "$jqpath" = "" ]
+then
+	echo "ERROR: Cannot find jq binary"
+	exit 69 # EX_UNAVAILABLE
+fi
+
+bcpath=$(command -v bc)
+if [ "$bcpath" = "" ]
+then
+	echo "ERROR: Cannot find bc binary"
+	exit 69 # EX_UNAVAILABLE
+fi
+
+
+
+###[ Set options that are not set from command line ]##########################
+
+# OpenWeatherMap API key
+[ -z "$api_key" ] && api_key=$(get_config "api_key" || echo "85a4e3c55b73909f42c6a23ec35b7147")
+
+# Location: example "Rzeszow,PL"
+[ -z "$location" ] && location=$(get_config "location" || echo "Toronto,CA")
+
+# System of Units: "metric" or "imperial"
+[ -z "$units" ] && units=$(get_config "units" || echo "metric")
+
+# Show forecast: How many days, example "5". "0" is standard output
+[ -z "$forecast" ] && forecast=$(get_config "forecast" || echo 0)
+
+# Display ANSI colors: "true" or "false"
+[ -z "$ansi" ] && ansi=$(get_config "ansi" || echo true)
+
+# Display symbols: "true" or "false" (requires a Unicode capable display)
+[ -z "$symbols" ] && symbols=$(get_config "symbols" || echo false)
+
+# Show feels-like: "true" or "false"
+[ -z "$show_feels_like" ] && show_feels_like=$(get_config "show_feels_like" || echo false)
+
+# Show UVI: "true" or "false"
+[ -z "$show_uvi" ] && show_uvi=$(get_config "show_uvi" || echo true)
+
+# Show wind: "true" or "false"
+[ -z "$show_wind" ] && show_wind=$(get_config "show_wind" || echo true)
+
+# Show humidity: "true" or "false"
+[ -z "$show_humidity" ] && show_humidity=$(get_config "show_humidity" || echo true)
+
+# Show pressure: "true" or "false"
+[ -z "$show_pressure" ] && show_pressure=$(get_config "show_pressure" || echo true)
+
+# Show daylight: "true" or "false"
+[ -z "$show_daylight" ] && show_daylight=$(get_config "show_daylight" || echo false)
+
+dateformat=$(get_config "dateformat" || echo "%a %b %d")
+timeformat=$(get_config "timeformat" || echo "%b %d %r")
+
+
+
+###[ Colors and characters ]###################################################
+
+background=$(get_config "background" || echo "\033[0m")
+text=$(get_config "text" || echo "\033[36;1m")
+data=$(get_config "data" || echo "\033[33;1m")
+delimiter=$(get_config "delimiter" || echo "\033[35m:")
+dashes=$(get_config "dashes" || echo "\033[34m-")
+
+
+
+###[ Text Labels ]#############################################################
+
+greeting_text=$(get_config "greeting_text" || echo "Weather in")
+wind_text=$(get_config "wind_text" || echo "Wind")
+feels_like_text=$(get_config "feels_like_text" || echo "Feels like")
+humidity_text=$(get_config "humidity_text" || echo "Humidity")
+pressure_text=$(get_config "pressure_text" || echo "Pressure")
+sunrise_text=$(get_config "sunrise_text" || echo "Sunrise")
+sunset_text=$(get_config "sunset_text" || echo "Sunset")
+forecast_text=$(get_config "forecast_text" || echo "forecast")
+
+
+
+###[ Unicode Symbols for icons ]###############################################
+
+sun=$(get_config "sun" || echo "\033[33;1m\xe2\x98\x80")
+moon=$(get_config "moon" || echo "\033[36m\xe2\x98\xbd")
+clouds=$(get_config "clouds" || echo "\033[37;1m\xe2\x98\x81")
+rain=$(get_config "rain" || echo "\033[37;1m\xe2\x98\x94")
+fog=$(get_config "fog" || echo "\033[37;1m\xe2\x96\x92")
+mist=$(get_config "mist" || echo "\033[34m\xe2\x96\x91")
+haze=$(get_config "haze" || echo "\033[33m\xe2\x96\x91")
+snow=$(get_config "snow" || echo "\033[37;1m\xe2\x9d\x84")
+thunderstorm=$(get_config "thunderstorm" || echo "\033[33;1m\xe2\x9a\xa1")
+
+
+
+###[ Fetch Weather data ]######################################################
+
+api_cmd=$([ "$forecast" != 0 ] && echo "forecast/daily" || echo "weather")
+
+if [ "$location" -gt 0 ] 2> /dev/null
+then
+	# Location is all numeric
+	weather=$($fetch_cmd "https://api.openweathermap.org/data/2.5/$api_cmd?id=$location&units=$units&appid=$api_key")
+else
+	# Location is a string
+	location=$(echo "$location" | sed "s/ /%20/g")
+	weather=$($fetch_cmd "https://api.openweathermap.org/data/2.5/$api_cmd?q=$location&units=$units&appid=$api_key")
+fi
+
+if [ -z "$weather" ]
+then
+	echo "ERROR: Cannot fetch weather data"
+	exit 75 # EX_TEMPFAIL
+fi
+
+status_code=$(echo "$weather" | jq -r '.cod' 2>/dev/null)
+
+if [ "$status_code" != 200 ]
+then
+	echo "ERROR: Cannot fetch weather data for the given location"
+	exit 69 # EX_UNAVAILABLE
+fi
+
+
+
+###[ Fetch UV data ]###########################################################
+
+if [ "$show_uvi" = true ] && [ "$forecast" = 0 ]
+then
+	lat=$(echo "$weather" | jq -r '.coord.lat')
+	lon=$(echo "$weather" | jq -r '.coord.lon')
+
+	uvdata=$($fetch_cmd "https://api.openweathermap.org/data/2.5/uvi?lat=$lat&lon=$lon&appid=$api_key")
+	uvi=$(echo "$uvdata" | jq -r '.value')
+fi
+
+
+
+###[ Process Weather data ]####################################################
+
+epoch_to_date() {
+	if date -j -r "$1" +"%a %b %d" > /dev/null 2>&1; then
+		# BSD
+		ret=$(date -j -r "$1" +"$dateformat")
+	else
+		# GNU
+		ret=$(date -d "@$1" +"$dateformat")
+	fi
+	echo "$ret"
+}
+
+if [ "$forecast" != 0 ]
+then
+	city=$(echo "$weather" | jq -r '.city.name')
+	flength=$(echo "$weather" | jq '.list | length')
+	forecast=$([ "$forecast" -gt "$flength" ] && echo "$flength" || echo "$forecast")
+else
+	city=$(echo "$weather" | jq -r '.name')
+	temperature=$(echo "$weather" | jq '.main.temp' | xargs printf "%.0f")
+	humidity=$(echo "$weather" | jq '.main.humidity')
+	feels_like=$(echo "$weather" | jq '.main.feels_like' | xargs printf "%.0f")
+	pressure=$(echo "$weather" | jq '.main.pressure')
+	sky=$(echo "$weather" | jq -r '.weather[0].main')
+	sunrise=$(echo "$weather" | jq '.sys.sunrise')
+	sunset=$(echo "$weather" | jq '.sys.sunset')
+	wind=$(echo "$weather" | jq '.wind.speed')
+	azimuth=$(echo "$weather" | jq '.wind.deg')
+fi
+
+
+
+###[ Process Wind data ]#######################################################
+
+set -- $(get_config "wind_directions" || echo "N NNE NE ENE E ESE SE SSE S SSW SW WSW W WNW NW NNW")
+
+if [ "$forecast" = 0 ]
+then
+	shift "$(echo "scale=0; ($azimuth + 11.25)/22.5 % 16" | bc)"
+	direction=$1
+fi
+
+
+
+###[ Process Sunrise and Sunset data ]#########################################
+
+epoch_to_time() {
+	if date -j -r "$1" +"%r" > /dev/null 2>&1; then
+		# BSD
+		ret=$(date -j -r "$1" +"$timeformat")
+	else
+		# GNU
+		ret=$(date -d "@$1" +"$timeformat")
+	fi
+	echo "$ret"
+}
+
+if [ "$forecast" = 0 ]
+then
+	if [ -n "$sunrise" ]
+	then
+		sunrise_time=$(epoch_to_time "$sunrise")
+	fi
+
+	if [ -n "$sunset" ]
+	then
+		sunset_time=$(epoch_to_time "$sunset")
+	fi
+fi
+
+
+
+###[ Set the period ]##########################################################
+
+now=$(date +%s)
+
+if [ "$forecast" != 0 ]
+then
+	period="none"
+else
+	if [ -z "$sunset" ] || [ -z "$sunrise" ]
+	then
+		period="day"
+	elif [ "$now" -ge "$sunset" ] || [ "$now" -le "$sunrise" ]
+	then
+		period="night"
+	else
+		period="day"
+	fi
+fi
+
+
+
+###[ Set the scale ]###########################################################
+
+case $units in
+	metric)
+		scale="°C"
+		speed_unit="m/s"
+		pressure_unit="hPa"
+		pressure=$(echo "$pressure" | xargs printf "%.0f")
+		;;
+	imperial)
+		scale="°F"
+		speed_unit="mph"
+		pressure_unit="inHg"
+		if [ "$forecast" = 0 ]
+		then
+			pressure=$(echo "$pressure*0.0295" | bc | xargs printf "%.2f")
+		fi
+		;;
+esac
+
+
+
+###[ Set icons ]###############################################################
+
+get_icon() {
+	case $1 in
+		Clear)
+			if [ $period = "night" ]
+			then
+				echo "$moon "
+			else
+				echo "$sun "
+			fi
+			;;
+		Clouds)
+			echo "$clouds "
+			;;
+		Rain)
+			echo "$rain "
+			;;
+		Fog)
+			echo "$fog "
+			;;
+		Mist)
+			echo "$mist "
+			;;
+		Haze)
+			echo "$haze "
+			;;
+		Snow)
+			echo "$snow "
+			;;
+		Thunderstorm)
+			echo "$thunderstorm "
+			;;
+	esac
+}
+
+
+
+###[ Display current Weather ]#################################################
+
+if [ "$forecast" != 0 ]
+then
+	output="$background$text $city $forecast_text$text$delimiter "
+
+	i=0
+	while [ $i -lt "$forecast" ]
+	do
+		day=$(echo "$weather" | jq ".list[$i]")
+		date=$(epoch_to_date "$(echo "$day" | jq -r '.dt')")
+		low=$(echo "$day" | jq -r '.temp.min' | xargs printf "%.0f")
+		high=$(echo "$day" | jq -r '.temp.max' | xargs printf "%.0f")
+
+		icon=""
+		if [ "$symbols" = true ]
+		then
+			sky=$(echo "$day" | jq -r '.weather[0].main')
+			icon=$(get_icon "$sky")
+		fi
+
+		output="$output$text$date$delimiter $data$high$text/$data$low $scale $icon"
+		if [ $i -lt $((forecast-1)) ]
+		then
+			output="$output$dashes "
+		fi
+
+		i=$((i + 1))
+	done
+else
+	if [ "$symbols" = true ]
+	then
+		icon="$(get_icon "$sky")"
+	fi
+	output="$background$text $greeting_text $city$delimiter$data $temperature $scale $icon"
+
+        if [ "$show_feels_like" = true ]
+        then
+                output="$output$dashes$text $feels_like_text$delimiter$data $feels_like $scale "
+        fi
+
+	if [ "$show_uvi" = true ]
+	then
+		output="$output$dashes$text UVI$delimiter$data $uvi "
+	fi
+
+	if [ "$show_wind" = true ]
+	then
+		output="$output$dashes$text $wind_text$delimiter$data $wind $speed_unit $direction "
+	fi
+
+	if [ "$show_humidity" = true ]
+	then
+		output="$output$dashes$text $humidity_text$delimiter$data $humidity%% "
+	fi
+
+	if [ "$show_pressure" = true ]
+	then
+		output="$output$dashes$text $pressure_text$delimiter$data $pressure $pressure_unit "
+	fi
+
+	if [ "$show_daylight" = true ]
+	then
+		output="$output$dashes$text $sunrise_text$delimiter$data $sunrise_time $dashes$text $sunset_text$delimiter$data $sunset_time "
+	fi
+fi
+
+if [ "$ansi" = true ]
+then
+	env printf "$output\033[0m\n"
+else
+	env printf "$output\n" | sed "s/$(printf '\033')\[[0-9;]*m//g"
+fi
