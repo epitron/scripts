@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+
+require 'epitools'
+
+args = ARGV
+if args.empty?
+  puts "usage: white-image-background <filename(s)>"
+  puts "(note: creates a backup of the original image)"
+  exit 1
+end
+
+args.each do |arg|
+  path = arg.to_Path
+  raise "Error: #{path} not found" unless path.exists?
+
+  backup = path.backup!
+  puts "* Converting: #{path} (backup: #{backup.filename})"
+  cmd = ["convert", backup.to_s, "-background", "white", "-alpha", "remove", "-alpha", "off", path.to_s]
+  #puts cmd.join(" ")
+  system *cmd
+end
