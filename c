@@ -19,6 +19,8 @@
 #
 #
 # TODOs:
+#   * MHTML parser
+#     |_ print pretty html/haml and image info (see: mhtmldump)
 #   * Don't blow up when you need a package
 #     |_ helpfully ask if the user wants to install it
 #   * If 'file' isn't installed, fall back to using the file extension, or the mime_magic gem
@@ -1433,7 +1435,13 @@ end
 ##############################################################################
 
 def print_exif(arg)
-  run("exiv2", "pr", arg, stderr: true)
+  if $exiftool_available ||= which("exiftool")
+    run("exiftool", arg, stderr: true)
+  elsif $exiv2_available ||= which("exiv2")
+    run("exiv2", "pr", arg, stderr: true)
+  else
+    raise "Error: we need either 'exiftool' or 'exiv2' to show image information"
+  end
 end
 
 ##############################################################################
