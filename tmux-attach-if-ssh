@@ -9,6 +9,7 @@
 #
 
 if [ "$SSH_CONNECTION" != "" ] && [ "$TMUX" == "" ]; then
+  termtitle "{ $HOSTNAME }"
   if tmux ls &> /dev/null; then
     tmux att
   else
