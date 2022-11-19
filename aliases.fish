@@ -1,48 +1,5 @@
-############################################################################################
-## Functions
 
-# function mkcd
-#   if [ ! -d "$@" ]
-#     mkdir "$argv"
-#   fi
-#   cd "$argv"
-# end
-
-# functions() {
-#   declare -f | less
-# }
-
-# # alias gc="git clone"
-# gc() {
-#   # Cloning into 'reponame'...
-#   if `which gc` "$@"; then
-#     cd `ls -tr | tail -n1`
-#   else
-#     echo "clone failed"
-#   fi
-# }
-
-# gem-cd() {
-#   local gem_dir
-
-#   if gem_dir="`gem-dir $@`"; then
-#     cd "$gem_dir"
-#   fi
-# }
-
-
-# pushpath() {
-#   if [ "$1" == "" ]; then
-#     dir="$PWD"
-#   else
-#     dir="`readlink -m "$1"`"
-#   fi
-
-#   export PATH="$dir":$PATH
-#   echo "'$dir' added to path."
-# }
-
-
+alias unalias='functions -e'
 
 ############################################################################################
 ## Aliases
@@ -83,6 +40,7 @@ alias cls='clear'
 
 # text
 alias nano="nano -w"
+alias n=nano
 alias s.='s .'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
@@ -167,7 +125,7 @@ alias rdp='xfreerdp'
 alias gource='gource --user-image-dir ~/.cache/gravatars'
 alias psx='pcsxr'
 alias detach='bg; disown'
-alias dpkg='sudoifnotroot dpkg'
+#alias dpkg='sudoifnotroot dpkg'
 alias record-desktop="simplescreenrecorder"
 alias b='chromium'
 
@@ -236,6 +194,9 @@ alias mp='makepkg -s'
 alias ni="sudoifnotroot npm install -g"
 # alias nl="npm list -g --color=always |& less -S"
 
+alias reload='exec fish'
+
+
 #
 # Usage:
 #   faketty <command> <args>
@@ -277,3 +238,19 @@ alias ni="sudoifnotroot npm install -g"
 #   fi
 #   alias ls="ls --color=auto"
 # fi
+
+unalias rm
+unalias dpkg
+
+alias dl='cd ~/dl'
+alias sd='cd ~/sd'
+alias misc='cd ~/misc'
+
+alias ai="apt install"
+alias as="apt search"
+alias ar="apt remove"
+alias au="apt update && apt upgrade"
+alias agdu="au"
+
+alias agar="apt-get autoremove"
+
