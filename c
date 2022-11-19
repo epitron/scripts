@@ -127,7 +127,7 @@ end
 
 class MissingDependency < Exception; end
 
-def depends(bin: nil, bins: [], gem: nil, gems: [], pip: nil, eggs: [], install: nil)
+def depends(bin: nil, bins: [], gem: nil, gems: [], pip: nil, eggs: [], install: nil, pkg: nil)
   # TODO: install stuff automatically!
 
   gems = [gems].flatten
@@ -160,6 +160,7 @@ def depends(bin: nil, bins: [], gem: nil, gems: [], pip: nil, eggs: [], install:
 
   if missing.any?
     msg = "Missing dependenc(y/ies): #{ missing.map{|t,n| "#{n} (#{t})"}.join(", ")}#{" (to install, run #{install.inspect})" if install}"
+    msg += " (it can be found in the #{pkg.inspect} package)" if pkg
     raise MissingDependency.new(msg)
     # $stderr.puts msg
     # exit 1
@@ -2045,10 +2046,8 @@ end
 ##############################################################################
 
 def print_pdf(file)
-  depends bins: "pdftohtml"
-
-  raise "Error: 'pdftohtml' is required; install the 'poppler' package" unless which("pdftohtml")
-  raise "Error: 'html2ansi' is required; install the 'html-renderer' gem" unless which("html2ansi")
+  depends bins: "pdftohtml", pkg: "poppler"
+  depends gem: "html2ansi"
 
   html = run("pdftohtml", "-stdout", "-noframes", "-i", file)
   print_html(html)
