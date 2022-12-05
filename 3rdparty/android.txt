@@ -1,3 +1,5 @@
+https://gitlab.com/linuxcafefederation/awesome-android/ # best opensource apps
+
 https://github.com/TeamNewPipe/NewPipe
 https://github.com/M66B/NetGuard
 https://github.com/kitsunyan/foxy-droid

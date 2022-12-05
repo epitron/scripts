@@ -1,2 +1,2 @@
 #!/bin/bash
-curl "cht.sh/$*"
+curl -LSs "https://cht.sh/$*" | less -RX
