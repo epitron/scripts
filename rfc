@@ -1,5 +1,5 @@
 #!/bin/bash
-URL=https://www.ietf.org/rfc/
+URL=https://www.ietf.org/rfc
 RFCINDEX=rfc-index.txt
 
 if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
@@ -23,5 +23,7 @@ if [ "$1" == "" ]; then
 
   less -X +60g rfc-index.txt
 else
-  curl -s -L $URL/rfc$1.txt | less -X
+  filename="rfc$(printf '%04d' $1).txt"
+  echo "[+] opening $URL/$filename"
+  curl -s -L $URL/$filename | less -X
 fi
