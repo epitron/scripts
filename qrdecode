@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if ! which zbarimg &> /dev/null; then
+  echo "Can't find zbarimg. Please install the 'zbar' package"
+  exit 2
+fi
+
+if [ "$1" == "" ]; then
+  echo "usage: qrdecode <image>"
+  exit 1
+fi
+
+zbarimg "$1"
