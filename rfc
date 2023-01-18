@@ -1,0 +1,29 @@
+#!/bin/bash
+URL=https://www.ietf.org/rfc
+RFCINDEX=rfc-index.txt
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+  echo "usage: rfc <id>     shows an RFC"
+  echo "         or"
+  echo "       rfc          lists all RFCs"
+  exit
+fi
+
+if [ "$1" == "" ]; then
+  if [ ! -d ~/.cache ]; then mkdir ~/.cache; fi
+  cd ~/.cache
+
+  if [ ! -f rfc-index.txt ]; then
+    # get the file
+    curl -L $URL/$RFCINDEX --output $RFCINDEX
+  elif [ `find $RFCINDEX -mtime +30` ]; then # only update the file if it's > 30 days old
+    # only download the index if the file on the server is newer
+    curl --silent -L $URL/$RFCINDEX --time-cond $RFCINDEX --output $RFCINDEX --connect-timeout 10
+  fi
+
+  less -X +60g rfc-index.txt
+else
+  filename="rfc$(printf '%04d' $1).txt"
+  echo "[+] opening $URL/$filename"
+  curl -s -L $URL/$filename | less -X
+fi
