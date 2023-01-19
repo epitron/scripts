@@ -39,8 +39,8 @@ alias c-x='chmod -x'
 alias cls='clear'
 
 # text
-alias nano="nano -w"
-alias n=nano
+alias nano='nano -w'
+alias n='nano'
 alias s.='s .'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'

@@ -4,6 +4,18 @@ Wherever I go and whatever I do, I am always in the straight jacket of junk, una
 It's like I can't breathe in the US, especially in suburban communities.
     -- William S. Burroughs
 %
+Any sufficiently complicated C or Fortran program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp.
+    -- Philip Greenspun's tenth rule of programming
+%
+All conditioning aims at making people like their inescapable social destiny.
+    -- Aldous Huxley
+%
+In man's life, the absence of an essential component usually leads to the adoption of a substitute. The substitute is usually embraced with vehemence and extremism, for we have to convince ourselves that what we took as second choice is the best there ever was. Thus blind faith is to a considerable extent a substitute for the lost faith in ourselves; insatiable desire a substitute for hope; accumulation a substitute for growth; fervent hustling a substitute for purposeful action; and pride a substitute for an unattainable self-respect.
+    -- Eric Hoffer
+%
+The nineteenth century planted the words which the twentieth century ripened into the atrocities of Stalin and Hitler. There is hardly an atrocity committed in the twentieth century that was not foreshadowed or even advocated by some noble man of words in the nineteenth.
+    -- Eric Hoffer
+%
 It is not in the nature of politics that the best men should be elected. The best men do not want to govern their fellow men.
     -- George MacDonald
 %

@@ -1,0 +1,18 @@
+# Using ExifTool to embed alt text into images for accessibility
+
+Homepage:
+  https://exiftool.org/
+
+Arch package:
+  perl-image-exiftool
+
+## Write:
+
+```exiftool filename -AltTextAccessibility="Your alt text here."```
+```exiftool filename -extDescrAccessibility="Your extended description text here."```
+
+## Read:
+
+```exiftool filename -AltTextAccessibility```
+```exiftool filename -extDescrAccessibility```
+
