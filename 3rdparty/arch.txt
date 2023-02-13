@@ -24,7 +24,7 @@ dog
 
 # System monitoring
 dstat
-bpytop
+htop bpytop
 
 
 # File transfers

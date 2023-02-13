@@ -1,3 +1,5 @@
 https://github.com/goodtiding5/docker-nitter
 https://github.com/crazy-max/docker-firefox-syncserver
 
+# a linux distro for setting up a home server with a bunch of services, running as docker containers (has lots of supported apps and can automatically backup all their configs!)
+https://github.com/GhostWriters/DockSTARTer
