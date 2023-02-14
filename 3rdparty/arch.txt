@@ -138,7 +138,7 @@ feh
 ncmpcpp
 pulseaudio pavucontrol volumeicon pulsemixer ponymix
 audacious-plugins mpg123 libmtp libmms
-imagemagick
+imagemagick oxipng
 handbrake
 
 
