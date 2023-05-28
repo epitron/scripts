@@ -1,0 +1,2 @@
+# SSH with backwards-compatible (aka. OLD) ciphers
+ssh -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa "$@"
