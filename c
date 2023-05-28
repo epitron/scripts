@@ -1597,6 +1597,7 @@ end
 ##############################################################################
 
 def print_csv(filename)
+  # TODO: detect headers by parsing the first few lines, and compare the first row to the rest, checking if there's any number fields (rationale: most CSVs have number columns, but the headers are usually text, so if there's a colum with numbers and a text header, the first row is probably headers) (hint for fast detection: `CSV.parse_line(line)` parses a single row)
   require 'csv'
 
   plain     = "\e[0m"
@@ -1605,12 +1606,17 @@ def print_csv(filename)
   cyan      = "\e[36;1m"
   dark_cyan = "\e[36m"
 
-  if filename[/\.xls$/]
+  if filename[/\.xls$/i]
     io = IO.popen(["xls2csv", filename], "rb")
     csv = CSV.new(io) #, row_sep: "\r\n")
   else
-    tabs, commas = open(filename, "rb") { |f| f.each_line.take(5) }.map(&:chomp).map { |l| l.scan(%r{(,|\t)})}.flatten.partition { |e| e == "\t" }
-    separator = tabs.size > commas.size ? "\t" : ","
+    if filename[/\.tsv$/i]
+      separator = "\t"
+    else
+      tabs, commas = open(filename, "rb") { |f| f.each_line.take(5) }.map(&:chomp).map { |l| l.scan(%r{(,|\t)})}.flatten.partition { |e| e == "\t" }
+      separator = tabs.size > commas.size ? "\t" : ","
+    end
+
     csv = CSV.open(filename, "rb", col_sep: separator)
   end
 
@@ -2205,7 +2211,7 @@ def convert(arg)
         print_pickle(arg)
       when *%w[.xml]
         print_xml(arg)
-      when *%w[.csv .xls]
+      when *%w[.csv .tsv .xls]
         print_csv(arg)
       when *%w[.weechatlog]
         print_weechat_log(arg)
