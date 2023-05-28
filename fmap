@@ -34,7 +34,7 @@ a, b = opts[:range].split("-").map { |ip| IPAddr.new(ip) }
 if a and b
   ips = (a..b).to_a.map(&:to_s)
 else
-  ips = [a]
+  ips = [a.to_s]
 end
 
 a, b = opts[:ports].split("-").map(&:to_i)
@@ -56,6 +56,7 @@ JobRunner.new do |jr|
 
         begin
           Timeout::timeout(timeout) do
+            ip = ip.to_s unless ip.is_a?(String) # wat?
             socket = TCPSocket.new(ip, port)
             socket.close
             [ip, port, :success]
