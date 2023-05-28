@@ -1,0 +1,119 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+##########################################################################################################################################
+
+class SS < Struct.new(:proto, :state, :rq, :sq, :laddr, :addr, :name, :pid, :fd)
+
+  # Netid            State               Recv-Q            Send-Q                          Local Address:Port                           Peer Address:Port            Process
+  # udp              ESTAB               0                 0                            10.1.1.189%wlan0:68                               10.1.1.254:67
+  # udp              ESTAB               0                 0                                  10.1.1.189:58107                         142.251.41.74:443              users:(("chromium",pid=975583,fd=41))
+  # tcp              ESTAB               0                 0                                  10.1.1.189:4001                           54.187.21.48:40551            users:(("ipfs",pid=916705,fd=125))
+  # tcp              ESTAB               0                 0                                  10.1.1.189:4001                          51.15.202.137:4001             users:(("ipfs",pid=916705,fd=104))
+  # tcp              ESTAB               0                 0                                  10.1.1.189:4001                          173.53.59.199:4001             users:(("ipfs",pid=916705,fd=71))
+  # tcp              ESTAB               0                 0                                  10.1.1.189:4001                         47.242.155.153:4001             users:(("ipfs",pid=916705,fd=146))
+
+  STATE_COLORS = {
+    # trying to connect
+    "SYN-SENT" => :green,
+
+    # connected
+    "ESTAB" => :white,
+
+    # active close
+    "CLOSING" => :red,
+
+    # passive close
+    "CLOSE-WAIT" => :yellow,
+    "LAST-ACK" => :red,
+
+    # "CLOSED" (does this ever happen?)
+  }
+
+  PROCESS_RE = /
+    ^
+    users:
+    \(\(
+      "(?<name>[^"]+)",
+      (?<attrs>.+)
+    \)\)
+    $
+  /x
+
+  def self.connections # tcp only
+    IO.popen(["ss", "-pntu"], &:read).
+      each_line.
+      drop(1).
+      map { |line| from_line(line) }
+  end
+
+  def self.from_line(line)
+    row = line.strip.split
+    if m = row.pop.match(PROCESS_RE)
+      procinfo = m.named_captures
+      attrs = procinfo["attrs"].split(",").map { |attr| k, v = attr.split(/=/,2); [k.to_sym, v[/^\d+$/] ? v.to_i : v] }.to_h
+      # row[-1] = {name: procinfo["name"], **attrs}
+      row += [procinfo["name"], attrs[:pid], attrs[:fd]]
+    else
+      # p error: line
+      row += [nil]*3
+    end
+
+    new(*row)
+  end
+
+  def inspect
+    "[ #{name}(#{pid}) => #{addr}/#{proto} ]"
+  end
+
+  ###################################################################################################################################
+
+  def self.print_legend
+    states = STATE_COLORS.map { |name, color| "<8>[ <#{color}>#{name} <8>]".colorize }
+    puts "states: #{states.join(" ")}"
+  end
+
+  def self.print_connections
+    # TCP state diagram: https://tangentsoft.com/wskfaq/articles/bitmaps/state-diagram-small.gif
+    grouped = SS.connections.group_by{|c| c.name }
+
+    grouped.sort_by { |name,cs| cs.size }.each do |name,cs|
+      puts "<8>===<7>[ <15>#{name} <8>(<7>#{cs.size}<8>) <7>]<8>========================".colorize
+
+      cells = cs.map do |c|
+        addr = c.addr.to_s
+
+        unless color = STATE_COLORS[c.state]
+          addr += "(#{c.state})"
+          color = :white
+        end
+
+        addr.send(color)
+      end
+
+      table = Term::Table.new(cells)
+      table.by_cols.each_line do |line|
+        puts line
+        Term.clear_eol
+      end
+
+      puts
+    end
+  end
+
+end
+
+##########################################################################################################################################
+
+
+##########################################################################################################################################
+
+Term.clear
+
+loop do
+  Term.home
+  SS.print_legend
+  SS.print_connections
+  sleep 0.4
+end
+

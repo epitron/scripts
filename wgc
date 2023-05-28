@@ -6,5 +6,6 @@ else
   url="$@"
 fi
 
+echo "getting: $url"
 wget --xattr --no-verbose --show-progress --no-use-server-timestamps "$url"
 

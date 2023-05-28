@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ $(uname -o) == Android ]; then
   termux-clipboard-get
 else

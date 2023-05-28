@@ -1,2 +1,4 @@
-https://greasyfork.org/scripts/431706 # Fandom.com cleaner
+https://greasyfork.org/en/scripts/431706-fandom-com-cleaner-wikis-userscript
+https://greasyfork.org/en/scripts/395497-login-reminder-popup-remover
+https://greasyfork.org/en/scripts/437291-open-source-alternative-redirector
 

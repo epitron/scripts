@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+########################################################
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: cat-baud [options] [<file(s)>]"
+
+  on "b=", "baud",  "Baudrate", default: "2400"
+end
+
+args = ARGV
+
+########################################################
+
+baud=opts[:baud].to_i
+delay=1.0/(baud/8)
+
+if baud < 1
+  $stderr.puts "not enough baud"
+  exit 255
+end
+
+ARGF.each_char { |c| c.display; sleep delay }

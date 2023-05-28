@@ -28,6 +28,17 @@ require 'xmlrpc/client'
 #   "uploadLength"=>"0",
 #   "uploadSpeed"=>"0"}]
 
+class Rational
+  #
+  # Returns a string representing the number in percent
+  #
+  def percent
+    "%0.1f%%" % (to_f * 100)
+  end
+  alias_method :to_percent, :percent
+end
+
+
 def puts_clear(str=nil)
   print str if str
   Term.clear_eol
@@ -56,7 +67,7 @@ loop do
       end.join
 
       speed    = info["downloadSpeed"].to_i
-      complete = Ratio.new(info["completedLength"].to_i, info["totalLength"].to_i)
+      complete = Rational(info["completedLength"].to_i, info["totalLength"].to_i)
 
       Term.home
       info["files"].each do |f|

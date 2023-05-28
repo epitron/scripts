@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#cat | grep --color=always -E '\w(| )' << END
 cat << END
 Letters
 a ⠁ b ⠃ c ⠉ d ⠙ e ⠑ f ⠋ g ⠛ h ⠓ i ⠊ j ⠚

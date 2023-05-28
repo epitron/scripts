@@ -20,11 +20,11 @@ def popen_with_stderr(*cmd)
 end
 
 def get_clipboard
-  result = popen_with_stderr("xclip", "-o")
+  result = popen_with_stderr("cb")
 
-  unless $?.success?
-    result = popen_with_stderr("xclip", "-o", "-selection", "clipboard")
-  end
+#  unless $?.success?
+#    result = popen_with_stderr("xclip", "-o", "-selection", "clipboard")
+#  end
 
   result
 end

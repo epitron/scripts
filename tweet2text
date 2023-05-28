@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+require "oga"
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+# TODO:
+# - untruncate urls (use href instead of text node)
+########################################################
+
+TESTURL = "https://twitter.com/G_S_Bhogal/status/1545510413982474253"
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: tweet2txt [options] <url>"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+def field(t, *names)
+  names.each do |name|
+    v = t.at_css(".#{name}")
+    return v.text unless v.nil?
+  end
+  nil
+end
+
+def ftime(time)
+  time.
+    strftime("%Y-%m-%d %H:%M").
+    gsub(/ 00:00$/, '')
+end
+
+########################################################
+
+url = args.first || IO.popen(["cb"], &:read).strip
+
+if (uri = URI.parse(url)).host =~ /\.?twitter\.com$/
+  uri.host = "nitter.ca"
+  url = uri.to_s
+end
+
+puts url
+puts
+
+
+d = Oga.parse_html curl(url)
+
+tweets = d.css(".tweet-body")
+toots  = d.css(".status__content").map(&:parent)
+
+tweets.each do |t|
+  user = field(t, "username")
+  text = field(t, "tweet-content")
+  time = DateTime.parse field(t, "tweet-published", "tweet-date")
+
+  puts "[#{ftime(time)}] <#{user}>\n\n#{text}"
+  puts
+end
+
+toots.each do |t|
+  #binding.pry
+  user = field(t, "display-name__account")&.strip
+
+  c = t.at_css(".status__content")
+  # <p><span class="p-summary">Spoilers for Stray? </span><button class="status__content__spoiler-link">Show more</button></p><div class="e-content" lang="en">
+  c.at_css("button.status__content__spoiler-link")&.remove
+  s = c.at_css("span.p-summary")
+  s&.replace("{ #{s.text.strip} }")
+  c.css("br").each { |e| e.replace("\n")}
+  c.css("p").each  { |e| e.replace(e.text + "\n\n")}
+  text = c.text.strip
+
+  time = DateTime.parse t.at_css("data.dt-published")["value"]
+  puts "[#{ftime(time)}] <#{user}>\n\n#{text}"
+  puts
+  
+  #binding.pry
+end
