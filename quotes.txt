@@ -1,3 +1,8 @@
+I have two memories of Saint Joan. The first was being burned at the stake in the picture. The second was being burned at the stake by the critics. The latter hurt more. I was scared like a rabbit and it showed on the screen. It was not a good experience at all. I started where most actresses end up.
+
+I am the greatest example of a very real fact, that all the publicity in the world will not make you a movie star if you are not also an actress.
+    -- Jean Seberg (on her first acting job in the epic film _Saint Joan_)
+%
 Any sufficiently complicated C or Fortran program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp.
     -- Philip Greenspun's tenth rule of programming
 %
