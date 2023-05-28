@@ -9,7 +9,8 @@
 #
 # => unit conversions (lbs -> kg, C -> F, etc.)
 # => Translate @symbol to &:symbol (for inline Ruby expressions)
-# => / does floating point division, // does integer division
+# => smart division
+#    |_ if there's no remainder, return an integer, otherwise a float (force integer division with "//" (same rules for "\" and "\\"))
 # => Bignum.sqrt should work (convert all numbers to BigDecimal?)
 # => proper parser
 # => Pry's prettyprinter
@@ -17,6 +18,10 @@
 # => Non-globbing operators: x / + - %
 # => | or |> to compute the prior expression and return the result, which can then be operated on more
 # => Treetop Parser (http://blog.glaucocustodio.com/2014/11/10/natural-language-parsing-with-ruby/)
+#
+# Bugs:
+#
+# => "5 \ 9.0" fails because .0 isn't matched
 #
 #############################################################################
 
@@ -64,6 +69,8 @@ class MathOTron
   end
 
   #############################################################################
+
+  NUM_RE = /[\d_,]+(?:\.\d+)?/
 
   REWRITE_RULES = {
     ## NICE MATH
