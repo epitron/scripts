@@ -16,6 +16,8 @@ runcmd() {
 
 runcmd setxkbmap -option keypad:pointerkeys
 runcmd xkbset mousekeysaccel $pre_accel_time $ms_between_movements $movements_before_acceleration_peaks $final_pixels_per_movement $acceleration_curve
+runcmd xkbset exp mousekeys
+runcmd xkbset mousekeys
 
 echo
 echo "Enabled! Press 'LeftShift+NumLock' to toggle it"
