@@ -130,7 +130,7 @@ end
 #####################################################################
 
 opts, args = ARGV.partition { |arg| arg[/^-\w/] }
-n_vers = 20
+n_vers = 100
 pkg = args.first
 
 if args.size != 1
