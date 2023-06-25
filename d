@@ -52,12 +52,18 @@ SIZE_COLORS = Rash.new(
 
 
 def parse_options
+  # custom parser for --<type> args
   selected_types = []
   ARGV.each do |arg|
     if type = ARG2TYPE[arg.gsub(/^--/, '')]
       ARGV.delete(arg)
       selected_types << type
     end
+  end
+  
+  # subsitute -R for -r (ls compatibility)
+  if i = ARGV.index("-R")
+    ARGV[i] = "-r"
   end
 
   #
@@ -68,7 +74,7 @@ def parse_options
 
     on "v", "verbose",      'Enable verbose mode'
     on "l", "long",         'Long mode (with sizes and dates)'
-    on "r", "recursive",    'Recursive'
+    on "r", "recursive",    'Recursive (or -R for "ls" compatibility)'
     on "D", "dirs-first",   'Show directories first'
     on "a", "all"   ,       'Show all files (including hidden)'
     on "H", "hidden",       'Show hidden files'
