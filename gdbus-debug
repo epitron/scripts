@@ -1,0 +1,2 @@
+#!/bin/bash
+G_DBUS_DEBUG=all "$@"
