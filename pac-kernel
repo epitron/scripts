@@ -1,1 +1,3 @@
-yes | pac linux-hardened linux-hardened-headers linux-hardened-docs linux linux-headers linux-firmware nvidia nvidia-utils nvidia-dkms virtualbox-host-dkms
+yes | pac linux-hardened linux-hardened-headers linux-hardened-docs linux-firmware nvidia-utils nvidia-open-dkms 
+# linux linux-headers 
+# virtualbox-host-dkms
