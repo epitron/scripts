@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if ! which ponymix &> /dev/null; then
+  echo "I can't do anything without the 'ponymix' program. Please install it!"
+  exit 1
+fi
+
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+  echo "purpose: adjusts the left/right balance of your audio device"
+  echo "usage: balance <number between -100 to 100, 0 is center>"
+  exit
+fi
+
+print_balance() {
+  echo "Balance: $(ponymix get-balance)"
+}
+
+if [ "$1" == "" ]; then
+  print_balance
+else
+  ponymix set-balance -- "$1" > /dev/null
+  print_balance
+fi
