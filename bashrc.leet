@@ -27,6 +27,7 @@ function possibly_append_path() {
 }
 
 # Things for the PATH (in reverse order of precedence)
+possibly_append_path ~/.dotnet/tools
 possibly_append_path ~/opt/graal/bin
 possibly_prepend_path ~/.fzf/bin
 possibly_prepend_path ~/perl5/bin
