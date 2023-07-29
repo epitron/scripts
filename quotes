@@ -85,7 +85,7 @@ files << LOCAL_QUOTES_FILE if files.empty? or opts.include?("-l")
 
 files.uniq!
 
-if (missing = files.select { |f| not File.exists?(f) }).any?
+if (missing = files.select { |f| not File.exist?(f) }).any?
   puts "Missing files:"
   missing.each { |m| puts "  #{m.inspect}" }
   exit 1
