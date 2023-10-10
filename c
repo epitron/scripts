@@ -1655,6 +1655,29 @@ def print_csv(filename)
 end
 
 ##############################################################################
+
+def print_vcf(filename)
+  depends gem: 'epitools'
+  require 'epitools/minimal'
+  require 'epitools/core_ext/enumerable'
+
+  Enumerator.new do |out|
+    open(filename) do |inp|
+      cards = inp.each_line.lazy.map(&:strip).split_between { |a,b| a == "END:VCARD" and b == "BEGIN:VCARD" }
+      cards.each do |card_lines|
+        card_lines.each do |l|
+          key, val = l.split(":",2)
+          next if ["BEGIN", "END", "VERSION", "X-IRMC-LUID"].include? key
+          val = val.split(";", 2).reverse.join(" ") if key == "N"
+          out << "#{key}: #{val}" unless val&.empty?
+        end
+        out << ""
+      end
+    end
+  end
+end
+
+##############################################################################
 # TODO: wide view improvement: put ascii chars side by each, but stack hex digits topwise
 def print_hex(arg, side_by_side=true)
   depends gems: "epitools"
@@ -2207,6 +2230,8 @@ def convert(arg)
         print_xml(arg)
       when *%w[.csv .xls]
         print_csv(arg)
+      when *%w[.vcf]
+        print_vcf(arg)
       when *%w[.weechatlog]
         print_weechat_log(arg)
       when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4a .m4s .avi .mov .qt .rm .wma .wmv .s3m .xm .it .mod]
