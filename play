@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 ###################################################################################################
 # TODOs:
-# * Use --ytdl-format= to ignore vp9 and > 1080p streams
 # * Multi-keyword search (eg: "b 52" should find "B-52s")
 ###################################################################################################
 require 'json'
@@ -26,7 +25,6 @@ def parse_options
     on 'f',  'fullscreen',"Detailed info about <n>"
     on 's=', 'subs',      "Use specified file or URL as subtitles (or 'auto' to add .srt to the filename)"
     on 't=', 'seek',      "Seek to timestamp"
-    on 'p=', 'player',    "Which player? (eg: mpv, mplayer, ffplay)", default: "mpv"
     on 'r',  'rofi',      "Rofi Opener"
     on 'c',  'cast',      "Open in Chromecast"
     on 'k',  'kodi',      "Open in Kodi"
@@ -35,7 +33,7 @@ def parse_options
     on 'C=', 'device',    "Chromecast device"
     on 'n',  'no-daemon', "Run in the foreground (so you can see logs)"
     on 'y',  'youtube',   "Search youtube"
-    on 'P',  'pry',       "Launch a Pry inspector before playing"
+    on 'p',  'pry',       "Launch a Pry inspector before playing"
     on 'v',  'verbose',   "Show more info"
   end
 
@@ -218,7 +216,7 @@ def log_entries
     log = open(LOGFILE)
     meth = :from_line
   end
-  log.reverse_each.lazy.with_index.map { |logline, i| LogEntry.send(meth, logline, i+1) }
+  log.reverse_each.lazy.with_index.map { |logline, i| LogEntry.send(meth, logline.strip, i+1) } # rescue nil }.reject { |l| l.nil? }
 end
 
 def entries_for_nums(nums)
@@ -340,7 +338,7 @@ def show_history(query: nil, amount: 10, reverse: true, paged: false, rofi: fals
   output.puts
 
   entries = log_entries
-  entries = entries.select { |entry| entry.title =~ regexp || entry.url =~ regexp || entry.uploader =~ regexp } if query
+  entries = entries.select { |entry| entry.title =~ regexp || entry.url =~ regexp } if query
   entries = entries.take(amount) unless amount == 0
 
   if reverse
@@ -364,8 +362,7 @@ def show_history(query: nil, amount: 10, reverse: true, paged: false, rofi: fals
 
     headline = "<10>#{result.date} <12>| <11>#{regexp ? title.gsub(regexp, &:on_blue) : title}"
     if result.respond_to?(:uploader) and result.uploader
-      #headline << " <8>(<1>#{result.uploader}<8>)"
-      headline << " <8>(<1>#{regexp ? result.uploader.gsub(regexp, &:light_yellow_on_blue) : result.uploader}<8>)"
+      headline << " <8>(<1>#{result.uploader}<8>)"
     end
 
     output.puts headline.colorize
@@ -444,14 +441,12 @@ def download(*urls, opts: nil)
       "--no-mtime",
       "--xattrs",
       "--no-playlist",
-      "--add-metadata",
       "-o", "%(title)s.%(ext)s",
     ]
 
-    if opts&.audio?
+    if opts&.audio_only?
       cmd += [
         "--extract-audio",
-        "--embed-thumbnail",
         "-f", "bestaudio[ext=m4a]/bestaudio",
       ]
     else
@@ -480,8 +475,8 @@ def yd_json(url)
   cmd = [
     youtube_dl_path,
     "-j",
-    "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-    # "-f", "bestvideo[ext=mp4,height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4]/best", # limit to 1080p
+    #"-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+    "-f", "bestvideo[ext=mp4][height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4]/best", # limit to 1080p
     "--sub-format=srt/ass/vtt/best",
     "--sub-lang=en",
     "--write-sub",
@@ -569,17 +564,6 @@ end
 
 ###################################################################################################
 
-def players
-  # TODO: handle subtitle and youtube/direct urls selection
-  {
-    "mpv"     => proc { |info| ["mpv",     "--force-media-title=#{info["title"]} (#{info["upload_date"]})", "--force-window=immediate"] },
-    "ffplay"  => proc { |info| ["ffplay",  "-window_title",    "#{info["title"]} (#{info["upload_date"]})"] },
-    "mplayer" => proc { |info| ["mplayer", "-title",           "#{info["title"]} (#{info["upload_date"]})"] },
-  }
-end
-
-###################################################################################################
-
 # def play(url, foreground: false, verbose: false, audio_only: false)
 def play(url, opts)
   foreground = opts["no-daemon"] or opts.pry?
@@ -605,19 +589,11 @@ def play(url, opts)
   # Watched-history log
   write_to_log(url, json) unless url.is_a? LogEntry # if we're playing something from the history, don't re-log it
 
-  # TODO:
-  #   1. gather relevant variables (eg: filename, url, title, date, etc.) into a hash
-  #   2. run hash through a lambda that generates the command line
-
   # Command to execute
   if audio_only
-    cmd = players[:ffplay].call(json)
+    cmd = ["ffplay", "-window_title", "#{json["title"]} (#{json["upload_date"]})"]
   else
-    if player = players[opts[:player]]
-      cmd = player.call(json)
-    else
-      cmd = [opts[:player]]
-    end
+    cmd = ["mpv", "--force-media-title=#{json["title"]} (#{json["upload_date"]})", "--force-window=immediate"]
   end
 
   # Pull audio/video URLs from JSON
@@ -626,12 +602,7 @@ def play(url, opts)
     if audio_only
       cmd << audio["url"]
     else
-      if url.to_s[/(youtu\.be|youtube\.com|archive\.org)/]
-        cmd << url.to_s
-        cmd << "--ytdl-format=bestvideo[height<=?1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=?1080]/best"
-      else
-        cmd += [video["url"], "--audio-file=#{audio["url"]}"]
-      end
+      cmd += [video["url"], "--audio-file=#{audio["url"]}"]
     end
   elsif url = json["url"]
     if json["format"] =~ /audio only/ or json["ext"] == "m4a" or json["ext"] == "mp3"
@@ -760,7 +731,7 @@ if $0 == __FILE__
       kodi(*urls)
     else
       urls.each do |url|
-        if opts.download? or opts.audio?
+        if opts.download?
           download(url, opts: opts)
         elsif which("mpv")
           play(url, opts)
