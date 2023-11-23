@@ -55,7 +55,7 @@ $ socat -T 0.1 pipe pipe
 // incoming data back to client
 $ socat TCP-LISTEN:8000,crlf SYSTEM:"echo HTTP/1.0 200; echo Content-Type\: text/plain; echo; cat"
 
-// a less primitive HTTP echo server that sends back not only the reqest but
+// a less primitive HTTP echo server that sends back not only the request but
 // also server and client address and port. Might have portability issues with
 // echo
 ./socat -T 1 -d -d tcp-l:10081,reuseaddr,fork,crlf system:"echo -e \"\\\"HTTP/1.0 200 OK\\\nDocumentType: text/html\\\n\\\n<html>date: \$\(date\)<br>server:\$SOCAT_SOCKADDR:\$SOCAT_SOCKPORT<br>client: \$SOCAT_PEERADDR:\$SOCAT_PEERPORT\\\n<pre>\\\"\"; cat; echo -e \"\\\"\\\n</pre></html>\\\"\""
