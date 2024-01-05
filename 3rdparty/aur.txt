@@ -1,3 +1,4 @@
+chronometer # nutrition app
 chromexup
 ungoogled-chromium
 stapler
