@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+if [ "$2" == "" ]; then
+  echo "usage: wget-warc <url> <output.warc>"
+  exit 1
+fi
+
+url="$1"
+warc="$2"
+
+wget -pkrm --warc-cdx --warc-file="$warc" "$url"
