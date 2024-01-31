@@ -1,5 +1,14 @@
 #!/usr/bin/env ruby
 
+niturl = %w[
+https://nitter.1d4.us/
+https://nitter.rawbit.ninja/
+https://nitter.moomoo.me/
+https://nitter.freedit.eu/
+https://nitter.net/
+].first
+niturl = ENV['NITTER'] || ENV['nitter'] || niturl
+
 args = ARGV
 
 if args.reject{|arg|arg[/^-\w/]}.empty? or args.delete("--help")
@@ -35,7 +44,7 @@ cmd = %w[
   --no-mtime
   --xattrs
   --add-metadata
-  --trim-filenames 220
+  --trim-filenames 100
 ]
 
 urls, opts = args.partition { |arg| arg[%r{^\w{2,20}://.}] }
@@ -65,7 +74,7 @@ unless opts.include?("-o")
     if urls.any? { |u| u["tiktok.com/"] }
       cmd << "%(uploader)s - %(title)0.50s - %(description)0.150s.%(ext)s"
     else
-      cmd << "%(title)0.240s.%(ext)s"
+      cmd << "%(title)0.200s.%(ext)s"
     end
   end
 end
@@ -84,11 +93,11 @@ elsif opts.delete("-s")
   cmd << "--skip-download"
   cmd << "--write-auto-sub"
 elsif opts.delete("-3")
-  cmd += %w[-f bestvideo[ext=mp4,height<=?360]+bestaudio[ext=m4a]/best]
+  cmd += %w[-f bestvideo[ext=mp4][height<=?360]+bestaudio[ext=m4a]/best]
 elsif opts.delete("-4")
-  cmd += %w[-f bestvideo[ext=mp4,height<=?480]+bestaudio[ext=m4a]/best]
+  cmd += %w[-f bestvideo[ext=mp4][height<=?480]+bestaudio[ext=m4a]/best]
 elsif opts.delete("-7")
-  cmd += %w[-f bestvideo[ext=mp4,height<=?720]+bestaudio[ext=m4a]/best]
+  cmd += %w[-f bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best]
 elsif opts.delete("-l")
   ## youtube-dl defaults to the best quality, so this isn't necessary -- it just causes problems
   cmd += %w[-f best --youtube-skip-dash-manifest]
@@ -109,7 +118,7 @@ urls.each_with_index do |url, i|
     url = "https://youtu.be/#{$1}"
   end
 
-  url = url.gsub(%r{/nitter\.[^/]+/}, "/twitter.com/")
+  url = url.sub(%r{^https?://nitter\.[^/]+/}, niturl) if niturl
 
   if url =~ /(youtu\.be|(you|hook)tube\.com|vimeo\.com)/
     unless cmd.include?("--skip-download") or cmd.include?("-f") or opts.delete("-h")
