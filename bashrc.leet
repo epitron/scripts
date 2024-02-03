@@ -92,6 +92,7 @@ if [ "$EDITOR" == "" ]; then
   export EDITOR="nano"
 fi
 export PAGER=less
+export GREP_COLORS="ms=01;32"
 export CLICOLOR=1
 export PYTHONSTARTUP=~/.pystartup
 export XZ_OPT="--threads=0"
