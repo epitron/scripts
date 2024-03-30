@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+require 'epitools'
+
+square_years = (-1...2055).select { |y| d = Date.parse("#{y}-02-01"); d.wday == 0  and (d+28).day != 29 }
+
+lesspipe do |less|
+  square_years.reverse.each_cons(2) do |year, prev_year|
+    delta = year - prev_year
+
+    less.puts "<15>#{year.to_s.rjust(4)} <8>(<9>+<11>#{delta}<8> years)".colorize
+  end
+end
