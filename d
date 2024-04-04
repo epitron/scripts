@@ -182,7 +182,7 @@ end
 
 ###############################################################################
 
-def print_paths(paths, long: false, regex: nil, hidden: false, tail: false)
+def print_paths(paths, long: false, regex: nil, hidden: false, tail: false, paged: false)
   paths  = paths.select { |path| path.filename =~ regex } if regex
   paths  = paths.reject &:hidden? unless hidden
 
@@ -200,10 +200,10 @@ def print_paths(paths, long: false, regex: nil, hidden: false, tail: false)
     end
   end
 
-  if tail
-    printer[$stdout]
-  else
+  if paged
     lesspipe(&printer)
+  else
+    printer.call($stdout)
   end
 end
 
@@ -212,7 +212,12 @@ end
 # Main
 ###############################################################################
 
-opts, selected_types, args = parse_options
+begin
+  opts, selected_types, args = parse_options
+rescue Slop::Error => e
+  puts "<12>Error: <7>#{e}".colorize
+  exit 1
+end
 
 args = ["."] if args.empty?
 
@@ -288,5 +293,5 @@ grouped.each do |dir, paths|
     paths = dirs + paths
   end
 
-  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?, tail: start_pager_at_the_end)
+  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?, paged: opts.paged?)
 end
