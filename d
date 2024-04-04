@@ -9,17 +9,32 @@ require 'epitools/clitools'
 ###############################################################################
 
 TYPE_INFO = [
-  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php|ipynb|lua)$/i,      :light_yellow],
-  [:image,   /\.(jpe?g|bmp|png|gif)$/i,                                   :green],
-  [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv|vob)$/i,          :light_purple],
+  [:code,    /\.(rb|c|c++|cpp|h|py|sh|nim|pl|awk|go|php|ipynb|lua)$/i,    :light_yellow],
+  [:image,   /\.(jpe?g|jp2|bmp|png|gif)$/i,                               :green],
   [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
   [:bin,     /\.(exe)$/i,                                                 :light_green],
   [:config,  /\.(conf|ini)$/i,                                            :cyan],
   [:dotfile, /^\../i,                                                     :grey],
-  [:data,    /\.(json|ya?ml|h|sql)$/i,                                    :yellow],
-  [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
+  [:data,    /\.(json|ya?ml|sql|csv)$/i,                                  :yellow],
+  [:subs,    /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
+  [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv|vob|m2[vp]|rm|asf)$/i,   :light_purple],
   [:archive, /\.(zip|rar|arj|pk3|deb|7z|tar\.(?:gz|xz|bz2|zst)|tgz|pixz|gem)$/i, :light_yellow],
   [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk|epub|docx?))$/i, :light_white],
+]
+
+INVENTORY_OF_TYPE_OPTIONS = %w[
+  file(s)
+  dir(s)/director(y/ies)
+  image(s)/pic(s)/pix
+  vid(eo)(s)
+  text(s)/doc(s)
+  code/source/src
+  music/audio
+  sub(s)
+  bin(s)/exe(s)/program(s)
+  archive(s)/zip(s)
+  dotfile(s)/sidecar(s)
+  data/json/yaml/csv/sql
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -31,16 +46,17 @@ ARG2TYPE = Rash.new({
   /^vid(eo)?s?$/          => :video,
   /^(subs?)$/             => :sub,
   /^(image?s|pics?|pix)$/ => :image,
-  /^(text|docs?)$/        => :doc,
-  /^(archives?|zip)$/     => :archive,
-  /^(dir|directory)$/     => :dir,
+  /^(text|doc)s?$/        => :doc,
+  /^(archive|zip)s?$/     => :archive,
+  /^director(y|ies)$/     => :dir,
   /^(bin|exe|program)s?$/ => :bin,
   /^dotfiles?$/           => :dotfile,
-  /^sidecar$/             => :dotfile,
-  /^data$/                => :data,
+  /^sidecars?$/           => :dotfile,
   /^files?$/              => :file,
   /^dirs?$/               => :dir,
+  /^(data|json|yaml|sql|csv)$/  => :data,
 })
+
 
 SIZE_COLORS = Rash.new(
               0...100 => :grey,
@@ -87,7 +103,7 @@ def parse_options
     on "g=","grep",         'Search filenames'
     on "f=","find",         'Find in directory tree'
 
-    separator "        --<type name>       List files of this type (possibilities: #{TYPE_INFO.map(&:first).join(', ')})"
+    separator "        --<type name>       List files of this type; possibilities: #{INVENTORY_OF_TYPE_OPTIONS.join(', ')}"
   end
 
   # re_matchers = ARG2TYPE.keys.map { |re| re.to_s.scan(/\^(.+)\$/) }
