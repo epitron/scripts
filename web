@@ -92,6 +92,7 @@
 PLAY           = "#{__dir__}/play"
 BROWSERS       = %w[qutebrowser qupzilla chromium chrome firefox opera vivaldi-bin netsurf dillo otter-browser xombrero midori jumanji]
 VIDEO_BROWSERS = %w[chrome chromium firefox opera]
+VIDEO_EXTS_REGEX = /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob|m4a|flac|mp3|ogg|aac)$/i
 
 load_rc_file
 
@@ -111,6 +112,10 @@ routes do
   # Resolve redirects
   match(host: %w[t.co bit.ly is.gd ow.ly buff.ly], &follow_redirect) # { |uri| route uri.follow_redirect }
 
+  # Open local files in 'open'
+  match scheme: 'file', path: VIDEO_EXTS_REGEX, &play_local_video
+  match scheme: 'file', &open_local_file
+
   # Open videos in 'play' (using a standalone desktop video player)
   match host: %w[ustream.tv youtu.be liveleak.com wimp.com vimeo.com blip.tv twitch.tv exponential.singularityu.org dailymotion.com thoughtmaybe.com invidious.xyz], &play_video
   match host: "youtube.com",  path: %r{^/(watch|embed)}, &play_video
@@ -127,7 +132,7 @@ routes do
   match host: "tvo.org",      path: ["/programs/", "/video/", "/documentaries/"], &play_video
   match host: %w[bandcamp.com mixcloud.com], &play_video
   match host: "soundcloud.com", path: %r{^/[^/]+/.}, &play_video
-  match path: /\.(mp4|mkv|m4v|f4v|webm|ogv|avi|flv|ts|mov|asf|mj?pe?g|vob|m4a|flac|mp3|ogg|aac)$/i, &play_video
+  match path: VIDEO_EXTS_REGEX, &play_video
 
   # Other videos open in browsers that are good at playing videos
   match host: %w[imgur.com twitch.tv justin.tv infoq.com] do |uri|
@@ -209,6 +214,10 @@ BEGIN {
 
     def without_params(*keys)
       with(query: params.reject{|k,v| keys.include? k }.to_query)
+    end
+
+    def unescaped_path
+      CGI.unescape path
     end
 
     def get
@@ -315,6 +324,14 @@ BEGIN {
       proc { |uri| exec(PLAY, uri) }
     end
 
+    def play_local_video
+      proc { |uri| exec("mpv", uri.unescaped_path) }
+    end
+
+    def open_local_file
+      proc { |uri| exec("#{__dir__}/open", uri.unescaped_path) }
+    end
+
     def follow_redirect
       proc { |uri| route uri.follow_redirect }
     end
@@ -347,9 +364,9 @@ BEGIN {
       # The default @default (sets it if it hasn't been set)
       @default ||= proc.new { open_in_best_browser uri }
 
-      # URI.parse doesn't handle file:/// urls properly, so, as a quick fix, let's just bypass it...
-      return @default.(uri) if uri.to_s[%r{^file://}i]
-
+      ## URI.parse doesn't handle file:/// urls properly, so, as a quick fix, let's just bypass it...
+      #return @default.(uri) if uri.to_s[%r{^file://}i]
+      
       # Try the rules until one matches
       @rules.each do |conditions, block|
 
