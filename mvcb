@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+target="$*"
+
+if [ "$MOVE_CMD" == "" ]; then
+  MOVE_CMD=mv-backup
+fi
+
+if [ ! -d "$target" ]; then
+  echo "ERROR: $target doesn't exist (or isn't a dir)"
+  #prompt "Make it? (Y/n)"
+  exit 1
+fi
+
+(cb; echo) | while read line; do
+  echo "clipboard: '$line'" 
+  if [ -f "$line" ] || [ -d "$line" ]; then
+    $MOVE_CMD "$line" "$target"
+  else
+    echo "[ERROR: NO SUCH FILE]"
+  fi
+done
