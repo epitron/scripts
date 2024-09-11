@@ -90,6 +90,7 @@ $::cfg_path_arc             = 'arc';              # arc program
 $::cfg_path_arj             = 'arj';              # arj program
 $::cfg_path_bzip            = 'bzip';             # bzip program
 $::cfg_path_bzip2           = 'bzip2';            # bzip2 program
+$::cfg_path_zstd            = 'zstd';             # zstd program
 $::cfg_path_cabextract      = 'cabextract';       # cabextract program
 $::cfg_path_cat             = 'cat';              # cat program
 $::cfg_path_compress        = 'compress';         # compress program
@@ -476,6 +477,14 @@ sub runcmds($$$;@) {
     push @cmd, $::cfg_path_bzip, '-cd', $archive, ['|'] if $mode ne 'add';
     push @cmd, maketarcmd('-', $outdir, $mode, 'f'), @args;
     push @cmd, ['|'], $::cfg_path_bzip, '-c', ['>'], $archive if $mode eq 'add';
+    @cmd = handle_empty_add(@cmd) if ($mode eq 'add' && @args == 0);
+    return multiarchivecmd($archive, $outdir, $mode, 1, 0, \@args, @cmd);
+  }
+  elsif ($format eq 'tar+zstd') {
+    return undef if ($mode eq 'extract' && !defined ($outdir = makeoutdir()));
+    push @cmd, $::cfg_path_zstd, '-cd', $archive, ['|'] if $mode ne 'add';
+    push @cmd, maketarcmd('-', $outdir, $mode, 'f'), @args;
+    push @cmd, ['|'], $::cfg_path_zstd, '-c', ['>'], $archive if $mode eq 'add';
     @cmd = handle_empty_add(@cmd) if ($mode eq 'add' && @args == 0);
     return multiarchivecmd($archive, $outdir, $mode, 1, 0, \@args, @cmd);
   }
@@ -1353,6 +1362,7 @@ sub formatext($) {
   return '.tar.lzma' if $format eq 'tar+lzma';
   return '.tar.lz'   if $format eq 'tar+lzip';
   return '.tar.xz'   if $format eq 'tar+xz';
+  return '.tar.zst'  if $format eq 'tar+zstd';
   return '.tar.Z'    if $format eq 'tar+compress';
   return '.tar'      if $format eq 'tar';
   return '.bz2'      if $format eq 'bzip2';
@@ -1608,6 +1618,7 @@ sub set_config_option($$$) {
     'path_arj'                => [ 'option', \$::cfg_path_arj, qr/.*/ ],
     'path_bzip'               => [ 'option', \$::cfg_path_bzip, qr/.*/ ],
     'path_bzip2'              => [ 'option', \$::cfg_path_bzip2, qr/.*/ ],
+    'path_zstd'               => [ 'option', \$::cfg_path_zstd, qr/.*/ ],
     'path_cabextract'         => [ 'option', \$::cfg_path_cabextract, qr/.*/ ],
     'path_cat'                => [ 'option', \$::cfg_path_cat, qr/.*/ ],
     'path_compress'           => [ 'option', \$::cfg_path_compress, qr/.*/ ],
