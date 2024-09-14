@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: fixtwitterpics [options] <dir(s)>"
+
+  on "n",  "dry-run",  "Show what will happen without making any changes"
+  on "f",  "clobber",  "Overwrite existing files"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+paramre = %r{\w+=[^&$]+}
+paramsre = %r{^([a-z0-9\-_]+)\?(#{paramre}(?:&#{paramre})*)$}i
+
+paths = args.any? ? args.map(&:to_Path) : [Path.pwd]
+
+paths.each do |path|
+  puts "* fixing twitter pics in #{path}..."
+
+  unless path.dir?
+    puts "  |_ error: not a dir"
+    next
+  end 
+
+  path.ls.each do |f|
+    if paramsre =~ f.filename
+      # GOxE6prWIAEIGMT?format=png&name=small
+
+      fn = $1
+      pars = $2.split("&").map { |s| s.split("=") }.to_h
+
+      unless fn.size == 15 and pars.keys.sort == ["format", "name"]
+        puts "  |_ unrecognized format: <12>#{f.filename}".colorize
+
+      else
+        newfn = "twitter-#{fn}:#{pars["name"]}.#{pars["format"]}"
+        dest = f.with(filename: newfn)
+        dest = dest.numbered_backup_file if dest.exists? and not opts.clobber?
+        if opts[:n]
+          puts "  |_ dryrun name: #{dest.filename}"
+        else
+          puts "  |_ renaming to: #{dest.filename}"
+          f.rename(dest)
+        end
+          
+      end
+
+    end
+  end
+end
