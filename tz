@@ -12,7 +12,7 @@ require 'epitools'
 
 ###########################################################
 
-ROOT_URL = "https://torrents-csv.ml/"
+ROOT_URL = "https://torrents-csv.com/"
 
 TRACKERS = [
   "udp://tracker.coppersurfer.tk:6969/announce",
@@ -195,18 +195,19 @@ def search(query, page=nil)
 
   # create the query params
   opts = {}
-  opts["type_"] = "torrent"
   opts["q"] = CGI.escape(query) unless query.empty?
-  opts["page"] = page || 1
+  #size=[NUMBER_OF_RESULTS]
+  #after=[AFTER]
+  #opts["page"] = page || 1
 
   url += "?" + opts.map { |k,v| "#{k}=#{v}" }.join("&")
 
   # puts url if $verbose
   puts url
-  results = read_url(url).from_json
-  pp results if $verbose
+  json = read_url(url).from_json
+  pp json if $verbose
 
-  results.map { |result| Result.from_json(result) }.compact
+  json["torrents"].map { |result| Result.from_json(result) }.compact
 end
 
 ###########################################################
@@ -308,8 +309,8 @@ def display(results)
     seedpeers = "#{r.seeds}/#{r.peers}".rjust(8)
     date      = r.datestamp
     size      = r.size.commatize.rjust(16)
-    line      = "<7>#{date} <9>#{size} <2>#{seedpeers} <15>#{number} <7>#{r.title}"
-
+    line      = "<15>#{number} <7>#{r.title}\n" +
+                "     <7>#{date} <9>#{size} <2>#{seedpeers}"
     puts line.colorize
   end
 end
