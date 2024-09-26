@@ -74,7 +74,11 @@ end.flatten
 excludes = []
 excludes << %r{/\.git/} unless opts[:all]
 excludes << /#{Regexp.escape opts[:exclude]}/i if opts[:exclude]
-excludes.each { |regex| files.reject! { |f| f =~ regex } }
+excludes.each do |regex|
+  files.reject! { |f| f =~ regex }
+end
+
+files.reject!(&:symlink?)
 
 ################################################################
 # Get file sizes
@@ -130,12 +134,13 @@ elsif opts.interactive?
 
   grouped_dupes.each do |group|
 
+    group = group.sort_by { |size, path| path.mtime }
     prefix = common_prefix(group.map(&:last))
 
     puts prefix
 
     group.each_with_index do |(size, file), i|
-      puts "<7>#{i+1}<8>) <9>#{size.commatize} <8>| <11>#{file.relative_to(prefix)}".colorize
+      puts "<7>#{i+1}<8>) <9>#{size.commatize} <8>| #{file.mtime.strftime("%Y-%m-%d")} | <11>#{file.relative_to(prefix)}".colorize
     end
 
     print "which to keep? (ENTER to skip) > "
