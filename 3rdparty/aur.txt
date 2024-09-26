@@ -47,4 +47,4 @@ gtkdialog-svn
 k2pdfopt
 multibootusb
 
-schismtracker
+schismtracker-git
