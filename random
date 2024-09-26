@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: <program that outputs some lines> | random [options]"
+
+  # on "a",  "along",  "desc"
+  on "n=", "num",  "Number of random lines to print", default: 1
+end
+
+args = ARGV
+
+########################################################
+
+if args.any?
+  inputs = args.map { |arg| open(arg) }
+else
+  inputs = [STDIN]
+end
+
+lines = inputs.flat_map { |i| i.each_line.to_a }
+
+picked = lines.pick(opts[:num].to_i)
+
+picked.each do |line|
+  puts line
+end
