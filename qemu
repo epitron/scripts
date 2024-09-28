@@ -155,11 +155,20 @@ cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
 
-if path = opts[:"9p"]
-  unless File.directory?(path)
-    puts "[+] Creating #{path} for 9p share..."
-    FileUtils.mkdir_p(path)
+if opts[:"9p"]
+  path = Path[opts[:"9p"]]
+
+  if path.file?
+    puts "Error: #{path} is a file"
+    exit 1
   end
+
+  if not path.dir?
+    puts "[+] Creating #{path}"
+    path.mkdir_p
+  end
+
+  puts "[+] The contents of #{path} will be shared inside in the VM; make sure to 'mount -t 9p host0 /mnt' in the VM to access them"
 
   cmd += ["-virtfs", "local,path=#{path},mount_tag=host0,security_model=none,readonly=off,id=host0"] # security_model=mapped-xattr
 end
