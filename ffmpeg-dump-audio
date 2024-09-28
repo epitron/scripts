@@ -2,12 +2,13 @@
 require 'epitools'
 
 def audio_format(path)
-  output = run_with_stderr("ffprobe", path).each_line do |line|
-    p line
+  run_with_stderr("ffprobe", path).each_line do |line|
+    # p line
     if line =~ /Stream \S+: Audio: (\w+)/
       return $1
     end
   end
+
   nil
 end
 
@@ -42,12 +43,14 @@ inputs.each do |infile|
     exit 2
   end
 
-  outfile = if infile.url?
-    Path.new(CGI.unescape(infile.filename)).with(ext: ext)
-  else
-    infile.with(ext: ext)
-  end
-  
+  outfile = ENV["OUTPUT"] || (
+    if infile.url?
+      Path.new(CGI.unescape(infile.filename)).with(ext: ext)
+    else
+      infile.with(ext: ext)
+    end
+  )
+
   puts "--------------------------------------------------------------------------"
   puts "Extracting audio:"
   puts "    in: #{infile}"
