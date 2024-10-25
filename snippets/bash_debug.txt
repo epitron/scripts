@@ -1,0 +1,21 @@
+https://hachyderm.io/@b0rk@jvns.ca/113120255137197714
+
+I think my favourite bash solution so far (h/t @philz42) is to use `trap DEBUG` to print the filename & line number every time PATH is modified
+
+something like this:
+
+function _trap_DEBUG() {
+    local cmd="${BASH_COMMAND}"
+    local line="${BASH_LINENO}"
+    local filename="${BASH_SOURCE[1]}"
+    if [[ "${cmd}" == *"PATH"* ]]; then
+        echo "${filename} line ${line}: '${cmd}'"
+    fi
+}
+
+trap '_trap_DEBUG' DEBUG
+set -T
+
+not sure if there's a zsh/fish equivalent though
+
+

@@ -38,6 +38,11 @@ The key thing about all the world's big problems is that they have to be dealt w
 We now live in a nation where doctors destroy health, lawyers destroy justice, universities destroy knowledge, governments destroy freedom, the press destoys information, religion destroys morals, and our banks destroy the economy.
     -- Chris Hedges
 %
+I have two memories of Saint Joan. The first was being burned at the stake in the picture. The second was being burned at the stake by the critics. The latter hurt more. I was scared like a rabbit and it showed on the screen. It was not a good experience at all. I started where most actresses end up.
+
+I am the greatest example of a very real fact, that all the publicity in the world will not make you a movie star if you are not also an actress.
+    -- Jean Seberg (on her first acting job in the epic film _Saint Joan_)
+%
 Wherever I go and whatever I do, I am always in the straight jacket of junk, unable to move a finger to free myself. I want to be free of junk more than I ever wanted anything.
     -- William S. Burroughs
 %
@@ -68,7 +73,7 @@ I think Douglas was probably something we don't even have a word for yet. A Futu
 I always think that the chances of finding out what really is going on are so absurdly remote that the only thing to do is to say hang the sense of it and just keep yourself occupied.
     -- Douglas Adams
 %
-Voting booths, television screens, office cubicles, hospitals, the ritual that surrounds them -- one might say these are the very machinery of alienation. They are the instruments through which the human imagination is smashed and shattered. Insurrectionary moments are moments when this bureaucratic apparatus is neutralized. Doing so always seems to have the effect of throwing horizons of possibility wide open, which is only to be expected if one of the main things that that apparatus normally does is to enforce extremely limited horizons. (This is probably why, as Rebecca Solnit has so beautifully observed, people often experience something very similar during natural disasters.)
+Voting booths, television screens, office cubicles, hospitals, the ritual that surrounds them—one might say these are the very machinery of alienation. They are the instruments through which the human imagination is smashed and shattered. Insurrectionary moments are moments when this bureaucratic apparatus is neutralized. Doing so always seems to have the effect of throwing horizons of possibility wide open, which is only to be expected if one of the main things that that apparatus normally does is to enforce extremely limited horizons. (This is probably why, as Rebecca Solnit has so beautifully observed, people often experience something very similar during natural disasters.)
     -- David Graeber
 %
 Many intelligence reports in war are contradictory; even more are false, and most are uncertain. In short, most intelligence is false.
@@ -1992,7 +1997,7 @@ Early man is thinking, "This world fits me very well. Here are all these things 
 This is rather as if you imagined a puddle waking up one morning and thinking, "This is an interesting world I find myself in -- an interesting hole I find myself in -- fits me rather neatly, doesn't it? In fact it fits me staggeringly well! It must have been made to have me in it!"
     -- Douglas Adams
 %
-We cannot solve our problems with the same levels of thinking that we used to create them.
+We can't solve problems by using the same kind of thinking we used when we created them.
     -- Albert Einstein
 %
 Franz Kafka, frustrated with his living quarters and day job, wrote in a letter to Felice Bauer in 1912, "time is short, my strength is limited, the office is a horror, the apartment is noisy, and if a pleasant, straightforward life is not possible then one must try to wriggle through by subtle maneuvers."
@@ -2057,7 +2062,7 @@ A ton of people is literally 12 to 15 people.
 There is nothing more practical than a good theory.
     -- Kurt Lewin
 %
-Oh, you're in television! That's interesting. No, I mean, the word television is interesting. It's a hybrid, you see: tele- comes from the greek, and -vision comes from the latin. It really should've been called "telerama", or "procolvision".
+Oh, you're in television! That's interesting. No, I mean, the word television is interesting. It's a hybrid, you see: tele- comes from the greek, and -vision comes from the latin. It should have been either "telerama", or "procolvision".
     -- Graham Chapman
 %
 I used to be indecisive. Now I'm not so sure.
@@ -3466,6 +3471,7 @@ The nomadic parasites will shift out of London and into Manhattan. And this will
 %
 Any sufficiently advanced technology is indistinguishable from magic.
 Any sufficiently primitive technology is indistinguishable from hard work.
+Any sufficiently advanced incompetence is indistinguishable from malice.
 Any sufficiently advanced malice is indistinguishable from incompetence.
 %
 And, isn't sanity really just a one-trick pony anyway? I mean all you get is one trick: rational thinking. But when you're good and crazy, oooh, oooh, oooh! The sky is the limit!
@@ -3844,6 +3850,9 @@ The opposite of risk is not safety -- it's stagnation.
 Make no little plans; they have no magic to stir men's blood and probably will themselves not be realized.
     -- Daniel Burnham
 %
+We have a drug problem in America and it's called television. We have a nation being turned into a bunch of fucking droids and getting so fat that pretty soon Americans are going to start oozing into each other's protoplasm. We'll just be giant globs with several feet and several heads probably wired straight into the television. This is the future I see. Someone asked, "How do you explain what we do next," and I said, "Dance. Fuck. Fight." Make yourself indigestible to the system so that if you are ever swallowed up, you will be vomited out. I really think so. Make yourself unemployable. You'll never get an interesting job if you're employable. Get arrested, form a punk band and go to Indonesia and fall in love with someone who doesn't speak your language. I'm not kidding.
+    -- Greg Palast
+%
 Life isn't about the pursuit of happiness, it's about being happy in your pursuits.
 %
 My loathings are simple: stupidity, oppression, crime, cruelty, soft music.
@@ -4057,6 +4066,9 @@ Laws alone can not secure freedom of expression; in order that every man present
 %
 There are two kinds of people in the world, those who believe there are two kinds of people in the world and those who don't.
     -- Robert Benchley
+%
+Television is the first truly democratic culture -- the first culture available to everybody and entirely governed by what the people want. The most terrifying thing is what people want.
+    -- Clives Barnes
 %
 Why do you have to be a nonconformist like everybody else?
     -- James Thurber

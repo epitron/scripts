@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: fixtwitterpics [options] <file(s) or dir(s)>"
+
+  on "n",  "dry-run",   "Show what will happen without making any changes"
+  on "r",  "recursive", "Recurse into subdirectories"
+  on "f",  "clobber",   "Overwrite existing files"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+paramre = %r{\w+=[^&$]+}
+paramsre = %r{^([a-z0-9\-_]+)\?(#{paramre}(?:&#{paramre})*)$}i
+
+paths = args.any? ? args.map(&:to_Path) : [Path.pwd]
+
+
+
+files = paths.map do |path|
+  if not path.exists?
+    puts "error: #{path} does not exist".light_red
+  elsif path.dir?
+    puts "* looking for twitpics in #{path}..."
+    opts.recursive? ? path.ls : path.ls_r
+  else
+    path
+  end 
+end.flatten.compact
+
+files.each do |f|
+    if paramsre =~ f.filename
+      # GOxE6prWIAEIGMT?format=png&name=small
+
+      fn = $1
+      pars = $2.split("&").map { |s| s.split("=") }.to_h
+
+      unless fn.size == 15 and pars.keys.sort == ["format", "name"]
+        puts "  |_ unrecognized format: <12>#{f.filename}".colorize
+
+      else
+        newfn = "twitter-#{fn}:#{pars["name"]}.#{pars["format"]}"
+        dest = f.with(filename: newfn)
+        dest = dest.numbered_backup_file if dest.exists? and not opts.clobber?
+        if opts[:n]
+          puts "  |_ dryrun name: #{dest.filename}"
+        else
+          puts "  |_ renaming to: #{dest.filename}"
+          f.rename(dest)
+        end
+          
+      end
+
+    end
+end

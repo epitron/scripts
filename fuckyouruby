@@ -1,0 +1,5 @@
+F="$1"
+B="$F.ugh"
+sed -r --debug --follow-symlinks --in-place=.ugh s/'File\.exists\?'/'File.exist?'/g "$F"
+diff -u "$B" "$F"
+

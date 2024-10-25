@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: nitters [options]"
+
+  # on "a",  "along",  "desc"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+args = ARGV
+
+########################################################
+
+=begin
+{"url":"https://nitter.esmailelbob.xyz",
+"domain":"nitter.esmailelbob.xyz",
+"points":67,
+"rss":true,
+"recent_pings":[945,983,1995,1084,1013,985,1569,1542,1346,927,1044,1277],
+"ping_max":1995,
+"ping_min":927,
+"ping_avg":1225,
+"version":"2023.09.19-537af7f",
+"version_url":"https://github.com/zedeus/nitter/commit/537af7f",
+"healthy":true,
+"last_healthy":"2024-01-31T15:26:29Z",
+"is_upstream":true,
+"is_latest_version":false,
+"is_bad_host":false,
+"country":"🇨🇦",
+"recent_checks":[["2024.01.31 10:02",true],["2024.01.31 10:17",true],["2024.01.31 10:33",true],["2024.01.31 10:48",true],["2024.01.31 11:03",true],["2024.01.31 11:19",true],["2024.01.31 11:34",true],["2024.01.31 11:49",true],["2024.01.31 12:05",true],["2024.01.31 12:20",true],["2024.01.31 12:36",true],["2024.01.31 12:51",true],["2024.01.31 13:07",true],["2024.01.31 13:22",true],["2024.01.31 13:38",true],["2024.01.31 13:53",true],["2024.01.31 14:09",true],["2024.01.31 14:24",true],["2024.01.31 14:39",true],["2024.01.31 14:55",true],["2024.01.31 15:10",true],["2024.01.31 15:26",true]],
+"healthy_percentage_overall":64,
+"connectivity":"IPv4",
+"__show_last_seen":false},
+=end
+
+url = "https://status.d420.de/api/v1/instances"
+#data = IO.popen(["curl", "-s", url], &:read)
+data = curl(url)
+#data = File.read("nitters.json")
+json = JSON.parse(data)
+
+ns = json['hosts'].select do |n|
+ n['is_upstream'] && n['healthy']
+end
+
+ns = ns.sort_by {|n| n['points']}
+
+ns.each do |n|
+  puts "#{n['points'].to_s.rjust(3)} #{n['url']}"
+end

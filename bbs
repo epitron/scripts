@@ -2,7 +2,10 @@
 require 'epitools'
 
 BBSES = %{
-  bbs.blackflag.org
+  mbrserver.com
+  bbs.inktwo.com
+  excelsiorbbs.ddns.net:2000
+  blackflag.acid.org
   bbs.thesprawl.city
   bbs.electronicchicken.com
   bbs.thebrokenbubble.com
@@ -18,9 +21,11 @@ BBSES = %{
 
 def telnet(host)
   puts
-  puts "Connecting to #{host}..."    
+  puts "Connecting to #{host}..."
+  host, port = host.split(":")
+  port ||= "23"
 
-  exec("cp437", "telnet", host)
+  exec("cp437", "telnet", host, port)
 end  
 
 def parse_choice(str)

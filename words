@@ -11,19 +11,20 @@ require 'slop'
 ########################################################
 # Parse options
 
-opts = Slop.parse(help: true, strict: true) do
+$opts = Slop.parse(help: true, strict: true) do
   banner "Usage: words [options]"
   on "i",  "ignore-case",  "Downcase all the words (which isn't technically ignoring, but I think it makes more sense, ok?)"
+  on "w",  "wiktionary",   "Print words from the wikipedia dictionary (wiktionary)"
 end
 
-args = ARGV
+$args = ARGV
 
 ########################################################
 
 def each_word
   wordlist = Path["/usr/share/dict/words"]
   wiktidx  = Path["~/.cache/wikt/wikt.idx"]
-  if wordlist.exists?
+  if wordlist.exists? and not $opts.wiktionary?
     wordlist.each_line { |l| yield l.chomp }
   else 
     3.times do
@@ -38,6 +39,6 @@ def each_word
 end
 
 begin
-  if opts[:i]; each_word { |w| puts w.downcase }
-         else; each_word { |w| puts w } end 
+  if $opts[:i]; each_word { |w| puts w.downcase }
+          else; each_word { |w| puts w } end
 rescue Interrupt; end
