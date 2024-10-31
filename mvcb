@@ -2,9 +2,8 @@
 
 target="$*"
 
-if [ "$MOVE_CMD" == "" ]; then
-  MOVE_CMD=mv-backup
-fi
+if [ "$MOVE_CMD" == "" ]; then MOVE_CMD=mv-backup;  fi
+if [ "$CB_CMD"   == "" ]; then CB_CMD=cb;           fi
 
 if [ ! -d "$target" ]; then
   echo "ERROR: $target doesn't exist (or isn't a dir)"
@@ -12,7 +11,7 @@ if [ ! -d "$target" ]; then
   exit 1
 fi
 
-(cb; echo) | while read line; do
+($CB_CMD; echo) | while read line; do
   echo "clipboard: '$line'" 
   if [ -f "$line" ] || [ -d "$line" ]; then
     $MOVE_CMD "$line" "$target"

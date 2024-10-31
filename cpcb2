@@ -1,0 +1,2 @@
+#!/bin/bash
+MOVE_CMD=cp-backup CB_CMD=cb2 mvcb "$@"
