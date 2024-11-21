@@ -12,16 +12,25 @@ require 'slop'
 # Parse options
 
 opts = Slop.parse(help: true, strict: true) do
-  banner "Usage: tag [options]"
+  banner "Usage: tag [options] <media file(s)...>"
 
-  on "n", "dryrun",  "do nothing"
-  # on "b=", "blong",  "desc", default: ""
+  on "n",  "dryrun",  "do nothing"
+  on "v",  "verbose", "show debug information"
+  on "a=", "artist",  "set the artist name manually"
+  on "A=", "album",   "set the album name manually"
+  on "d=", "date",    "set the date manually"
+  on "t=", "title",   "set the title manually"
 end
 
 ########################################################
 
 paths = ARGV.map &:to_Path
 tmp = Path.tmpdir
+
+if opts.title? and paths.size > 1
+  $stderr.puts "Error: You can only manually override the title for a single file at a time"
+  exit 1
+end
 
 paths.each do |inp|
   out = tmp/"tagged.#{inp.ext}"
@@ -37,8 +46,13 @@ paths.each do |inp|
   tags = {}
 
   tags[:artist] = artist
-  tags[:title] = title
-  tags[:track] = track if track
+  tags[:title]  = title
+  tags[:track]  = track if track
+
+  tags[:title]  = opts[:title]  if opts.title?
+  tags[:artist] = opts[:artist] if opts.artist?
+  tags[:date]   = opts[:date]   if opts.date?
+  tags[:album]  = opts[:album]  if opts.album?
 
   cmd = ["ffmpeg", "-hide_banner", "-v", "error", "-i", inp, "-c", "copy"]
   cmd += tags.flat_map { |k,v| ["-metadata", "#{k}=#{v}"] }
