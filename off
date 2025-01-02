@@ -1,6 +1,10 @@
 #!/bin/bash
 if which systemctl > /dev/null; then
   systemctl poweroff
-else
+elif which reboot > /dev/null; then
+  sudo reboot -p
+elif which shutdown > /dev/null; then
   shutdown -h now
+else
+  echo "Error: Couldn't figure out how to shutdown."
 fi
