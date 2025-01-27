@@ -16,7 +16,7 @@ def parse_options
     banner "Usage: qemu [options] <.iso(s) or .qcow2 file(s) or /dev(s)>"
 
     on "m=", "memory",   "How much memory to use?", default: "2G"
-    on "s=", "size",     "Disk size", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
+    on "s=", "size",     "Disk size (you can also append this to the qcow2 filename, eg: 'zfspool.qcow2:30G')", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
     on "B",  "nbd",      "Attach image to a block device (for mounting filesystems)"
     # on "d=", "device",   "Pass through a block device (eg: /dev/sdb)"
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
@@ -24,7 +24,7 @@ def parse_options
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "P=", "cpus",     "Number of CPUs (default: 1)"
     on "B=", "bios",     "Load a BIOS ROM file"
-    on "S=", "samba",    "Mount a host directory via samba (it'll be on 10.x.x.4)"
+    on "S=", "samba",    "Mount a host directory via samba (eg: --samba=/home/me/vmfiles) (the SMB mount will be on 10.x.x.4)"
     on "9=", "9p",       "Mount a host directory via 9p (eg: --9p=/home/me/guestshared)\n" +
                             "\tmount with:\n" +
                             "\t\tmount -t 9p host0 /mnt\n" +
@@ -62,9 +62,13 @@ if args.empty? and not opts.bios?
   exit 1
 end
 
-isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" or arg.path[%r{^/dev/s(r|cd)\d}] }
-isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
-exit 1 unless isos.all? &:exist?
+isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" or arg.path =~ %r{^/dev/s(r|cd)\d} }
+
+missing_isos = isos.reject(&:exist?)
+if missing_isos.any?
+  missing_isos.each { |iso| puts "Error: #{iso.inspect} does not exist".light_red }
+  exit 1
+end
 
 ###############################
 # Attach NBD
@@ -224,16 +228,20 @@ cmd += ["-display", "curses"] if opts.curses?
 cmd += ["-serial",  "stdio"]  if opts.serial?
 
 disks.each do |disk|
-  unless disk.exists?
-    # if bf = opts[:"backing-file"]
-    #   if disks.size > 1
-    #     puts "Error: Can't use more than one disk image when specifying a backing file"
-    #   else
-    #     system("qemu-img", "-f", "qcow2", "-b", bf, disk)
+  # parse out the :<size><units> option from the end of the file (eg: 'zfspool.qcow2:10G')
+  if disk.filename =~ /^(.+):(\d+)([kmg]b?)$/i
+    disk = disk.with(filename: $1)
+    size = "#{$2}#{$3}"
+  else
+    size = opts[:size]
+  end
 
+  unless disk.exists?
+    # Create a new disk
     case disk.ext
     when "qcow2"
-      system("qemu-img", "create", "-f", "qcow2", disk, opts[:size])
+      print "[+] "
+      system("qemu-img", "create", "-f", "qcow2", disk, size)
     else
       puts "I don't know how to make a #{disk} image"
     end
