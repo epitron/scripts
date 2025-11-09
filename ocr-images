@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+##############################################################################################
+require 'epitools'
+##############################################################################################
+
+class Path
+  TYPES = [
+    [/\.(avi|ogm|webm|mp4|m4v|mkv|mj?pe?g|flv|f4v|mov|wmv|asf|vob)$/i, "video"],
+    [/(^README|\.(pdf|doc|txt|srt|sub|nfo)$)/i               , "doc"],
+    [/\.(jpe?g|gif|png|webp)$/i                              , "image"],
+    [/\.(mp3|ogg|m4a|aac|flac)$/i                            , "audio"],
+  ]
+
+  def file_type
+    return "directory" if dir?
+    TYPES.find { |re, t| re.match(filename) }&.last
+  end
+
+  def type
+    dir? ? "dir" : (file_type || "file")
+  end
+
+  def video?; type == "video"; end
+  def audio?; type == "audio"; end
+  def doc?;   type == "doc"; end
+  def image?; type == "image"; end
+  def media?; %w[audio video doc image].include? type; end
+end
+
+##############################################################################################
+
+lang   = "eng"
+paths  = ARGV.map(&:to_Path).map { |path| path.dir? ? path.ls_R : path }
+images = paths.select(&:image?)
+
+puts "* Processing #{images.size.commatize} images..."
+
+images.each do |imagefile|
+  textfile = imagefile.with(filename: "#{imagefile.filename}.txt")
+
+  if textfile.exists?
+    if textfile.size > 0
+      puts  "  |_ Skipping #{textfile} (#{textfile.size.commatize} bytes)".cyan
+      next
+    else
+      puts  "  |_ Deleting 0 byte file: #{textfile}".red
+      textfile.rm
+    end
+  end
+
+  puts  "  |_ #{imagefile}"
+  print "     "
+  system("tesseract", "-l", lang, imagefile, imagefile)
+  puts  "|_ saved #{textfile.filename.inspect} (#{textfile.size.commatize} bytes)".green
+end
