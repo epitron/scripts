@@ -534,7 +534,7 @@ def print_header(title, level=nil)
 end
 
 def run(*args, &block)
-  return Enumerator.new { |y| run(*args) { |io| io.each_line { |line| y << line } } } unless block_given?
+  return Enumerator.new { |y| run(*args) { |io| io.each_line(&y) } } unless block_given?
 
   opts = (args.last.is_a? Hash) ? args.pop : {}
   args = [args.map(&:ensure_string)]
@@ -606,9 +606,13 @@ def concatenate_enumerables(*enums)
 
   Enumerator.new do |y|
     enums.each do |enum|
-      enum.each { |e| y << e }
+      enum.each(&y)
     end
   end
+end
+
+def pipe_to_y(e, y, method=:each)
+  e.send(method, &y)
 end
 
 def show_image(filename)
@@ -1948,6 +1952,16 @@ def print_xpi_info(filename)
 end
 
 ##############################################################################
+
+def print_deb(filename)
+  Enumerator.new do |y|
+    pipe_to_y run("dpkg-deb", "-I", filename), y
+    y << ""
+    pipe_to_y run("dpkg-deb", "-c", filename), y
+  end
+end
+
+##############################################################################
 # Pretty-print XML
 
 def nice_xml(xml)
@@ -2192,7 +2206,7 @@ def convert(arg)
     ext = path.extname.downcase
 
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz|zst)$/ or
-       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem|iso|wim)$/
+        ext =~ /\.(tgz|tar|zip|rar|arj|lzh|rpm|7z|apk|pk3|jar|gem|iso|wim)$/
       print_archive(arg)
     elsif path.filename =~ /\.live_chat\.json(\.gz)?$/
       print_youtube_chat_json(arg)
@@ -2210,6 +2224,8 @@ def convert(arg)
       print_ssl_certificate(arg)
     else
       case ext
+      when *%w[.deb]
+        print_deb(arg)
       when *%w[.html .htm]
         print_html(File.read arg)
       when *%w[.md .markdown .mdwn .page .gmi]
