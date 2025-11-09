@@ -18,7 +18,7 @@ def parse_options
     on "m=", "memory",   "How much memory to use?", default: "2G"
     on "s=", "size",     "Disk size (you can also append this to the qcow2 filename, eg: 'zfspool.qcow2:30G')", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
     on "B",  "nbd",      "Attach image to a block device (for mounting filesystems)"
-    # on "d=", "device",   "Pass through a block device (eg: /dev/sdb)"
+    on "d=", "device",   "Add a QEMU device (eg: rtl8139)"
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
@@ -38,7 +38,7 @@ def parse_options
     on "c",  "console",  "STDIO-only serial console mode"
     on "C",  "curses",   "Terminal-based UI (Press Alt-2 to get to qemu command console)"
     on "n",  "no-daemon","Run in the foreground"
-    on "d",  "debug",    "Print command and quit"
+    # on "d",  "debug",    "Print command and quit"
     on "M",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
     on "V",  "version",  "Show version information"
@@ -158,6 +158,10 @@ end
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
+
+if opts.device?
+  cmd += ["-device", opts[:device]]
+end
 
 if opts[:"9p"]
   path = Path[opts[:"9p"]]
