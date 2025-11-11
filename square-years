@@ -1,8 +1,35 @@
 #!/usr/bin/env ruby
 require 'epitools'
 
-square_years = (-1...2055).select { |y| d = Date.parse("#{y}-02-01"); d.wday == 0  and (d+28).day != 29 }
+#
+# A "square year" is one where february has 28 days and february 1st falls on the first day of the week (sunday or monday, depending on your denomination).
+#
+# example:
+#
+# $ cal --sunday 1 2 1691
+#
+#     February 1691
+# Su Mo Tu We Th Fr Sa
+#  1  2  3  4  5  6  7
+#  8  9 10 11 12 13 14
+# 15 16 17 18 19 20 21
+# 22 23 24 25 26 27 28
+#
 
+FIRST_WEEKDAY = 0 # sunday
+
+#
+# Find all square yaers
+# (NB: things get fucky around 1752 because of the julian reform, where 11 days were added to the calendar to bring it in line with solar events; Ruby's date library gives different answers from the 'cal' command, and I'm not sure how to fix it. bleh.)
+#
+square_years = (-1...2055).select do |y|
+  d = Date.parse("#{y}-02-01")
+  (d+28).day != 29 and d.wday == FIRST_WEEKDAY
+end
+
+#
+# Pretty-print each year, and its delta (how long it's been since the last square year)
+#
 lesspipe do |less|
   square_years.reverse.each_cons(2) do |year, prev_year|
     delta = year - prev_year
