@@ -1,24 +1,24 @@
 #!/usr/bin/env ruby
 ########################################################
+$:.unshift "#{File.dirname($0)}/lib/ruby"
 require 'mhtml'
 require 'epitools'
-
-gem 'slop', "~> 3.6"
+# gem 'slop', "~> 3.6"
 require 'slop'
 ########################################################
 
-class Mhtml::RootDocument
-  def file_path
-    "index.html"
-  end
+# class Mhtml::RootDocument
+#   def file_path
+#     "root_doc.html"
+#   end
 
-  def each
-    return to_enum(:each) unless block_given?
+#   def each
+#     return to_enum(:each) unless block_given?
 
-    yield self
-    sub_docs.each { |sd| yield sd }
-  end
-end
+#     yield self
+#     sub_docs.each { |sd| yield sd }
+#   end
+# end
 
 ########################################################
 # Parse options
@@ -70,10 +70,30 @@ else
   puts "<8>* <15>Extracting <11>#{path.filename} to <14>#{outdir}<7>...".colorize
 
   outdir.cd do
-    mhtml.each do |doc|
-      outfilename = CGI.escape(doc.file_path)
-      puts "  <8>|_ <7>#{doc.file_path} <8>(<9>#{doc.body.size} <7>bytes<8>)".colorize
-      open(outfilename, "wb") { |f| f.write(doc.body) }
+    # mhtml.each do |doc|
+    mhtml.sub_docs.each do |doc|
+
+      if doc.file_path.nil?
+        # require 'base64'
+        # body = Base64.decode64(doc.body)
+        body = doc.body
+        output_filename = "index.html"
+      else
+        body = doc.body
+        output_filename = CGI.escape(doc.file_path)
+      end
+
+      outpath = Path[output_filename]
+
+      puts "  <8>|_ <7>#{outpath} <8>(<9>#{body.size} <7>bytes<8>)".colorize
+
+      if outpath.exists?
+        print "     <8>|_ <10>backing up <7>#{outpath} <10>to ".colorize
+        bf = outpath.numbered_backup!
+        puts "<3>#{bf.filename}".colorize
+      end
+
+      outpath.write body
     end
   end
 end
