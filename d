@@ -11,7 +11,7 @@ require 'epitools/clitools'
 TYPE_INFO = [
   [:code,    /\.(rb|c|c++|cpp|h|py|sh|nim|pl|awk|go|php|ipynb|lua)$/i,    :light_yellow],
   [:image,   /\.(jpe?g|jp2|bmp|png|gif)$/i,                               :green],
-  [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
+  [:music,   /\.(mp3|ogg|m4a|aac|wma)$/i,                                 :purple],
   [:bin,     /\.(exe)$/i,                                                 :light_green],
   [:config,  /\.(conf|ini)$/i,                                            :cyan],
   [:dotfile, /^\../i,                                                     :grey],
