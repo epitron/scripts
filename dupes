@@ -20,6 +20,7 @@ def parse_opts_and_args
     on 'd',  'delete',      'Delete dupes (keeping the oldest)'
     on 'i',  'interactive', 'Interactively delete dupes'
     on 's',  'size-only',   'Don\'t checksum files (can be much faster, but inaccurate)'
+    on 'p',  'print-summary', 'Print a summary of all duplicates found (with sizes), and do nothing else'
     on 'a',  'all',         "Process all files (don't ignore .git)"
     on 'r',  'rm',          "Use 'rm' instead of 'trsh'"
     on 'e=', 'exclude',     'Exclude a path'
@@ -82,16 +83,27 @@ files.reject!(&:symlink?)
 
 ################################################################
 # Get file sizes
+title "Found <9>#{files.size}</9> files..."
+subtitle "Getting all file sizes..."
 sized_files = files.map { |f| [f.size, f] }
 
-title "Found <9>#{files.size}</9> files..."
 
 ################################################################
 #
 # Find duplicates by first grouping by file size,
 # then grouping those groups by the file's SHA256 hash.
 #
-group_proc = opts["size-only"] ? proc { |s,f| s } : proc { |s,f| f.sha256 } 
+if opts.size_only?
+  subtitle "Grouping files by size..."
+  group_proc = proc { |s,f| s }
+else
+  subtitle "Generating SHA256-hashes for all files..."
+  group_proc = proc { |s,f| f.sha256 }
+end
+
+# FIXME: create a Struct for [file, size, sha256] (that's actaully already in the Path class; it caches size and sha256 hash)
+# FIXME: detect hash collisions (while generating hashes, record of files with different sizes but the same hash)
+# NB: it doesn't help to first group them by size, then sha256 each file in the group, because you still have to hash every file!
 
 grouped_dupes = sized_files.group_by(&:first). # group by file size
   flat_map do |filesize, group|
@@ -104,16 +116,40 @@ grouped_dupes = sized_files.group_by(&:first). # group by file size
   end.compact.sort
 
 if grouped_dupes.empty?
-  subtitle "no duplicates"
+  subtitle "<10>No duplicates!"
   exit 1
 end
 
-subtitle "#{grouped_dupes.size} duplicates"
-puts
-
+subtitle "Found: #{grouped_dupes.size} groups of duplicate files (#{grouped_dupes.flatten.size.commatize} total files)"
 
 ################################################################
-if opts.delete?
+#
+# grouped_dupes = [
+#   [
+#     [size, path],
+#     [size, path],
+#     [size, path],
+#     ...
+#   ],
+#   [ ... ],
+#   [ ... ],
+#   ...
+# ]
+#
+if opts.print_summary?
+
+  # grouped_dupes = [[size, path], ...]
+  redundant_space = 0
+
+  grouped_dupes.each do |group|
+    total_size       = group.sum_by(&:first)
+    each_file_size   = group.first.first
+    redundant_space += total_size - each_file_size
+  end
+
+  subtitle("Redundant space: <11>#{redundant_space.commatize} bytes")
+
+elsif opts.delete?
 
   #
   # Delete all but oldest dupe
@@ -134,7 +170,13 @@ elsif opts.interactive?
 
   grouped_dupes.each do |group|
 
-    group = group.sort_by { |size, path| path.mtime }
+    begin
+      group = group.sort_by { |size, path| path.mtime }
+    rescue Errno::ENOENT => e
+      $stderr.puts "Error: \"#{path}\" no longer exists"
+      next
+    end
+
     prefix = common_prefix(group.map(&:last))
 
     puts prefix
