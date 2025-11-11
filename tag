@@ -42,6 +42,11 @@ paths.each do |inp|
   end
   title, artist = artist, title if title.nil?
 
+  if title =~ /^(\d{1,2})(?: -|\.) (.+?)$/ # redundant (but necessary...?)
+    track = $1.to_i
+    title = $2
+  end
+
   # refrence: http://jonhall.info/create_id3_tags_using_ffmpeg/
   tags = {}
 
