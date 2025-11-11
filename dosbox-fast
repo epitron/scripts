@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "usage: dosbox-fast <executable file.exe>"
+  echo "          ^- runs a program in dosbox with no speed-throttling"
+  exit 1
+fi
+
+DOSBOX_CONFIG="$( dirname "${BASH_SOURCE[0]}" )/dosbox-fast.conf"
+
+echo "using custom config: $DOSBOX_CONFIG"
+dosbox -conf "$DOSBOX_CONFIG" "$@"
