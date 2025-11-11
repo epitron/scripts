@@ -15,7 +15,7 @@ require 'slop'
 opts = Slop.parse(help: true, strict: true) do
   banner "Usage: git-rm-history [options]"
 
-  # on "a",  "along",  "desc"
+  on "n",  "dryrun",  "Just show what'll happen"
   # on "b=", "blong",  "desc", default: ""
 end
 
@@ -29,8 +29,14 @@ class Path
   end
 end
 
-args.each do |arg|
-  path      = Path[arg]
+paths = args.map(&:to_Path)
+
+if paths.empty?
+  puts "Error: must supply a path" # unless you're already in a git dir, ya git!
+  puts opts
+end
+
+paths.each do |path|
   gitdir    = path/".git"
   gitconfig = gitdir/"config"
 
@@ -43,7 +49,10 @@ args.each do |arg|
   config = gitconfig.read
   
   # path.rm_R
-  FileUtils.rm_rf(path)
+  puts "[*] removing #{gitdir}"
+  unless opts.dryrun?
+    FileUtils.rm_rf(gitdir)
+  end
   # path.mv("#{path.path.chomp("/")}-tmp")
 
   path.mkdir
