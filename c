@@ -595,7 +595,7 @@ end
 def which(bin)
   ENV["PATH"].split(":").find do |path|
     result = File.join(path, bin)
-    return result if File.exists? result
+    return result if File.exist? result
   end
   nil
 end
@@ -626,7 +626,7 @@ def tmp_filename(prefix="c", length=20)
   name  = nil
   loop do
     name = "/tmp/#{prefix}-#{length.times.map { chars.sample }.join}"
-    break unless File.exists?(name)
+    break unless File.exist?(name)
   end
   name
 end
@@ -654,7 +654,7 @@ def create_tmpdir(prefix="c-")
     random_suffix = suffix_size.times.map { alphabet[rand(alphabet.size)] }.join('')
     random_dir = "#{prefix}#{random_suffix}"
     potential = File.join(tmp_root, random_dir)
-    if File.exists? potential
+    if File.exist? potential
       puts "#{potential} exists, trying another..."
     else
       Dir.mkdir(potential)
@@ -1794,7 +1794,7 @@ def print_hex(arg, side_by_side=true)
         skip_begins_at = nil
       end
 
-      hex = chars.map.with_index { |b, i| "<#{(i%2==0) ? 2 : 3}>%0.2x" % b.ord }
+      hex = chars.map.with_index { |b, i| "<#{(i%2==0) ? 8 : 3}>%0.2x" % b.ord }
       #underflow = bytes_per_line - hex.size
       #hex += ['   ']*underflow if underflow > 0
 
@@ -2104,7 +2104,7 @@ def convert(arg)
   if arg =~ %r{^https?://.+}
     print_http(arg)
   else
-    arg = which(arg) unless File.exists? arg
+    arg = which(arg) unless File.exist? arg
 
     raise Errno::ENOENT unless arg
 
