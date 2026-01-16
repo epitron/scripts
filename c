@@ -30,16 +30,12 @@
 #     |_ eg: `def convert({stream,string}, format: ..., filename: ...)` (allows chaining processors, eg: .diff.gz)
 #   * Live filtering (grep within output chunks, but retain headers; retain some context?)
 #     |_ special pager(s)! (moar)
-#     |_ jump between files (ctrl-up/down)
+#     |_ jump between files (ctrl-pgup/pgdown (like switching tabs))
 #   * Follow symbolic links (eg: c libthing.so -> libthing.so.2)
 #   * "--summary" option to only print basic information about each file
-#   * Follow symlinks by default
 #   * "c directory/" should print "=== directory/README.md ========" in the filename which is displayed in multi-file mode
 #   * Print [eof] between files when in multi-file mode
 #   * Make .ANS files work in 'less' (less -S -R, cp437)
-#   * Add gem/program dependencies to functions (using a DSL)
-#     |_ "install all dependencies" can use it
-#     |_ error/warning when dependency isn't installed, plus a fallback codepath
 #   * Fix "magic" (use hex viewer when format isn't recognized)
 #   * Renderers should pick best of coderay/rugmentize/pygmentize/rougify (a priority list for each ext)
 #
@@ -538,7 +534,7 @@ def print_header(title, level=nil)
 end
 
 def run(*args, &block)
-  return Enumerator.new { |y| run(*args) { |io| io.each_line { |line| y << line } } } unless block_given?
+  return Enumerator.new { |y| run(*args) { |io| io.each_line(&y) } } unless block_given?
 
   opts = (args.last.is_a? Hash) ? args.pop : {}
   args = [args.map(&:ensure_string)]
@@ -580,7 +576,7 @@ def lesspipe(*args)
     params << "-F" unless options[:always] == true
   end
 
-  IO.popen("less #{params * ' '}", "w") do |less|
+  IO.popen(["less", *params], "w") do |less|
     if output
       less.puts output
     else
@@ -610,9 +606,13 @@ def concatenate_enumerables(*enums)
 
   Enumerator.new do |y|
     enums.each do |enum|
-      enum.each { |e| y << e }
+      enum.each(&y)
     end
   end
+end
+
+def pipe_to_y(e, y, method=:each)
+  e.send(method, &y)
 end
 
 def show_image(filename)
@@ -1278,9 +1278,11 @@ def print_youtube_chat_json(filename)
   # return to_enum(:print_youtube_chat_json, filename) unless block_given?
   require 'json'
   require 'pp'
+  require 'epitools/path'
 
   Enumerator.new do |out|
-    f = filename[/\.gz$/] ? zopen(filename) : open(filename)
+    path = Path[filename]
+    f = (path.ext == "gz") ? path.zopen : path.open
     # open(filename) do |f|
     begin
       f.each_line do |line|
@@ -1343,6 +1345,24 @@ end
 
 ##############################################################################
 
+def print_marshal(filename)
+  depends gems: ["coderay", "epitools"]
+
+  require 'epitools/path'
+  require 'pp'
+  require 'coderay'
+
+  Enumerator.new do |out|
+    path = Path[filename]
+    f = (path.ext == "gz") ? path.zopen : path.open
+    data = Marshal.load(f)
+    out << CodeRay.scan(data.pretty_inspect, :ruby).term
+  end
+end
+
+
+##############################################################################
+
 def print_iso(filename)
   run("lsiso", filename, stderr: true)
 end
@@ -1385,7 +1405,7 @@ def print_torrent(filename)
   files       = data["info"]["files"]
   trackers    = [data["announce"], *data["announce-list"]].compact
   urls        = data["url-list"]
-  col1_size   = files.map { |f| f["length"] }.max.to_s.size if files
+  col1_size   = files.map { |f| f["length"] }.max.commatize.size if files
   comment     = data["comment"]
   creator     = data["created by"]
   piece_size  = data.dig "info", "piece length"
@@ -1405,7 +1425,7 @@ def print_torrent(filename)
 
   if files
     files.sort_by { |f| [-f["path"].size, f["path"]] }.each do |f|
-      output << "#{f["length"].to_s.rjust(col1_size)} | #{f["path"].join("/")}"
+      output << "#{f["length"].commatize.rjust(col1_size)} | #{f["path"].join("/")}"
     end
     output << ""
   end
@@ -1661,6 +1681,29 @@ def print_csv(filename)
 end
 
 ##############################################################################
+
+def print_vcf(filename)
+  depends gem: 'epitools'
+  require 'epitools/minimal'
+  require 'epitools/core_ext/enumerable'
+
+  Enumerator.new do |out|
+    open(filename) do |inp|
+      cards = inp.each_line.lazy.map(&:strip).split_between { |a,b| a == "END:VCARD" and b == "BEGIN:VCARD" }
+      cards.each do |card_lines|
+        card_lines.each do |l|
+          key, val = l.split(":",2)
+          next if ["BEGIN", "END", "VERSION", "X-IRMC-LUID"].include? key
+          val = val.split(";", 2).reverse.join(" ") if key == "N"
+          out << "#{key}: #{val}" unless val&.empty?
+        end
+        out << ""
+      end
+    end
+  end
+end
+
+##############################################################################
 # TODO: wide view improvement: put ascii chars side by each, but stack hex digits topwise
 def print_hex(arg, side_by_side=true)
   depends gems: "epitools"
@@ -1909,6 +1952,16 @@ def print_xpi_info(filename)
 end
 
 ##############################################################################
+
+def print_deb(filename)
+  Enumerator.new do |y|
+    pipe_to_y run("dpkg-deb", "-I", filename), y
+    y << ""
+    pipe_to_y run("dpkg-deb", "-c", filename), y
+  end
+end
+
+##############################################################################
 # Pretty-print XML
 
 def nice_xml(xml)
@@ -2153,20 +2206,26 @@ def convert(arg)
     ext = path.extname.downcase
 
     if path.filename =~ /\.tar\.(gz|xz|bz2|lz|lzma|pxz|pixz|lrz|zst)$/ or
-       ext =~ /\.(tgz|tar|zip|rar|arj|lzh|deb|rpm|7z|apk|pk3|jar|gem|iso|wim)$/
+        ext =~ /\.(tgz|tar|zip|rar|arj|lzh|rpm|7z|apk|pk3|jar|gem|iso|wim)$/
       print_archive(arg)
+    elsif path.filename =~ /\.live_chat\.json(\.gz)?$/
+      print_youtube_chat_json(arg)
+    elsif path.filename =~ /\.marshal(\.gz)?$/
+      print_marshal(arg)
     elsif cmd = DECOMPRESSORS[ext]
       run(*cmd, arg)
     elsif path.filename =~ /.+-current\.xml$/
       print_wikidump(arg)
+    # elsif path.filename =~ /-pages-articles-multistream\.xml\.bz2$/
+    #   print_wikidump(arg)
     elsif path.filename =~ /bookmark.+\.html$/i
       print_bookmarks(arg)
     elsif path.filename =~ /^id_(rsa|ed25519|dsa|ecdsa)(\.pub)?$/
       print_ssl_certificate(arg)
-    elsif path.filename =~ /\.live_chat\.json(\.gz)?$/
-      print_youtube_chat_json(arg)
     else
       case ext
+      when *%w[.deb]
+        print_deb(arg)
       when *%w[.html .htm]
         print_html(File.read arg)
       when *%w[.md .markdown .mdwn .page .gmi]
@@ -2213,9 +2272,11 @@ def convert(arg)
         print_xml(arg)
       when *%w[.csv .tsv .xls]
         print_csv(arg)
+      when *%w[.vcf]
+        print_vcf(arg)
       when *%w[.weechatlog]
         print_weechat_log(arg)
-      when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4a .m4s .avi .mov .qt .rm .wma .wmv .s3m .xm .it .mod]
+      when *%w[.mp3 .mp2 .ogg .webm .mkv .mp4 .m4a .aac .m4s .avi .mov .qt .rm .wma .wmv .s3m .xm .it .mod]
         print_ffprobe(arg)
       when *%w[.jpg .jpeg]
         print_exif(arg)

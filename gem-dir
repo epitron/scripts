@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-
 require 'rubygems'
 
 # Send annoying Ruby 2.7.0 deprecation warnings to STDERR so that our *actual* output can be used in scripts
@@ -27,15 +26,36 @@ rescue Bundler::GemNotFound => e
   []
 end  
 
-raise "Error: must specify a gem" unless ARGV.size == 1
-
-gem_name = ARGV.first
-
-all_specs = gem_specs(gem_name) + bundler_specs(gem_name)
-
-if spec = all_specs.sort_by(&:version).last
-  $real_stdout.puts spec.full_gem_path
-else
-  STDERR.puts "ERROR: Gem `#{gem_name}` not found"
-  exit 1
+if ARGV.include? "--help" or ARGV.include? "-h"
+  puts DATA.read
+  exit
 end
+
+if ARGV.empty?
+  $real_stdout.puts "#{Gem.user_dir}/gems"
+else
+  ARGV.each do |gem_name|
+    all_specs = gem_specs(gem_name) + bundler_specs(gem_name)
+
+    if spec = all_specs.sort_by(&:version).last
+      $real_stdout.puts spec.full_gem_path
+    else
+      $stderr.puts "ERROR: Gem `#{gem_name}` not found"
+    end
+  end
+end
+
+
+__END__
+Usage:
+  gem-dir [<gem name(s)>]
+
+Purpose:
+  Prints the directory where "gem install" placed a gem (so you can inspect it).
+
+Example:
+  $ gem-dir irb
+  /usr/lib/ruby/gems/3.0.0/gems/irb-1.4.2
+
+(If don't give any gem names, it prints the directory that contains all the user gems.)
+

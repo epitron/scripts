@@ -19,7 +19,6 @@ end
 #######################################################################################################
 
 def run_chunks(cmd, strip_junk: true, strip_comments: true)
-  begin
     lines = IO.popen(cmd, &:readlines)
 
     chunks = lines.chunk do |line|
@@ -31,10 +30,6 @@ def run_chunks(cmd, strip_junk: true, strip_comments: true)
     end
 
     chunks.reject(&:first).map(&:last)
-  rescue => e
-    puts e
-    puts e.backtrace
-  end
 end
 
 #######################################################################################################
@@ -113,8 +108,6 @@ def geoip(thing)
   else
     run(["geoip-ruby", thing])
   end
-rescue Exception => e
-  "Error: #{e.inspect}"
 end
 
 #######################################################################################################
@@ -129,7 +122,6 @@ def dog(thing)
   out = []
   out << header("dog #{thing}")
   out << ""
-
   cmd = %w[dog --color=always] 
   cmd << thing
   cmd += %w[A AAAA TXT SOA CNAME MX NS]
@@ -146,10 +138,24 @@ end
 
 #######################################################################################################
 
+class JobRunnerThatHandlesExceptions < JobRunner
+  def add(&oldblock)
+    newblock = proc do
+      begin
+        oldblock.call
+      rescue => e
+        [e.to_s, e.backtrace.to_s]
+      end
+    end
+
+    super(&newblock)
+  end
+end
+
 lesspipe do |less|
 
   ARGV.each do |arg|
-    jobs = JobRunner.new
+    jobs = JobRunnerThatHandlesExceptions.new
 
     if arg =~ %r{^https?://([^/]+)}
       arg = $1

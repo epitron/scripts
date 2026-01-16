@@ -16,16 +16,20 @@ def parse_options
     banner "Usage: qemu [options] <.iso(s) or .qcow2 file(s) or /dev(s)>"
 
     on "m=", "memory",   "How much memory to use?", default: "2G"
-    on "s=", "size",     "Disk size", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
-    on "n",  "nbd",      "Attach image to a block device (for mounting filesystems)"
-    # on "d=", "device",   "Pass through a block device (eg: /dev/sdb)"
+    on "s=", "size",     "Disk size (you can also append this to the qcow2 filename, eg: 'zfspool.qcow2:30G')", default: "10G"  # TODO: Accept the size as a suffix to the .qcow2 filename (eg: freebsd.qcow2:10G)
+    on "B",  "nbd",      "Attach image to a block device (for mounting filesystems)"
+    on "d=", "device",   "Add a QEMU device (eg: rtl8139)"
     on "b=", "boot",     "Drive to boot (eg: --boot=a)"
     on "k=", "kvm",      "Use KVM", default: true
     on "p=", "port",     "Forward a port to the machine (eg: '22', or '2222:22')"
     on "P=", "cpus",     "Number of CPUs (default: 1)"
     on "B=", "bios",     "Load a BIOS ROM file"
-    on "S=", "samba",    "Mount a host directory via samba (it'll be on 10.x.x.4)"
-    on "9=", "9p",       "Mount a host directory via 9p (guest fstab: \"host0 /wherever 9p trans=virtio,version=9p2000.L 0 0\")"
+    on "S=", "samba",    "Mount a host directory via samba (eg: --samba=/home/me/vmfiles) (the SMB mount will be on 10.x.x.4)"
+    on "9=", "9p",       "Mount a host directory via 9p (eg: --9p=/home/me/guestshared)\n" +
+                            "\tmount with:\n" +
+                            "\t\tmount -t 9p host0 /mnt\n" +
+                            "\tor add a line to the guest's fstab:\n" +
+                            "\t\thost0 /wherever 9p trans=virtio,version=9p2000.L 0 0"
     on "r",  "restrict", "Restrict the network (firewall)"
     on "e",  "efi",      "Boot using OVMF EFI BIOS"
     on "1",  "pi",       "Raspberry PI mode"
@@ -34,7 +38,7 @@ def parse_options
     on "c",  "console",  "STDIO-only serial console mode"
     on "C",  "curses",   "Terminal-based UI (Press Alt-2 to get to qemu command console)"
     on "n",  "no-daemon","Run in the foreground"
-    on "d",  "debug",    "Print command and quit"
+    # on "d",  "debug",    "Print command and quit"
     on "M",  "cursor",   "Show the mouse cursor"
     on "v",  "verbose",  "Show (a little) more information"
     on "V",  "version",  "Show version information"
@@ -58,9 +62,13 @@ if args.empty? and not opts.bios?
   exit 1
 end
 
-isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" or arg.path[%r{^/dev/s(r|cd)\d}] }
-isos.each { |iso| puts "Error: #{iso.inspect} does not exist" unless iso.exists? }
-exit 1 unless isos.all? &:exist?
+isos, disks = args.map { |arg| Path.new(arg) }.partition { |arg| arg.ext == "iso" or arg.path =~ %r{^/dev/s(r|cd)\d} }
+
+missing_isos = isos.reject(&:exist?)
+if missing_isos.any?
+  missing_isos.each { |iso| puts "Error: #{iso.inspect} does not exist".light_red }
+  exit 1
+end
 
 ###############################
 # Attach NBD
@@ -150,7 +158,28 @@ end
 cmd += ["-rtc", "base=localtime"]
 cmd += ["-m", memory]
 cmd += ["-object", "rng-random,id=rando,filename=/dev/urandom"]
-cmd += ["-virtfs", "local,path=#{opts[:"9p"]},mount_tag=host0,security_model=passthrough,id=host0"] if opts[:"9p"]
+
+if opts.device?
+  cmd += ["-device", opts[:device]]
+end
+
+if opts[:"9p"]
+  path = Path[opts[:"9p"]]
+
+  if path.file?
+    puts "Error: #{path} is a file"
+    exit 1
+  end
+
+  if not path.dir?
+    puts "[+] Creating #{path}"
+    path.mkdir_p
+  end
+
+  puts "[+] The contents of #{path} will be shared inside in the VM; make sure to 'mount -t 9p host0 /mnt' in the VM to access them"
+
+  cmd += ["-virtfs", "local,path=#{path},mount_tag=host0,security_model=none,readonly=off,id=host0"] # security_model=mapped-xattr
+end
 
 if opts[:bios]
   cmd += ["-bios", opts[:bios]]
@@ -203,16 +232,20 @@ cmd += ["-display", "curses"] if opts.curses?
 cmd += ["-serial",  "stdio"]  if opts.serial?
 
 disks.each do |disk|
-  unless disk.exists?
-    # if bf = opts[:"backing-file"]
-    #   if disks.size > 1
-    #     puts "Error: Can't use more than one disk image when specifying a backing file"
-    #   else
-    #     system("qemu-img", "-f", "qcow2", "-b", bf, disk)
+  # parse out the :<size><units> option from the end of the file (eg: 'zfspool.qcow2:10G')
+  if disk.filename =~ /^(.+):(\d+)([kmg]b?)$/i
+    disk = disk.with(filename: $1)
+    size = "#{$2}#{$3}"
+  else
+    size = opts[:size]
+  end
 
+  unless disk.exists?
+    # Create a new disk
     case disk.ext
     when "qcow2"
-      system("qemu-img", "create", "-f", "qcow2", disk, opts[:size])
+      print "[+] "
+      system("qemu-img", "create", "-f", "qcow2", disk, size)
     else
       puts "I don't know how to make a #{disk} image"
     end

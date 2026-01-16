@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: fixmamerom [options] <game dir(s)...>"
+
+  on "v",  "dryrun", "Don't make dirs or copy any files"
+  on "d=", "dir",    "The directory where the rom is located", default: nil
+end
+
+args = ARGV
+
+########################################################
+
+for game in args
+
+  if dir = opts[:dir]
+    indir = Path[dir]
+  else
+    indir = Path[game]
+  end
+
+  if not indir.exists?
+    puts "[!] Error: #{indir} doesn't exist".light_red
+    next
+  end
+
+
+  puts "========================================================================="
+  puts "  fixing #{game} in #{indir}"
+  puts "-------------------------------------------------------------------------"
+
+  cmd = ["mame", "-listroms", game]
+
+  proper_names = {}
+  IO.popen(cmd) do |io|
+    # ROMs required for driver "wboy".
+    # Name                                   Size Checksum
+    # epr-7489.116                          16384 CRC(130f4b70) SHA1(4a2ea5bc06f3a240c68813be3a9f9bef2bcf4e9c)
+    # epr-7490.109                          16384 CRC(9e656733) SHA1(2233beb874b7cb48899afe603fef567932951a88)
+    # epr-7491.96                           16384 CRC(1f7d0efe) SHA1(a1b4f8faf1614f4808df1292209c340f1490adbd)
+    # epr-7498.120                           8192 CRC(78ae1e7b) SHA1(86032f443359b0bb2766e33024ed2e320aa9bc84)
+    # epr-7497.62                            8192 CRC(08d609ca) SHA1(11799e9ef7e6942b304f132b404bff3ed44d524b)
+    io.each_line do |line|
+      if line =~ /^(.+?)\s+(\d+)\s+CRC\((.+?)\) SHA1\((.+?)\)/
+        filename, size, crc, sha1 = $1, $2.to_i, $3, $4
+        proper_names[sha1] = [filename, size]
+      end
+    end
+  end
+
+  puts "Roms that this game needs:".light_cyan
+  pp proper_names
+  puts
+
+  still_missing = proper_names.dup
+
+  destdir = Path["#{game}-fixed"]
+  destdir.mkdir unless destdir.dir? or opts.dryrun?
+
+  indir.ls.select(&:file?).each do |f|
+    hash = f.sha1
+
+    if (target_filename, size = proper_names[hash])
+
+      if f.size == size
+        still_missing.delete(hash)
+        puts "[+] Found #{target_filename} (it was named #{f.filename})".green
+        unless opts.dryrun?
+          puts "    |_ copying #{f.filename} to #{destdir}#{target_filename}"
+          f.cp(destdir/target_filename)
+        end
+      else
+        puts "[!] #{f.filename} is the wrong size (expected #{size}, got #{f.size})".red
+      end
+    else
+      puts "[!] #{f.filename} doesn't match any hash".red
+    end
+  end
+
+  puts
+
+  if still_missing.any?
+    puts "[!] #{still_missing.size} files are still missing:".light_red
+    pp still_missing
+  else
+    puts "[+] All roms found!".light_green
+    puts "[+] Renamed files have been copied to in #{destdir}".light_green unless opts.dryrun?
+  end
+
+  puts
+end

@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools/core_ext/array'
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+PREVARICATIONS = ["maybe", "kinda", "not sure", "a bit", "a little", "i think", "i dunno", "who cares", "whatever", "or something"]
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "prevaricate:\n\tTo shift or turn from direct speech or behaviour; to deviate from the truth; to evade the truth; to waffle or be (intentionally) ambiguous.\n"
+
+  # on "a",  "along",  "desc"
+  on "n=", "num",  "How many prevarications to display?", default: 5
+end
+
+args = ARGV
+
+########################################################
+
+num = opts[:num].to_i
+
+PREVARICATIONS.
+  permutation(3).
+  to_a.
+  map { |a| a.join(" ") }.
+  pick(num).
+  each { |prevariation| puts prevariation }
+

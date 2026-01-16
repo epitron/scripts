@@ -1,0 +1,92 @@
+#!/usr/bin/env ruby
+##############################################################################################
+require 'epitools'
+##############################################################################################
+
+class Oga::XML::Element
+  def text_for(tag_name)
+    if tag = at_css(tag_name)
+      tag.text
+    end
+  end
+end
+
+##############################################################################################
+
+def print_rom_info(rom_name, out=$stdout)
+  #
+  # TODO: fix parsing algorithm:
+  #
+  # => find "machine[name=rom_name]"
+  # => find "device_ref" tags
+  #    eg: <machine name="1943"><device_ref name="z80" /></machine>
+  # => print "machine[#{device_ref["name"]}]" elements in order
+  #    (duplicate device_refs mean there are two chips)
+  #
+
+  cmd = %w[mame -lx] + [rom_name]
+
+  doc = IO.popen(cmd) { |io| Oga.parse_xml io.read }
+
+  if $?.success?
+
+    machines = doc.css("machine")
+    machines, devices = machines.partition do |m|
+      m["name"] == rom_name
+    end
+
+    m            = machines.first
+    desc         = m.text_for("description")
+    year         = m.text_for("year")
+    manufacturer = m.text_for("manufacturer")
+
+    # <display tag="screen" type="raster" rotate="270" width="256" height="224" refresh="59.637405" pixclock="6000000" htotal="384" hbend="128" hbstart="384" vtotal="262" vbend="22" vbstart="246" />
+    # <display tag="screen" type="vector" rotate="180" flipx="yes" refresh="38.000107" />
+    disp         = m.at_css("display")
+    w            = disp["width"]
+    h            = disp["height"]
+    refresh      = "%0.2f" % disp["refresh"].to_f
+    display_type = disp["type"] # raster or ... vector?
+    resolution   = (w.blank? and h.blank?) ? "" : "<13>#{w}<5>x<13>#{h} "
+
+    out.puts "<8>=== <15>#{rom_name} <8>==================================================".colorize
+    out.puts
+    out.puts "  <11>#{desc} <7>by <3>#{manufacturer} <8>(<7>#{year}<8>)".colorize
+    out.puts
+    out.puts "  <7>source <8>= <15>#{m["sourcefile"]}".colorize
+    out.puts "  <7>display <8>= #{resolution}<7>#{display_type} at <6>#{refresh}hz".colorize
+    m.css("chip").each do |c|
+      out.puts "  <7>#{c["type"]}:#{c["tag"]} <8>= <15>#{c["name"]}".colorize
+    end
+
+    out.puts
+    out.puts "  devices:"
+    devices.each do |d|
+      out.puts "     <15>#{d.text_for("description")} <8>(<7>#{d["name"]}<8>)".colorize
+    end
+
+    out.puts
+    out.puts
+  end
+end
+
+##############################################################################################
+
+# args = %w[pang bublbobl cclimber 1943 tmnt pbobble]
+args = ARGV
+
+if args.empty?
+  puts "usage: mameinfo <rom name(s)...>"
+  puts
+  puts "example"
+  puts "   $ mameinfo pang bublbobl cclimber 1943 tmnt pbobble"
+  puts
+  exit 1
+else
+  lesspipe do |less|
+    args.each { |arg| print_rom_info(arg, less) }
+  end
+end
+
+
+

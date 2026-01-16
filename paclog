@@ -5,6 +5,13 @@ require 'slop'
 require 'epitools'
 require 'date'
 ###########################################################################
+# TODO:
+#
+# - responsive algorithm:
+#   - read file backwards a line at a time, gathering results into an array
+#   - when time delta is high enough, emit the array
+#   [parallel] receive arrays and print them to less
+###########################################################################
 Colored.force!
 ###########################################################################
 

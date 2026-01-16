@@ -1,1 +1,19 @@
-ffmpeg -i "$1" -an -filter:v "setpts=0.1*PTS" -r 60 "${1%.mp4}-lapse.mp4"
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+  echo "purpose:"
+  echo "  produce a time lapse by dropping frames"
+  echo
+  echo "usage:"
+  echo "  ffmpeg-timelapse <input video>"
+  echo "  (produces a file named <input>-lapse.mp4)"
+  echo
+  exit
+fi
+
+OUTFILE="${1%.mp4}-lapse.mp4"
+
+echo "* Writing timelapse to '$OUTPUT'..."
+
+ffmpeg -i "$1" -an -filter:v "setpts=0.1*PTS" -r 60 "$OUTFILE"
+

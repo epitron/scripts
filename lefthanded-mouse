@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: lefthanded-mouse [options]"
+  on "l",  "list",   "List mice"
+  on "a",  "all",    "List all mouse settings"
+  on "m=", "mouse",  "Which mouse should we switch?"
+end
+
+args = ARGV
+
+########################################################
+
+all_props = `xfconf-query -c pointers -l`.nicelines
+rprops = all_props.grep(%r{/RightHanded$})
+mice = rprops.map { |l| l.split("/")[1] }
+
+list_mice = proc do
+  puts "Mice found:"
+  puts "-----------"
+  mice.each.with_index do |mouse,i|
+    puts "  #{i+1}. #{mouse}"
+  end
+end
+
+if opts.list?
+  list_mice.call
+  exit
+end
+
+if opts[:a]
+  puts "All mouse settings:"
+  puts "-------------------"
+  puts all_props
+  exit 1
+end
+
+case rprops.size
+when 0
+  puts "ERROR: Couldn't find the 'RightHanded' setting for any of your mice!"
+  puts
+  puts "Here's all the settings I found:"
+  puts all_props
+  exit 1
+when 1
+
+when 2
+  puts "Error: found #{mice.size} mice. Please pick one using the '-m' option."
+  puts
+  list_mice.call
+end
+
+
+# xfconf-query -c pointers -p /USB_Optical_Mouse/RightHanded -T
+
+# right=`xfconf-query -c pointers -p /USB_Optical_Mouse/RightHanded`
+
+# if [ "$right" == "true" ]; then
+#   msg="Righthanded"
+# else
+#   msg="Lefthanded"
+# fi
+
+# system("notify-send", "Mouse toggle", msg)

@@ -1,0 +1,2 @@
+#!/bin/bash
+CB_CMD=cb2 mvcb "$@"

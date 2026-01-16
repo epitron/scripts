@@ -11,7 +11,7 @@ require 'epitools'
 
 MEDIA_DEFS = [
   #  type of thing                     players                                     exts
-  [  [/^image/, /^pic/, /^photo/],     ["feh", "gthumb","ristretto","shotwell"], %w[jpg jpeg png gif] ],
+  [  [/^image/, /^pic/, /^photo/],     ["gthumb","feh","ristretto","shotwell"], %w[jpg jpeg png gif] ],
   [  [/^mov/, /^vid/],                 ["mpv", "mplayer", "totem"],              %w[mp4 avi mov mpg mpeg flv wmv asf m4v ogm] ],
   [  [/^mus/, /^aud/, /^song/],        ["audacious", "audacious2",
                                         "amarok -e"],                            %w[mp3 flac mp4 aac ogg] ],
@@ -80,7 +80,7 @@ puts "+ Shuffling #{opts[:desc]}..."
 puts "  |_ searching for: #{Dir.pwd}/#{glob_pattern}"
 
 # GLOB IT
-all_files = Path.glob(glob_pattern, File::FNM_CASEFOLD)
+all_files = Path.glob(glob_pattern) #, File::FNM_CASEFOLD)
 
 # GROUP IT
 grouped = all_files.group_by { |filename| File.extname(filename)[1..-1].upcase }.sort_by{|k,v| -v.size}

@@ -46,7 +46,7 @@ files.each do |f|
       # GOxE6prWIAEIGMT?format=png&name=small
 
       fn = $1
-      pars = $2.split("&").map { |s| s.split("=") }.to_h
+      pars = $2.split("&").map { |s| s.split("=", 2) }.to_h
 
       unless fn.size == 15 and pars.keys.sort == ["format", "name"]
         puts "  |_ unrecognized format: <12>#{f.filename}".colorize

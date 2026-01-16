@@ -15,4 +15,6 @@ else
   fi
 fi
 
-echo "$LINE" | gsub -f "\n(?!\z)" -t "\\n" | tee -a "$BM_FILE"
+if [ "$LINE" != "" ]; then
+  echo "$LINE" | gsub -f "\n(?!\z)" -t "\\n" | tee -a "$BM_FILE"
+fi

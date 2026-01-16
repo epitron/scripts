@@ -5,4 +5,10 @@ import glob
 import re
 import time
 import shutil
+import struct
 
+def look(o):
+  if hasattr(o, "iterator"):
+    return { k: v for (k,v) in o.iterator() }
+  else:
+    return { k: o.__getattribute__(k) for k in o.__dir__() if not k.startswith("__") }

@@ -9,17 +9,32 @@ require 'epitools/clitools'
 ###############################################################################
 
 TYPE_INFO = [
-  [:code,    /\.(rb|c|c++|cpp|py|sh|nim|pl|awk|go|php|ipynb|lua)$/i,      :light_yellow],
-  [:image,   /\.(jpe?g|bmp|png|gif)$/i,                                   :green],
-  [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv|vob)$/i,          :light_purple],
-  [:music,   /\.(mp3|ogg|m4a|aac)$/i,                                     :purple],
+  [:code,    /\.(rb|c|c++|cpp|h|py|sh|nim|pl|awk|go|php|ipynb|lua)$/i,    :light_yellow],
+  [:image,   /\.(jpe?g|jp2|bmp|png|gif)$/i,                               :green],
+  [:music,   /\.(mp3|ogg|m4a|aac|wma)$/i,                                 :purple],
   [:bin,     /\.(exe)$/i,                                                 :light_green],
   [:config,  /\.(conf|ini)$/i,                                            :cyan],
   [:dotfile, /^\../i,                                                     :grey],
-  [:data,    /\.(json|ya?ml|h|sql)$/i,                                    :yellow],
-  [:sidecar, /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
+  [:data,    /\.(json|ya?ml|sql|csv)$/i,                                  :yellow],
+  [:subs,    /\.(srt|idx|sub|asc|sig|log|vtt)$/i,                         :grey],
+  [:video,   /\.(mp4|mkv|avi|m4v|flv|webm|mov|mpe?g|wmv|vob|m2[vp]|rm|asf)$/i,   :light_purple],
   [:archive, /\.(zip|rar|arj|pk3|deb|7z|tar\.(?:gz|xz|bz2|zst)|tgz|pixz|gem)$/i, :light_yellow],
   [:doc,     /(Makefile|CMakeLists.txt|README|LICENSE|LEGAL|TODO|\.(txt|pdf|md|rdoc|log|mk|epub|docx?))$/i, :light_white],
+]
+
+INVENTORY_OF_TYPE_OPTIONS = %w[
+  file(s)
+  dir(s)/director(y/ies)
+  image(s)/pic(s)/pix
+  vid(eo)(s)
+  text(s)/doc(s)
+  code/source/src
+  music/audio
+  sub(s)
+  bin(s)/exe(s)/program(s)
+  archive(s)/zip(s)
+  dotfile(s)/sidecar(s)
+  data/json/yaml/csv/sql
 ]
 
 FILENAME2COLOR = Rash.new TYPE_INFO.map { |name, regex, color| [regex, color] }
@@ -31,16 +46,17 @@ ARG2TYPE = Rash.new({
   /^vid(eo)?s?$/          => :video,
   /^(subs?)$/             => :sub,
   /^(image?s|pics?|pix)$/ => :image,
-  /^(text|docs?)$/        => :doc,
-  /^(archives?|zip)$/     => :archive,
-  /^(dir|directory)$/     => :dir,
+  /^(text|doc)s?$/        => :doc,
+  /^(archive|zip)s?$/     => :archive,
+  /^director(y|ies)$/     => :dir,
   /^(bin|exe|program)s?$/ => :bin,
   /^dotfiles?$/           => :dotfile,
-  /^sidecar$/             => :dotfile,
-  /^data$/                => :data,
+  /^sidecars?$/           => :dotfile,
   /^files?$/              => :file,
   /^dirs?$/               => :dir,
+  /^(data|json|yaml|sql|csv)$/  => :data,
 })
+
 
 SIZE_COLORS = Rash.new(
               0...100 => :grey,
@@ -52,12 +68,18 @@ SIZE_COLORS = Rash.new(
 
 
 def parse_options
+  # custom parser for --<type> args
   selected_types = []
   ARGV.each do |arg|
     if type = ARG2TYPE[arg.gsub(/^--/, '')]
       ARGV.delete(arg)
       selected_types << type
     end
+  end
+  
+  # subsitute -R for -r (ls compatibility)
+  if i = ARGV.index("-R")
+    ARGV[i] = "-r"
   end
 
   #
@@ -68,7 +90,7 @@ def parse_options
 
     on "v", "verbose",      'Enable verbose mode'
     on "l", "long",         'Long mode (with sizes and dates)'
-    on "r", "recursive",    'Recursive'
+    on "r", "recursive",    'Recursive (or -R for "ls" compatibility)'
     on "D", "dirs-first",   'Show directories first'
     on "a", "all"   ,       'Show all files (including hidden)'
     on "H", "hidden",       'Show hidden files'
@@ -81,7 +103,7 @@ def parse_options
     on "g=","grep",         'Search filenames'
     on "f=","find",         'Find in directory tree'
 
-    separator "        --<type name>       List files of this type (possibilities: #{TYPE_INFO.map(&:first).join(', ')})"
+    separator "        --<type name>       List files of this type; possibilities: #{INVENTORY_OF_TYPE_OPTIONS.join(', ')}"
   end
 
   # re_matchers = ARG2TYPE.keys.map { |re| re.to_s.scan(/\^(.+)\$/) }
@@ -160,7 +182,7 @@ end
 
 ###############################################################################
 
-def print_paths(paths, long: false, regex: nil, hidden: false, tail: false)
+def print_paths(paths, long: false, regex: nil, hidden: false, tail: false, paged: false)
   paths  = paths.select { |path| path.filename =~ regex } if regex
   paths  = paths.reject &:hidden? unless hidden
 
@@ -178,10 +200,10 @@ def print_paths(paths, long: false, regex: nil, hidden: false, tail: false)
     end
   end
 
-  if tail
-    printer[$stdout]
-  else
+  if paged
     lesspipe(&printer)
+  else
+    printer.call($stdout)
   end
 end
 
@@ -190,7 +212,12 @@ end
 # Main
 ###############################################################################
 
-opts, selected_types, args = parse_options
+begin
+  opts, selected_types, args = parse_options
+rescue Slop::Error => e
+  puts "<12>Error: <7>#{e}".colorize
+  exit 1
+end
 
 args = ["."] if args.empty?
 
@@ -266,5 +293,5 @@ grouped.each do |dir, paths|
     paths = dirs + paths
   end
 
-  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?, tail: start_pager_at_the_end)
+  print_paths(paths, long: opts.long?, regex: regex, hidden: opts.hidden?, paged: opts.paged?)
 end

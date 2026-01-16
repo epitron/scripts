@@ -107,7 +107,6 @@ pushpath() {
 
 # filesystem
 alias mv="mv -v"
-alias mv-backup='mv --backup=numbered'
 alias cp="cp -v"
 alias rm='trsh'
 alias r='ren'
@@ -127,7 +126,7 @@ fi
 alias n=nano
 alias s.='s .'
 alias c.='c .'
-alias egrep='egrep --color=auto'
+alias egrep='grep -E --color=auto'
 alias fgrep='fgrep --color=auto'
 alias grep='grep --color=auto'
 alias rcat='tac'
@@ -173,6 +172,7 @@ alias a="audacious"
 alias ae="a -e"
 alias a2="a"
 alias ch="chromium"
+alias ff="firefox --new-tab"
 alias qute="qutebrowser"
 alias mixer="pulsemixer"
 alias yd='youtube-dl --xattrs --no-mtime'
@@ -238,7 +238,8 @@ alias lsblk='lsblk -o MODEL,SIZE,TYPE,NAME,MOUNTPOINT,LABEL,FSTYPE'
 alias disks='lsblk'
 
 # system
-alias_all_as_sudo sysdig swapped perf
+alias_all_as_sudo sysdig perf
+alias swapped='sudoifnotroot /usr/scripts/swapped'
 alias dmesg='dmesg -T --color=always|less -S -R +\>'
 alias dmesg-tail='\dmesg -T --color -w'
 alias dstat-wide='dstat -tcyifd'

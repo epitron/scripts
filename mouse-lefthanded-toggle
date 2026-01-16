@@ -1,4 +1,15 @@
+#!/bin/bash
+
+if ! righthanded_property="$(xfconf-query -c pointers -l | grep RightHanded)"; then
+  echo "ERROR: Couldn't find the 'RightHanded' setting for any of your mice!"
+  echo
+  echo "Here's the settings I found:"
+  xfconf-query -c pointers -l
+  exit 1
+fi
+
 xfconf-query -c pointers -p /USB_Optical_Mouse/RightHanded -T
+xfconf-query -c pointers -p $righthanded_property -T
 
 right=`xfconf-query -c pointers -p /USB_Optical_Mouse/RightHanded`
 

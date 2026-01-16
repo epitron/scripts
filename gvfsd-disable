@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ "$1" == "no" ]; then
+  OPERATION=unmask
+  DESCRIPTION=Enabling
+else
+  OPERATION=mask
+  DESCRIPTION=Disabling
+fi
+
+SERVICES="gvfs-daemon gvfs-gphoto2-volume-monitor gvfs-metadata gvfs-mtp-volume-monitor gvfs-udisks2-volume-monitor"
+
+echo "[+] ${DESCRIPTION}: $SERVICES"
+echo
+
+for service in $SERVICES; do
+  i --user $service $OPERATION
+done
+
+echo
+echo "[*] Done"
+
+
+

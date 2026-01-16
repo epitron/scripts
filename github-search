@@ -110,5 +110,7 @@ results.reverse.each do |item|
   # puts "    <9>#{updated_at.nice_date}".colorize if updated_at
   puts "    <15>#{desc[0..255]}".colorize if desc
   puts "    <3>#{url}".colorize
+  puts "    <6>#{url.chomp(".git")}/relases/latest".colorize if language&.match /^go$/i
+
   puts
 end

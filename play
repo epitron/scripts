@@ -605,9 +605,11 @@ def play(url, opts)
       cmd += [video["url"], "--audio-file=#{audio["url"]}"]
     end
   elsif url = json["url"]
-    if json["format"] =~ /audio only/ or json["ext"] == "m4a" or json["ext"] == "mp3"
+    if json["ext"] == "m4a" or json["ext"] == "mp3"
+      cmd << url
+    elsif json["format"] =~ /audio only/
       cmd << "--audio-file=#{url}"
-      cmd << json["thumbnail"]
+      cmd << json["thumbnail"] if json["thumbnail"]
     else
       cmd << url
     end
@@ -652,7 +654,6 @@ def play(url, opts)
 
   cmd += ["--start=#{seek.to_s}"] if seek
   cmd += ["--fs=yes"]           if fullscreen
-
 
   ## Run mpv
 
