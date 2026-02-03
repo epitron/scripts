@@ -33,7 +33,7 @@ lftp
 curl
 wget
 axel
-
+aria2
 
 # CLI clients
 lynx
