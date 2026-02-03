@@ -667,7 +667,7 @@ Mathematics is the art of giving the same name to different things.
 %
 The average person is mean.
 %
-The cost of sanity in this society is a certain level of alienation.
+The cost of sanity in this society, is a certain level﻿ of alienation.
     -- Terence McKenna
 %
 Softness and tenderness are attributes of life,
@@ -3711,7 +3711,7 @@ Computers are like Old Testament gods; lots of rules and no mercy.
 We each create a story -- a narritive, a picture, an allegory, a model -- for what's going on in the universe. And then we fight -- sometimes to the death -- to make others believe in that model, or to be able to keep believing in it ourselves. In other words, we try to erase contradictory evidence to that model.
     --  Douglas Rushkoff
 %
-To initiate a war of aggression is not only an international crime, it is the supreme international crime, differing only from other war crimes in that it contains within itself the accumulated evil of the whole.
+To initiate a war of aggression is not only an international crime; it is the supreme international crime, differing only from other war crimes in that it contains within itself the accumulated evil of the whole.
     --  Judicial ruling at the Nuremberg trials
 %
 There is no comparison between that which is lost by not succeeding and that which is lost by not trying.
