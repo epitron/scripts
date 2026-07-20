@@ -6,12 +6,16 @@ print "\e[?9h"
 STDIN.raw do |io|
   loop do
     c = io.read 1
-    if (28..127).include? c.ord
-      print c
+    n = c.ord
+
+    if (28..126).include? n
+      s = c
     else
-      print c.inspect.gsub(/(^"|"$)/, '')
+      s = c.inspect.gsub(/(^"|"$)/, '')
     end
-    
+
+    print "#{s} [#{n}] "    
+
     break if c == ?\C-c
   end
 end
