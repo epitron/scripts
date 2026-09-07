@@ -1,6 +1,15 @@
 #!/bin/bash
-if [ "$1" == "" ]; then
-  echo "usage: ssl-fingerprint <cert.pem>"
+
+if [ "" == "$1" ]; then
+  echo "usage: ssl-fingerprint <cert.pem|hostname.com:port>"
+  echo "(NB: You must set port to 443 if it's an https server)"
+  exit 1
+fi
+
+if [ -f "$1" ]; then
+  openssl x509 -in "$1" -noout -fingerprint -sha256
 else
-  openssl x509 -in "$1" -noout -fingerprint -sha1
+  openssl s_client -connect "$1" \
+    </dev/null 2>/dev/null \
+    | openssl x509 -noout -fingerprint -sha256
 fi
