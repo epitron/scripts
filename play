@@ -69,11 +69,11 @@ end
 ###################################################################################################
 
 def which(bin)
-  return bin if bin[0] == "/" and File.exists?(bin)
+  return bin if bin[0] == "/" and File.exist?(bin)
 
   ENV["PATH"].split(":").each do |dir|
     full_path = File.join(dir, bin)
-    return full_path if File.exists? full_path
+    return full_path if File.exist? full_path
   end
 
   nil
@@ -208,11 +208,11 @@ end
 ###################################################################################################
 
 def log_entries
-  if File.exists? JSON_LOGFILE
+  if File.exist? JSON_LOGFILE
     log = open(JSON_LOGFILE)
     meth = :from_json
   else
-    open(LOGFILE, "wb") {} unless File.exists?(LOGFILE) # touch the logfile
+    open(LOGFILE, "wb") {} unless File.exist?(LOGFILE) # touch the logfile
     log = open(LOGFILE)
     meth = :from_line
   end

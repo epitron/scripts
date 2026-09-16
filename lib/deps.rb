@@ -13,7 +13,7 @@ end
 def which(bin)
   ENV["PATH"].split(PATH_SEPARATOR).find do |path|
     fullpath = File.join(path, bin)
-    return fullpath if File.exists? fullpath + BINARY_EXTENSION
+    return fullpath if File.exist? fullpath + BINARY_EXTENSION
   end
   nil
 end
@@ -29,7 +29,7 @@ def bin_deps(*bins)
     missing = missing.delete_if do |bin|
       fullpath = File.join(path, bin+BINARY_EXTENSION)
       # p fullpath
-      File.exists? fullpath
+      File.exist? fullpath
     end
 
     break if missing.empty?
@@ -128,7 +128,7 @@ class Deps
       missing = missing.delete_if do |bin|
         fullpath = File.join(path, bin+BINARY_EXTENSION)
         # p fullpath
-        File.exists? fullpath
+        File.exist? fullpath
       end
 
       break if missing.empty?

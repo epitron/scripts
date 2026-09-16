@@ -167,7 +167,7 @@ lesspipe do |less|
     if url.url?
       less.puts "### URL: #{url}"
       html = cached_curl(url)
-    elsif File.exists?(url)
+    elsif File.exist?(url)
       less.puts "### File: #{url}"
       html = File.read(url)
     else

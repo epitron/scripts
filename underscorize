@@ -22,10 +22,10 @@ for fn in args
  new_fn = fn.gsub(' ', '_')
  if fn == new_fn
   puts %{ - Skipping "#{fn}"}
- elsif not File.exists? fn
+ elsif not File.exist? fn
   puts %{! cannot find file: "#{fn}"}
  else
-  if File.exists? new_fn
+  if File.exist? new_fn
    puts %{ - Skipping "#{fn}" ("#{new_fn}" already exists) }
   else
    if opts.include? "-s"

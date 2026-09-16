@@ -257,7 +257,7 @@ if __FILE__ == $0
   puts
 
   for arg in ARGV
-    unless File.exists? arg
+    unless File.exist? arg
       puts "Error: #{arg.inspect} not found..."
       next
     end
@@ -281,7 +281,7 @@ if __FILE__ == $0
       next
     end
 
-    if File.exists? new_filename
+    if File.exist? new_filename
       STDIN.purge
       print "#{new_filename} exists. Overwrite? (y/N) "
       case $stdin.gets.strip.downcase

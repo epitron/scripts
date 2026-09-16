@@ -13,7 +13,7 @@ if args.empty?
 end
 
 args.each do |infile|
-  unless File.exists? infile
+  unless File.exist? infile
     puts "* #{infile} not found. Skipping."
     next
   end

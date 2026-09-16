@@ -3,7 +3,7 @@
 def which(bin)
   ENV["PATH"].split(":").find do |path|
     result = File.join(path, bin)
-    return result if File.exists? result
+    return result if File.exist? result
   end
   nil
 end
@@ -25,7 +25,7 @@ exe = args.shift
 
 
 
-if File.exists?(exe)
+if File.exist?(exe)
   exe = File.absolute_path(exe)
 else 
   exe = which(exe)

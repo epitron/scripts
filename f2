@@ -158,7 +158,7 @@ if $0 == __FILE__
 
   # Ignore bad path arguments
   roots = roots.select do |path|
-    File.exists?(path) || STDERR.puts("Error: #{path} doesn't exist")
+    File.exist?(path) || STDERR.puts("Error: #{path} doesn't exist")
   end
 
   # Search!

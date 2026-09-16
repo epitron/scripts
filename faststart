@@ -13,7 +13,7 @@ end
 
 ARGV.each do |arg|
 
-  unless File.exists?(arg)
+  unless File.exist?(arg)
     puts "File not found: #{arg}"
     next
   end

@@ -109,7 +109,7 @@ class Grabber
   def save(url, dest)
     if File.directory?(dest)
       save_to = File.join( dest, filename_from_url(url) )
-    elsif File.exists?(dest)
+    elsif File.exist?(dest)
       # TODO: Resume?
       raise "Error: #{dest} already exists."
     else
@@ -219,7 +219,7 @@ class Link
   def save(dest=".")
     if File.directory?(dest)
       save_to = File.join( dest, filename_from_url(url) )
-    elsif File.exists?(dest)
+    elsif File.exist?(dest)
       # TODO: Resume?
       raise "Error: #{dest} already exists."
     else

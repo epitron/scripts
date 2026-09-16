@@ -14,7 +14,7 @@ def gem_specs(name)
 end
 
 def bundler_specs(name)
-  if File.exists?("Gemfile")
+  if File.exist?("Gemfile")
     require 'bundler'
     Bundler.load.specs.select { |s| s.name == name }
     # Bundler.environment.specs.select { |s| s.name == name }

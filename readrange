@@ -7,7 +7,7 @@ end
 
 filename, range_string, finish = ARGV
 
-fail "File does not exist: #{filename}" unless File.exists? filename
+fail "File does not exist: #{filename}" unless File.exist? filename
 
 finish = finish.to_i if finish
 

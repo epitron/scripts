@@ -57,7 +57,7 @@ elsif args.size != 2
 end
 
 args.each do |arg|
-  unless File.symlink?(arg) or File.exists?(arg)
+  unless File.symlink?(arg) or File.exist?(arg)
     puts "Error: #{arg.inspect} doesn't exist."
     exit 1
   end

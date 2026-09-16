@@ -117,7 +117,7 @@ class Drive < TypedStruct["drivename model family serial firmware size healthy s
       path = "/sys/block/#{drivename}/#{drivename}#{part}/size"
     end
 
-    if File.exists? path
+    if File.exist? path
       File.read(path).to_i
     else
       0

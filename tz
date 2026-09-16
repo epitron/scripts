@@ -216,7 +216,7 @@ def download_torrent(result)
   puts "<3>* <11>#{result.title} <8>(<10>#{result.seeds}/<2>#{result.peers}<8>)".colorize
 
   filename = "#{result.hash} - #{result.escaped_title}.torrent"
-  if File.exists? filename
+  if File.exist? filename
     puts "  |_ skipping".light_yellow
     return
   end

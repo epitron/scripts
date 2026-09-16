@@ -39,7 +39,7 @@ unless dir
   exit
 end
 
-unless File.exists? dir
+unless File.exist? dir
   puts "Error: #{dir} not found"
   exit 1
 end

@@ -98,7 +98,7 @@ if args.empty? and opts.wiki?
       clone(wiki, "wiki", shallow: opts[:shallow])
       puts
       homepage = "wiki/Home.md"
-      system("c", homepage) if File.exists?(homepage)
+      system("c", homepage) if File.exist?(homepage)
     end
   else
     $stderr.puts "ERROR: Couldn't find the .git directory. Are you running this from within a git repo?"
@@ -110,7 +110,7 @@ end
 
 repo, dest = args
 
-unless File.exists? repo
+unless File.exist? repo
   case repo
   when %r{^[\w\-]+/[\w\-\.]+/?$}
     # user left off https://github.com/; fill it in!
@@ -125,7 +125,7 @@ unless File.exists? repo
   end
 end
 
-if dest and File.exists?(dest)
+if dest and File.exist?(dest)
   puts "Error: destination #{dest.inspect} already exists"
   exit 1
 end

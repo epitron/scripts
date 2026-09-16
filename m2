@@ -323,7 +323,7 @@ def report_on(file)
     sleep 1
     puts
     loop do
-      if File.exists? file
+      if File.exist? file
         print "\e[1G* Out file: #{File.size(file).commatize} bytes\e[J"
       end
       sleep 1
@@ -364,7 +364,7 @@ end
 def normalize(infile, outfile=nil)
   outfile = outfile || change_ext(infile, ".norm.wav")
 
-  File.unlink outfile if File.exists? outfile
+  File.unlink outfile if File.exist? outfile
 
   cmd = %w[normalize --attack-exponent 1.1 -r 0.8 -o] + [outfile, infile]
   system(*cmd)
@@ -470,7 +470,7 @@ if $0 == __FILE__
   audiofile = opts[:audiofile]
   unless audiofile
     normed_audio = change_ext(files.first, ".norm.mp3")
-    audiofile = normed_audio if File.exists? normed_audio
+    audiofile = normed_audio if File.exist? normed_audio
   end
   cmd += ["-audiofile", audiofile] if audiofile
 
@@ -596,7 +596,7 @@ if $0 == __FILE__
 
       if File.directory? path
         # dirs
-        if File.exists? File.join(path, "VIDEO_TS") or path[%r{(^|/)VIDEO_TS/?$}]
+        if File.exist? File.join(path, "VIDEO_TS") or path[%r{(^|/)VIDEO_TS/?$}]
           # DVD
           videos << "dvd:///./#{path}"
         else

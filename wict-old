@@ -48,11 +48,11 @@ def bdb_open(filename, opts=nil)
 end
 
 def backup(src)
-  if File.exists? src
+  if File.exist? src
     counter = 1
     dest = "#{src}.bak"
 
-    while File.exists? dest
+    while File.exist? dest
       counter += 1
       dest = "#{src}.bak#{counter}"
     end
@@ -184,7 +184,7 @@ if $0 == __FILE__
 
   # test_highlighter
 
-  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+  Dir.mkdir CACHE_DIR unless File.exist? CACHE_DIR
 
   if options.u? or options.a?
 
@@ -192,7 +192,7 @@ if $0 == __FILE__
 
   else
 
-    if not File.exists? INDEX
+    if not File.exist? INDEX
       puts "You must first download a database. Run 'wict -u'."
       exit 1
     elsif ARGV.empty?

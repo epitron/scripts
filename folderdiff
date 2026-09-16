@@ -187,7 +187,7 @@ def content_probably_matches?(a, b, sample_percent = 0.001)
   sizea = File.size a
   sizeb = File.size b
   raise "Files must be the same size" unless sizea == sizeb
-  raise "Files must exist" unless [a,b].all? { |f| File.exists? f }
+  raise "Files must exist" unless [a,b].all? { |f| File.exist? f }
   
   size                = sizea
   block_size          = 2**14  # 16k blocks (average filesystem block size)
@@ -301,7 +301,7 @@ def main
   parse_options!
 
   raise "Must pass 2 folders to compare as parameters" unless ARGV.size == 2
-  raise "Both folders must exist" unless ARGV.any? and ARGV.all?{|f| File.exists? f}
+  raise "Both folders must exist" unless ARGV.any? and ARGV.all?{|f| File.exist? f}
 
   a,b = ARGV.map{|path| Folder.new path }
 

@@ -205,8 +205,8 @@ elsif opts.efi?
   #   readonly_vars = "#{place}/OVMF_VARS.fd"
   #   vars          = "/tmp/ovmf_vars.fd"
 
-  #   raise "Error: #{bios} not found" unless File.exists?(bios)
-  #   raise "Error: #{readonly_vars} not found" unless File.exists?(readonly_vars)
+  #   raise "Error: #{bios} not found" unless File.exist?(bios)
+  #   raise "Error: #{readonly_vars} not found" unless File.exist?(readonly_vars)
 
   #   copy(readonly_vars, vars)
 

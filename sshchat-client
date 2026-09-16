@@ -49,7 +49,7 @@ if (args & %w[-h --help]).any?
   help!
 elsif ARGV.any?
   addr = ARGV.first
-elsif File.exists? CONFIG_FILE
+elsif File.exist? CONFIG_FILE
   addr = File.read(CONFIG_FILE).each_line.first.strip
 end
 

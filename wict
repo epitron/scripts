@@ -46,11 +46,11 @@ def ensure_database!
 end
 
 def backup(src)
-  if File.exists? src
+  if File.exist? src
     counter = 1
     dest = "#{src}.bak"
 
-    while File.exists? dest
+    while File.exist? dest
       counter += 1
       dest = "#{src}.bak#{counter}"
     end
@@ -363,7 +363,7 @@ def update_lowmem(lang="en")
   url = latest_tsv_url(lang)
   puts url.inspect
 
-  FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
+  FileUtils.mkdir_p CACHE_DIR unless File.exist? CACHE_DIR
   backup(INDEX_FILE)
   backup(TSV_FILE)
 
@@ -411,7 +411,7 @@ def update(lang="en")
   url = latest_tsv_url(lang)
   puts url.inspect
 
-  FileUtils.mkdir_p CACHE_DIR unless File.exists? CACHE_DIR
+  FileUtils.mkdir_p CACHE_DIR unless File.exist? CACHE_DIR
   backup(INDEX_FILE)
   backup(TSV_FILE)
 

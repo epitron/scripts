@@ -156,7 +156,7 @@ def to_kodipath(url)
     url
 
   else
-    if File.exists?(url)
+    if File.exist?(url)
       require 'pathname'
       require 'uri'
 

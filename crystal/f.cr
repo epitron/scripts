@@ -167,7 +167,7 @@ has_query = !query.empty?
 
 # Ignore bad path arguments
 roots = roots.select do |path|
-  File.exists?(path) || STDERR.puts("Error: #{path} doesn't exist")
+  File.exist?(path) || STDERR.puts("Error: #{path} doesn't exist")
 end
 
 # Search!

@@ -57,7 +57,7 @@ end
 title, offset = fzf_picker
 
 tmpdir = "/tmp/archwiki"
-Dir.mkdir(tmpdir) unless File.exists?(tmpdir)
+Dir.mkdir(tmpdir) unless File.exist?(tmpdir)
 tmpfile = "#{tmpdir}/#{Digest::SHA1.hexdigest title}.wiki"
 
 ## write to /tmp/archwiki/#{title}.wiki

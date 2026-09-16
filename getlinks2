@@ -122,7 +122,7 @@ def get_links(url, types=TYPES, regexp=nil)
   if url =~ %r{^https?://.+}
     data             = wget(url)
     root_is_relative = relative_url?(url)
-  elsif File.exists? url
+  elsif File.exist? url
     data = File.read url
     root_is_relative = false
   else

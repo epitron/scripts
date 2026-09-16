@@ -22,7 +22,7 @@ end
 
 Pry.history.saver = proc do |line|
   if !@history_file
-    Dir.mkdir(PRY_CONFIG_DIR) unless File.exists?(PRY_CONFIG_DIR)
+    Dir.mkdir(PRY_CONFIG_DIR) unless File.exist?(PRY_CONFIG_DIR)
     filename = "#{PRY_CONFIG_DIR}/history-#{Time.now.strftime('%Y-%m-%d')}.log"
     @history_file = File.open(filename, 'a', 0600).tap { |f| f.sync = true }
   end

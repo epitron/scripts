@@ -4,7 +4,7 @@
 cachefile = "#{ENV['HOME']}/.resolv.cache"
 #p [:cache, cachefile]
 
-if File.exists? cachefile
+if File.exist? cachefile
   @nscache = Marshal.load(File.read cachefile)
 else
   @nscache = {}

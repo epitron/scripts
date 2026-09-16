@@ -1893,7 +1893,7 @@ help
     end
 
     def hub_raw_manpage
-      if File.exists? file = File.dirname(__FILE__) + '/../../man/hub.1'
+      if File.exist? file = File.dirname(__FILE__) + '/../../man/hub.1'
         File.read(file)
       else
         DATA.read

@@ -75,7 +75,7 @@ class Image < Struct.new(:link, :datecode, :timecode, :size, :code)
   def save!(savedir=".")
     image = link.click
 
-    unless File.exists?(savedir)
+    unless File.exist?(savedir)
       puts "Created #{savedir}..."
       FileUtils.mkdir_p(savedir)
     end

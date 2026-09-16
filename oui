@@ -41,11 +41,11 @@ def db_open(flags=DBM::READER)
 end
 
 def backup(src)
-  if File.exists? src
+  if File.exist? src
     counter = 1
     dest = "#{src}.bak"
 
-    while File.exists? dest
+    while File.exist? dest
       counter += 1
       dest = "#{src}.bak#{counter}"
     end
@@ -178,7 +178,7 @@ end
 
 if $0 == __FILE__
 
-  Dir.mkdir CACHE_DIR unless File.exists? CACHE_DIR
+  Dir.mkdir CACHE_DIR unless File.exist? CACHE_DIR
 
   # Help
   if ARGV.include? "-h" or ARGV.include? "--help"

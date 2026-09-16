@@ -26,17 +26,17 @@ SAMPLE_DURATION = 5 # seconds
 FORMAT = 'S16_LE'   # this is the format that my USB microphone generates
 THRESHOLD = 0.15
 
-if !File.exists?('/usr/bin/arecord')
+if !File.exist?('/usr/bin/arecord')
   warn "/usr/bin/arecord not found; install package alsa-utils"
   exit 1
 end
 
-if !File.exists?('/usr/bin/sox')
+if !File.exist?('/usr/bin/sox')
   warn "/usr/bin/sox not found; install package sox"
   exit 1
 end
 
-if !File.exists?('/proc/asound/cards')
+if !File.exist?('/proc/asound/cards')
   warn "/proc/asound/cards not found"
   exit 1
 end

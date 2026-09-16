@@ -14,7 +14,7 @@ end
 def which(bin)
   ENV["PATH"].split(":").each do |path|
     fullpath = File.join(path, bin)
-    return fullpath if File.exists? fullpath
+    return fullpath if File.exist? fullpath
   end
   nil
 end

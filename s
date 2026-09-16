@@ -26,7 +26,7 @@ def which_dir(dir)
   else
     CODE_PATHS.map { |d| File.expand_path d }.each do |path|
       potential_path = File.join(path, dir)
-      return potential_path if File.exists? potential_path
+      return potential_path if File.exist? potential_path
     end
   end
   nil
@@ -44,7 +44,7 @@ def find_bin(bins)
   bins.each do |fn|
     if fn[%r{[~/]}]
       fn = File.expand_path(fn)
-      return fn if File.exists? fn
+      return fn if File.exist? fn
     else
       if bin = which_bin(fn)
         return bin
@@ -65,7 +65,7 @@ end
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
 files = args.map do |arg|
-  if File.exists?(arg) or arg[%r{^\./.}]
+  if File.exist?(arg) or arg[%r{^\./.}]
     arg
   else
     which_dir(arg) || which_bin(arg) || arg
