@@ -4051,7 +4051,7 @@ I wish that man would go away!
 At exactly what point do you start to realise that life without knowledge is death in disguise?
 %
 Madness is rare in individuals -- but in groups, parties, nations, and ages it is the rule.
-    -- Nietzche
+    -- Nietzsche
 %
 Education is what survives when what has been learned has been forgotten.
     -- Skinner
@@ -4165,7 +4165,7 @@ Life can only be understood backwards; but it must be lived forwards.
     -- Soren Kierkegaard
 %
 It is nobler to declare oneself wrong than to insist on being right -- especially when one is right.
-    -- Friedrich Nietzche
+    -- Friedrich Nietzsche
 %
 The keenest sorrow is to recognize ourselves as the sole cause of all our adversities.
     -- Sophocles
