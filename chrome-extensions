@@ -11,6 +11,7 @@ def parse_options
   opts = Slop.parse(help: true, strict: true) do
     banner "Usage: chrome-extensions [options] [search terms]"
 
+    on "s",  "size",     "Show size of each extension"
     on "v",  "verbose",  "Show extra information (ie: permissions and domains the extension runs on)"
     # on "b=", "blong",  "desc", default: ""
   end
@@ -56,6 +57,10 @@ class Extension
       name
     end
   end
+
+  def du
+    IO.popen(["du", "-h", "-s", @dir], &:read).split.first
+  end
 end
 
 ############################################################################################################
@@ -72,7 +77,7 @@ end
 exts.each do |ext|
   puts "<11>#{ext.name} <8>(<1>v<9>#{ext.version.gsub(".", "<1>.</1>")}<8>) - #{ext.id}".colorize
   puts "  <3>location: <7>#{ext.reldir}".colorize
-
+  puts "  <3>size: <14>#{ext.du}".colorize if opts.size?
   if opts.verbose?
     if ext.perms
       puts "  <3>perms: <7>#{ext.perms.join(", ")}".colorize
@@ -83,6 +88,5 @@ exts.each do |ext|
       puts Term::Table.new(ext.content_scripts, indent: 4)
     end
   end
-
   puts
 end
