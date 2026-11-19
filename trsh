@@ -1094,7 +1094,7 @@ sub SetEnvirnment()
 			'l|list'	  => \$OptionList,
 			'f|force+'	  => \$OptionForce,
 			'r|recursive'	  => \$OptionRecursive,
-			'R|recursive'	  => \$OptionRecursive,
+			# 'R|recursive'	  => \$OptionRecursive,
 			'u|undo'	  => \$OptionUndo,
 			'help'		  => \$OptionHelp,
 			'i|interactive'	  => \$OptionInteractive,
