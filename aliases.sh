@@ -147,12 +147,12 @@ then
   #alias ag="rg"
 fi
 
-if we_have ag
-then
-  alias ag="ag --smart-case --pager '$pager'"
-else
+# if we_have ag
+# then
+#   alias ag="ag --smart-case --pager '$pager'"
+# else
   alias ag="ack --pager '$pager'"
-fi
+# fi
 
 alias less='less -X -F -i'
 alias diff='diff -u --color'
@@ -194,6 +194,7 @@ alias geoip='geoiplookup'
 alias geoip6='geoiplookup6'
 alias iptraf='sudoifnotroot iptraf-ng'
 alias ip6='ip -6'
+alias iotop='sudoifnotroot iotop'
 
 # disks
 alias_all_as_sudo fdisk blkid
