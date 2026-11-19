@@ -691,7 +691,7 @@ if $0 == __FILE__
     elsif args.empty?
       puts "Pass the word(s) you want to look up as (an) argument(s)."
     else
-      indexes = lookup(args)
+      indexes = lookup_grep(args)
       if indexes.strip.empty?
         # retry without diacritics (accents and stuff)
         args = args.map { |arg| strip_diacritics(arg) }
