@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+########################################################
+require 'epitools'
+
+gem 'slop', "~> 3.6"
+require 'slop'
+########################################################
+
+NVME_TEMPERATURE_FILES = "/sys/class/nvme/nvme0/hwmon*/temp*_input"
+
+def get_temps
+  paths = Path[NVME_TEMPERATURE_FILES]
+
+  if paths.size == 0
+    puts "Error: Couldn't find a matching temperature sensor file at #{NVME_TEMPERATURE_FILES.inspect}"
+    exit 1
+  end
+
+  temps = paths.map do |path|
+    [
+      path.basename.gsub(/_input$/, ''),
+      path.read.to_i.to_f / 1000
+    ]
+  end
+
+  temps
+end
+
+def format_temps(temps)
+  temps.map do |name, temp|
+    "<7>#{name}<8>: <10>%0.2f°C" % temp
+  end.join("  ")
+end
+
+def timestamp
+  Time.now.strftime("%Y-%m-%d %H:%M:%S")
+end
+
+########################################################
+# Parse options
+
+opts = Slop.parse(help: true, strict: true) do
+  banner "Usage: nvme-temp [options]"
+
+  on "w",  "watch",  "Repeatedly print the temperature, every 10 seconds"
+  # on "b=", "blong",  "desc", default: ""
+end
+
+########################################################
+
+if opts.watch?
+  loop do
+    puts "<8>[<7>#{timestamp}<8>] #{format_temps(get_temps)}".colorize
+    sleep 10
+  end
+else
+  puts format_temps(get_temps).colorize
+end
