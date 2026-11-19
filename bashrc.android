@@ -3,7 +3,6 @@ unalias dpkg
 
 alias dl='cd ~/dl'
 alias s='cd ~/sd'
-alias n='cd ~/n'
 alias sd=s
 alias misc='cd ~/misc'
 
