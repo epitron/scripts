@@ -38,8 +38,8 @@ possibly_prepend_path ~/node_modules/.bin
 possibly_prepend_path ~/.cabal/bin
 possibly_prepend_path ~/.cargo/bin
 possibly_prepend_path ~/go/bin
-for i in ~/.gem/ruby/*/bin ~/.local/share/gem/ruby/*/bin; do
-  possibly_prepend_path $i
+for binpath in ~/.gem/ruby/*/bin ~/.local/share/gem/ruby/*/bin; do
+  possibly_prepend_path $binpath
 done
 possibly_prepend_path ~/.gem/bin
 for gempath in /usr/lib/ruby/gems/*/bin; do
@@ -59,9 +59,9 @@ possibly_prepend_path ~/bin
 #export LESS_TERMCAP_us="`echo -e '\e[01;32m'`"
 
 # bat-man
-if we_have bat; then
-  export MANPAGER="sh -c 'col -bx | bat -l man -p'"
-fi
+#if we_have bat; then
+#  export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+#fi
 
 # fzf
 if we_have fzf || [ -f ~/.fzf/bin/fzf ]; then
