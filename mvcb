@@ -12,7 +12,8 @@ if [ ! -d "$target" ]; then
 fi
 
 ($CB_CMD; echo) | while read line; do
-  echo "clipboard: '$line'" 
+  echo "clipboard: '$line'"
+  line="$( echo "$line" | sed s/'^file:\/\/'/''/ )"
   if [ -f "$line" ] || [ -d "$line" ]; then
     $MOVE_CMD "$line" "$target"
   else
