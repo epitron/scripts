@@ -1,5 +1,5 @@
 if [ "$1" == "" ]; then
-  PORT="8888"
+  PORT="3000"
 else
   PORT="$1"
 fi
