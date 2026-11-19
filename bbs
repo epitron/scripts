@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
+#
+# https://www.telnetbbsguide.com/
+#
+
 require 'epitools'
 
 BBSES = %{
@@ -10,14 +14,19 @@ BBSES = %{
   bbs.electronicchicken.com
   bbs.thebrokenbubble.com
   bbs.pharcyde.org
-  bbs.diskshop.ca
   d1st.org
-  1984.ws
   hysteriabbs.com
   bloodisland.ph4.se
   bbs.godta.com
+  zonebbs.net:2323
 }.nice_lines.map(&:strip)
+# bbs.diskshop.ca # offline
 
+
+# luit -encoding GBK telnet bbs.newsmth.net
+# luit -encoding cp437 telnet blackflag.acid.org
+# telnet 1984.ws # max headroom (utf-8)
+# telnet disfluxbbs.com # (utf-8), ssh on port 2222
 
 def telnet(host)
   puts
@@ -25,7 +34,7 @@ def telnet(host)
   host, port = host.split(":")
   port ||= "23"
 
-  exec("cp437", "telnet", host, port)
+  exec("luit", "-encoding", "cp437", "telnet", host, port)
 end  
 
 def parse_choice(str)
