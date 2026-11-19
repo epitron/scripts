@@ -1,21 +1,21 @@
 #!/usr/bin/env ruby
+
 shares = {
-  "media/movies"        => ["movies-*"],
-  "media/tv"            => ["tv-*"],
-  "media/music"         => ["mp3-*"],
-  "media/ebooks"        => ["ebooks-*"],
-  "media/iso"           => ["iso-*"],
-  "media/documentaries" => ["documentaries-*"],
-  "media/audiobooks"    => ["audiobooks-?"],
-  "media/musicvideos"   => ["musicvideos-?"],
-  "media/podcasts"      => ["podcasts"],
-  "media/talks"         => ["talks-*"],
-  "media/talks-old"     => ["talks-old"],
-  "media/research"      => ["research"],
-  "media/.archive"      => ["/d/archive"],
+  "movies"        => ["links/movies-*"],
+  "tv"            => ["links/tv-*"],
+  "music"         => ["links/mp3-*"],
+  "ebooks"        => ["links/ebooks-*"],
+  "iso"           => ["links/iso-*"],
+  "documentaries" => ["links/documentaries-*"],
+  "audiobooks"    => ["links/audiobooks-?"],
+  "musicvideos"   => ["links/musicvideos-?"],
+  "podcasts"      => ["links/podcasts"],
+  "talks"         => ["links/talks-*"],
+  "research"      => ["links/research"],
+  # ".archive"      => ["/d/archive"],
 }
 
-root       = ENV["HOME"]
+root       = "#{ENV["HOME"]}/media"
 opts, args = ARGV.partition { |arg| arg[/^--?\w/] }
 
 if opts.include?("-h") or opts.include?("--help")
@@ -77,6 +77,9 @@ end
 
 shares.each do |dest, srcs|
   puts "* #{dest}"
+
+  srcs = srcs.select { |src| File.exist? src }
+
   srcs.each { |src| puts "  |_ #{src}" }
 
   srcs_joined = srcs.join(":")
