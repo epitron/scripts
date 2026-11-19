@@ -18,11 +18,11 @@ require 'epitools'
 MAX_LINE_LENGTH  = 1000
 IGNORE_PATHS     = Set.new([".svn", ".git", "CVS"])
 
-configfile = Path["~/.grc.json"]
-config = configfile.parse
-config["download_path"] ||= "~/Downloads"
-  DOWNLOAD_PATH    = Path[config["download_path"]]
-configfile.write(config.to_json)
+#configfile = Path["~/.grc.json"]
+#config = (configfile.exists? && configfile.parse) || {}
+#config["ignore_paths"] ||= ...
+#IGNORE_PATHS = Set.new(config["ignore_paths"])
+#configfile.write(config.to_json)
 
 #################################################################
 
