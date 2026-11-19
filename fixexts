@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 ###################################################
-gem 'slop', "~> 3.6"
+$:.unshift("#{File.dirname($0)}/lib/ruby")
+# gem 'slop', "~> 3.6"
 require 'slop'
 #require 'mimemagic'
 require 'pathname'
@@ -8,6 +9,7 @@ require 'epitools'
 ###################################################
 #
 # TODOs:
+# - if the extension of the source filename isn't a valid extension (eg: "hello.there"), don't remove it
 # - If the file exists, put an incrementing counter
 # - Be smarter about what it thinks an extension is (eg: "hello there how are you doing. i am fine!" => ". i am fine!" is not an extension)
 #
@@ -96,9 +98,17 @@ def skipit?(ext, true_ext, mime)
   false
 end
 
+###################################################
+
+def valid_ext?(ext)
+  normalized_ext = ext.gsub(/^\./, '').downcase
+  MimeMagic::EXTENSIONS.include?(normalized_ext)
+end
+
+###################################################
+
 FIXERS = {
   # [ current-extension, actual-type ] => proc
-
   ["mp4", "video/mp2t"]      => proc { |path| convert_to_mp4(path) },
   ["mp4", "video/quicktime"] => proc { |path| convert_to_mp4(path) },
 }
@@ -120,6 +130,8 @@ def convert_to_mp4(path)
   path
 end
 
+###################################################
+
 def fix!(path)
   mime = path.open { |io| MimeMagic.by_magic(io) }
   return unless mime
@@ -139,7 +151,8 @@ def fix!(path)
         newpath = fix_container[path]
         puts "  <8>|_ <7>fixed container: <10>#{newpath}".colorize
       else
-        newpath = path.sub_ext(".#{true_ext}")
+        # only replace the extension if it's a different valid extension (eg: don't replace ".there" if the file is called "hello.there")
+        newpath = valid_ext?(path.extname) ? path.sub_ext(".#{true_ext}") : Pathname.new("#{path}.#{true_ext}")
         if newpath.exist?
           puts "Error: #{newpath} exists!"
         else
