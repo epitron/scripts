@@ -6,7 +6,7 @@ require 'oga'
 require 'ostruct'
 
 URL_ROOT   = "https://aur.archlinux.org"
-SEARCH_URL = "#{URL_ROOT}/packages/?K=%s&O=0&SB=p&SO=d"
+SEARCH_URL = "#{URL_ROOT}/packages?K=%s&O=0&SB=p&SO=d"
 
 def search(query)
   # io  = open("aur.html")
